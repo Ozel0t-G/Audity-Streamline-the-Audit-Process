@@ -196,4 +196,6 @@ textarea.field{min-height:96px;resize:vertical}
 .empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:16px}
 .theme-toggle{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .theme-option{width:100%}
+.details{border:1px solid var(--border);border-radius:14px;background:var(--choice-bg);padding:12px;margin:12px 0}
+.details summary{cursor:pointer;color:var(--soft);font-weight:700}
 @media(max-width:950px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto}.hero,.split,.grid-2,.grid-3,.grid-4,.timeline{grid-template-columns:1fr}.topbar{position:static}.table th{position:static}}
