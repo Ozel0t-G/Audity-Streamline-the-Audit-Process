@@ -1,7 +1,7 @@
 # Audity — Streamline the Cybersecurity Audit Process
 
 <p align="center">
-  <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/f82acd21-5df9-4865-b79d-802dec8c7fad" />
+  <img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/f82acd21-5df9-4865-b79d-802dec8c7fad" />
 </p>
 
 **Audity** is a local-first, security-first audit and assessment workspace for cybersecurity consultants, CISOs, GRC teams, auditors, and security managers.
