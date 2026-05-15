@@ -13,9 +13,11 @@ Audity is designed for sensitive audit, security, and GRC work where client data
 Unlike hosted web services, Audity runs locally on the user’s machine through a lightweight local web server. Assessment data remains in the local browser environment and can be exported as a portable project backup file. This follows a **local-first, security-first** operating model: keep sensitive client data close to the assessor, reduce unnecessary exposure, and avoid placing confidential assessment material on external infrastructure unless there is a clear business, legal, and contractual basis for doing so.
 
 This design aligns with common security and GRC principles. ISO/IEC 27001 describes an ISMS as a structured system for managing risks related to information handled by an organization and emphasizes confidentiality, integrity, and availability of information assets. NIST CSF 2.0 is intended to help organizations understand, assess, prioritize, and communicate cybersecurity risk. NIS2 Article 21 requires appropriate and proportionate technical, operational, and organizational measures to manage risks to network and information systems. Audity is built around the same practical idea: assessment data should be handled with the same care as the risks being assessed.
+
+
 <img width="1016" height="470" alt="Bildschirmfoto 2026-05-15 um 09 26 34" src="https://github.com/user-attachments/assets/d680fb4e-155a-4311-b9d5-36c29f8a5b0b" />
 
----
+
 
 ## Why Audity Exists
 
@@ -25,7 +27,7 @@ Audity solves this by providing a guided assessment workflow that standardizes h
 
 The goal is not to replace professional judgment. The goal is to make the assessment process cleaner, faster, more consistent, and easier to explain to clients, management, auditors, and technical teams.
 
----
+
 
 ## Core Design Principles
 
@@ -79,7 +81,7 @@ However, the user remains the final decision-maker.
 
 Suggested findings must be reviewed, accepted, edited, or dismissed before they become part of the report.
 
----
+
 
 # Application Features
 
@@ -100,7 +102,7 @@ The main assessment flow consists of:
 
 Each step is designed around one clear task and one primary user decision.
 
----
+
 
 ## 2. Assessment Setup
 
@@ -127,7 +129,7 @@ Example assessment types:
 - SOC / Detection Maturity Assessment
 - Third-Party Risk Assessment
 
----
+
 
 ## 3. Scope & Context Management
 
@@ -148,7 +150,7 @@ This is important because the same technical weakness can have a very different 
 
 For example, missing restore testing in a small non-critical environment is serious. Missing restore testing in healthcare, finance, or critical infrastructure can be critical.
 
----
+
 
 ## 4. Guided Questions
 
@@ -210,7 +212,7 @@ Medium
 High
 ```
 
----
+
 
 ## 5. Suggestion Engine
 
@@ -258,7 +260,7 @@ Dismiss
 Review later
 ```
 
----
+
 
 ## 6. Finding Review
 
@@ -287,7 +289,7 @@ Each suggested finding can include:
 
 Findings can be accepted, edited, or dismissed before being included in the final report.
 
----
+
 
 ## 7. Risk Register
 
@@ -333,7 +335,7 @@ Rating model:
 17–25   = Critical
 ```
 
----
+
 
 ## 8. Roadmap Builder
 
@@ -363,7 +365,7 @@ Roadmap items can include:
 
 The goal is to help the user move from assessment results to actionable remediation planning.
 
----
+
 
 ## 9. Report Preview
 
@@ -387,7 +389,7 @@ The report structure can include:
 
 For the Alpha version, the report can be printed or saved as PDF using the browser’s print functionality.
 
----
+
 
 ## 10. Local Project Export and Import
 
@@ -409,7 +411,7 @@ This allows users to:
 
 Because browser storage can be cleared by the user or the operating system, regular project export is strongly recommended.
 
----
+
 
 ## 11. Local Browser Storage
 
@@ -424,7 +426,7 @@ Local browser storage is not a substitute for project backup.
 Export .cisoassess files regularly.
 ```
 
----
+
 
 ## 12. Framework Library
 
@@ -442,7 +444,7 @@ NSM Grunnprinsipper for IKT-sikkerhet
 
 The framework support in the Alpha version is intended for guided assessment structure, mapping, and testing. It should not yet be treated as a complete legal or certification-grade control catalogue.
 
----
+
 
 ## Planned Frameworks for Beta
 
@@ -466,7 +468,7 @@ GDPR assessment mapping
 ENISA cybersecurity guidance mappings
 ```
 
----
+
 
 # Installation and Local Execution
 
@@ -487,7 +489,7 @@ http://127.0.0.1:8787
 
 This means Audity is only served locally on the user’s machine.
 
----
+
 
 # macOS Installation
 
@@ -544,7 +546,7 @@ The macOS launcher starts a lightweight local HTTP server from the extracted app
 
 No remote backend is contacted for application hosting.
 
----
+
 
 # Linux Installation
 
@@ -609,7 +611,7 @@ The Linux launcher serves the local static application bundle through a local HT
 
 No cloud-hosted application backend is required.
 
----
+
 
 # Windows Installation
 
@@ -665,7 +667,7 @@ The Windows batch launcher starts a local web server from the extracted applicat
 
 The application is not hosted on an external web service and does not require a remote database.
 
----
+
 
 # Security Model
 
@@ -701,7 +703,7 @@ Audity’s local-first model supports common information security principles:
 
 Audity applies these principles pragmatically by minimizing unnecessary data movement and keeping audit work local by default.
 
----
+
 
 # Alpha Version Notice
 
@@ -736,7 +738,7 @@ Encryption for project files is planned for a later version.
 9. Export a project backup.
 10. Re-import the backup and verify the assessment state.
 
----
+
 
 # Project Status
 
