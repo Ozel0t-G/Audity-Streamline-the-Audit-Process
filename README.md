@@ -10,7 +10,7 @@ The application guides users step by step through structured cybersecurity and c
 
 Audity is designed for sensitive audit, security, and GRC work where client data, assessment evidence, internal control weaknesses, risk ratings, and remediation plans should not be uploaded to an external SaaS platform by default.
 
-Unlike hosted web services, Audity runs locally on the user’s machine through a lightweight local web server. Assessment data remains in the local browser environment and can be exported as a portable project backup file. This follows a **local-first, security-first** operating model: keep sensitive client data close to the assessor, reduce unnecessary exposure, and avoid placing confidential assessment material on external infrastructure unless there is a clear business, legal, and contractual basis for doing so.
+Unlike hosted web services, Audity runs locally on the user’s machine through a lightweight local web server. Productive assessment data is written to a real local project file in a folder selected by the user through the browser’s File System Access API. This follows a **local-first, security-first** operating model: keep sensitive client data close to the assessor, reduce unnecessary exposure, and avoid placing confidential assessment material on external infrastructure unless there is a clear business, legal, and contractual basis for doing so.
 
 This design aligns with common security and GRC principles. ISO/IEC 27001 describes an ISMS as a structured system for managing risks related to information handled by an organization and emphasizes confidentiality, integrity, and availability of information assets. NIST CSF 2.0 is intended to help organizations understand, assess, prioritize, and communicate cybersecurity risk. NIS2 Article 21 requires appropriate and proportionate technical, operational, and organizational measures to manage risks to network and information systems. Audity is built around the same practical idea: assessment data should be handled with the same care as the risks being assessed.
 
@@ -391,11 +391,52 @@ For the Alpha version, the report can be printed or saved as PDF using the brows
 
 
 
-## 10. Local Project Export and Import
+## 10. Local Project Folder Mode
 
-Audity supports portable project backup files.
+Audity uses local project files for professional use.
 
-Projects can be exported as:
+At startup, the app checks whether the browser supports project folder mode:
+
+```text
+window.showDirectoryPicker
+secure context
+```
+
+If this capability is missing, Audity does not start and does not fall back to IndexedDB or browser-local productive storage.
+
+Recommended browser:
+
+```text
+Google Chrome
+```
+
+Alternative browser:
+
+```text
+Microsoft Edge
+```
+
+Not supported for productive use:
+
+```text
+Safari
+Firefox
+older browsers
+mobile browsers
+embedded WebViews without File System Access API
+```
+
+When a project folder is selected, Audity creates or opens:
+
+```text
+audity-project.cisoassess
+```
+
+The selected folder should be controlled by the user, for example a client project folder in Documents or an encrypted local workspace.
+
+## 11. Project Export and Import
+
+Audity can still export portable project copies as:
 
 ```text
 *.cisoassess
@@ -409,22 +450,7 @@ This allows users to:
 - share a project internally under controlled conditions
 - restore a previous assessment state
 
-Because browser storage can be cleared by the user or the operating system, regular project export is strongly recommended.
-
-
-
-## 11. Local Browser Storage
-
-The Alpha version stores data locally in the browser environment.
-
-This allows the app to preserve assessment progress between sessions, as long as browser data for the local app is not deleted.
-
-Important operational note:
-
-```text
-Local browser storage is not a substitute for project backup.
-Export .cisoassess files regularly.
-```
+The main project state is stored in the selected project folder, not in productive browser-local storage.
 
 
 
@@ -503,8 +529,6 @@ Recommended browsers:
 ```text
 Google Chrome
 Microsoft Edge
-Safari
-Firefox
 ```
 
 ## Steps
@@ -543,7 +567,7 @@ Then confirm the security prompt.
 
 ## Technical Behavior
 
-The macOS launcher starts a lightweight local HTTP server from the extracted application directory. The browser loads the static Audity frontend from localhost.
+The macOS launcher starts a lightweight local HTTP server from the extracted application directory. The browser loads the static Audity frontend from localhost and requires project folder mode through the File System Access API.
 
 No remote backend is contacted for application hosting.
 
@@ -559,9 +583,7 @@ Recommended browsers:
 
 ```text
 Google Chrome
-Chromium
 Microsoft Edge
-Firefox
 ```
 
 ## Steps
@@ -608,7 +630,7 @@ chmod +x start-linux.sh
 
 ## Technical Behavior
 
-The Linux launcher serves the local static application bundle through a local HTTP listener. The application executes in the browser runtime and stores assessment data locally.
+The Linux launcher serves the local static application bundle through a local HTTP listener. The application executes in the browser runtime and stores assessment data in the selected local project folder.
 
 No cloud-hosted application backend is required.
 
@@ -625,7 +647,6 @@ Recommended browsers:
 ```text
 Microsoft Edge
 Google Chrome
-Firefox
 ```
 
 ## Steps
@@ -664,7 +685,7 @@ START_WINDOWS.bat
 
 ## Technical Behavior
 
-The Windows batch launcher starts a local web server from the extracted application directory and opens the local Audity frontend in the default browser.
+The Windows batch launcher starts a local web server from the extracted application directory and opens the local Audity frontend in the default browser. Audity requires a supported Chromium-based desktop browser for project folder mode.
 
 The application is not hosted on an external web service and does not require a remote database.
 
@@ -764,12 +785,12 @@ Known Alpha limitations:
 
 ```text
 Framework mappings are initial and not complete certification catalogues.
-Browser storage should be backed up using .cisoassess export.
 PDF export uses browser print/save functionality.
 Multi-user collaboration is not included.
 Cloud sync is not included.
 Role-based access control is not included.
 Encryption for project files is planned for a later version.
+The selected project folder must be opened again after a browser restart.
 ```
 
 ---
@@ -817,7 +838,7 @@ Confirm suggested findings mention evidence gaps.
 
 Export / Import:
 Export .cisoassess after answering questions and accepting a framework gap.
-Reset local alpha data.
+Reset the selected project file.
 Import the file.
 Confirm selected frameworks, usage modes, questions, findings, risks, roadmap, and report sections still render.
 ```
@@ -830,6 +851,6 @@ Confirm selected frameworks, usage modes, questions, findings, risks, roadmap, a
 Status: Alpha
 Architecture: Portable local web application
 Execution model: Local web server + browser runtime
-Storage model: Local browser storage + .cisoassess export/import
+Storage model: File System Access API project folder + .cisoassess project file
 Primary use case: Cybersecurity, audit, and GRC assessment workflow
 ```

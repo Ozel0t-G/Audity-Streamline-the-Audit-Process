@@ -198,4 +198,10 @@ textarea.field{min-height:96px;resize:vertical}
 .theme-option{width:100%}
 .details{border:1px solid var(--border);border-radius:14px;background:var(--choice-bg);padding:12px;margin:12px 0}
 .details summary{cursor:pointer;color:var(--soft);font-weight:700}
+.blocking-screen{min-height:100vh;display:grid;place-items:center;padding:32px;background:linear-gradient(135deg,var(--bg),var(--bg2) 60%,var(--bg3))}
+.blocking-card{width:min(900px,100%);background:linear-gradient(180deg,var(--panel2),var(--panel3));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:clamp(24px,4vw,44px)}
+.blocking-brand{margin-bottom:28px}
+.blocking-card h2{font-size:clamp(30px,4vw,46px);line-height:1.05;margin:0 0 14px}
+.blocking-card p{color:var(--muted);line-height:1.55}
+.blocking-card code{color:var(--text);background:var(--badge-bg);border:1px solid var(--border);border-radius:8px;padding:2px 6px}
 @media(max-width:950px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto}.hero,.split,.grid-2,.grid-3,.grid-4,.timeline{grid-template-columns:1fr}.topbar{position:static}.table th{position:static}}
