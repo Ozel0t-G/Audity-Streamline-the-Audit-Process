@@ -1,4 +1,4 @@
-# Audity — Streamline the Audit Process
+# Audity — Streamline the Cybersecurity Audit Process
 
 **Audity** is a local-first, security-first audit and assessment workspace for cybersecurity consultants, CISOs, GRC teams, auditors, and security managers.
 
