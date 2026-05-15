@@ -293,23 +293,43 @@ Findings can be accepted, edited, or dismissed before being included in the fina
 
 ## 7. Risk Register
 
-Audity translates confirmed findings into structured risk register entries.
+Audity translates weak assessment answers, missing evidence, low maturity scores, and confirmed findings into structured risk register entries.
+
+The Risk Register is stored per customer in the selected project folder:
+
+```text
+risk_registers/
+  risk_register_<customerId>.json
+```
+
+Automatically generated risks use stable source links so repeated saves update existing entries instead of creating duplicates:
+
+```text
+assessmentId + sourceType + sourceId + controlId
+```
 
 Risk records include:
 
 - risk title
 - description
-- cause
-- impact description
+- category
+- control mapping
+- source reference
 - likelihood score
 - impact score
-- calculated risk rating
+- inherent risk score
+- risk level
 - risk owner
 - treatment option
-- treatment plan
+- mitigation plan
+- residual likelihood
+- residual impact
+- residual risk score
 - due date
 - status
-- related findings
+- notes
+- automatic/manual indicator
+- manual edit indicator
 
 Supported treatment options:
 
@@ -318,6 +338,7 @@ Mitigate
 Accept
 Transfer
 Avoid
+Monitor
 ```
 
 Risk scoring follows a simple likelihood x impact model:
@@ -335,9 +356,72 @@ Rating model:
 17–25   = Critical
 ```
 
+Users can edit the Risk Register like a simple spreadsheet. System-calculated fields such as risk score, risk level, residual score, updated timestamp, and manual edit flags are recalculated automatically.
+
+Risk deletion uses soft delete in the app and is written to the Activity Log.
+
+Risk Register PDF exports are saved in the selected project folder:
+
+```text
+reports/
+  risk_register_<customerId>_<timestamp>.pdf
+```
 
 
-## 8. Roadmap Builder
+
+## 8. Activity Logging
+
+Audity stores a customer-specific Activity Log in JSON Lines format:
+
+```text
+logs/
+  customer_<customerId>/
+    activity_log.jsonl
+    activity_log_integrity.json
+```
+
+Activity Logs are read-only in the app. There is no UI function to edit, delete, reset, or remove log entries.
+
+Each log entry includes:
+
+- timestamp
+- customer ID
+- assessment ID
+- action
+- entity type
+- entity ID
+- summary
+- details
+- previous hash
+- entry hash
+
+Audity uses a hash chain:
+
+```text
+entryHash = SHA-256(canonicalJson(logEntryWithoutEntryHash))
+previousHash = previous entry entryHash
+```
+
+On project load, Audity verifies the chain and shows a warning if the log appears to have been modified outside the app.
+
+Important clarification:
+
+```text
+Local logs are tamper-evident, not tamper-proof.
+```
+
+Activity logs cannot be edited in Audity. Audity also verifies log integrity and warns if log files appear to have been modified outside the app.
+
+Activity Log PDF exports are saved in the selected project folder:
+
+```text
+reports/
+  activity_log_<customerId>_<timestamp>.pdf
+```
+
+
+
+## 9. Roadmap Builder
 
 Audity converts risks and findings into a remediation roadmap.
 
@@ -367,7 +451,7 @@ The goal is to help the user move from assessment results to actionable remediat
 
 
 
-## 9. Report Preview
+## 10. Report Preview
 
 Audity includes a report preview area for reviewing assessment output before export.
 
@@ -391,7 +475,7 @@ For the Alpha version, the report can be printed or saved as PDF using the brows
 
 
 
-## 10. Local Project Folder Mode
+## 11. Local Project Folder Mode
 
 Audity uses local project files for professional use.
 
@@ -434,7 +518,7 @@ audity-project.cisoassess
 
 The selected folder should be controlled by the user, for example a client project folder in Documents or an encrypted local workspace.
 
-## 11. Project Export and Import
+## 12. Project Export and Import
 
 Audity can still export portable project copies as:
 
@@ -454,7 +538,7 @@ The main project state is stored in the selected project folder, not in producti
 
 
 
-## 12. Framework Library
+## 13. Framework Library
 
 Audity Alpha includes initial support for the following frameworks and control libraries:
 
@@ -785,12 +869,14 @@ Known Alpha limitations:
 
 ```text
 Framework mappings are initial and not complete certification catalogues.
-PDF export uses browser print/save functionality.
+Main report PDF export uses browser print/save functionality.
+Risk Register and Activity Log PDF exports are intentionally simple.
 Multi-user collaboration is not included.
 Cloud sync is not included.
 Role-based access control is not included.
 Encryption for project files is planned for a later version.
 The selected project folder must be opened again after a browser restart.
+Activity logs are tamper-evident, not tamper-proof against direct file-system changes.
 ```
 
 ---
