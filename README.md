@@ -438,6 +438,7 @@ MITRE ATT&CK
 HIPAA Security Rule
 NSM Grunnprinsipper for IKT-sikkerhet
 ```
+<img width="1021" height="467" alt="Bildschirmfoto 2026-05-15 um 14 17 53" src="https://github.com/user-attachments/assets/7fdb52b9-9fb8-4d7a-925d-d506efb10ae3" />
 
 The framework support in the Alpha version is intended for guided assessment structure, mapping, and testing. It should not yet be treated as a complete legal or certification-grade control catalogue.
 
