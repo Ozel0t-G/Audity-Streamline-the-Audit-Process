@@ -15,8 +15,7 @@ Unlike hosted web services, Audity runs locally on the user’s machine through 
 This design aligns with common security and GRC principles. ISO/IEC 27001 describes an ISMS as a structured system for managing risks related to information handled by an organization and emphasizes confidentiality, integrity, and availability of information assets. NIST CSF 2.0 is intended to help organizations understand, assess, prioritize, and communicate cybersecurity risk. NIS2 Article 21 requires appropriate and proportionate technical, operational, and organizational measures to manage risks to network and information systems. Audity is built around the same practical idea: assessment data should be handled with the same care as the risks being assessed.
 
 
-<img width="1016" height="470" alt="Bildschirmfoto 2026-05-15 um 09 26 34" src="https://github.com/user-attachments/assets/d680fb4e-155a-4311-b9d5-36c29f8a5b0b" />
-
+<img width="1021" height="467" alt="Bildschirmfoto 2026-05-15 um 13 54 14" src="https://github.com/user-attachments/assets/d449fe96-905b-46c0-bd1f-7ee08529d80d" />
 
 
 ## Why Audity Exists
