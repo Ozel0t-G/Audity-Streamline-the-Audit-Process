@@ -151,6 +151,9 @@ For example, missing restore testing in a small non-critical environment is seri
 
 ## 4. Guided Questions
 
+<img width="1021" height="467" alt="Bildschirmfoto 2026-05-15 um 14 19 40" src="https://github.com/user-attachments/assets/44da0a40-87b4-4f62-b000-f959015970d5" />
+
+
 The assessment questionnaire is presented domain by domain.
 
 Instead of showing the user a large spreadsheet-like control table, Audity presents clear assessment cards.
