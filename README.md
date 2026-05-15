@@ -1,5 +1,9 @@
 # Audity — Streamline the Cybersecurity Audit Process
 
+<p align="center">
+  <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/f82acd21-5df9-4865-b79d-802dec8c7fad" />
+</p>
+
 **Audity** is a local-first, security-first audit and assessment workspace for cybersecurity consultants, CISOs, GRC teams, auditors, and security managers.
 
 The application guides users step by step through structured cybersecurity and compliance assessments, from initial client setup to scope definition, control evaluation, finding review, risk register generation, remediation roadmap planning, and final report export.
