@@ -20,7 +20,6 @@ This design aligns with common security and GRC principles. ISO/IEC 27001 descri
 
 
 ## Why Audity Exists
-
 Many audits and security assessments still happen across spreadsheets, Word documents, screenshots, interview notes, and manually maintained risk registers. That works, but it is inefficient, inconsistent, and hard to reproduce.
 
 Audity solves this by providing a guided assessment workflow that standardizes how security assessments are performed, documented, reviewed, and reported.
