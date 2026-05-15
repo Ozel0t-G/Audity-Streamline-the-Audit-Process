@@ -701,6 +701,54 @@ Audity’s local-first model supports common information security principles:
 
 Audity applies these principles pragmatically by minimizing unnecessary data movement and keeping audit work local by default.
 
+## Compliance Engine Alpha
+
+Audity now includes a local compliance engine for framework readiness support.
+
+The engine is data-driven and works from local static files only:
+
+```text
+Framework control database
+Control-to-question mappings
+Evidence expectations
+Control evaluation
+Framework coverage
+Gap analysis
+Suggested findings
+Risk and roadmap impact
+Report readiness sections
+```
+
+Supported Alpha framework structures:
+
+```text
+ISO/IEC 27001:2022
+NIS2
+NIST Cybersecurity Framework 2.0
+CIS Controls v8
+MITRE ATT&CK
+HIPAA Security Rule
+NSM Grunnprinsipper for IKT-sikkerhet
+```
+
+The Alpha engine intentionally uses original control summaries, assessment questions, evidence expectations, and mapping rationale. It does not copy full official control catalogues or certification material.
+
+The UI uses the terms:
+
+```text
+Readiness
+Coverage
+Evidence completeness
+Potential gap
+Assessment result
+```
+
+It should not describe a result as certified, guaranteed, audit-proof, or fully compliant.
+
+Framework content in this Alpha version is intended for workflow testing and assessment support. It should not be treated as a complete certification-grade control catalogue. Framework mappings are provided to support assessment consistency and reporting. They should be reviewed by a qualified professional before being used for formal audit or regulatory conclusions.
+
+Audity supports professional judgment. It does not replace legal, regulatory, audit, or certification advice.
+
 
 
 # Alpha Version Notice
@@ -735,6 +783,41 @@ Encryption for project files is planned for a later version.
 8. Open the report preview.
 9. Export a project backup.
 10. Re-import the backup and verify the assessment state.
+
+## Compliance Engine Alpha Test Notes
+
+Suggested manual checks for the current Alpha build:
+
+```text
+ISO 27001 Readiness:
+Select ISO 27001 as Primary and NIS2 as Supporting.
+Regenerate questions.
+Set privileged MFA to No, score 1, evidence Missing.
+Confirm access-control readiness drops and a framework-gap finding appears.
+
+NIS2 Readiness:
+Select NIS2 as Primary.
+Mark incident response and restore testing as weak.
+Confirm business continuity and incident handling gaps appear.
+Confirm roadmap phases include 0-30 days and 31-90 days.
+
+SOC / Detection Maturity:
+Select MITRE ATT&CK as Supporting.
+Answer logging and detection questions.
+Confirm MITRE mappings appear as detection coverage support.
+Confirm the UI avoids final compliance wording for MITRE.
+
+Evidence Missing:
+Set high-impact questions to score 1 and evidence Missing.
+Confirm control status becomes Evidence missing or Not implemented.
+Confirm suggested findings mention evidence gaps.
+
+Export / Import:
+Export .cisoassess after answering questions and accepting a framework gap.
+Reset local alpha data.
+Import the file.
+Confirm selected frameworks, usage modes, questions, findings, risks, roadmap, and report sections still render.
+```
 
 
 
