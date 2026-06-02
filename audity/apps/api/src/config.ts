@@ -5,6 +5,7 @@ export type AudityConfig = {
   logLevel: string;
   port: number;
   publicUrl: string;
+  sessionIdleTimeoutMinutes: number;
 };
 
 export function loadConfig(): AudityConfig {
@@ -16,6 +17,9 @@ export function loadConfig(): AudityConfig {
     env: process.env.AUDITY_ENV ?? "production",
     logLevel: process.env.AUDITY_LOG_LEVEL ?? "info",
     port: Number(process.env.PORT ?? 3000),
-    publicUrl: process.env.AUDITY_PUBLIC_URL ?? "http://localhost"
+    publicUrl: process.env.AUDITY_PUBLIC_URL ?? "http://localhost",
+    sessionIdleTimeoutMinutes: Number(
+      process.env.AUDITY_SESSION_IDLE_TIMEOUT_MINUTES ?? 30
+    )
   };
 }

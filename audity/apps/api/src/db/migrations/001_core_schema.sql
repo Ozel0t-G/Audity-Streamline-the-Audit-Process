@@ -33,6 +33,8 @@ create table if not exists sessions (
   id uuid primary key,
   user_id uuid not null references users(id) on delete cascade,
   refresh_token_hash text not null unique,
+  csrf_token_hash text,
+  last_seen_at timestamptz not null default now(),
   expires_at timestamptz not null,
   revoked_at timestamptz,
   created_at timestamptz not null default now()
@@ -285,3 +287,25 @@ create table if not exists backup_jobs (
   finished_at timestamptz,
   metadata jsonb not null default '{}'::jsonb
 );
+
+alter table sessions add column if not exists csrf_token_hash text;
+alter table sessions add column if not exists last_seen_at timestamptz not null default now();
+alter table mfa_settings add column if not exists secret_encrypted text;
+alter table mfa_settings add column if not exists verified_at timestamptz;
+
+create or replace function prevent_append_only_change()
+returns trigger as $$
+begin
+  raise exception 'append-only table cannot be modified';
+end;
+$$ language plpgsql;
+
+drop trigger if exists audit_logs_append_only on audit_logs;
+create trigger audit_logs_append_only
+before update or delete on audit_logs
+for each row execute function prevent_append_only_change();
+
+drop trigger if exists user_activity_logs_append_only on user_activity_logs;
+create trigger user_activity_logs_append_only
+before update or delete on user_activity_logs
+for each row execute function prevent_append_only_change();

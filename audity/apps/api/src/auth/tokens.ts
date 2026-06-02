@@ -13,6 +13,11 @@ export type AccessTokenPayload = {
   permissions: string[];
 };
 
+export type MfaChallengePayload = {
+  sub: string;
+  purpose: "mfa_challenge";
+};
+
 export function signAccessToken(payload: AccessTokenPayload): string {
   return jwt.sign(payload, loadConfig().appSecret, {
     expiresIn: accessTokenTtlSeconds,
@@ -24,6 +29,23 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
   return jwt.verify(token, loadConfig().appSecret, {
     issuer: "audity"
   }) as AccessTokenPayload;
+}
+
+export function signMfaChallengeToken(userId: string): string {
+  return jwt.sign({ sub: userId, purpose: "mfa_challenge" }, loadConfig().appSecret, {
+    expiresIn: 5 * 60,
+    issuer: "audity"
+  });
+}
+
+export function verifyMfaChallengeToken(token: string): MfaChallengePayload {
+  const payload = jwt.verify(token, loadConfig().appSecret, {
+    issuer: "audity"
+  }) as MfaChallengePayload;
+  if (payload.purpose !== "mfa_challenge") {
+    throw new Error("Invalid MFA challenge token");
+  }
+  return payload;
 }
 
 export function createRefreshToken(): string {
