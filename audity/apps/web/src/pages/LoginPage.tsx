@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { BrandMark } from "../components/BrandMark";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -48,9 +49,7 @@ export function LoginPage() {
     <main className="min-h-screen bg-audity-app text-audity-text">
       <header className="flex h-12 items-center border-b border-audity-border bg-audity-topnav px-5">
         <div className="flex items-center gap-3">
-          <div className="grid h-7 w-7 place-items-center rounded-audity border border-audity-borderStrong bg-audity-panel text-sm font-bold text-audity-primary">
-            A
-          </div>
+          <BrandMark />
           <span className="text-sm font-semibold">Audity</span>
         </div>
       </header>

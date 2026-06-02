@@ -237,6 +237,14 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "findings.opened",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { assessmentId: request.params.id }
+      });
       await ensureSuggestedFindings(request.params.id);
       const result = await pool.query(
         `select f.*, fc.control_code, fc.title as control_title, aq.question, ca.score,
@@ -332,6 +340,14 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "risk_register.opened",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { assessmentId: request.params.id }
+      });
       const result = await pool.query(
         `select r.*, f.title as finding_title
          from risks r
@@ -466,6 +482,14 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "roadmap.opened",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { assessmentId: request.params.id }
+      });
       const result = await pool.query(
         `select ri.*, r.title as risk_title
          from roadmap_items ri

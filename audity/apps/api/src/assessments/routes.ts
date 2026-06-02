@@ -114,6 +114,14 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "assessment.opened",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { assessmentId: request.params.id }
+      });
       return { assessment };
     }
   );

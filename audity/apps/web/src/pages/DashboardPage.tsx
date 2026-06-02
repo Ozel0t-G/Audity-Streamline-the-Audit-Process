@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { BrandMark } from "../components/BrandMark";
 
 export function DashboardPage() {
   const { user, logout, setupMfa, verifyMfaSetup } = useAuth();
@@ -36,9 +37,7 @@ export function DashboardPage() {
     <main className="min-h-screen bg-audity-app text-audity-text">
       <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
         <div className="flex items-center gap-3">
-          <div className="grid h-7 w-7 place-items-center rounded-audity border border-audity-borderStrong bg-audity-panel text-sm font-bold text-audity-primary">
-            A
-          </div>
+          <BrandMark />
           <span className="text-sm font-semibold">Audity</span>
         </div>
         <button
@@ -56,6 +55,7 @@ export function DashboardPage() {
           </div>
           <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/customers">Customers</Link>
           <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/frameworks">Framework Library</Link>
+          <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/admin">Admin</Link>
         </aside>
         <section className="bg-audity-page p-5">
           <div className="mb-5 border-b border-audity-border pb-4">
