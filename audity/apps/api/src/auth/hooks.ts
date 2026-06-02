@@ -66,3 +66,17 @@ export function requirePermission(permission: string) {
     }
   };
 }
+
+export function requireCsrfPermission(permission: string) {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    await requireCsrf(request, reply);
+    if (reply.sent) {
+      return;
+    }
+    if (!request.user?.permissions.includes(permission)) {
+      await reply
+        .code(403)
+        .send({ code: "PERMISSION_DENIED", message: "Permission denied" });
+    }
+  };
+}

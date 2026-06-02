@@ -2,8 +2,10 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import { AUDITY_VERSION, type HealthResponse } from "@audity/shared";
+import { registerAssessmentRoutes } from "./assessments/routes.js";
 import { registerAuthRoutes } from "./auth/routes.js";
 import { loadConfig } from "./config.js";
+import { registerCustomerRoutes } from "./customers/routes.js";
 import { verifyDatabaseConnection } from "./db/client.js";
 import { applyCoreSchema } from "./db/schema.js";
 
@@ -33,4 +35,6 @@ app.get("/ready", async () => {
 await verifyDatabaseConnection();
 await applyCoreSchema();
 await registerAuthRoutes(app);
+await registerCustomerRoutes(app);
+await registerAssessmentRoutes(app);
 await app.listen({ host: "0.0.0.0", port: config.port });
