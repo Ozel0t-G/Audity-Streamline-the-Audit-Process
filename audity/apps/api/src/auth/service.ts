@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import argon2 from "argon2";
 import { pool } from "../db/client.js";
 import { seedRolesAndPermissions } from "../rbac/seed.js";
+import { randomToken, sha256 } from "../utils/crypto.js";
 import {
   createRefreshToken,
   hashRefreshToken,
@@ -85,13 +86,15 @@ export async function createInstanceAdmin(input: {
 export async function createSession(user: AuthUser): Promise<{
   accessToken: string;
   refreshToken: string;
+  csrfToken: string;
 }> {
   const refreshToken = createRefreshToken();
+  const csrfToken = randomToken();
   const sessionId = randomUUID();
   await pool.query(
-    `insert into sessions (id, user_id, refresh_token_hash, expires_at)
-     values ($1, $2, $3, $4)`,
-    [sessionId, user.id, hashRefreshToken(refreshToken), refreshExpiry()]
+    `insert into sessions (id, user_id, refresh_token_hash, csrf_token_hash, expires_at)
+     values ($1, $2, $3, $4, $5)`,
+    [sessionId, user.id, hashRefreshToken(refreshToken), sha256(csrfToken), refreshExpiry()]
   );
   return {
     accessToken: signAccessToken({
@@ -101,14 +104,15 @@ export async function createSession(user: AuthUser): Promise<{
       role: user.role,
       permissions: user.permissions
     }),
-    refreshToken
+    refreshToken,
+    csrfToken
   };
 }
 
-export async function loginWithPassword(
+export async function authenticateWithPassword(
   email: string,
   password: string
-): Promise<{ user: AuthUser; accessToken: string; refreshToken: string } | null> {
+): Promise<AuthUser | null> {
   const row = await getUserByEmail(email);
   if (!row || row.status !== "active") {
     return null;
@@ -124,13 +128,34 @@ export async function loginWithPassword(
     role: row.role,
     permissions: row.permissions
   };
+  return user;
+}
+
+export async function loginWithPassword(
+  email: string,
+  password: string
+): Promise<{
+  user: AuthUser;
+  accessToken: string;
+  refreshToken: string;
+  csrfToken: string;
+} | null> {
+  const user = await authenticateWithPassword(email, password);
+  if (!user) {
+    return null;
+  }
   const tokens = await createSession(user);
   return { user, ...tokens };
 }
 
 export async function refreshSession(
   refreshToken: string
-): Promise<{ user: AuthUser; accessToken: string; refreshToken: string } | null> {
+): Promise<{
+  user: AuthUser;
+  accessToken: string;
+  refreshToken: string;
+  csrfToken: string;
+} | null> {
   const result = await pool.query<{ id: string; user_id: string }>(
     `select id, user_id from sessions
      where refresh_token_hash = $1
@@ -168,9 +193,41 @@ export async function isSessionActive(sessionId: string): Promise<boolean> {
   const result = await pool.query<{ active: boolean }>(
     `select exists(
       select 1 from sessions
-      where id = $1 and revoked_at is null and expires_at > now()
+      where id = $1
+        and revoked_at is null
+        and expires_at > now()
+        and last_seen_at > now() - ($2::int * interval '1 minute')
     ) as active`,
-    [sessionId]
+    [sessionId, process.env.AUDITY_SESSION_IDLE_TIMEOUT_MINUTES ?? "30"]
   );
+  if (result.rows[0]?.active === true) {
+    await pool.query("update sessions set last_seen_at = now() where id = $1", [
+      sessionId
+    ]);
+  }
   return result.rows[0]?.active === true;
+}
+
+export async function isCsrfTokenValid(
+  sessionId: string,
+  csrfToken: string | undefined
+): Promise<boolean> {
+  if (!csrfToken) {
+    return false;
+  }
+  const result = await pool.query<{ valid: boolean }>(
+    `select exists(
+      select 1 from sessions
+      where id = $1 and csrf_token_hash = $2 and revoked_at is null
+    ) as valid`,
+    [sessionId, sha256(csrfToken)]
+  );
+  return result.rows[0]?.valid === true;
+}
+
+export async function revokeAllUserSessions(userId: string): Promise<void> {
+  await pool.query(
+    "update sessions set revoked_at = now() where user_id = $1 and revoked_at is null",
+    [userId]
+  );
 }

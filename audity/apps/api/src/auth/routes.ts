@@ -1,12 +1,30 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
+import { appendAuditEvent } from "../audit/service.js";
 import { loadConfig } from "../config.js";
-import { requirePermission } from "./hooks.js";
-import { verifyAccessToken } from "./tokens.js";
+import { requireAuth, requireCsrf, requirePermission } from "./hooks.js";
 import {
+  signMfaChallengeToken,
+  verifyAccessToken,
+  verifyMfaChallengeToken
+} from "./tokens.js";
+import {
+  createMfaSetup,
+  disableMfa,
+  enableMfa,
+  getMfaSecret,
+  isMfaEnabled,
+  storePendingMfaSecret,
+  verifyTotp
+} from "./mfa.js";
+import {
+  authenticateWithPassword,
+  createSession,
   createInstanceAdmin,
+  getUserById,
   getUserCount,
   loginWithPassword,
   refreshSession,
+  revokeAllUserSessions,
   revokeRefreshToken,
   revokeSession
 } from "./service.js";
@@ -22,6 +40,11 @@ type SetupBody = {
 type LoginBody = {
   email?: string;
   password?: string;
+};
+
+type MfaVerifyBody = {
+  code?: string;
+  challengeToken?: string;
 };
 
 function hasCredentials<T extends SetupBody | LoginBody>(
@@ -66,7 +89,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         .send({ code: "SETUP_SESSION_FAILED", message: "Setup session failed" });
     }
     setRefreshCookie(reply, session.refreshToken);
-    return { accessToken: session.accessToken, user };
+    return { accessToken: session.accessToken, csrfToken: session.csrfToken, user };
   });
 
   app.post<{ Body: LoginBody }>("/api/auth/login", async (request, reply) => {
@@ -75,14 +98,41 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         .code(400)
         .send({ code: "INVALID_INPUT", message: "Email and password are required" });
     }
-    const session = await loginWithPassword(request.body.email, request.body.password);
-    if (!session) {
+    const user = await authenticateWithPassword(request.body.email, request.body.password);
+    if (!user) {
+      await appendAuditEvent({
+        actor: null,
+        action: "auth.login.failed",
+        entity: "user",
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? null,
+        payload: { email: request.body.email }
+      });
       return reply
         .code(401)
         .send({ code: "LOGIN_FAILED", message: "Invalid email or password" });
     }
+    if (await isMfaEnabled(user.id)) {
+      return {
+        mfaRequired: true,
+        challengeToken: signMfaChallengeToken(user.id)
+      };
+    }
+    const session = await createSession(user);
+    await appendAuditEvent({
+      actor: user.id,
+      action: "auth.login.success",
+      entity: "user",
+      entityId: user.id,
+      ip: request.ip,
+      userAgent: request.headers["user-agent"] ?? null
+    });
     setRefreshCookie(reply, session.refreshToken);
-    return { accessToken: session.accessToken, user: session.user };
+    return {
+      accessToken: session.accessToken,
+      csrfToken: session.csrfToken,
+      user
+    };
   });
 
   app.post("/api/auth/logout", async (request, reply) => {
@@ -95,6 +145,14 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     if (token) {
       try {
         await revokeSession(verifyAccessToken(token).sid);
+        await appendAuditEvent({
+          actor: verifyAccessToken(token).sub,
+          action: "auth.logout",
+          entity: "session",
+          entityId: verifyAccessToken(token).sid,
+          ip: request.ip,
+          userAgent: request.headers["user-agent"] ?? null
+        });
       } catch {
         // Invalid tokens are already logged out from the caller perspective.
       }
@@ -118,8 +176,132 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         .send({ code: "REFRESH_INVALID", message: "Refresh token is invalid" });
     }
     setRefreshCookie(reply, session.refreshToken);
-    return { accessToken: session.accessToken, user: session.user };
+    return {
+      accessToken: session.accessToken,
+      csrfToken: session.csrfToken,
+      user: session.user
+    };
   });
+
+  app.post(
+    "/api/auth/logout-all",
+    { preHandler: requireCsrf },
+    async (request) => {
+      await revokeAllUserSessions(request.user!.sub);
+      return { status: "ok" };
+    }
+  );
+
+  app.post("/api/auth/mfa/setup", { preHandler: requireAuth }, async (request) => {
+    const setup = await createMfaSetup(request.user!.email);
+    await storePendingMfaSecret(request.user!.sub, setup.secret);
+    return setup;
+  });
+
+  app.post<{ Body: MfaVerifyBody }>("/api/auth/mfa/verify", async (request, reply) => {
+    const code = request.body.code;
+    if (!code) {
+      return reply.code(400).send({ code: "INVALID_INPUT", message: "TOTP code is required" });
+    }
+
+    if (request.body.challengeToken) {
+      let challenge;
+      try {
+        challenge = verifyMfaChallengeToken(request.body.challengeToken);
+      } catch {
+        return reply
+          .code(401)
+          .send({ code: "MFA_CHALLENGE_INVALID", message: "MFA challenge is invalid" });
+      }
+      const secret = await getMfaSecret(challenge.sub);
+      if (!secret || !verifyTotp(secret, code)) {
+        await appendAuditEvent({
+          actor: challenge.sub,
+          action: "auth.login.failed",
+          entity: "mfa_settings",
+          entityId: challenge.sub,
+          ip: request.ip,
+          userAgent: request.headers["user-agent"] ?? null,
+          payload: { reason: "mfa_failed" }
+        });
+        return reply
+          .code(401)
+          .send({ code: "MFA_FAILED", message: "MFA code is invalid" });
+      }
+      const user = await getUserById(challenge.sub);
+      if (!user) {
+        return reply.code(401).send({ code: "USER_NOT_FOUND", message: "User not found" });
+      }
+      const session = await createSession(user);
+      setRefreshCookie(reply, session.refreshToken);
+      await appendAuditEvent({
+        actor: user.id,
+        action: "auth.login.success",
+        entity: "user",
+        entityId: user.id,
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? null,
+        payload: { mfa: true }
+      });
+      return {
+        accessToken: session.accessToken,
+        csrfToken: session.csrfToken,
+        user
+      };
+    }
+
+    await requireAuth(request, reply);
+    if (reply.sent) {
+      return;
+    }
+    const secret = await getMfaSecret(request.user!.sub);
+    if (!secret || !verifyTotp(secret, code)) {
+      return reply.code(401).send({ code: "MFA_FAILED", message: "MFA code is invalid" });
+    }
+    const recoveryCodes = await enableMfa(request.user!.sub);
+    await appendAuditEvent({
+      actor: request.user!.sub,
+      action: "auth.mfa.enabled",
+      entity: "mfa_settings",
+      entityId: request.user!.sub,
+      ip: request.ip,
+      userAgent: request.headers["user-agent"] ?? null
+    });
+    await appendAuditEvent({
+      actor: request.user!.sub,
+      action: "auth.mfa.verified",
+      entity: "mfa_settings",
+      entityId: request.user!.sub,
+      ip: request.ip,
+      userAgent: request.headers["user-agent"] ?? null
+    });
+    return { status: "ok", recoveryCodes };
+  });
+
+  app.post<{ Body: { userId?: string } }>(
+    "/api/auth/mfa/disable",
+    { preHandler: requireCsrf },
+    async (request, reply) => {
+      const targetUserId = request.body.userId ?? request.user!.sub;
+      const disablingOtherUser = targetUserId !== request.user!.sub;
+      const isAdmin = ["Instance Admin", "Tenant Admin"].includes(request.user!.role);
+      if (disablingOtherUser && !isAdmin) {
+        return reply
+          .code(403)
+          .send({ code: "PERMISSION_DENIED", message: "Only admins can disable MFA for other users" });
+      }
+      await disableMfa(targetUserId);
+      await appendAuditEvent({
+        actor: request.user!.sub,
+        action: "auth.mfa.disabled",
+        entity: "mfa_settings",
+        entityId: targetUserId,
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? null
+      });
+      return { status: "ok" };
+    }
+  );
 
   app.get(
     "/api/auth/me",

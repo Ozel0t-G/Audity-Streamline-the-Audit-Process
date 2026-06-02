@@ -1,10 +1,27 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { isSessionActive } from "./service.js";
+import { isCsrfTokenValid, isSessionActive } from "./service.js";
 import { verifyAccessToken, type AccessTokenPayload } from "./tokens.js";
 
 declare module "fastify" {
   interface FastifyRequest {
     user?: AccessTokenPayload;
+  }
+}
+
+export async function requireCsrf(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  await requireAuth(request, reply);
+  if (reply.sent) {
+    return;
+  }
+  const token = request.headers["x-csrf-token"];
+  const csrfToken = Array.isArray(token) ? token[0] : token;
+  if (!request.user || !(await isCsrfTokenValid(request.user.sid, csrfToken))) {
+    await reply
+      .code(403)
+      .send({ code: "CSRF_INVALID", message: "CSRF token is invalid" });
   }
 }
 

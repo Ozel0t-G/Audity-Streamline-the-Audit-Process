@@ -4,9 +4,11 @@ import { useAuth } from "../auth/AuthProvider";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, verifyMfaChallenge } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [challengeToken, setChallengeToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,10 +17,28 @@ export function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      const result = await login(email, password);
+      if (result.mfaRequired) {
+        setChallengeToken(result.challengeToken);
+        return;
+      }
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleMfaSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await verifyMfaChallenge(challengeToken, mfaCode);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "MFA verification failed");
     } finally {
       setLoading(false);
     }
@@ -47,33 +67,52 @@ export function LoginPage() {
           </p>
         </div>
         <form
-          onSubmit={handleSubmit}
+          onSubmit={challengeToken ? handleMfaSubmit : handleSubmit}
           className="rounded-audity border border-audity-border bg-audity-panel p-5"
         >
           <div className="mb-5 border-b border-audity-border pb-4">
-            <h2 className="text-xl font-semibold">Login</h2>
-            <p className="mt-1 text-sm text-audity-secondary">Use your Audity account credentials.</p>
+            <h2 className="text-xl font-semibold">{challengeToken ? "MFA Challenge" : "Login"}</h2>
+            <p className="mt-1 text-sm text-audity-secondary">
+              {challengeToken ? "Enter the authenticator code for this account." : "Use your Audity account credentials."}
+            </p>
           </div>
-          <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
-            Email
-          </label>
-          <input
-            className="mb-4 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
-            type="email"
-            value={email}
-            autoComplete="email"
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
-            Password
-          </label>
-          <input
-            className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
-            type="password"
-            value={password}
-            autoComplete="current-password"
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          {challengeToken ? (
+            <>
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
+                Authenticator code
+              </label>
+              <input
+                className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                value={mfaCode}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                onChange={(event) => setMfaCode(event.target.value)}
+              />
+            </>
+          ) : (
+            <>
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
+                Email
+              </label>
+              <input
+                className="mb-4 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+              />
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
+                Password
+              </label>
+              <input
+                className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                type="password"
+                value={password}
+                autoComplete="current-password"
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </>
+          )}
           {error ? (
             <div className="mt-4 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">
               {error}
@@ -84,7 +123,7 @@ export function LoginPage() {
             type="submit"
             disabled={loading}
           >
-            {loading ? "Signing in" : "Sign in"}
+            {loading ? "Working" : challengeToken ? "Verify" : "Sign in"}
           </button>
         </form>
       </section>
