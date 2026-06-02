@@ -7,6 +7,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
+import { FrameworkLibraryPage } from "./pages/frameworks/FrameworkLibraryPage";
+import { GuidedQuestionsPage } from "./pages/frameworks/GuidedQuestionsPage";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -19,6 +21,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/customers" element={<CustomerListPage />} />
             <Route path="/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/frameworks" element={<FrameworkLibraryPage />} />
+            <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

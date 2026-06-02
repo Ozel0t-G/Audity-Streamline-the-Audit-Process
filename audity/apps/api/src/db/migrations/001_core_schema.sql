@@ -293,6 +293,32 @@ alter table sessions add column if not exists last_seen_at timestamptz not null 
 alter table mfa_settings add column if not exists secret_encrypted text;
 alter table mfa_settings add column if not exists verified_at timestamptz;
 alter table assessments add column if not exists framework text;
+alter table frameworks add column if not exists short_name text;
+alter table frameworks add column if not exists status_label text;
+alter table frameworks add column if not exists disclaimer text;
+alter table frameworks add column if not exists imported_by uuid references users(id);
+alter table frameworks add column if not exists imported_at timestamptz;
+alter table frameworks add column if not exists license_confirmed boolean not null default false;
+alter table framework_domains add column if not exists description text;
+alter table framework_controls add column if not exists question_text text;
+alter table framework_controls add column if not exists evidence_examples jsonb not null default '[]'::jsonb;
+alter table framework_controls add column if not exists tags jsonb not null default '[]'::jsonb;
+
+create unique index if not exists frameworks_name_version_unique
+  on frameworks (name, coalesce(version, ''));
+
+create unique index if not exists framework_domains_framework_name_unique
+  on framework_domains (framework_id, name);
+
+create unique index if not exists framework_controls_domain_code_unique
+  on framework_controls (framework_domain_id, control_code);
+
+create unique index if not exists assessment_questions_assessment_control_unique
+  on assessment_questions (assessment_id, framework_control_id)
+  where framework_control_id is not null;
+
+create unique index if not exists control_answers_question_unique
+  on control_answers (assessment_question_id);
 
 create or replace function prevent_append_only_change()
 returns trigger as $$

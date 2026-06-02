@@ -55,6 +55,7 @@ export function DashboardPage() {
             Dashboard
           </div>
           <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/customers">Customers</Link>
+          <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/frameworks">Framework Library</Link>
         </aside>
         <section className="bg-audity-page p-5">
           <div className="mb-5 border-b border-audity-border pb-4">

@@ -8,6 +8,7 @@ import { loadConfig } from "./config.js";
 import { registerCustomerRoutes } from "./customers/routes.js";
 import { verifyDatabaseConnection } from "./db/client.js";
 import { applyCoreSchema } from "./db/schema.js";
+import { registerFrameworkRoutes } from "./frameworks/routes.js";
 
 const config = loadConfig();
 const app = Fastify({
@@ -37,4 +38,5 @@ await applyCoreSchema();
 await registerAuthRoutes(app);
 await registerCustomerRoutes(app);
 await registerAssessmentRoutes(app);
+await registerFrameworkRoutes(app);
 await app.listen({ host: "0.0.0.0", port: config.port });
