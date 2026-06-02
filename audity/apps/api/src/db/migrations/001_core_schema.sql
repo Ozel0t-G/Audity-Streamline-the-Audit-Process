@@ -292,6 +292,7 @@ alter table sessions add column if not exists csrf_token_hash text;
 alter table sessions add column if not exists last_seen_at timestamptz not null default now();
 alter table mfa_settings add column if not exists secret_encrypted text;
 alter table mfa_settings add column if not exists verified_at timestamptz;
+alter table assessments add column if not exists framework text;
 
 create or replace function prevent_append_only_change()
 returns trigger as $$
