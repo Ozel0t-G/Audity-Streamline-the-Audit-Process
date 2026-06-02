@@ -342,6 +342,14 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "questions.opened",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { assessmentId: request.params.id, frameworkId }
+      });
       await ensureAssessmentQuestions(request.params.id, frameworkId);
 
       const framework = await pool.query(

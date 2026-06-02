@@ -5,6 +5,7 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { PrivateRoute } from "./auth/PrivateRoute";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
 import { FrameworkLibraryPage } from "./pages/frameworks/FrameworkLibraryPage";
@@ -25,6 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/frameworks" element={<FrameworkLibraryPage />} />
             <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
             <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
+            <Route path="/admin" element={<AdminDashboardPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

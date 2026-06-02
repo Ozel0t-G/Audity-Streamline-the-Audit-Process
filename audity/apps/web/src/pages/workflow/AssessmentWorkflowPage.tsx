@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
+import { BrandMark } from "../../components/BrandMark";
 import type { Finding, Risk, RoadmapItem } from "./types";
 
 const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
@@ -190,7 +191,7 @@ export function AssessmentWorkflowPage() {
     <main className="min-h-screen bg-audity-app text-audity-text">
       <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
         <div className="flex items-center gap-3">
-          <div className="grid h-7 w-7 place-items-center rounded-audity border border-audity-borderStrong bg-audity-panel text-sm font-bold text-audity-primary">A</div>
+          <BrandMark />
           <span className="text-sm font-semibold">Audity</span>
         </div>
         <button className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panel px-3 text-sm text-audity-secondary hover:border-audity-primary hover:text-audity-text" onClick={() => void logout()}>
