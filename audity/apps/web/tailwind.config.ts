@@ -21,7 +21,9 @@ export default {
           text: "#F4F6F8",
           secondary: "#A8B0BA",
           muted: "#7C858F",
-          success: "#2ECC71"
+          success: "#2ECC71",
+          warning: "#F5A400",
+          error: "#FF4B00"
         }
       },
       borderRadius: {
