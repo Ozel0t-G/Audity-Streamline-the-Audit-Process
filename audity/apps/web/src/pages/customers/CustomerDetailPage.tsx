@@ -15,7 +15,7 @@ function toCsv(value: string[] | undefined): string {
 const workflow = [
   ["Setup", false],
   ["Scope", false],
-  ["Questions", true],
+  ["Questions", false],
   ["Findings", true],
   ["Risk", true],
   ["Report", true]
@@ -31,7 +31,7 @@ export function CustomerDetailPage() {
   const [assessmentForm, setAssessmentForm] = useState({
     type: "Full Security Maturity Assessment",
     audience: "Management + Technical Team",
-    framework: "Framework placeholder",
+    framework: "NIST CSF 2.0",
     language: "en",
     targetDate: "",
     status: "draft"
@@ -140,6 +140,7 @@ export function CustomerDetailPage() {
           <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Workspace</p>
           <Link className="block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/dashboard">Dashboard</Link>
           <Link className="mt-1 block rounded-audity bg-audity-primaryActive px-3 py-2 text-sm font-semibold" to="/customers">Customers</Link>
+          <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/frameworks">Framework Library</Link>
         </aside>
         <section className="bg-audity-page p-5">
           <div className="mb-5 border-b border-audity-border pb-4">
@@ -177,6 +178,7 @@ export function CustomerDetailPage() {
                       <th className="border-b border-audity-border px-3 py-3 text-left">Audience</th>
                       <th className="border-b border-audity-border px-3 py-3 text-left">Framework</th>
                       <th className="border-b border-audity-border px-3 py-3 text-left">Status</th>
+                      <th className="border-b border-audity-border px-3 py-3 text-left">Questions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -190,10 +192,19 @@ export function CustomerDetailPage() {
                         <td className="px-3 py-3 text-audity-secondary">{assessment.audience}</td>
                         <td className="px-3 py-3 text-audity-secondary">{assessment.framework}</td>
                         <td className="px-3 py-3 text-audity-secondary">{assessment.status}</td>
+                        <td className="px-3 py-3">
+                          <Link
+                            className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs font-semibold text-audity-primary hover:border-audity-primary"
+                            to={`/assessments/${assessment.id}/questions`}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            Open
+                          </Link>
+                        </td>
                       </tr>
                     ))}
                     {!assessments.length ? (
-                      <tr><td className="px-3 py-8 text-center text-audity-muted" colSpan={4}>No assessments to show</td></tr>
+                      <tr><td className="px-3 py-8 text-center text-audity-muted" colSpan={5}>No assessments to show</td></tr>
                     ) : null}
                   </tbody>
                 </table>

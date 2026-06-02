@@ -1,4 +1,5 @@
 import { createInstanceAdmin, getUserCount } from "../auth/service.js";
+import { seedFrameworks } from "../frameworks/seed.js";
 import { seedRolesAndPermissions } from "../rbac/seed.js";
 import { verifyDatabaseConnection, pool } from "./client.js";
 import { applyCoreSchema } from "./schema.js";
@@ -6,6 +7,7 @@ import { applyCoreSchema } from "./schema.js";
 await verifyDatabaseConnection();
 await applyCoreSchema();
 await seedRolesAndPermissions();
+await seedFrameworks();
 
 if ((await getUserCount()) === 0) {
   await createInstanceAdmin({
@@ -19,4 +21,4 @@ if ((await getUserCount()) === 0) {
 }
 
 await pool.end();
-console.log("Database seeded: roles and permissions are ready.");
+console.log("Database seeded: roles, permissions and frameworks are ready.");
