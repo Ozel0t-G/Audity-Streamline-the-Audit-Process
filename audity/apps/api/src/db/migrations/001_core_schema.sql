@@ -309,6 +309,14 @@ alter table findings add column if not exists source_explanation text;
 alter table findings add column if not exists accepted_risk boolean not null default false;
 alter table findings add column if not exists updated_by uuid references users(id);
 alter table roadmap_items add column if not exists source_risk_rating text;
+alter table evidence_items add column if not exists deleted_at timestamptz;
+alter table reports add column if not exists author_info jsonb not null default '{}'::jsonb;
+alter table reports add column if not exists selected_blocks jsonb not null default '[]'::jsonb;
+alter table reports add column if not exists html_preview text;
+alter table reports add column if not exists pdf_object_key text;
+alter table reports add column if not exists exported_at timestamptz;
+alter table reports add column if not exists report_version integer not null default 1;
+alter table report_branding add column if not exists logo_file_name text;
 
 create unique index if not exists frameworks_name_version_unique
   on frameworks (name, coalesce(version, ''));

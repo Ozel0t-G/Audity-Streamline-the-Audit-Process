@@ -13,6 +13,7 @@ RUN npm run build --workspace @audity/worker
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/package.json
 COPY apps/api/package.json apps/api/package.json

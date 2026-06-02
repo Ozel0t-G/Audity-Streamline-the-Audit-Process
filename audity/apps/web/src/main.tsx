@@ -10,6 +10,7 @@ import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
 import { FrameworkLibraryPage } from "./pages/frameworks/FrameworkLibraryPage";
 import { GuidedQuestionsPage } from "./pages/frameworks/GuidedQuestionsPage";
+import { AssessmentAssetsPage } from "./pages/reports/AssessmentAssetsPage";
 import { AssessmentWorkflowPage } from "./pages/workflow/AssessmentWorkflowPage";
 import "./styles.css";
 
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/frameworks" element={<FrameworkLibraryPage />} />
             <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
             <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
+            <Route path="/assessments/:id/assets" element={<AssessmentAssetsPage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

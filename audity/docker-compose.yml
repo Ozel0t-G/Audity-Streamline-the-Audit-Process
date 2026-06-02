@@ -32,6 +32,8 @@ services:
       AUDITY_STORAGE_BUCKET: ${AUDITY_STORAGE_BUCKET:-audity-evidence}
       AUDITY_STORAGE_ACCESS_KEY: ${AUDITY_STORAGE_ACCESS_KEY:-replace-me}
       AUDITY_STORAGE_SECRET_KEY: ${AUDITY_STORAGE_SECRET_KEY:-replace-me}
+      AUDITY_UPLOAD_MAX_BYTES: ${AUDITY_UPLOAD_MAX_BYTES:-26214400}
+      AUDITY_UPLOAD_ALLOWED_TYPES: ${AUDITY_UPLOAD_ALLOWED_TYPES:-application/pdf,text/plain,text/csv,image/png,image/jpeg,application/json}
       AUDITY_REQUIRE_MFA: ${AUDITY_REQUIRE_MFA:-false}
       AUDITY_PUBLIC_REGISTRATION: ${AUDITY_PUBLIC_REGISTRATION:-false}
       AUDITY_SMTP_ENABLED: ${AUDITY_SMTP_ENABLED:-false}
@@ -64,8 +66,13 @@ services:
     environment:
       AUDITY_DATABASE_URL: ${AUDITY_DATABASE_URL:-postgres://audity:change-me@audity-db:5432/audity}
       AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
+      AUDITY_STORAGE_ENDPOINT: ${AUDITY_STORAGE_ENDPOINT:-http://audity-storage:9000}
+      AUDITY_STORAGE_BUCKET: ${AUDITY_STORAGE_BUCKET:-audity-evidence}
+      AUDITY_STORAGE_ACCESS_KEY: ${AUDITY_STORAGE_ACCESS_KEY:-replace-me}
+      AUDITY_STORAGE_SECRET_KEY: ${AUDITY_STORAGE_SECRET_KEY:-replace-me}
       AUDITY_LOG_LEVEL: ${AUDITY_LOG_LEVEL:-info}
       WORKER_HEALTH_PORT: 3001
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
     depends_on:
       audity-db:
         condition: service_healthy
