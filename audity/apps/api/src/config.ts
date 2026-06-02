@@ -5,7 +5,14 @@ export type AudityConfig = {
   logLevel: string;
   port: number;
   publicUrl: string;
+  redisUrl: string;
   sessionIdleTimeoutMinutes: number;
+  storageAccessKey: string;
+  storageBucket: string;
+  storageEndpoint: string;
+  storageSecretKey: string;
+  uploadMaxBytes: number;
+  uploadAllowedTypes: string[];
 };
 
 export function loadConfig(): AudityConfig {
@@ -18,8 +25,18 @@ export function loadConfig(): AudityConfig {
     logLevel: process.env.AUDITY_LOG_LEVEL ?? "info",
     port: Number(process.env.PORT ?? 3000),
     publicUrl: process.env.AUDITY_PUBLIC_URL ?? "http://localhost",
+    redisUrl: process.env.AUDITY_REDIS_URL ?? "redis://audity-redis:6379",
     sessionIdleTimeoutMinutes: Number(
       process.env.AUDITY_SESSION_IDLE_TIMEOUT_MINUTES ?? 30
-    )
+    ),
+    storageEndpoint: process.env.AUDITY_STORAGE_ENDPOINT ?? "http://audity-storage:9000",
+    storageBucket: process.env.AUDITY_STORAGE_BUCKET ?? "audity-evidence",
+    storageAccessKey: process.env.AUDITY_STORAGE_ACCESS_KEY ?? "replace-me",
+    storageSecretKey: process.env.AUDITY_STORAGE_SECRET_KEY ?? "replace-me",
+    uploadMaxBytes: Number(process.env.AUDITY_UPLOAD_MAX_BYTES ?? 25 * 1024 * 1024),
+    uploadAllowedTypes: (
+      process.env.AUDITY_UPLOAD_ALLOWED_TYPES ??
+      "application/pdf,text/plain,text/csv,image/png,image/jpeg,application/json"
+    ).split(",")
   };
 }
