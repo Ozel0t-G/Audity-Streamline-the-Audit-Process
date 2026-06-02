@@ -1,0 +1,9 @@
+services:
+  audity-api:
+    environment:
+      AUDITY_ENV: development
+      AUDITY_PUBLIC_URL: http://localhost
+
+  audity-worker:
+    environment:
+      AUDITY_ENV: development

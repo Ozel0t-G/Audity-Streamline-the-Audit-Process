@@ -1,0 +1,124 @@
+services:
+  audity-web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: audity-web
+    ports:
+      - "80:80"
+    depends_on:
+      audity-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  audity-api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: audity-api
+    environment:
+      AUDITY_ENV: ${AUDITY_ENV:-production}
+      AUDITY_PUBLIC_URL: ${AUDITY_PUBLIC_URL:-http://localhost}
+      AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
+      AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
+      AUDITY_DATABASE_URL: ${AUDITY_DATABASE_URL:-postgres://audity:change-me@audity-db:5432/audity}
+      AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
+      AUDITY_STORAGE_PROVIDER: ${AUDITY_STORAGE_PROVIDER:-minio}
+      AUDITY_STORAGE_ENDPOINT: ${AUDITY_STORAGE_ENDPOINT:-http://audity-storage:9000}
+      AUDITY_STORAGE_BUCKET: ${AUDITY_STORAGE_BUCKET:-audity-evidence}
+      AUDITY_STORAGE_ACCESS_KEY: ${AUDITY_STORAGE_ACCESS_KEY:-replace-me}
+      AUDITY_STORAGE_SECRET_KEY: ${AUDITY_STORAGE_SECRET_KEY:-replace-me}
+      AUDITY_REQUIRE_MFA: ${AUDITY_REQUIRE_MFA:-false}
+      AUDITY_PUBLIC_REGISTRATION: ${AUDITY_PUBLIC_REGISTRATION:-false}
+      AUDITY_SMTP_ENABLED: ${AUDITY_SMTP_ENABLED:-false}
+      AUDITY_SMTP_HOST: ${AUDITY_SMTP_HOST:-smtp.example.com}
+      AUDITY_SMTP_PORT: ${AUDITY_SMTP_PORT:-587}
+      AUDITY_SMTP_TLS: ${AUDITY_SMTP_TLS:-true}
+      AUDITY_SMTP_USER: ${AUDITY_SMTP_USER:-replace-me}
+      AUDITY_SMTP_PASSWORD: ${AUDITY_SMTP_PASSWORD:-replace-me}
+      AUDITY_LOG_LEVEL: ${AUDITY_LOG_LEVEL:-info}
+    ports:
+      - "3000:3000"
+    depends_on:
+      audity-db:
+        condition: service_healthy
+      audity-redis:
+        condition: service_healthy
+      audity-storage:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  audity-worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    container_name: audity-worker
+    environment:
+      AUDITY_DATABASE_URL: ${AUDITY_DATABASE_URL:-postgres://audity:change-me@audity-db:5432/audity}
+      AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
+      AUDITY_LOG_LEVEL: ${AUDITY_LOG_LEVEL:-info}
+      WORKER_HEALTH_PORT: 3001
+    depends_on:
+      audity-db:
+        condition: service_healthy
+      audity-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  audity-db:
+    image: postgres:16
+    container_name: audity-db
+    environment:
+      POSTGRES_DB: audity
+      POSTGRES_USER: audity
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - audity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audity -d audity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  audity-redis:
+    image: redis:7-alpine
+    container_name: audity-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  audity-storage:
+    image: minio/minio:latest
+    container_name: audity-storage
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${AUDITY_STORAGE_ACCESS_KEY:-replace-me}
+      MINIO_ROOT_PASSWORD: ${AUDITY_STORAGE_SECRET_KEY:-replace-me}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - audity-storage-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  audity-db-data:
+  audity-storage-data:
