@@ -9,6 +9,7 @@ import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
 import { FrameworkLibraryPage } from "./pages/frameworks/FrameworkLibraryPage";
 import { GuidedQuestionsPage } from "./pages/frameworks/GuidedQuestionsPage";
+import { AssessmentWorkflowPage } from "./pages/workflow/AssessmentWorkflowPage";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/customers/:id" element={<CustomerDetailPage />} />
             <Route path="/frameworks" element={<FrameworkLibraryPage />} />
             <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
+            <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

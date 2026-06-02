@@ -16,8 +16,8 @@ const workflow = [
   ["Setup", false],
   ["Scope", false],
   ["Questions", false],
-  ["Findings", true],
-  ["Risk", true],
+  ["Findings", false],
+  ["Risk", false],
   ["Report", true]
 ] as const;
 
@@ -179,6 +179,7 @@ export function CustomerDetailPage() {
                       <th className="border-b border-audity-border px-3 py-3 text-left">Framework</th>
                       <th className="border-b border-audity-border px-3 py-3 text-left">Status</th>
                       <th className="border-b border-audity-border px-3 py-3 text-left">Questions</th>
+                      <th className="border-b border-audity-border px-3 py-3 text-left">Risk</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -201,10 +202,19 @@ export function CustomerDetailPage() {
                             Open
                           </Link>
                         </td>
+                        <td className="px-3 py-3">
+                          <Link
+                            className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs font-semibold text-audity-primary hover:border-audity-primary"
+                            to={`/assessments/${assessment.id}/workflow`}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            Open
+                          </Link>
+                        </td>
                       </tr>
                     ))}
                     {!assessments.length ? (
-                      <tr><td className="px-3 py-8 text-center text-audity-muted" colSpan={5}>No assessments to show</td></tr>
+                      <tr><td className="px-3 py-8 text-center text-audity-muted" colSpan={6}>No assessments to show</td></tr>
                     ) : null}
                   </tbody>
                 </table>

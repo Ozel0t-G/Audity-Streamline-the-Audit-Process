@@ -303,6 +303,12 @@ alter table framework_domains add column if not exists description text;
 alter table framework_controls add column if not exists question_text text;
 alter table framework_controls add column if not exists evidence_examples jsonb not null default '[]'::jsonb;
 alter table framework_controls add column if not exists tags jsonb not null default '[]'::jsonb;
+alter table findings add column if not exists assessment_question_id uuid references assessment_questions(id);
+alter table findings add column if not exists framework_control_id uuid references framework_controls(id);
+alter table findings add column if not exists source_explanation text;
+alter table findings add column if not exists accepted_risk boolean not null default false;
+alter table findings add column if not exists updated_by uuid references users(id);
+alter table roadmap_items add column if not exists source_risk_rating text;
 
 create unique index if not exists frameworks_name_version_unique
   on frameworks (name, coalesce(version, ''));
@@ -319,6 +325,10 @@ create unique index if not exists assessment_questions_assessment_control_unique
 
 create unique index if not exists control_answers_question_unique
   on control_answers (assessment_question_id);
+
+create unique index if not exists findings_assessment_control_unique
+  on findings (assessment_id, framework_control_id)
+  where framework_control_id is not null;
 
 create or replace function prevent_append_only_change()
 returns trigger as $$
