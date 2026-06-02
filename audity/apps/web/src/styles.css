@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-app: #111315;
+  --color-bg-page: #151719;
+  --color-bg-panel: #202225;
+  --color-bg-panel-alt: #242628;
+  --color-bg-table-header: #2a2d30;
+  --color-bg-sidebar: #1e2124;
+  --color-bg-topnav: #061e3a;
+  --color-border-subtle: #34383d;
+  --color-border-strong: #3f444a;
+  --color-primary: #008cff;
+  --color-primary-hover: #00a3ff;
+  --color-primary-active: #006bd6;
+  --color-text-primary: #f4f6f8;
+  --color-text-secondary: #a8b0ba;
+  --color-text-muted: #7c858f;
+  --color-text-disabled: #5e666f;
+  --color-severity-critical: #ff4b00;
+  --color-severity-high: #ff6a00;
+  --color-severity-medium: #f5a400;
+  --color-severity-low: #9aa4b2;
+  --color-success: #2ecc71;
+  --color-warning: #f5a400;
+  --color-error: #ff4b00;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --topnav-height: 48px;
+  --sidebar-width: 260px;
+  --page-padding: 20px;
+  --panel-padding: 16px;
+}
+
+html {
+  background: var(--color-bg-app);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--color-bg-app);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}

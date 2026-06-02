@@ -1,0 +1,15 @@
+{
+  "name": "audity",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @audity/shared && npm run build --workspace @audity/api && npm run build --workspace @audity/worker && npm run build --workspace @audity/web",
+    "typecheck": "npm run typecheck --workspace @audity/shared && npm run typecheck --workspace @audity/api && npm run typecheck --workspace @audity/worker && npm run typecheck --workspace @audity/web",
+    "db:migrate": "npm run db:migrate --workspace @audity/api",
+    "db:seed": "npm run db:seed --workspace @audity/api"
+  }
+}
