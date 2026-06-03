@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { loadConfig } from "../config.js";
 
 function encryptionKey(): Buffer {
-  return crypto.createHash("sha256").update(loadConfig().appSecret).digest();
+  return crypto.createHash("sha256").update(loadConfig().encryptionKey).digest();
 }
 
 export function sha256(value: string): string {

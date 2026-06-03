@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 
@@ -48,6 +48,7 @@ const blocks = [
 
 export function AssessmentAssetsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const api = useApi();
   const { accessToken } = useAuth();
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
@@ -72,6 +73,14 @@ export function AssessmentAssetsPage() {
   });
   const [report, setReport] = useState<Report | null>(null);
   const [job, setJob] = useState<{ id: string; status: string; downloadUrl?: string | null } | null>(null);
+  const [emailJob, setEmailJob] = useState<{ id: string; status: string; result?: { smtpResult?: string } | null } | null>(null);
+  const [sendForm, setSendForm] = useState({
+    recipient: "",
+    subject: "Audity secure assessment report",
+    message: "",
+    includeRiskRegister: true,
+    warningAccepted: false
+  });
   const [error, setError] = useState("");
 
   async function load() {
@@ -160,6 +169,58 @@ export function AssessmentAssetsPage() {
     if (!job) return;
     const payload = await api<{ id: string; status: string; downloadUrl?: string | null }>(`/api/jobs/${job.id}/status`);
     setJob(payload);
+  }
+
+  async function sendReport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id || !report) return;
+    const payload = await api<{ jobId: string; packageDownloadUrl: string }>(
+      `/api/assessments/${id}/reports/${report.id}/send`,
+      {
+        method: "POST",
+        body: JSON.stringify(sendForm)
+      }
+    );
+    setEmailJob({ id: payload.jobId, status: "queued" });
+    window.open(payload.packageDownloadUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function pollEmailJob() {
+    if (!emailJob) return;
+    const payload = await api<{ id: string; status: string; result?: { smtpResult?: string } | null }>(
+      `/api/email-jobs/${emailJob.id}/status`
+    );
+    setEmailJob(payload);
+  }
+
+  async function exportAssessment() {
+    if (!id || !accessToken) return;
+    const response = await fetch(`${apiBaseUrl}/api/assessments/${id}/export`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!response.ok) throw new Error(`Export failed: ${response.status}`);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `audity-assessment-${id}.cisoassess`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importAssessment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const input = form.elements.namedItem("importFile") as HTMLInputElement;
+    if (!input.files?.[0]) return;
+    const body = new FormData();
+    body.set("file", input.files[0]);
+    const payload = await api<{ customerId: string; assessmentId: string }>("/api/assessments/import", {
+      method: "POST",
+      body
+    });
+    form.reset();
+    navigate(`/customers/${payload.customerId}`);
   }
 
   async function openPreview() {
@@ -259,6 +320,44 @@ export function AssessmentAssetsPage() {
                 {job.downloadUrl ? <a className="text-audity-success" href={job.downloadUrl} target="_blank" rel="noreferrer">Download PDF</a> : null}
               </div>
             ) : null}
+            {report ? (
+              <form className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3" onSubmit={(event) => void sendReport(event)}>
+                <h3 className="mb-3 text-sm font-semibold">Send secure report package</h3>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <input className="h-9 rounded-audity border border-audity-border bg-audity-panel px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Recipient email" value={sendForm.recipient} onChange={(event) => setSendForm({ ...sendForm, recipient: event.target.value })} />
+                  <input className="h-9 rounded-audity border border-audity-border bg-audity-panel px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Subject" value={sendForm.subject} onChange={(event) => setSendForm({ ...sendForm, subject: event.target.value })} />
+                  <textarea className="min-h-20 rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-sm text-audity-text outline-none focus:border-audity-primary md:col-span-2" placeholder="Message" value={sendForm.message} onChange={(event) => setSendForm({ ...sendForm, message: event.target.value })} />
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-audity-secondary">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={sendForm.includeRiskRegister} onChange={(event) => setSendForm({ ...sendForm, includeRiskRegister: event.target.checked })} />
+                    Include Risk Register CSV
+                  </label>
+                  <label className="flex items-center gap-2 text-audity-warning">
+                    <input type="checkbox" checked={sendForm.warningAccepted} onChange={(event) => setSendForm({ ...sendForm, warningAccepted: event.target.checked })} />
+                    I confirm this encrypted package may contain confidential/high-risk data.
+                  </label>
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Send package</button>
+                </div>
+                {emailJob ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-audity-secondary">
+                    <span>Email job {emailJob.id}: {emailJob.status}</span>
+                    <button type="button" className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void pollEmailJob()}>Refresh</button>
+                    {emailJob.result?.smtpResult ? <span className="text-audity-success">{emailJob.result.smtpResult}</span> : null}
+                  </div>
+                ) : null}
+              </form>
+            ) : null}
+            <section className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3">
+              <h3 className="mb-3 text-sm font-semibold">Assessment Import / Export</h3>
+              <div className="flex flex-wrap items-center gap-3">
+                <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={() => void exportAssessment()}>Export .cisoassess</button>
+                <form className="flex flex-wrap items-center gap-2" onSubmit={(event) => void importAssessment(event)}>
+                  <input name="importFile" type="file" accept=".cisoassess,application/octet-stream" className="text-sm text-audity-secondary" />
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Import</button>
+                </form>
+              </div>
+            </section>
           </section>
     </>
   );

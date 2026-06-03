@@ -300,7 +300,10 @@ export function AssessmentWorkflowPage() {
           </div>
           <section className="mt-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold">Roadmap Builder</h2>
+              <div>
+                <h2 className="text-lg font-semibold">Roadmap Builder</h2>
+                <p className="mt-1 text-xs text-audity-muted">Drag cards between columns to change timeframe.</p>
+              </div>
               <form className="flex flex-wrap gap-2" onSubmit={createRoadmapItem}>
                 <select className="h-9 rounded-audity border border-audity-border bg-audity-page px-2 text-sm text-audity-text" value={roadmapForm.phase} onChange={(event) => setRoadmapForm({ ...roadmapForm, phase: event.target.value })}>
                   {phases.map((phase) => <option key={phase}>{phase}</option>)}

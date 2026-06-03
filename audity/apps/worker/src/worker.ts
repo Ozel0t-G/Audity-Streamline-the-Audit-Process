@@ -1,7 +1,8 @@
 import Fastify from "fastify";
 import { Worker } from "bullmq";
 import { Client } from "minio";
-import { createHash, randomUUID } from "node:crypto";
+import { createDecipheriv, createHash, randomUUID } from "node:crypto";
+import nodemailer from "nodemailer";
 import pg from "pg";
 import puppeteer from "puppeteer-core";
 
@@ -44,6 +45,17 @@ function nextTimestamp(previous?: Date): Date {
 }
 
 async function appendReportExported(userId: string, reportId: string, objectKey: string): Promise<void> {
+  await appendActivityEvent(userId, "report.exported", "report", reportId, null, { reportId, objectKey });
+}
+
+async function appendActivityEvent(
+  userId: string,
+  action: string,
+  entityType: string,
+  entityId: string,
+  before: unknown,
+  after: unknown
+): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -53,20 +65,20 @@ async function appendReportExported(userId: string, reportId: string, objectKey:
     );
     const timestamp = nextTimestamp(previous.rows[0]?.created_at).toISOString();
     const prevHash = previous.rows[0]?.event_hash ?? "";
-    const before = null;
-    const after = { reportId, objectKey };
     const payload = JSON.stringify({ before, after });
     const eventHash = createHash("sha256")
-      .update(timestamp + userId + "report.exported" + reportId + payload + prevHash)
+      .update(timestamp + userId + action + entityId + payload + prevHash)
       .digest("hex");
     await client.query(
       `insert into user_activity_logs
         (id, user_id, action, entity_type, entity_id, before_value, after_value, prev_hash, event_hash, created_at)
-       values ($1, $2, 'report.exported', 'report', $3, $4, $5, $6, $7, $8)`,
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         randomUUID(),
         userId,
-        reportId,
+        action,
+        entityType,
+        entityId,
         JSON.stringify(before),
         JSON.stringify(after),
         prevHash || null,
@@ -81,6 +93,99 @@ async function appendReportExported(userId: string, reportId: string, objectKey:
   } finally {
     client.release();
   }
+}
+
+function decryptText(payload: string): string {
+  const [ivRaw, tagRaw, encryptedRaw] = payload.split(".");
+  const key = createHash("sha256")
+    .update(process.env.AUDITY_ENCRYPTION_KEY ?? process.env.AUDITY_APP_SECRET ?? "change-me")
+    .digest();
+  const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(ivRaw, "base64url"));
+  decipher.setAuthTag(Buffer.from(tagRaw, "base64url"));
+  return Buffer.concat([
+    decipher.update(Buffer.from(encryptedRaw, "base64url")),
+    decipher.final()
+  ]).toString("utf8");
+}
+
+async function sendSecureReportEmail(jobData: {
+  assessmentId: string;
+  reportId: string;
+  userId: string;
+  recipient: string;
+  subject: string;
+  message: string;
+  packageObjectKey: string;
+}) {
+  const settings = await pool.query(
+    "select * from email_settings order by updated_at desc limit 1"
+  );
+  const row = settings.rows[0];
+  const sender = row?.sender || row?.smtp_user || "no-reply@audity.local";
+  let smtpResult = "skipped: smtp not configured";
+  const packageStream = await storageClient.getObject(storageBucket, jobData.packageObjectKey);
+  const chunks: Buffer[] = [];
+  for await (const chunk of packageStream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  const attachment = Buffer.concat(chunks);
+
+  if (process.env.AUDITY_SMTP_ENABLED === "true" && row?.smtp_host) {
+    const transporter = nodemailer.createTransport({
+      host: row.smtp_host,
+      port: Number(row.smtp_port ?? 587),
+      secure: Boolean(row.smtp_tls),
+      auth: row.smtp_user
+        ? {
+            user: row.smtp_user,
+            pass: row.smtp_password_encrypted ? decryptText(row.smtp_password_encrypted) : ""
+          }
+        : undefined
+    });
+    const result = await transporter.sendMail({
+      from: sender,
+      to: jobData.recipient,
+      subject: jobData.subject,
+      text: `${jobData.message || "Attached is your encrypted Audity report package."}\n\nThe package uses AES-256-GCM encryption.`,
+      attachments: [
+        {
+          filename: `Assessment_Report_${jobData.reportId}.auditysecure`,
+          content: attachment
+        }
+      ]
+    });
+    smtpResult = `sent: ${result.messageId}`;
+  }
+
+  await pool.query(
+    `insert into email_delivery_log
+      (id, sender, recipient, report_id, assessment_id, encryption_method, smtp_result)
+     values ($1,$2,$3,$4,$5,$6,$7)`,
+    [
+      randomUUID(),
+      sender,
+      jobData.recipient,
+      jobData.reportId,
+      jobData.assessmentId,
+      "AES-256-GCM",
+      smtpResult
+    ]
+  );
+  await appendActivityEvent(
+    jobData.userId,
+    "report.email_sent",
+    "report",
+    jobData.reportId,
+    null,
+    {
+      reportId: jobData.reportId,
+      assessmentId: jobData.assessmentId,
+      recipient: jobData.recipient,
+      encryptionMethod: "AES-256-GCM",
+      smtpResult
+    }
+  );
+  return { smtpResult };
 }
 
 async function verifyDatabaseConnection(): Promise<void> {
@@ -155,6 +260,26 @@ new Worker(
     } finally {
       await browser.close();
     }
+  },
+  {
+    connection: {
+      url: process.env.AUDITY_REDIS_URL ?? "redis://audity-redis:6379"
+    }
+  }
+);
+
+new Worker(
+  "audity-email-send",
+  async (job) => {
+    return sendSecureReportEmail(job.data as {
+      assessmentId: string;
+      reportId: string;
+      userId: string;
+      recipient: string;
+      subject: string;
+      message: string;
+      packageObjectKey: string;
+    });
   },
   {
     connection: {

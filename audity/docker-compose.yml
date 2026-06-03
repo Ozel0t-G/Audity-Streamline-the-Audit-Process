@@ -64,12 +64,20 @@ services:
       dockerfile: apps/worker/Dockerfile
     container_name: audity-worker
     environment:
+      AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
+      AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
       AUDITY_DATABASE_URL: ${AUDITY_DATABASE_URL:-postgres://audity:change-me@audity-db:5432/audity}
       AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
       AUDITY_STORAGE_ENDPOINT: ${AUDITY_STORAGE_ENDPOINT:-http://audity-storage:9000}
       AUDITY_STORAGE_BUCKET: ${AUDITY_STORAGE_BUCKET:-audity-evidence}
       AUDITY_STORAGE_ACCESS_KEY: ${AUDITY_STORAGE_ACCESS_KEY:-replace-me}
       AUDITY_STORAGE_SECRET_KEY: ${AUDITY_STORAGE_SECRET_KEY:-replace-me}
+      AUDITY_SMTP_ENABLED: ${AUDITY_SMTP_ENABLED:-false}
+      AUDITY_SMTP_HOST: ${AUDITY_SMTP_HOST:-smtp.example.com}
+      AUDITY_SMTP_PORT: ${AUDITY_SMTP_PORT:-587}
+      AUDITY_SMTP_TLS: ${AUDITY_SMTP_TLS:-true}
+      AUDITY_SMTP_USER: ${AUDITY_SMTP_USER:-replace-me}
+      AUDITY_SMTP_PASSWORD: ${AUDITY_SMTP_PASSWORD:-replace-me}
       AUDITY_LOG_LEVEL: ${AUDITY_LOG_LEVEL:-info}
       WORKER_HEALTH_PORT: 3001
       PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser

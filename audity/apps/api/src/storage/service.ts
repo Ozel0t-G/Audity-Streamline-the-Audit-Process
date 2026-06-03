@@ -39,11 +39,16 @@ export async function signedGetUrl(objectKey: string): Promise<string> {
 }
 
 export async function objectDataUrl(objectKey: string, mimeType: string): Promise<string> {
+  const buffer = await objectBuffer(objectKey);
+  return `data:${mimeType};base64,${buffer.toString("base64")}`;
+}
+
+export async function objectBuffer(objectKey: string): Promise<Buffer> {
   await ensureBucket();
   const stream = await storageClient.getObject(config.storageBucket, objectKey);
   const chunks: Buffer[] = [];
   for await (const chunk of stream as Readable) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
-  return `data:${mimeType};base64,${Buffer.concat(chunks).toString("base64")}`;
+  return Buffer.concat(chunks);
 }
