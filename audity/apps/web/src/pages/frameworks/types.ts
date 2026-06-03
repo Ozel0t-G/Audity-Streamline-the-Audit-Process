@@ -11,6 +11,12 @@ export type Framework = {
   importedBy: string | null;
   importedAt: string | null;
   licenseConfirmed: boolean;
+  deliveryMode?: string | null;
+  contentClass?: string | null;
+  officialStandardTextIncluded?: boolean;
+  officialControlCatalogueIncluded?: boolean;
+  licensedContentImportSupported?: boolean;
+  redistributionNote?: string | null;
   controlCount: number;
 };
 
@@ -22,6 +28,11 @@ export type FrameworkControl = {
   question: string | null;
   evidenceExamples: string[];
   tags: string[];
+  audityObjective?: string | null;
+  defaultWeight?: number;
+  readinessPassCondition?: string | null;
+  gapCondition?: string | null;
+  reportMapping?: Record<string, unknown> | null;
 };
 
 export type FrameworkDomain = {
@@ -51,11 +62,19 @@ export type QuestionMapping = {
 
 export type GuidedQuestion = {
   questionId: string;
+  sourceQuestionId?: string;
   controlId: string;
   code: string;
   title: string;
   description: string | null;
   question: string;
+  answerScale?: string;
+  minimumEvidenceExpected?: number;
+  preferredEvidenceTypes?: string[];
+  gapTrigger?: string | null;
+  defaultWeight?: number;
+  readinessPassCondition?: string | null;
+  gapCondition?: string | null;
   evidenceExamples: string[];
   mappings: QuestionMapping[];
   answer: QuestionAnswer | null;

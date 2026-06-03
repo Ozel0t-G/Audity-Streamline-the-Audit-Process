@@ -90,6 +90,12 @@ function mapFramework(row: Record<string, unknown>) {
     importedBy: row.imported_by,
     importedAt: row.imported_at,
     licenseConfirmed: row.license_confirmed,
+    deliveryMode: row.delivery_mode,
+    contentClass: row.content_class,
+    officialStandardTextIncluded: row.official_standard_text_included,
+    officialControlCatalogueIncluded: row.official_control_catalogue_included,
+    licensedContentImportSupported: row.licensed_content_import_supported,
+    redistributionNote: row.redistribution_note,
     controlCount: Number(row.control_count ?? 0)
   };
 }
@@ -160,37 +166,58 @@ async function ensureAssessmentQuestions(
 ): Promise<void> {
   const controls = await pool.query<{
     id: string;
+    question_id: string;
+    question: string;
+    answer_scale: string;
+    minimum_evidence_expected: number;
+    preferred_evidence_types: unknown;
+    gap_trigger: string | null;
     question_text: string | null;
     title: string;
     name: string;
     sort_order: number;
+    question_sort_order: number;
     domain_sort_order: number;
   }>(
-    `select fc.id, fc.question_text, fc.title, fd.name, fc.sort_order, fd.sort_order as domain_sort_order
-     from framework_controls fc
+    `select fc.id, fc.question_text, fc.title, fd.name, fc.sort_order, fd.sort_order as domain_sort_order,
+       qcm.question_id, qcm.question, qcm.answer_scale, qcm.minimum_evidence_expected,
+       qcm.preferred_evidence_types, qcm.gap_trigger, qcm.sort_order as question_sort_order
+     from question_control_mappings qcm
+     join framework_controls fc on fc.id = qcm.framework_control_id
      join framework_domains fd on fd.id = fc.framework_domain_id
-     where fd.framework_id = $1
-     order by fd.sort_order, fc.sort_order`,
+     where qcm.framework_id = $1
+     order by fd.sort_order, fc.sort_order, qcm.sort_order`,
     [frameworkId]
   );
   for (const control of controls.rows) {
-    const questionId = stableUuid(`assessment-question:${assessmentId}:${control.id}`);
+    const questionId = stableUuid(`assessment-question:${assessmentId}:${control.question_id}`);
     await pool.query(
       `insert into assessment_questions
-        (id, assessment_id, framework_control_id, question, domain, sort_order)
-       values ($1, $2, $3, $4, $5, $6)
-       on conflict (assessment_id, framework_control_id) where framework_control_id is not null
+        (id, assessment_id, framework_control_id, question_id, question, domain, sort_order,
+         answer_scale, minimum_evidence_expected, preferred_evidence_types, gap_trigger)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       on conflict (assessment_id, question_id) where question_id is not null
        do update set
+        framework_control_id = excluded.framework_control_id,
         question = excluded.question,
         domain = excluded.domain,
-        sort_order = excluded.sort_order`,
+        sort_order = excluded.sort_order,
+        answer_scale = excluded.answer_scale,
+        minimum_evidence_expected = excluded.minimum_evidence_expected,
+        preferred_evidence_types = excluded.preferred_evidence_types,
+        gap_trigger = excluded.gap_trigger`,
       [
         questionId,
         assessmentId,
         control.id,
-        control.question_text ?? `Assess readiness for ${control.title}`,
+        control.question_id,
+        control.question ?? control.question_text ?? `Assess readiness for ${control.title}`,
         control.name,
-        control.domain_sort_order * 100 + control.sort_order
+        control.domain_sort_order * 1000 + control.question_sort_order,
+        control.answer_scale,
+        control.minimum_evidence_expected,
+        JSON.stringify(control.preferred_evidence_types ?? []),
+        control.gap_trigger
       ]
     );
   }
@@ -239,7 +266,9 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
       const domains = await pool.query(
         `select fd.id as domain_id, fd.name as domain_name, fd.description as domain_description,
           fd.sort_order as domain_sort_order, fc.id as control_id, fc.control_code, fc.title,
-          fc.description, fc.question_text, fc.evidence_examples, fc.tags, fc.sort_order
+          fc.description, fc.question_text, fc.evidence_examples, fc.tags, fc.sort_order,
+          fc.audity_objective, fc.default_weight, fc.readiness_pass_condition,
+          fc.gap_condition, fc.report_mapping
          from framework_domains fd
          left join framework_controls fc on fc.framework_domain_id = fd.id
          where fd.framework_id = $1
@@ -266,6 +295,11 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
             question: row.question_text,
             evidenceExamples: row.evidence_examples,
             tags: row.tags,
+            audityObjective: row.audity_objective,
+            defaultWeight: Number(row.default_weight ?? 1),
+            readinessPassCondition: row.readiness_pass_condition,
+            gapCondition: row.gap_condition,
+            reportMapping: row.report_mapping,
             sortOrder: row.sort_order
           });
         }
@@ -332,17 +366,34 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
             ]
           );
         }
+        const controlId = randomUUID();
         await pool.query(
           `insert into framework_controls
             (id, framework_domain_id, control_code, title, description, question_text, sort_order)
            values ($1, $2, $3, $4, $5, $6, $7)`,
           [
-            randomUUID(),
+            controlId,
             domainId,
             control.code,
             control.title,
             control.description ?? "",
             control.question ?? `Assess readiness for ${control.title}`,
+            controls.indexOf(control) + 1
+          ]
+        );
+        await pool.query(
+          `insert into question_control_mappings
+            (id, framework_id, framework_control_id, question_id, question, answer_scale,
+             minimum_evidence_expected, preferred_evidence_types, gap_trigger, sort_order)
+           values ($1, $2, $3, $4, $5, '0,1,2,3,4,NA', 1, $6, $7, $8)`,
+          [
+            randomUUID(),
+            frameworkId,
+            controlId,
+            `${control.code}-Q1`,
+            control.question ?? `Assess readiness for ${control.title}`,
+            JSON.stringify([]),
+            "score <= 2 or missing approved evidence",
             controls.indexOf(control) + 1
           ]
         );
@@ -393,7 +444,10 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
       const rows = await pool.query(
         `select fd.id as domain_id, fd.name as domain_name, fd.description as domain_description,
           fd.sort_order as domain_sort_order, fc.id as control_id, fc.control_code, fc.title,
-          fc.description, fc.question_text, fc.evidence_examples, aq.id as question_id,
+          fc.description, fc.question_text, fc.evidence_examples, fc.default_weight,
+          fc.readiness_pass_condition, fc.gap_condition,
+          aq.id as assessment_question_id, aq.question_id, aq.answer_scale,
+          aq.minimum_evidence_expected, aq.preferred_evidence_types, aq.gap_trigger,
           aq.question, ca.id as answer_id, ca.score, ca.answer_state, ca.evidence_status,
           ca.confidence_level, ca.notes, ca.updated_at,
           coalesce(
@@ -418,8 +472,8 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
          left join framework_domains mapped_domain on mapped_domain.id = mapped.framework_domain_id
          left join frameworks mapped_framework on mapped_framework.id = mapped_domain.framework_id
          where fd.framework_id = $1
-         group by fd.id, fc.id, aq.id, ca.id
-         order by fd.sort_order, fc.sort_order`,
+        group by fd.id, fc.id, aq.id, ca.id
+         order by fd.sort_order, aq.sort_order, fc.sort_order`,
         [frameworkId, request.params.id]
       );
 
@@ -447,12 +501,20 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
         domain.totalControls = Number(domain.totalControls) + 1;
         domain.answeredControls = Number(domain.answeredControls) + (answered ? 1 : 0);
         (domain.questions as unknown[]).push({
-          questionId: row.question_id,
+          questionId: row.assessment_question_id,
+          sourceQuestionId: row.question_id,
           controlId: row.control_id,
           code: row.control_code,
           title: row.title,
           description: row.description,
           question: row.question,
+          answerScale: row.answer_scale,
+          minimumEvidenceExpected: row.minimum_evidence_expected,
+          preferredEvidenceTypes: row.preferred_evidence_types,
+          gapTrigger: row.gap_trigger,
+          defaultWeight: Number(row.default_weight ?? 1),
+          readinessPassCondition: row.readiness_pass_condition,
+          gapCondition: row.gap_condition,
           evidenceExamples: row.evidence_examples,
           mappings: row.mappings,
           answer: row.answer_id
@@ -512,7 +574,9 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
          from assessment_questions aq
          join framework_controls fc on fc.id = aq.framework_control_id
          join framework_domains fd on fd.id = fc.framework_domain_id
-         where aq.assessment_id = $1 and aq.framework_control_id = $2 and fd.framework_id = $3`,
+         where aq.assessment_id = $1
+           and (aq.id::text = $2 or aq.question_id = $2 or aq.framework_control_id::text = $2)
+           and fd.framework_id = $3`,
         [request.params.id, request.params.controlId, frameworkId]
       );
       if (!question.rows[0]) {
