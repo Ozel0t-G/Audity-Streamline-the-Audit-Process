@@ -88,7 +88,7 @@ export function GuidedQuestionsPage() {
     setError("");
     setSaved("");
     try {
-      await api(`/api/assessments/${id}/questions/${activeQuestion.controlId}/answer`, {
+      await api(`/api/assessments/${id}/questions/${activeQuestion.questionId}/answer`, {
         method: "PUT",
         body: JSON.stringify(form)
       });

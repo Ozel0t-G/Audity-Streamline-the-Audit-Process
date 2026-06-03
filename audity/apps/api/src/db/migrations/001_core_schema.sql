@@ -72,6 +72,20 @@ create table if not exists frameworks (
   created_at timestamptz not null default now()
 );
 
+create table if not exists licensed_framework_imports (
+  id uuid primary key,
+  tenant_id text,
+  framework_family text not null,
+  tenant_framework_id text,
+  tenant_license_owner text,
+  license_status text,
+  license_review_date date,
+  redistribution_allowed boolean not null default false,
+  storage_scope text not null default 'tenant_local_only',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists assessments (
   id uuid primary key,
   customer_id uuid not null references customers(id) on delete cascade,
@@ -107,6 +121,40 @@ create table if not exists framework_controls (
   title text not null,
   description text,
   sort_order integer not null default 0
+);
+
+create table if not exists framework_evidence_requirements (
+  id uuid primary key,
+  control_id uuid not null references framework_controls(id) on delete cascade,
+  evidence_type text not null,
+  required_by_default boolean not null default true,
+  freshness_days integer,
+  sort_order integer not null default 0
+);
+
+create table if not exists question_control_mappings (
+  id uuid primary key,
+  framework_id uuid not null references frameworks(id) on delete cascade,
+  framework_control_id uuid not null references framework_controls(id) on delete cascade,
+  question_id text not null,
+  question text not null,
+  answer_scale text not null default '0,1,2,3,4,NA',
+  minimum_evidence_expected integer not null default 1,
+  preferred_evidence_types jsonb not null default '[]'::jsonb,
+  gap_trigger text,
+  sort_order integer not null default 0
+);
+
+create table if not exists licensed_framework_mappings (
+  id uuid primary key,
+  tenant_id text,
+  audity_control_id uuid not null references framework_controls(id) on delete cascade,
+  tenant_reference_id text,
+  tenant_reference_title text,
+  tenant_reference_text_local_only text,
+  mapping_status text not null default 'empty_until_tenant_imports_licensed_content',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists assessment_questions (
@@ -294,16 +342,35 @@ alter table users add column if not exists alpha_accepted_at timestamptz;
 alter table mfa_settings add column if not exists secret_encrypted text;
 alter table mfa_settings add column if not exists verified_at timestamptz;
 alter table assessments add column if not exists framework text;
+alter table frameworks add column if not exists delivery_mode text;
+alter table frameworks add column if not exists content_class text;
+alter table frameworks add column if not exists official_standard_text_included boolean not null default false;
+alter table frameworks add column if not exists official_control_catalogue_included boolean not null default false;
+alter table frameworks add column if not exists licensed_content_import_supported boolean not null default false;
+alter table frameworks add column if not exists redistribution_note text;
+alter table frameworks add column if not exists updated_at timestamptz not null default now();
 alter table frameworks add column if not exists short_name text;
 alter table frameworks add column if not exists status_label text;
 alter table frameworks add column if not exists disclaimer text;
 alter table frameworks add column if not exists imported_by uuid references users(id);
 alter table frameworks add column if not exists imported_at timestamptz;
 alter table frameworks add column if not exists license_confirmed boolean not null default false;
+alter table framework_domains add column if not exists domain_id text;
 alter table framework_domains add column if not exists description text;
+alter table framework_controls add column if not exists audity_objective text;
+alter table framework_controls add column if not exists default_weight numeric not null default 1.0;
+alter table framework_controls add column if not exists readiness_pass_condition text;
+alter table framework_controls add column if not exists gap_condition text;
+alter table framework_controls add column if not exists criticality_hint text;
+alter table framework_controls add column if not exists report_mapping jsonb not null default '{}'::jsonb;
 alter table framework_controls add column if not exists question_text text;
 alter table framework_controls add column if not exists evidence_examples jsonb not null default '[]'::jsonb;
 alter table framework_controls add column if not exists tags jsonb not null default '[]'::jsonb;
+alter table assessment_questions add column if not exists question_id text;
+alter table assessment_questions add column if not exists answer_scale text;
+alter table assessment_questions add column if not exists minimum_evidence_expected integer not null default 1;
+alter table assessment_questions add column if not exists preferred_evidence_types jsonb not null default '[]'::jsonb;
+alter table assessment_questions add column if not exists gap_trigger text;
 alter table findings add column if not exists assessment_question_id uuid references assessment_questions(id);
 alter table findings add column if not exists framework_control_id uuid references framework_controls(id);
 alter table findings add column if not exists source_explanation text;
@@ -328,9 +395,17 @@ create unique index if not exists framework_domains_framework_name_unique
 create unique index if not exists framework_controls_domain_code_unique
   on framework_controls (framework_domain_id, control_code);
 
-create unique index if not exists assessment_questions_assessment_control_unique
-  on assessment_questions (assessment_id, framework_control_id)
-  where framework_control_id is not null;
+drop index if exists assessment_questions_assessment_control_unique;
+
+create unique index if not exists assessment_questions_assessment_question_unique
+  on assessment_questions (assessment_id, question_id)
+  where question_id is not null;
+
+create unique index if not exists framework_evidence_requirements_control_type_unique
+  on framework_evidence_requirements (control_id, evidence_type);
+
+create unique index if not exists question_control_mappings_framework_question_control_unique
+  on question_control_mappings (framework_id, question_id, framework_control_id);
 
 create unique index if not exists control_answers_question_unique
   on control_answers (assessment_question_id);

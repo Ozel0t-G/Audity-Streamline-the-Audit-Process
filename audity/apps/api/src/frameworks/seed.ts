@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { pool } from "../db/client.js";
+import { audityReadinessPack } from "./readinessPack.js";
 
 const frameworkDisclaimer =
   "Audity provides built-in public-framework summaries and Audity-native readiness workflows for assessment support. User-imported or license-restricted frameworks require the user's own license confirmation before use.";
@@ -11,9 +12,25 @@ type SeedControl = {
   question: string;
   evidenceExamples: string[];
   tags?: string[];
+  audityObjective?: string;
+  defaultWeight?: number;
+  readinessPassCondition?: string;
+  gapCondition?: string;
+  criticalityHint?: string;
+  reportMapping?: Record<string, unknown>;
+  licensedMappingSlots?: Array<Record<string, unknown>>;
+  questions?: Array<{
+    questionId: string;
+    question: string;
+    answerScale: string;
+    minimumEvidenceExpected: number;
+    preferredEvidenceTypes: string[];
+    gapTrigger: string;
+  }>;
 };
 
 type SeedDomain = {
+  domainId?: string;
   name: string;
   description: string;
   controls: SeedControl[];
@@ -28,6 +45,13 @@ type SeedFramework = {
   licenseStatus: string;
   statusLabel: string;
   distributedByAudity: boolean;
+  deliveryMode?: string;
+  contentClass?: string;
+  contentStatus?: string;
+  officialStandardTextIncluded?: boolean;
+  officialControlCatalogueIncluded?: boolean;
+  licensedContentImportSupported?: boolean;
+  redistributionNote?: string;
   domains: SeedDomain[];
 };
 
@@ -38,6 +62,59 @@ function stableUuid(input: string): string {
     20
   )}-${hash.slice(20, 32)}`;
 }
+
+const readinessFrameworks: SeedFramework[] = audityReadinessPack.map((framework) => ({
+  key: framework.framework_id,
+  name: framework.display_name,
+  shortName: framework.framework_id.includes("iec62443") ? "IEC 62443 Readiness" : "ISO 27001 Readiness",
+  version: framework.framework_id.includes("iso27001") ? "2022" : "Audity 2026",
+  sourceType: "audity_native_readiness",
+  licenseStatus: "readiness_workflow_only",
+  statusLabel: "Readiness Workflow Only",
+  distributedByAudity: true,
+  deliveryMode: framework.delivery_mode,
+  contentClass: framework.content_class,
+  contentStatus: framework.content_status,
+  officialStandardTextIncluded: framework.official_standard_text_included,
+  officialControlCatalogueIncluded: framework.official_control_catalogue_included,
+  licensedContentImportSupported: framework.licensed_content_import_supported,
+  redistributionNote: framework.redistribution_note,
+  domains: framework.domains.map((domain) => ({
+    domainId: domain.domain_id,
+    name: domain.name,
+    description: domain.description,
+    controls: framework.controls
+      .filter((control) => control.domain === domain.name)
+      .map((control) => {
+        const questions = framework.question_control_mappings
+          .filter((question) => question.maps_to_control_ids.includes(control.control_id))
+          .map((question) => ({
+            questionId: question.question_id,
+            question: question.question,
+            answerScale: question.answer_scale,
+            minimumEvidenceExpected: Number(question.minimum_evidence_expected),
+            preferredEvidenceTypes: question.preferred_evidence_types,
+            gapTrigger: question.gap_trigger
+          }));
+        return {
+          code: control.control_id,
+          title: control.title,
+          description: control.audity_objective,
+          question: questions[0]?.question ?? `Assess readiness for ${control.title}`,
+          evidenceExamples: control.evidence_requirements,
+          tags: ["audity-native-readiness", framework.framework_id],
+          audityObjective: control.audity_objective,
+          defaultWeight: Number(control.default_weight),
+          readinessPassCondition: control.readiness_pass_condition,
+          gapCondition: control.gap_condition,
+          criticalityHint: control.criticality_hint,
+          reportMapping: control.report_mapping ?? {},
+          licensedMappingSlots: control.licensed_framework_mapping_slots,
+          questions
+        };
+      })
+  }))
+}));
 
 const frameworks: SeedFramework[] = [
   {
@@ -280,7 +357,8 @@ const frameworks: SeedFramework[] = [
         ]
       }
     ]
-  }
+  },
+  ...readinessFrameworks
 ];
 
 export async function seedFrameworks(): Promise<void> {
@@ -288,8 +366,11 @@ export async function seedFrameworks(): Promise<void> {
     const frameworkId = stableUuid(`framework:${framework.key}`);
     await pool.query(
       `insert into frameworks
-        (id, name, short_name, version, source_type, license_status, distributed_by_audity, status_label, disclaimer, license_confirmed)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+        (id, name, short_name, version, source_type, license_status, distributed_by_audity,
+         status_label, disclaimer, license_confirmed, delivery_mode, content_class,
+         official_standard_text_included, official_control_catalogue_included,
+         licensed_content_import_supported, redistribution_note, updated_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, $11, $12, $13, $14, $15, now())
        on conflict (id) do update set
         name = excluded.name,
         short_name = excluded.short_name,
@@ -299,7 +380,14 @@ export async function seedFrameworks(): Promise<void> {
         distributed_by_audity = excluded.distributed_by_audity,
         status_label = excluded.status_label,
         disclaimer = excluded.disclaimer,
-        license_confirmed = excluded.license_confirmed`,
+        license_confirmed = excluded.license_confirmed,
+        delivery_mode = excluded.delivery_mode,
+        content_class = excluded.content_class,
+        official_standard_text_included = excluded.official_standard_text_included,
+        official_control_catalogue_included = excluded.official_control_catalogue_included,
+        licensed_content_import_supported = excluded.licensed_content_import_supported,
+        redistribution_note = excluded.redistribution_note,
+        updated_at = now()`,
       [
         frameworkId,
         framework.name,
@@ -309,28 +397,37 @@ export async function seedFrameworks(): Promise<void> {
         framework.licenseStatus,
         framework.distributedByAudity,
         framework.statusLabel,
-        frameworkDisclaimer
+        framework.contentStatus ?? frameworkDisclaimer,
+        framework.deliveryMode ?? null,
+        framework.contentClass ?? null,
+        framework.officialStandardTextIncluded ?? false,
+        framework.officialControlCatalogueIncluded ?? false,
+        framework.licensedContentImportSupported ?? false,
+        framework.redistributionNote ?? null
       ]
     );
 
     for (const [domainIndex, domain] of framework.domains.entries()) {
       const domainId = stableUuid(`domain:${framework.key}:${domain.name}`);
       await pool.query(
-        `insert into framework_domains (id, framework_id, name, description, sort_order)
-         values ($1, $2, $3, $4, $5)
+        `insert into framework_domains (id, framework_id, domain_id, name, description, sort_order)
+         values ($1, $2, $3, $4, $5, $6)
          on conflict (id) do update set
+          domain_id = excluded.domain_id,
           name = excluded.name,
           description = excluded.description,
           sort_order = excluded.sort_order`,
-        [domainId, frameworkId, domain.name, domain.description, domainIndex + 1]
+        [domainId, frameworkId, domain.domainId ?? null, domain.name, domain.description, domainIndex + 1]
       );
 
       for (const [controlIndex, control] of domain.controls.entries()) {
         const controlId = stableUuid(`control:${framework.key}:${control.code}`);
         await pool.query(
           `insert into framework_controls
-            (id, framework_domain_id, control_code, title, description, question_text, evidence_examples, tags, sort_order)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            (id, framework_domain_id, control_code, title, description, question_text,
+             evidence_examples, tags, sort_order, audity_objective, default_weight,
+             readiness_pass_condition, gap_condition, criticality_hint, report_mapping)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
            on conflict (id) do update set
             framework_domain_id = excluded.framework_domain_id,
             control_code = excluded.control_code,
@@ -339,7 +436,13 @@ export async function seedFrameworks(): Promise<void> {
             question_text = excluded.question_text,
             evidence_examples = excluded.evidence_examples,
             tags = excluded.tags,
-            sort_order = excluded.sort_order`,
+            sort_order = excluded.sort_order,
+            audity_objective = excluded.audity_objective,
+            default_weight = excluded.default_weight,
+            readiness_pass_condition = excluded.readiness_pass_condition,
+            gap_condition = excluded.gap_condition,
+            criticality_hint = excluded.criticality_hint,
+            report_mapping = excluded.report_mapping`,
           [
             controlId,
             domainId,
@@ -349,9 +452,89 @@ export async function seedFrameworks(): Promise<void> {
             control.question,
             JSON.stringify(control.evidenceExamples),
             JSON.stringify(control.tags ?? []),
-            controlIndex + 1
+            controlIndex + 1,
+            control.audityObjective ?? control.description,
+            control.defaultWeight ?? 1,
+            control.readinessPassCondition ?? "average_question_score >= 3 and at least one relevant evidence item approved",
+            control.gapCondition ?? "average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable",
+            control.criticalityHint ?? null,
+            JSON.stringify(control.reportMapping ?? {})
           ]
         );
+
+        for (const [evidenceIndex, evidenceType] of control.evidenceExamples.entries()) {
+          await pool.query(
+            `insert into framework_evidence_requirements
+              (id, control_id, evidence_type, required_by_default, freshness_days, sort_order)
+             values ($1, $2, $3, true, null, $4)
+             on conflict (id) do update set
+              evidence_type = excluded.evidence_type,
+              required_by_default = excluded.required_by_default,
+              freshness_days = excluded.freshness_days,
+              sort_order = excluded.sort_order`,
+            [
+              stableUuid(`evidence-requirement:${framework.key}:${control.code}:${evidenceType}`),
+              controlId,
+              evidenceType,
+              evidenceIndex + 1
+            ]
+          );
+        }
+
+        for (const slot of control.licensedMappingSlots ?? []) {
+          await pool.query(
+            `insert into licensed_framework_mappings
+              (id, audity_control_id, tenant_reference_id, tenant_reference_title, mapping_status)
+             values ($1, $2, $3, $4, $5)
+             on conflict (id) do update set
+              tenant_reference_id = excluded.tenant_reference_id,
+              tenant_reference_title = excluded.tenant_reference_title,
+              mapping_status = excluded.mapping_status,
+              updated_at = now()`,
+            [
+              stableUuid(`licensed-mapping-slot:${framework.key}:${control.code}:${String(slot.framework_family ?? "generic")}`),
+              controlId,
+              slot.tenant_reference_id ?? null,
+              slot.tenant_control_title ?? null,
+              String(slot.mapping_status ?? "empty_until_tenant_imports_licensed_content")
+            ]
+          );
+        }
+
+        for (const [questionIndex, question] of (control.questions ?? [{
+          questionId: `${control.code}-Q1`,
+          question: control.question,
+          answerScale: "0,1,2,3,4,NA",
+          minimumEvidenceExpected: 1,
+          preferredEvidenceTypes: control.evidenceExamples,
+          gapTrigger: "score <= 2 or missing approved evidence"
+        }]).entries()) {
+          await pool.query(
+            `insert into question_control_mappings
+              (id, framework_id, framework_control_id, question_id, question, answer_scale,
+               minimum_evidence_expected, preferred_evidence_types, gap_trigger, sort_order)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             on conflict (framework_id, question_id, framework_control_id) do update set
+              question = excluded.question,
+              answer_scale = excluded.answer_scale,
+              minimum_evidence_expected = excluded.minimum_evidence_expected,
+              preferred_evidence_types = excluded.preferred_evidence_types,
+              gap_trigger = excluded.gap_trigger,
+              sort_order = excluded.sort_order`,
+            [
+              stableUuid(`question-control:${framework.key}:${control.code}:${question.questionId}`),
+              frameworkId,
+              controlId,
+              question.questionId,
+              question.question,
+              question.answerScale,
+              question.minimumEvidenceExpected,
+              JSON.stringify(question.preferredEvidenceTypes),
+              question.gapTrigger,
+              controlIndex * 10 + questionIndex + 1
+            ]
+          );
+        }
       }
     }
   }
