@@ -14,3 +14,9 @@ export const emailQueue = new Queue("audity-email-send", {
     url: config.redisUrl
   }
 });
+
+export const backupQueue = new Queue("audity-backup", {
+  connection: {
+    url: config.redisUrl
+  }
+});

@@ -38,6 +38,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/frameworks" element={<FrameworkLibraryPage />} />
               <Route path="/admin/branding" element={<AdminDashboardPage section="branding" />} />
               <Route path="/admin/email" element={<AdminDashboardPage section="email" />} />
+              <Route path="/admin/backup" element={<AdminDashboardPage section="backup" />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -1,7 +1,8 @@
 import Fastify from "fastify";
-import { Worker } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import { Client } from "minio";
 import { createDecipheriv, createHash, randomUUID } from "node:crypto";
+import { spawn } from "node:child_process";
 import nodemailer from "nodemailer";
 import pg from "pg";
 import puppeteer from "puppeteer-core";
@@ -22,6 +23,8 @@ const storageEndpoint = new URL(
   process.env.AUDITY_STORAGE_ENDPOINT ?? "http://audity-storage:9000"
 );
 const storageBucket = process.env.AUDITY_STORAGE_BUCKET ?? "audity-evidence";
+const backupBucket = process.env.AUDITY_BACKUP_BUCKET ?? "audity-backups";
+const redisUrl = process.env.AUDITY_REDIS_URL ?? "redis://audity-redis:6379";
 const storageClient = new Client({
   endPoint: storageEndpoint.hostname,
   port: Number(storageEndpoint.port || 9000),
@@ -33,6 +36,9 @@ const storageClient = new Client({
 async function ensureBucket(): Promise<void> {
   if (!(await storageClient.bucketExists(storageBucket))) {
     await storageClient.makeBucket(storageBucket);
+  }
+  if (!(await storageClient.bucketExists(backupBucket))) {
+    await storageClient.makeBucket(backupBucket);
   }
 }
 
@@ -188,6 +194,157 @@ async function sendSecureReportEmail(jobData: {
   return { smtpResult };
 }
 
+function pgDump(): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const errors: Buffer[] = [];
+    const child = spawn("pg_dump", [
+      "--format=custom",
+      "--no-owner",
+      "--no-privileges",
+      process.env.AUDITY_DATABASE_URL ?? "postgres://audity:change-me@audity-db:5432/audity"
+    ]);
+    child.stdout.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    child.stderr.on("data", (chunk) => errors.push(Buffer.from(chunk)));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(Buffer.concat(chunks));
+      } else {
+        reject(new Error(Buffer.concat(errors).toString("utf8") || `pg_dump exited with ${code}`));
+      }
+    });
+  });
+}
+
+async function listEvidenceObjects(): Promise<Array<{ name: string; size?: number; lastModified?: Date; etag?: string }>> {
+  const objects: Array<{ name: string; size?: number; lastModified?: Date; etag?: string }> = [];
+  const stream = storageClient.listObjectsV2(storageBucket, "", true);
+  for await (const item of stream) {
+    if (item.name) {
+      objects.push({
+        name: item.name,
+        size: item.size,
+        lastModified: item.lastModified,
+        etag: item.etag
+      });
+    }
+  }
+  return objects;
+}
+
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
+async function evidenceSnapshot(prefix: string): Promise<{ manifest: Buffer; copiedObjects: string[] }> {
+  const objects = await listEvidenceObjects();
+  const copiedObjects: string[] = [];
+  for (const object of objects) {
+    const content = await streamToBuffer(await storageClient.getObject(storageBucket, object.name));
+    const objectKey = `${prefix}/evidence/${object.name}`;
+    await storageClient.putObject(backupBucket, objectKey, content, content.length, {
+      "Content-Type": "application/octet-stream"
+    });
+    copiedObjects.push(objectKey);
+  }
+  return {
+    manifest: Buffer.from(JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      sourceBucket: storageBucket,
+      backupBucket,
+      copiedObjects,
+      objects
+    }, null, 2), "utf8"),
+    copiedObjects
+  };
+}
+
+async function ensureBackupRecord(backupJobId: string | undefined, jobType: string) {
+  if (backupJobId) {
+    await pool.query(
+      "update backup_jobs set status = 'running', started_at = coalesce(started_at, now()) where id = $1",
+      [backupJobId]
+    );
+    return backupJobId;
+  }
+  const id = randomUUID();
+  await pool.query(
+    `insert into backup_jobs (id, job_type, status, started_at, metadata)
+     values ($1, $2, 'running', now(), $3)`,
+    [id, jobType, JSON.stringify({ scheduled: true, requestedAt: new Date().toISOString() })]
+  );
+  return id;
+}
+
+async function runBackup(jobData: {
+  backupJobId?: string;
+  jobType?: "full" | "database" | "evidence";
+  userId?: string;
+}) {
+  const jobType = jobData.jobType ?? "full";
+  const backupJobId = await ensureBackupRecord(jobData.backupJobId, jobType);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const prefix = `backups/${timestamp}-${backupJobId}`;
+  const metadata: Record<string, unknown> = {
+    backupJobId,
+    jobType,
+    backupBucket,
+    objects: []
+  };
+  try {
+    await ensureBucket();
+    if (jobType === "full" || jobType === "database") {
+      const dump = await pgDump();
+      const objectKey = `${prefix}/database.dump`;
+      await storageClient.putObject(backupBucket, objectKey, dump, dump.length, {
+        "Content-Type": "application/octet-stream"
+      });
+      (metadata.objects as string[]).push(objectKey);
+      metadata.databaseDumpBytes = dump.length;
+    }
+    if (jobType === "full" || jobType === "evidence") {
+      const snapshot = await evidenceSnapshot(prefix);
+      const objectKey = `${prefix}/evidence-manifest.json`;
+      await storageClient.putObject(backupBucket, objectKey, snapshot.manifest, snapshot.manifest.length, {
+        "Content-Type": "application/json"
+      });
+      (metadata.objects as string[]).push(objectKey);
+      (metadata.objects as string[]).push(...snapshot.copiedObjects);
+      metadata.evidenceManifestBytes = snapshot.manifest.length;
+      metadata.evidenceObjectCount = snapshot.copiedObjects.length;
+    }
+    await pool.query(
+      "update backup_jobs set status = 'completed', finished_at = now(), metadata = metadata || $2::jsonb where id = $1",
+      [backupJobId, JSON.stringify(metadata)]
+    );
+    if (jobData.userId) {
+      await appendActivityEvent(
+        jobData.userId,
+        "backup.completed",
+        "backup_job",
+        backupJobId,
+        null,
+        metadata
+      );
+    }
+    return metadata;
+  } catch (error) {
+    await pool.query(
+      "update backup_jobs set status = 'failed', finished_at = now(), metadata = metadata || $2::jsonb where id = $1",
+      [
+        backupJobId,
+        JSON.stringify({ error: error instanceof Error ? error.message : "Backup failed" })
+      ]
+    );
+    throw error;
+  }
+}
+
 async function verifyDatabaseConnection(): Promise<void> {
   const result = await pool.query<{ ok: number }>("select 1 as ok");
   if (result.rows[0]?.ok !== 1) {
@@ -263,7 +420,7 @@ new Worker(
   },
   {
     connection: {
-      url: process.env.AUDITY_REDIS_URL ?? "redis://audity-redis:6379"
+      url: redisUrl
     }
   }
 );
@@ -283,8 +440,36 @@ new Worker(
   },
   {
     connection: {
-      url: process.env.AUDITY_REDIS_URL ?? "redis://audity-redis:6379"
+      url: redisUrl
     }
+  }
+);
+
+new Worker(
+  "audity-backup",
+  async (job) => runBackup(job.data as {
+    backupJobId?: string;
+    jobType?: "full" | "database" | "evidence";
+    userId?: string;
+  }),
+  {
+    connection: {
+      url: redisUrl
+    }
+  }
+);
+
+const backupQueue = new Queue("audity-backup", {
+  connection: {
+    url: redisUrl
+  }
+});
+await backupQueue.add(
+  "run-backup",
+  { jobType: "full" },
+  {
+    jobId: "daily-full-backup",
+    repeat: { pattern: "0 2 * * *" }
   }
 );
 

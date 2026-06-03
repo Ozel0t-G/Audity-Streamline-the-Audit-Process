@@ -5,12 +5,18 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: audity-web
     ports:
-      - "80:80"
+      - "80:8080"
+    user: "101:101"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=101,gid=101,mode=1777
+      - /var/run:uid=101,gid=101,mode=1777
+      - /tmp:uid=101,gid=101,mode=1777
     depends_on:
       audity-api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -20,6 +26,10 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: audity-api
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp
     environment:
       AUDITY_ENV: ${AUDITY_ENV:-production}
       AUDITY_PUBLIC_URL: ${AUDITY_PUBLIC_URL:-http://localhost}
@@ -30,6 +40,7 @@ services:
       AUDITY_STORAGE_PROVIDER: ${AUDITY_STORAGE_PROVIDER:-minio}
       AUDITY_STORAGE_ENDPOINT: ${AUDITY_STORAGE_ENDPOINT:-http://audity-storage:9000}
       AUDITY_STORAGE_BUCKET: ${AUDITY_STORAGE_BUCKET:-audity-evidence}
+      AUDITY_BACKUP_BUCKET: ${AUDITY_BACKUP_BUCKET:-audity-backups}
       AUDITY_STORAGE_ACCESS_KEY: ${AUDITY_STORAGE_ACCESS_KEY:-replace-me}
       AUDITY_STORAGE_SECRET_KEY: ${AUDITY_STORAGE_SECRET_KEY:-replace-me}
       AUDITY_UPLOAD_MAX_BYTES: ${AUDITY_UPLOAD_MAX_BYTES:-26214400}
@@ -63,6 +74,10 @@ services:
       context: .
       dockerfile: apps/worker/Dockerfile
     container_name: audity-worker
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp
     environment:
       AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
       AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
@@ -70,6 +85,7 @@ services:
       AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
       AUDITY_STORAGE_ENDPOINT: ${AUDITY_STORAGE_ENDPOINT:-http://audity-storage:9000}
       AUDITY_STORAGE_BUCKET: ${AUDITY_STORAGE_BUCKET:-audity-evidence}
+      AUDITY_BACKUP_BUCKET: ${AUDITY_BACKUP_BUCKET:-audity-backups}
       AUDITY_STORAGE_ACCESS_KEY: ${AUDITY_STORAGE_ACCESS_KEY:-replace-me}
       AUDITY_STORAGE_SECRET_KEY: ${AUDITY_STORAGE_SECRET_KEY:-replace-me}
       AUDITY_SMTP_ENABLED: ${AUDITY_SMTP_ENABLED:-false}

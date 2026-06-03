@@ -27,7 +27,7 @@ function queryString(filters: Record<string, string>) {
   return text ? `?${text}` : "";
 }
 
-type AdminSection = "activity" | "audit" | "users" | "branding" | "email";
+type AdminSection = "activity" | "audit" | "users" | "branding" | "email" | "backup";
 
 type Branding = {
   logoObjectKey: string | null;
@@ -60,6 +60,15 @@ type EmailDelivery = {
   encryptionMethod: string;
   smtpResult: string;
   createdAt: string;
+};
+
+type BackupJob = {
+  id: string;
+  jobType: string;
+  status: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  metadata: Record<string, unknown>;
 };
 
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
@@ -105,6 +114,8 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     sender: ""
   });
   const [emailDeliveryLog, setEmailDeliveryLog] = useState<EmailDelivery[]>([]);
+  const [backupJobs, setBackupJobs] = useState<BackupJob[]>([]);
+  const [backupType, setBackupType] = useState<"full" | "database" | "evidence">("full");
   const [error, setError] = useState("");
 
   const selectedLog = useMemo(
@@ -148,6 +159,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     setEmailDeliveryLog(deliveryPayload.emailDeliveryLog);
   }
 
+  async function loadBackup() {
+    const payload = await api<{ latestBackup: BackupJob | null; backupJobs: BackupJob[] }>("/api/admin/backup/status");
+    setBackupJobs(payload.backupJobs);
+  }
+
   async function loadSection() {
     setError("");
     if (section === "activity") await loadActivity();
@@ -155,6 +171,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     if (section === "users") await loadUsers();
     if (section === "branding") await loadBranding();
     if (section === "email") await loadEmail();
+    if (section === "backup") await loadBackup();
   }
 
   useEffect(() => {
@@ -252,12 +269,27 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     await loadEmail();
   }
 
+  async function triggerBackup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      await api("/api/admin/backup/trigger", {
+        method: "POST",
+        body: JSON.stringify({ jobType: backupType })
+      });
+      await loadBackup();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Backup trigger failed");
+    }
+  }
+
   const title = {
     activity: "Activity Log",
     audit: "Audit Log",
     users: "User Management",
     branding: "Branding Settings",
-    email: "Email Settings"
+    email: "Email Settings",
+    backup: "Backup & Recovery"
   }[section];
 
   return (
@@ -458,6 +490,51 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     </div>
                   ))}
                   {!emailDeliveryLog.length ? <p className="text-sm text-audity-muted">No deliveries yet</p> : null}
+                </div>
+              </section>
+            </div>
+          ) : null}
+          {section === "backup" ? (
+            <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-4 text-lg font-semibold">Manual Backup</h2>
+                <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    Backup Type
+                    <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={backupType} onChange={(event) => setBackupType(event.target.value as typeof backupType)}>
+                      <option value="full">Full</option>
+                      <option value="database">Database</option>
+                      <option value="evidence">Evidence</option>
+                    </select>
+                  </label>
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                    Trigger backup
+                  </button>
+                </form>
+              </section>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold">Backup Jobs</h2>
+                  <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void loadBackup()}>
+                    Refresh
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {backupJobs.map((job) => (
+                    <div key={job.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-audity-primary">{job.jobType}</p>
+                        <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{job.status}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-audity-secondary">
+                        Started: {job.startedAt ? new Date(job.startedAt).toLocaleString() : "-"}
+                      </p>
+                      <p className="mt-1 text-xs text-audity-muted">
+                        Objects: {Array.isArray(job.metadata?.objects) ? job.metadata.objects.length : 0}
+                      </p>
+                    </div>
+                  ))}
+                  {!backupJobs.length ? <p className="text-sm text-audity-muted">No backup jobs yet</p> : null}
                 </div>
               </section>
             </div>

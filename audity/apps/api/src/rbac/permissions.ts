@@ -28,7 +28,8 @@ export const permissions = [
   "activitylog.view",
   "settings.manage",
   "branding.manage",
-  "email.manage"
+  "email.manage",
+  "backup.manage"
 ] as const;
 
 export type PermissionName = (typeof permissions)[number];
