@@ -27,7 +27,7 @@ function queryString(filters: Record<string, string>) {
   return text ? `?${text}` : "";
 }
 
-type AdminSection = "activity" | "audit" | "users" | "branding";
+type AdminSection = "activity" | "audit" | "users" | "branding" | "email";
 
 type Branding = {
   logoObjectKey: string | null;
@@ -39,6 +39,27 @@ type Branding = {
   footerText: string;
   confidentialityLabel: string;
   watermark: string;
+};
+
+type EmailSettings = {
+  smtpHost: string;
+  smtpPort: number;
+  smtpTls: boolean;
+  smtpUser: string;
+  smtpPassword?: string;
+  sender: string;
+  hasPassword?: boolean;
+};
+
+type EmailDelivery = {
+  id: string;
+  sender: string;
+  recipient: string;
+  reportId: string;
+  assessmentId: string;
+  encryptionMethod: string;
+  smtpResult: string;
+  createdAt: string;
 };
 
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
@@ -75,6 +96,15 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     confidentialityLabel: "Confidential",
     watermark: ""
   });
+  const [emailSettings, setEmailSettings] = useState<EmailSettings>({
+    smtpHost: "",
+    smtpPort: 587,
+    smtpTls: true,
+    smtpUser: "",
+    smtpPassword: "",
+    sender: ""
+  });
+  const [emailDeliveryLog, setEmailDeliveryLog] = useState<EmailDelivery[]>([]);
   const [error, setError] = useState("");
 
   const selectedLog = useMemo(
@@ -109,14 +139,27 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     setBranding(payload.branding);
   }
 
-  async function loadAll() {
+  async function loadEmail() {
+    const [settingsPayload, deliveryPayload] = await Promise.all([
+      api<{ emailSettings: EmailSettings }>("/api/admin/email-settings"),
+      api<{ emailDeliveryLog: EmailDelivery[] }>("/api/admin/email-delivery-log")
+    ]);
+    setEmailSettings({ ...settingsPayload.emailSettings, smtpPassword: "" });
+    setEmailDeliveryLog(deliveryPayload.emailDeliveryLog);
+  }
+
+  async function loadSection() {
     setError("");
-    await Promise.all([loadActivity(), loadAudit(), loadUsers(), loadBranding()]);
+    if (section === "activity") await loadActivity();
+    if (section === "audit") await loadAudit();
+    if (section === "users") await loadUsers();
+    if (section === "branding") await loadBranding();
+    if (section === "email") await loadEmail();
   }
 
   useEffect(() => {
-    void loadAll().catch((err) => setError(err instanceof Error ? err.message : "Admin load failed"));
-  }, []);
+    void loadSection().catch((err) => setError(err instanceof Error ? err.message : "Admin load failed"));
+  }, [section]);
 
   async function verifyHashChain() {
     setError("");
@@ -196,11 +239,25 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     setBranding(payload.branding);
   }
 
+  async function saveEmailSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const payload = await api<{ emailSettings: EmailSettings }>("/api/admin/email-settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        ...emailSettings,
+        smtpPassword: emailSettings.smtpPassword || undefined
+      })
+    });
+    setEmailSettings({ ...payload.emailSettings, smtpPassword: "" });
+    await loadEmail();
+  }
+
   const title = {
     activity: "Activity Log",
     audit: "Audit Log",
     users: "User Management",
-    branding: "Branding Settings"
+    branding: "Branding Settings",
+    email: "Email Settings"
   }[section];
 
   return (
@@ -372,6 +429,38 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Save branding</button>
               </form>
             </section>
+          ) : null}
+          {section === "email" ? (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-4 text-lg font-semibold">SMTP Configuration</h2>
+                <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveEmailSettings(event)}>
+                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="SMTP host" value={emailSettings.smtpHost} onChange={(event) => setEmailSettings({ ...emailSettings, smtpHost: event.target.value })} />
+                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="number" placeholder="Port" value={emailSettings.smtpPort} onChange={(event) => setEmailSettings({ ...emailSettings, smtpPort: Number(event.target.value) })} />
+                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="SMTP user" value={emailSettings.smtpUser} onChange={(event) => setEmailSettings({ ...emailSettings, smtpUser: event.target.value })} />
+                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="password" placeholder={emailSettings.hasPassword ? "Password saved" : "SMTP password"} value={emailSettings.smtpPassword ?? ""} onChange={(event) => setEmailSettings({ ...emailSettings, smtpPassword: event.target.value })} />
+                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Sender" value={emailSettings.sender} onChange={(event) => setEmailSettings({ ...emailSettings, sender: event.target.value })} />
+                  <label className="flex h-9 items-center gap-2 text-sm text-audity-secondary">
+                    <input type="checkbox" checked={emailSettings.smtpTls} onChange={(event) => setEmailSettings({ ...emailSettings, smtpTls: event.target.checked })} />
+                    TLS
+                  </label>
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Save email settings</button>
+                </form>
+              </section>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-4 text-lg font-semibold">Delivery Log</h2>
+                <div className="space-y-2">
+                  {emailDeliveryLog.map((entry) => (
+                    <div key={entry.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                      <p className="text-sm font-semibold text-audity-primary">{entry.recipient}</p>
+                      <p className="mt-1 text-xs text-audity-secondary">{entry.smtpResult} · {entry.encryptionMethod}</p>
+                      <p className="mt-1 text-xs text-audity-muted">{new Date(entry.createdAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                  {!emailDeliveryLog.length ? <p className="text-sm text-audity-muted">No deliveries yet</p> : null}
+                </div>
+              </section>
+            </div>
           ) : null}
     </>
   );

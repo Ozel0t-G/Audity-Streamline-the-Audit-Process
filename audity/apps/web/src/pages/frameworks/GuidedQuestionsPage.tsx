@@ -6,6 +6,14 @@ import type { AssessmentQuestionsPayload, GuidedQuestion, QuestionDomain } from 
 const answerStates = ["answered", "needs_follow_up", "not_applicable", "unknown"];
 const evidenceStatuses = ["not_requested", "requested", "received", "validated", "missing"];
 const confidenceLevels = ["low", "medium", "high"];
+const scoreOptions = [
+  { value: 0, label: "0 None" },
+  { value: 1, label: "1 Initial" },
+  { value: 2, label: "2 Partial" },
+  { value: 3, label: "3 Defined" },
+  { value: 4, label: "4 Managed" },
+  { value: 5, label: "5 Optimized" }
+];
 
 function progressColor(value: number) {
   if (value >= 70) return "bg-audity-success";
@@ -160,8 +168,12 @@ export function GuidedQuestionsPage() {
                     <h2 className="mt-1 text-xl font-semibold">{activeQuestion.title}</h2>
                     <p className="mt-2 text-sm text-audity-secondary">{activeQuestion.question}</p>
                     <label className="mt-5 block text-xs font-semibold uppercase text-audity-secondary">
-                      Score: {form.score}
-                      <input className="mt-3 w-full accent-[#008cff]" type="range" min="0" max="5" step="1" value={form.score} onChange={(event) => setForm({ ...form, score: Number(event.target.value) })} />
+                      Score
+                      <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.score} onChange={(event) => setForm({ ...form, score: Number(event.target.value) })}>
+                        {scoreOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
                     </label>
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">

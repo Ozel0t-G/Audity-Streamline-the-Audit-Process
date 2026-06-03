@@ -8,3 +8,9 @@ export const reportQueue = new Queue("audity-report-export", {
     url: config.redisUrl
   }
 });
+
+export const emailQueue = new Queue("audity-email-send", {
+  connection: {
+    url: config.redisUrl
+  }
+});

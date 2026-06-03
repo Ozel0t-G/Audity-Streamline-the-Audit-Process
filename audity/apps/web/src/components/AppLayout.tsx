@@ -105,7 +105,6 @@ export function AppLayout() {
           <nav className="space-y-1">
             <NavLink className={navClass} to="/dashboard">Dashboard</NavLink>
             <NavLink className={navClass} to="/customers">Customers</NavLink>
-            <NavLink className={navClass} to="/frameworks">Framework Library</NavLink>
             {assessmentId ? (
               <>
                 <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>Questions</NavLink>
@@ -140,7 +139,9 @@ export function AdminLayout() {
             <NavLink className={navClass} to="/admin/activity">Activity Log</NavLink>
             <NavLink className={navClass} to="/admin/audit">Audit Log</NavLink>
             <NavLink className={navClass} to="/admin/users">User Management</NavLink>
+            <NavLink className={navClass} to="/admin/frameworks">Framework Library</NavLink>
             <NavLink className={navClass} to="/admin/branding">Branding</NavLink>
+            <NavLink className={navClass} to="/admin/email">Email Settings</NavLink>
           </nav>
           <Link
             className="mt-5 block rounded-audity border border-audity-borderStrong px-3 py-2 text-sm font-semibold text-audity-secondary hover:border-audity-primary hover:text-audity-text"

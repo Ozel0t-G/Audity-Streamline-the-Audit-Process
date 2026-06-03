@@ -26,7 +26,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/customers" element={<CustomerListPage />} />
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
-              <Route path="/frameworks" element={<FrameworkLibraryPage />} />
               <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
               <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
               <Route path="/assessments/:id/assets" element={<AssessmentAssetsPage />} />
@@ -36,7 +35,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/activity" element={<AdminDashboardPage section="activity" />} />
               <Route path="/admin/audit" element={<AdminDashboardPage section="audit" />} />
               <Route path="/admin/users" element={<AdminDashboardPage section="users" />} />
+              <Route path="/admin/frameworks" element={<FrameworkLibraryPage />} />
               <Route path="/admin/branding" element={<AdminDashboardPage section="branding" />} />
+              <Route path="/admin/email" element={<AdminDashboardPage section="email" />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
