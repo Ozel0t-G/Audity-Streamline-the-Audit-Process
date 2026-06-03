@@ -4,6 +4,7 @@ import { unzipSync, zipSync } from "fflate";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { emailQueue } from "../jobs/queue.js";
 import {
@@ -282,6 +283,9 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
     async (request, reply) => {
       const body = validateBody(sendReportSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const payload = await reportPackage(
         request.params.id,
         request.params.reportId,
@@ -333,6 +337,9 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
     "/api/assessments/:id/export",
     { preHandler: requirePermission("report.export") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const bundle = await loadAssessmentBundle(request.params.id);
       if (!bundle) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
@@ -382,15 +389,16 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
       const customerId = randomUUID();
       const assessmentId = randomUUID();
       await pool.query(
-        `insert into customers (id, name, industry, regulatory_context, critical_systems, business_criticality, status)
-         values ($1,$2,$3,$4,$5,$6,'active')`,
+        `insert into customers (id, name, industry, regulatory_context, critical_systems, business_criticality, status, created_by_user_id)
+         values ($1,$2,$3,$4,$5,$6,'active',$7)`,
         [
           customerId,
           `${bundle.assessment.customer_name} (Imported)`,
           bundle.assessment.industry,
           bundle.assessment.regulatory_context,
           JSON.stringify(bundle.assessment.critical_systems ?? []),
-          bundle.assessment.business_criticality
+          bundle.assessment.business_criticality,
+          request.user!.sub
         ]
       );
       await pool.query(

@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
 
@@ -264,6 +265,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/findings",
     { preHandler: requirePermission("assessment.view") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       if (!(await ensureAssessmentExists(request.params.id))) {
         return reply
           .code(404)
@@ -313,6 +317,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       const body = validateBody(findingSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const before = await loadFinding(request.params.findingId);
       if (!before || before.assessmentId !== request.params.id) {
         return reply.code(404).send({ code: "FINDING_NOT_FOUND", message: "Finding not found" });
@@ -369,6 +376,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/risks",
     { preHandler: requirePermission("assessment.view") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       if (!(await ensureAssessmentExists(request.params.id))) {
         return reply
           .code(404)
@@ -400,6 +410,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       const body = validateBody(riskSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       if (!(await ensureAssessmentExists(request.params.id))) {
         return reply
           .code(404)
@@ -462,6 +475,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       const body = validateBody(riskSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const before = await loadRisk(request.params.riskId);
       if (!before || before.assessmentId !== request.params.id) {
         return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
@@ -515,6 +531,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/roadmap",
     { preHandler: requirePermission("assessment.view") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       if (!(await ensureAssessmentExists(request.params.id))) {
         return reply
           .code(404)
@@ -546,6 +565,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       const body = validateBody(roadmapSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       if (!(await ensureAssessmentExists(request.params.id))) {
         return reply
           .code(404)
@@ -594,6 +616,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       const body = validateBody(roadmapSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const before = await loadRoadmapItem(request.params.roadmapItemId);
       if (!before || before.assessmentId !== request.params.id) {
         return reply

@@ -45,6 +45,23 @@ const userUpdateSchema = z.object({
   status: z.enum(["active", "disabled"]).optional()
 });
 
+const systemSettingsSchema = z.object({
+  sessionIdleTimeoutMinutes: z.union([
+    z.literal(5),
+    z.literal(10),
+    z.literal(15),
+    z.literal(20),
+    z.literal(25),
+    z.literal(30),
+    z.literal(35),
+    z.literal(40),
+    z.literal(45),
+    z.literal(50),
+    z.literal(55),
+    z.literal(60)
+  ])
+});
+
 function mapBackup(row: Record<string, unknown>) {
   return {
     id: row.id,
@@ -182,6 +199,59 @@ function eventHash(row: {
 }
 
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
+  app.get(
+    "/api/admin/system-settings",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async () => {
+      const result = await pool.query<{ value: number }>(
+        "select (value #>> '{}')::int as value from settings where key = 'session_idle_timeout_minutes'"
+      );
+      return { sessionIdleTimeoutMinutes: result.rows[0]?.value ?? 30 };
+    }
+  );
+
+  app.patch<{ Body: { sessionIdleTimeoutMinutes: number } }>(
+    "/api/admin/system-settings",
+    { preHandler: requireCsrfPermission("settings.manage") },
+    async (request, reply) => {
+      const body = validateBody(systemSettingsSchema, request.body, reply);
+      if (!body) return;
+      if (request.user?.role !== "Instance Admin" && request.user?.role !== "Tenant Admin") {
+        return reply.code(403).send({ code: "ADMIN_ROLE_REQUIRED", message: "Admin role required" });
+      }
+      const previous = await pool.query<{ value: number }>(
+        "select (value #>> '{}')::int as value from settings where key = 'session_idle_timeout_minutes'"
+      );
+      const oldValue = previous.rows[0]?.value ?? 30;
+      await pool.query(
+        `insert into settings (key, value, updated_at)
+         values ('session_idle_timeout_minutes', $1::jsonb, now())
+         on conflict (key) do update set value = excluded.value, updated_at = now()`,
+        [JSON.stringify(body.sessionIdleTimeoutMinutes)]
+      );
+      await pool.query(
+        `insert into audit_logs (id, actor_user_id, action, entity, entity_id, ip, user_agent, payload)
+         values ($1,$2,'system.session_timeout.updated','settings','session_idle_timeout_minutes',$3,$4,$5)`,
+        [
+          randomUUID(),
+          request.user!.sub,
+          request.ip,
+          request.headers["user-agent"] ?? null,
+          JSON.stringify({ oldValue, newValue: body.sessionIdleTimeoutMinutes })
+        ]
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "system.session_timeout.updated",
+        entityType: "settings",
+        entityId: "session_idle_timeout_minutes",
+        before: { value: oldValue },
+        after: { value: body.sessionIdleTimeoutMinutes }
+      });
+      return { sessionIdleTimeoutMinutes: body.sessionIdleTimeoutMinutes };
+    }
+  );
+
   app.get(
     "/api/admin/backup/status",
     { preHandler: requireAdminPermission("backup.manage") },

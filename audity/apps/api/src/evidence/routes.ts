@@ -4,6 +4,7 @@ import multipart from "@fastify/multipart";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { loadConfig } from "../config.js";
+import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { ensureBucket, signedGetUrl, storageBucket, storageClient } from "../storage/service.js";
 
@@ -40,6 +41,9 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
     { preHandler: requireCsrfPermission("evidence.upload") },
     async (request, reply) => {
       const config = loadConfig();
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const assessment = await pool.query("select id from assessments where id = $1", [
         request.params.id
       ]);
@@ -103,7 +107,10 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
   app.get<{ Params: { id: string } }>(
     "/api/assessments/:id/evidence",
     { preHandler: requirePermission("assessment.view") },
-    async (request) => {
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const result = await pool.query(
         `select * from evidence_items
          where assessment_id = $1 and deleted_at is null
@@ -118,6 +125,9 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/evidence/:evidenceId/download",
     { preHandler: requirePermission("evidence.download") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const result = await pool.query(
         `select * from evidence_items
          where id = $1 and assessment_id = $2 and deleted_at is null`,
@@ -143,6 +153,9 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/evidence/:evidenceId",
     { preHandler: requireCsrfPermission("evidence.upload") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const before = await pool.query(
         `select * from evidence_items
          where id = $1 and assessment_id = $2 and deleted_at is null`,

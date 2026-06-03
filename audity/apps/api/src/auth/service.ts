@@ -198,7 +198,12 @@ export async function isSessionActive(sessionId: string): Promise<boolean> {
       where id = $1
         and revoked_at is null
         and expires_at > now()
-        and last_seen_at > now() - ($2::int * interval '1 minute')
+        and last_seen_at > now() - (
+          coalesce(
+            (select (value #>> '{}')::int from settings where key = 'session_idle_timeout_minutes'),
+            $2::int
+          ) * interval '1 minute'
+        )
     ) as active`,
     [sessionId, process.env.AUDITY_SESSION_IDLE_TIMEOUT_MINUTES ?? "30"]
   );

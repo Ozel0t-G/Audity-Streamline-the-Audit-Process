@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
 
@@ -416,6 +417,9 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
     "/api/assessments/:id/questions",
     { preHandler: requirePermission("assessment.view") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const frameworkId = await getAssessmentFrameworkId(request.params.id);
       if (!frameworkId) {
         return reply
@@ -552,6 +556,9 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
     async (request, reply) => {
       const body = validateBody(answerSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const frameworkId = await getAssessmentFrameworkId(request.params.id);
       if (!frameworkId) {
         return reply

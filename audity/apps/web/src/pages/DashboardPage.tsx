@@ -1,8 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 
 export function DashboardPage() {
   const { user, setupMfa, verifyMfaSetup } = useAuth();
+  const api = useApi();
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    customerId?: string | null;
+    readAt?: string | null;
+    createdAt: string;
+  }>>([]);
   const [mfaSetup, setMfaSetup] = useState<{
     secret: string;
     otpauthUrl: string;
@@ -11,6 +23,16 @@ export function DashboardPage() {
   const [mfaCode, setMfaCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    void api<{ notifications: typeof notifications }>("/api/notifications")
+      .then((payload) => setNotifications(payload.notifications.filter((notification) => [
+        "customer_shared",
+        "new_questions_available",
+        "customer_scope_changed"
+      ].includes(notification.type)).slice(0, 5)))
+      .catch(() => undefined);
+  }, [api]);
 
   async function startMfaSetup() {
     setError("");
@@ -41,7 +63,30 @@ export function DashboardPage() {
             </p>
           </div>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="min-h-80 rounded-audity border border-audity-border bg-audity-panel" />
+            <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+              <div className="mb-4 border-b border-audity-border pb-3">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Notifications</p>
+                <h2 className="mt-1 text-lg font-semibold">Customer Updates</h2>
+              </div>
+              <div className="space-y-2">
+                {notifications.map((notification) => (
+                  <div key={notification.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-audity-text">{notification.title}</p>
+                        <p className="mt-1 text-sm text-audity-secondary">{notification.message}</p>
+                      </div>
+                      {notification.customerId ? (
+                        <Link className="shrink-0 rounded-audity border border-audity-borderStrong px-2 py-1 text-xs font-semibold text-audity-primary hover:border-audity-primary" to={`/customers/${notification.customerId}`}>
+                          Open customer
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+                {!notifications.length ? <p className="py-10 text-center text-sm text-audity-muted">No customer notifications</p> : null}
+              </div>
+            </section>
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <div className="mb-4 border-b border-audity-border pb-3">
                 <p className="text-xs font-semibold uppercase text-audity-muted">Security</p>
