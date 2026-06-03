@@ -35,33 +35,52 @@ async function ensureBucket(): Promise<void> {
   }
 }
 
+function nextTimestamp(previous?: Date): Date {
+  const now = new Date();
+  if (!previous || now.getTime() > previous.getTime()) {
+    return now;
+  }
+  return new Date(previous.getTime() + 1);
+}
+
 async function appendReportExported(userId: string, reportId: string, objectKey: string): Promise<void> {
-  const previous = await pool.query<{ event_hash: string }>(
-    "select event_hash from user_activity_logs order by created_at desc limit 1"
-  );
-  const timestamp = new Date().toISOString();
-  const prevHash = previous.rows[0]?.event_hash ?? "";
-  const before = null;
-  const after = { reportId, objectKey };
-  const payload = JSON.stringify({ before, after });
-  const eventHash = createHash("sha256")
-    .update(timestamp + userId + "report.exported" + reportId + payload + prevHash)
-    .digest("hex");
-  await pool.query(
-    `insert into user_activity_logs
-      (id, user_id, action, entity_type, entity_id, before_value, after_value, prev_hash, event_hash, created_at)
-     values ($1, $2, 'report.exported', 'report', $3, $4, $5, $6, $7, $8)`,
-    [
-      randomUUID(),
-      userId,
-      reportId,
-      JSON.stringify(before),
-      JSON.stringify(after),
-      prevHash || null,
-      eventHash,
-      timestamp
-    ]
-  );
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query("select pg_advisory_xact_lock(hashtext('audity_user_activity_logs'))");
+    const previous = await client.query<{ event_hash: string; created_at: Date }>(
+      "select event_hash, created_at from user_activity_logs order by created_at desc, id desc limit 1"
+    );
+    const timestamp = nextTimestamp(previous.rows[0]?.created_at).toISOString();
+    const prevHash = previous.rows[0]?.event_hash ?? "";
+    const before = null;
+    const after = { reportId, objectKey };
+    const payload = JSON.stringify({ before, after });
+    const eventHash = createHash("sha256")
+      .update(timestamp + userId + "report.exported" + reportId + payload + prevHash)
+      .digest("hex");
+    await client.query(
+      `insert into user_activity_logs
+        (id, user_id, action, entity_type, entity_id, before_value, after_value, prev_hash, event_hash, created_at)
+       values ($1, $2, 'report.exported', 'report', $3, $4, $5, $6, $7, $8)`,
+      [
+        randomUUID(),
+        userId,
+        reportId,
+        JSON.stringify(before),
+        JSON.stringify(after),
+        prevHash || null,
+        eventHash,
+        timestamp
+      ]
+    );
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function verifyDatabaseConnection(): Promise<void> {

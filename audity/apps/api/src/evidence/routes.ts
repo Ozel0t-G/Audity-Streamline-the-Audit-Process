@@ -7,6 +7,17 @@ import { loadConfig } from "../config.js";
 import { pool } from "../db/client.js";
 import { ensureBucket, signedGetUrl, storageBucket, storageClient } from "../storage/service.js";
 
+type MultipartField = {
+  value?: unknown;
+};
+
+function multipartTextField(value: unknown): string {
+  if (value && typeof value === "object" && "value" in value) {
+    return String((value as MultipartField).value ?? "");
+  }
+  return "";
+}
+
 function mapEvidence(row: Record<string, unknown>) {
   return {
     id: row.id,
@@ -46,6 +57,7 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
       if (!config.uploadAllowedTypes.includes(file.mimetype)) {
         return reply.code(400).send({ code: "FILE_TYPE_BLOCKED", message: "File type is not allowed" });
       }
+      const notes = multipartTextField(file.fields.notes);
       await ensureBucket();
       const id = randomUUID();
       const objectKey = `evidence/${request.params.id}/${id}/${file.filename}`;
@@ -72,7 +84,7 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
           file.filename,
           file.mimetype,
           size,
-          ""
+          notes
         ]
       );
       const evidence = mapEvidence(result.rows[0]);
