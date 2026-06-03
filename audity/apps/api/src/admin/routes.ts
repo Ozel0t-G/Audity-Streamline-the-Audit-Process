@@ -1,6 +1,6 @@
 import crypto, { randomUUID } from "node:crypto";
 import argon2 from "argon2";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
@@ -25,6 +25,23 @@ type UserUpdateBody = {
   role?: string;
   status?: "active" | "disabled";
 };
+
+const adminRoles = new Set(["Instance Admin", "Tenant Admin"]);
+
+function requireAdminPermission(permission: string) {
+  const permissionHandler = requirePermission(permission);
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    await permissionHandler(request, reply);
+    if (reply.sent) {
+      return;
+    }
+    if (!request.user || !adminRoles.has(request.user.role)) {
+      await reply
+        .code(403)
+        .send({ code: "ADMIN_ROLE_REQUIRED", message: "Admin role required" });
+    }
+  };
+}
 
 function csvCell(value: unknown): string {
   const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
@@ -127,7 +144,7 @@ function eventHash(row: {
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: LogFilters }>(
     "/api/admin/activity-logs",
-    { preHandler: requirePermission("activitylog.view") },
+    { preHandler: requireAdminPermission("activitylog.view") },
     async (request) => {
       const { where, values } = activityWhere(request.query);
       const result = await pool.query(
@@ -145,7 +162,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { id: string } }>(
     "/api/admin/activity-logs/:id",
-    { preHandler: requirePermission("activitylog.view") },
+    { preHandler: requireAdminPermission("activitylog.view") },
     async (request, reply) => {
       const result = await pool.query(
         `select ual.*, u.email as user_email
@@ -163,7 +180,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Querystring: LogFilters }>(
     "/api/admin/activity-logs/export",
-    { preHandler: requirePermission("activitylog.view") },
+    { preHandler: requireAdminPermission("activitylog.view") },
     async (request, reply) => {
       const { where, values } = activityWhere(request.query);
       const result = await pool.query(
@@ -193,7 +210,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get(
     "/api/admin/activity-logs/verify",
-    { preHandler: requirePermission("activitylog.view") },
+    { preHandler: requireAdminPermission("activitylog.view") },
     async () => {
       const result = await pool.query<{
         id: string;
@@ -233,7 +250,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Querystring: { action?: string; dateFrom?: string; dateTo?: string } }>(
     "/api/admin/audit-logs",
-    { preHandler: requirePermission("auditlog.view") },
+    { preHandler: requireAdminPermission("auditlog.view") },
     async (request) => {
       const clauses: string[] = [];
       const values: unknown[] = [];
@@ -264,7 +281,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get(
     "/api/admin/audit-logs/export",
-    { preHandler: requirePermission("auditlog.view") },
+    { preHandler: requireAdminPermission("auditlog.view") },
     async (_request, reply) => {
       const result = await pool.query(
         `select al.id, u.email as actor_email, al.action, al.entity, al.entity_id,

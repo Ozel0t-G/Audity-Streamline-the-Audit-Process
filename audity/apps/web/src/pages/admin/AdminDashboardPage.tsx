@@ -11,6 +11,7 @@ const highRiskActions = new Set([
   "risk.accepted",
   "score_reduced",
   "report.exported",
+  "mfa.disabled",
   "auth.mfa.disabled",
   "role.changed"
 ]);
