@@ -16,9 +16,12 @@ Include:
 - API responses include security headers through Helmet.
 - API requests are rate limited through Redis.
 - Auth routes have stricter rate limits than general API routes.
+- JSON API inputs are validated with Zod schemas before processing.
+- Frontend menus and page actions are hidden when the logged-in role lacks the required permission.
+- Backup trigger is limited to Instance Admin accounts.
 - Sensitive package/export payloads use AES-256-GCM.
 - SMTP passwords are encrypted at rest.
-- Containers run non-root where practical and use read-only filesystems with tmpfs scratch paths.
+- Application containers run non-root and use read-only filesystems with tmpfs scratch paths; third-party service images are pinned by digest in `docker-compose.yml`.
 
 ## Production Notes
 
@@ -27,4 +30,3 @@ Include:
 - Restrict MinIO, PostgreSQL, Redis, and Docker host access.
 - Configure real SMTP credentials only through trusted admin accounts.
 - Run dependency review before any production deployment.
-

@@ -2,6 +2,7 @@ import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
+import { useAuth } from "../../auth/AuthProvider";
 import type { Finding, Risk, RoadmapItem } from "./types";
 
 const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
@@ -16,10 +17,12 @@ function ratingClass(rating: string | null) {
 
 function RoadmapPhaseColumn({
   phase,
-  items
+  items,
+  canDrag
 }: {
   phase: string;
   items: RoadmapItem[];
+  canDrag: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: phase });
   return (
@@ -30,16 +33,17 @@ function RoadmapPhaseColumn({
       <h3 className="mb-3 text-sm font-semibold">{phase}</h3>
       <div className="space-y-2">
         {items.map((item) => (
-          <RoadmapCard key={item.id} item={item} />
+          <RoadmapCard key={item.id} item={item} canDrag={canDrag} />
         ))}
       </div>
     </div>
   );
 }
 
-function RoadmapCard({ item }: { item: RoadmapItem }) {
+function RoadmapCard({ item, canDrag }: { item: RoadmapItem; canDrag: boolean }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: item.id
+    id: item.id,
+    disabled: !canDrag
   });
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
@@ -50,7 +54,7 @@ function RoadmapCard({ item }: { item: RoadmapItem }) {
       style={style}
       {...listeners}
       {...attributes}
-      className={`cursor-grab rounded-audity border border-audity-borderStrong bg-audity-panel px-3 py-2 active:cursor-grabbing ${isDragging ? "opacity-70" : ""}`}
+      className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} rounded-audity border border-audity-borderStrong bg-audity-panel px-3 py-2 ${isDragging ? "opacity-70" : ""}`}
     >
       <p className="text-sm font-semibold">{item.action}</p>
       <p className="mt-1 text-xs text-audity-muted">{item.riskTitle} · {item.effortEstimate}</p>
@@ -61,6 +65,12 @@ function RoadmapCard({ item }: { item: RoadmapItem }) {
 export function AssessmentWorkflowPage() {
   const { id } = useParams();
   const api = useApi();
+  const { user } = useAuth();
+  const can = (permission: string) => Boolean(user?.permissions.includes(permission));
+  const canApproveFindings = can("finding.approve");
+  const canAcceptRisk = can("risk.accept");
+  const canEditRisk = can("risk.edit");
+  const canEditRoadmap = can("roadmap.edit");
   const [findings, setFindings] = useState<Finding[]>([]);
   const [risks, setRisks] = useState<Risk[]>([]);
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
@@ -173,6 +183,7 @@ export function AssessmentWorkflowPage() {
   }
 
   async function moveRoadmapItem(event: DragEndEvent) {
+    if (!canEditRoadmap) return;
     if (!id || !event.over || String(event.active.id) === String(event.over.id)) return;
     const item = roadmapItems.find((roadmapItem) => roadmapItem.id === String(event.active.id));
     const phase = String(event.over.id);
@@ -234,11 +245,19 @@ export function AssessmentWorkflowPage() {
                           <p className="mt-2 text-sm text-audity-secondary">{selectedFinding.recommendation}</p>
                         </div>
                       </div>
+                      {(canApproveFindings || canAcceptRisk) ? (
                       <div className="mt-4 flex flex-wrap gap-2">
+                        {canApproveFindings ? (
                         <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void updateFinding("accept")}>Accept</button>
+                        ) : null}
+                        {canAcceptRisk ? (
                         <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void updateFinding("mark-as-accepted-risk")}>Accepted risk</button>
+                        ) : null}
+                        {canApproveFindings ? (
                         <button className="h-9 rounded-audity border border-audity-error bg-audity-panelAlt px-3 text-sm text-audity-error hover:bg-[#2A1C17]" onClick={() => void updateFinding("dismiss")}>Dismiss</button>
+                        ) : null}
                       </div>
+                      ) : null}
                       <div className="mt-5">
                         <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Framework Mapping</p>
                         <div className="grid gap-2 md:grid-cols-2">
@@ -256,6 +275,7 @@ export function AssessmentWorkflowPage() {
               </div>
             </section>
             <aside className="space-y-4">
+              {canEditRisk ? (
               <form onSubmit={createRisk} className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">Create Risk</h2>
                 <div className="grid grid-cols-2 gap-3">
@@ -274,6 +294,7 @@ export function AssessmentWorkflowPage() {
                 </label>
                 <button className="mt-3 h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!selectedFinding}>Create risk from finding</button>
               </form>
+              ) : null}
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">Risk Matrix</h2>
                 <div className="grid grid-cols-2 gap-2">
@@ -304,6 +325,7 @@ export function AssessmentWorkflowPage() {
                 <h2 className="text-lg font-semibold">Roadmap Builder</h2>
                 <p className="mt-1 text-xs text-audity-muted">Drag cards between columns to change timeframe.</p>
               </div>
+              {canEditRoadmap ? (
               <form className="flex flex-wrap gap-2" onSubmit={createRoadmapItem}>
                 <select className="h-9 rounded-audity border border-audity-border bg-audity-page px-2 text-sm text-audity-text" value={roadmapForm.phase} onChange={(event) => setRoadmapForm({ ...roadmapForm, phase: event.target.value })}>
                   {phases.map((phase) => <option key={phase}>{phase}</option>)}
@@ -311,6 +333,7 @@ export function AssessmentWorkflowPage() {
                 <input className="h-9 w-64 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Roadmap action" value={roadmapForm.action} onChange={(event) => setRoadmapForm({ ...roadmapForm, action: event.target.value })} />
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!selectedRisk}>Generate from risk</button>
               </form>
+              ) : null}
             </div>
             <DndContext onDragEnd={(event) => void moveRoadmapItem(event)}>
               <div className="grid gap-3 xl:grid-cols-4">
@@ -319,6 +342,7 @@ export function AssessmentWorkflowPage() {
                     key={phase}
                     phase={phase}
                     items={roadmapItems.filter((item) => item.phase === phase)}
+                    canDrag={canEditRoadmap}
                   />
                 ))}
               </div>

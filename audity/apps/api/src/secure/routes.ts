@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { unzipSync, zipSync } from "fflate";
+import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
@@ -13,6 +14,7 @@ import {
   storageClient
 } from "../storage/service.js";
 import { decryptText, encryptText } from "../utils/crypto.js";
+import { validateBody } from "../utils/validation.js";
 
 type EmailSettingsBody = {
   smtpHost?: string;
@@ -30,6 +32,23 @@ type SendReportBody = {
   includeRiskRegister?: boolean;
   warningAccepted?: boolean;
 };
+
+const emailSettingsSchema = z.object({
+  smtpHost: z.string().optional(),
+  smtpPort: z.number().int().min(1).max(65535).optional(),
+  smtpTls: z.boolean().optional(),
+  smtpUser: z.string().optional(),
+  smtpPassword: z.string().optional(),
+  sender: z.string().optional()
+});
+
+const sendReportSchema = z.object({
+  recipient: z.string().email(),
+  subject: z.string().optional(),
+  message: z.string().optional(),
+  includeRiskRegister: z.boolean().optional(),
+  warningAccepted: z.literal(true)
+});
 
 function mapEmailSettings(row: Record<string, unknown> | undefined) {
   return {
@@ -232,10 +251,12 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
   app.put<{ Body: EmailSettingsBody }>(
     "/api/admin/email-settings",
     { preHandler: requireCsrfPermission("email.manage") },
-    async (request) => {
+    async (request, reply) => {
+      const body = validateBody(emailSettingsSchema, request.body, reply);
+      if (!body) return;
       const previous = await pool.query("select * from email_settings order by updated_at desc limit 1");
-      const passwordEncrypted = request.body.smtpPassword
-        ? encryptText(request.body.smtpPassword)
+      const passwordEncrypted = body.smtpPassword
+        ? encryptText(body.smtpPassword)
         : previous.rows[0]?.smtp_password_encrypted ?? null;
       const result = await pool.query(
         `insert into email_settings (id, smtp_host, smtp_port, smtp_tls, smtp_user, smtp_password_encrypted, sender)
@@ -243,12 +264,12 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
          returning *`,
         [
           randomUUID(),
-          request.body.smtpHost ?? previous.rows[0]?.smtp_host ?? "",
-          request.body.smtpPort ?? previous.rows[0]?.smtp_port ?? 587,
-          request.body.smtpTls ?? previous.rows[0]?.smtp_tls ?? true,
-          request.body.smtpUser ?? previous.rows[0]?.smtp_user ?? "",
+          body.smtpHost ?? previous.rows[0]?.smtp_host ?? "",
+          body.smtpPort ?? previous.rows[0]?.smtp_port ?? 587,
+          body.smtpTls ?? previous.rows[0]?.smtp_tls ?? true,
+          body.smtpUser ?? previous.rows[0]?.smtp_user ?? "",
           passwordEncrypted,
-          request.body.sender ?? previous.rows[0]?.sender ?? ""
+          body.sender ?? previous.rows[0]?.sender ?? ""
         ]
       );
       return { emailSettings: mapEmailSettings(result.rows[0]) };
@@ -257,18 +278,14 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
 
   app.post<{ Params: { id: string; reportId: string }; Body: SendReportBody }>(
     "/api/assessments/:id/reports/:reportId/send",
-    { preHandler: requireCsrfPermission("report.export") },
+    { preHandler: requireCsrfPermission("report.send") },
     async (request, reply) => {
-      if (!request.body.recipient || !request.body.warningAccepted) {
-        return reply.code(400).send({
-          code: "SEND_CONFIRMATION_REQUIRED",
-          message: "Recipient and high-risk warning confirmation are required"
-        });
-      }
+      const body = validateBody(sendReportSchema, request.body, reply);
+      if (!body) return;
       const payload = await reportPackage(
         request.params.id,
         request.params.reportId,
-        request.body.includeRiskRegister ?? true
+        body.includeRiskRegister ?? true
       );
       if (!payload) {
         return reply.code(404).send({ code: "REPORT_NOT_FOUND", message: "Report not found" });
@@ -283,9 +300,9 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
         assessmentId: request.params.id,
         reportId: request.params.reportId,
         userId: request.user!.sub,
-        recipient: request.body.recipient,
-        subject: request.body.subject ?? "Audity secure assessment report",
-        message: request.body.message ?? "",
+        recipient: body.recipient,
+        subject: body.subject ?? "Audity secure assessment report",
+        message: body.message ?? "",
         packageObjectKey: objectKey
       });
       return reply.code(202).send({

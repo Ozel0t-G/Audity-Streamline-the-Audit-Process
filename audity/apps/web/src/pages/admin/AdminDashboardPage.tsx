@@ -73,7 +73,7 @@ type BackupJob = {
 
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const api = useApi();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -122,6 +122,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     () => activityLogs.find((log) => log.id === selectedLogId) ?? activityLogs[0],
     [activityLogs, selectedLogId]
   );
+  const can = (permission: string) => Boolean(user?.permissions.includes(permission));
 
   async function loadActivity() {
     const payload = await api<{ activityLogs: ActivityLog[] }>(
@@ -386,9 +387,9 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Security Audit Log</h2>
-                <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void exportCsv("/api/admin/audit-logs/export", "audity-audit-logs.csv")}>
+                {can("auditlog.view") ? <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void exportCsv("/api/admin/audit-logs/export", "audity-audit-logs.csv")}>
                   Export
-                </button>
+                </button> : null}
               </div>
               <div className="space-y-2">
                 {auditLogs.slice(0, 12).map((log) => (
@@ -408,7 +409,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           <div className="grid gap-4">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">User Management</h2>
-              <form className="mb-4 space-y-3" onSubmit={inviteUser}>
+              {can("users.invite") ? <form className="mb-4 space-y-3" onSubmit={inviteUser}>
                 <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} />
                 <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Name" value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} />
                 <div className="grid grid-cols-[1fr_160px] gap-2">
@@ -418,7 +419,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   </select>
                 </div>
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Invite</button>
-              </form>
+              </form> : null}
               <div className="space-y-2">
                 {users.map((user) => (
                   <div key={user.id} className="rounded-audity border border-audity-border bg-audity-page p-3">
@@ -427,11 +428,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                         <p className="text-sm font-semibold">{user.email}</p>
                         <p className="text-xs text-audity-muted">{user.name} · {user.status}</p>
                       </div>
-                      <button className="h-8 rounded-audity border border-audity-error px-2 text-xs text-audity-error" onClick={() => void updateUser(user, { status: "disabled" })}>Disable</button>
+                      {can("users.disable") ? <button className="h-8 rounded-audity border border-audity-error px-2 text-xs text-audity-error" onClick={() => void updateUser(user, { status: "disabled" })}>Disable</button> : null}
                     </div>
-                    <select className="h-9 w-full rounded-audity border border-audity-border bg-audity-panel px-2 text-sm text-audity-text" value={user.role} onChange={(event) => void updateUser(user, { role: event.target.value })}>
+                    {can("roles.manage") ? <select className="h-9 w-full rounded-audity border border-audity-border bg-audity-panel px-2 text-sm text-audity-text" value={user.role} onChange={(event) => void updateUser(user, { role: event.target.value })}>
                       {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
-                    </select>
+                    </select> : null}
                   </div>
                 ))}
               </div>
@@ -498,7 +499,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">Manual Backup</h2>
-                <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>
+                {user?.role === "Instance Admin" ? <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">
                     Backup Type
                     <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={backupType} onChange={(event) => setBackupType(event.target.value as typeof backupType)}>
@@ -510,7 +511,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
                     Trigger backup
                   </button>
-                </form>
+                </form> : <p className="text-sm text-audity-muted">Instance Admin required.</p>}
               </section>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="mb-4 flex items-center justify-between gap-3">

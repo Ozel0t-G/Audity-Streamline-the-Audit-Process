@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
+import { validateBody } from "../utils/validation.js";
 
 type AssessmentBody = {
   type?: string;
@@ -22,6 +24,25 @@ type ScopeBody = {
   limitations?: string;
   criticality?: string;
 };
+
+const assessmentSchema = z.object({
+  type: z.string().trim().min(1).optional(),
+  audience: z.string().optional(),
+  framework: z.string().optional(),
+  language: z.string().optional(),
+  targetDate: z.string().optional(),
+  status: z.string().optional()
+});
+
+const scopeSchema = z.object({
+  inScopeSystems: z.array(z.string()).optional(),
+  outOfScope: z.array(z.string()).optional(),
+  businessProcesses: z.array(z.string()).optional(),
+  regulatoryContext: z.string().optional(),
+  assumptions: z.string().optional(),
+  limitations: z.string().optional(),
+  criticality: z.string().optional()
+});
 
 function mapAssessment(row: Record<string, unknown>) {
   return {
@@ -61,7 +82,9 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
     "/api/customers/:id/assessments",
     { preHandler: requireCsrfPermission("assessment.create") },
     async (request, reply) => {
-      if (!request.body.type) {
+      const body = validateBody(assessmentSchema.required({ type: true }), request.body, reply);
+      if (!body) return;
+      if (!body.type) {
         return reply
           .code(400)
           .send({ code: "INVALID_INPUT", message: "Assessment type is required" });
@@ -83,12 +106,12 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
         [
           id,
           request.params.id,
-          request.body.type,
-          request.body.audience ?? null,
-          request.body.framework ?? null,
-          request.body.language ?? "en",
-          request.body.targetDate || null,
-          request.body.status ?? "draft"
+          body.type,
+          body.audience ?? null,
+          body.framework ?? null,
+          body.language ?? "en",
+          body.targetDate || null,
+          body.status ?? "draft"
         ]
       );
       const assessment = mapAssessment(result.rows[0]);
@@ -130,6 +153,8 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
     "/api/assessments/:id",
     { preHandler: requireCsrfPermission("assessment.edit") },
     async (request, reply) => {
+      const body = validateBody(assessmentSchema, request.body, reply);
+      if (!body) return;
       const before = await loadAssessment(request.params.id);
       if (!before) {
         return reply
@@ -149,12 +174,12 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
          returning *`,
         [
           request.params.id,
-          request.body.type,
-          request.body.audience ?? null,
-          request.body.framework ?? null,
-          request.body.language,
-          request.body.targetDate || null,
-          request.body.status
+          body.type,
+          body.audience ?? null,
+          body.framework ?? null,
+          body.language,
+          body.targetDate || null,
+          body.status
         ]
       );
       const assessment = mapAssessment(result.rows[0]);
@@ -174,6 +199,8 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
     "/api/assessments/:id/scope",
     { preHandler: requireCsrfPermission("assessment.edit") },
     async (request, reply) => {
+      const body = validateBody(scopeSchema, request.body, reply);
+      if (!body) return;
       const before = await loadAssessment(request.params.id);
       if (!before) {
         return reply
@@ -181,13 +208,13 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
       const scope = {
-        inScopeSystems: request.body.inScopeSystems ?? [],
-        outOfScope: request.body.outOfScope ?? [],
-        businessProcesses: request.body.businessProcesses ?? [],
-        regulatoryContext: request.body.regulatoryContext ?? "",
-        assumptions: request.body.assumptions ?? "",
-        limitations: request.body.limitations ?? "",
-        criticality: request.body.criticality ?? ""
+        inScopeSystems: body.inScopeSystems ?? [],
+        outOfScope: body.outOfScope ?? [],
+        businessProcesses: body.businessProcesses ?? [],
+        regulatoryContext: body.regulatoryContext ?? "",
+        assumptions: body.assumptions ?? "",
+        limitations: body.limitations ?? "",
+        criticality: body.criticality ?? ""
       };
       const result = await pool.query(
         `update assessments

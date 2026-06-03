@@ -1,10 +1,12 @@
 import crypto, { randomUUID } from "node:crypto";
 import argon2 from "argon2";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
-import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { requireCsrf, requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { backupQueue } from "../jobs/queue.js";
+import { validateBody } from "../utils/validation.js";
 
 type LogFilters = {
   userId?: string;
@@ -26,6 +28,22 @@ type UserUpdateBody = {
   role?: string;
   status?: "active" | "disabled";
 };
+
+const backupTriggerSchema = z.object({
+  jobType: z.enum(["full", "database", "evidence"]).optional()
+});
+
+const inviteSchema = z.object({
+  email: z.string().email(),
+  name: z.string().trim().min(1),
+  role: z.string().trim().min(1),
+  password: z.string().min(8)
+});
+
+const userUpdateSchema = z.object({
+  role: z.string().optional(),
+  status: z.enum(["active", "disabled"]).optional()
+});
 
 function mapBackup(row: Record<string, unknown>) {
   return {
@@ -53,6 +71,16 @@ function requireAdminPermission(permission: string) {
         .send({ code: "ADMIN_ROLE_REQUIRED", message: "Admin role required" });
     }
   };
+}
+
+async function requireInstanceAdminCsrf(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  await requireCsrf(request, reply);
+  if (reply.sent) return;
+  if (request.user?.role !== "Instance Admin") {
+    await reply
+      .code(403)
+      .send({ code: "INSTANCE_ADMIN_REQUIRED", message: "Instance Admin role required" });
+  }
 }
 
 function csvCell(value: unknown): string {
@@ -172,9 +200,11 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: { jobType?: "full" | "database" | "evidence" } }>(
     "/api/admin/backup/trigger",
-    { preHandler: requireCsrfPermission("backup.manage") },
+    { preHandler: requireInstanceAdminCsrf },
     async (request, reply) => {
-      const jobType = request.body.jobType ?? "full";
+      const body = validateBody(backupTriggerSchema, request.body ?? {}, reply);
+      if (!body) return;
+      const jobType = body.jobType ?? "full";
       const id = randomUUID();
       await pool.query(
         `insert into backup_jobs (id, job_type, status, started_at, metadata)
@@ -384,20 +414,19 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     "/api/admin/users/invite",
     { preHandler: requireCsrfPermission("users.invite") },
     async (request, reply) => {
-      if (!request.body.email || !request.body.name || !request.body.role || !request.body.password) {
-        return reply.code(400).send({ code: "INVALID_INPUT", message: "Email, name, role and temporary password are required" });
-      }
-      const role = await pool.query<{ id: string }>("select id from roles where name = $1", [request.body.role]);
+      const body = validateBody(inviteSchema, request.body, reply);
+      if (!body) return;
+      const role = await pool.query<{ id: string }>("select id from roles where name = $1", [body.role]);
       if (!role.rows[0]) {
         return reply.code(400).send({ code: "ROLE_NOT_FOUND", message: "Role not found" });
       }
-      const passwordHash = await argon2.hash(request.body.password, { type: argon2.argon2id });
+      const passwordHash = await argon2.hash(body.password, { type: argon2.argon2id });
       const id = randomUUID();
       const result = await pool.query(
         `insert into users (id, email, name, password_hash, role_id)
          values ($1, lower($2), $3, $4, $5)
          returning id, email, name, status, created_at, updated_at`,
-        [id, request.body.email, request.body.name, passwordHash, role.rows[0].id]
+        [id, body.email, body.name, passwordHash, role.rows[0].id]
       );
       await appendActivityEvent({
         userId: request.user!.sub,
@@ -405,9 +434,9 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         entityType: "user",
         entityId: id,
         before: null,
-        after: { ...result.rows[0], role: request.body.role }
+        after: { ...result.rows[0], role: body.role }
       });
-      return reply.code(201).send({ user: { ...result.rows[0], role: request.body.role } });
+      return reply.code(201).send({ user: { ...result.rows[0], role: body.role } });
     }
   );
 
@@ -415,6 +444,8 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     "/api/admin/users/:id",
     { preHandler: requireCsrfPermission("roles.manage") },
     async (request, reply) => {
+      const body = validateBody(userUpdateSchema, request.body, reply);
+      if (!body) return;
       const before = await pool.query(
         `select u.id, u.email, u.name, u.status, r.name as role
          from users u join roles r on r.id = u.role_id
@@ -424,10 +455,10 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       if (!before.rows[0]) {
         return reply.code(404).send({ code: "USER_NOT_FOUND", message: "User not found" });
       }
-      const role = request.body.role
-        ? await pool.query<{ id: string }>("select id from roles where name = $1", [request.body.role])
+      const role = body.role
+        ? await pool.query<{ id: string }>("select id from roles where name = $1", [body.role])
         : null;
-      if (request.body.role && !role?.rows[0]) {
+      if (body.role && !role?.rows[0]) {
         return reply.code(400).send({ code: "ROLE_NOT_FOUND", message: "Role not found" });
       }
       const result = await pool.query(
@@ -437,7 +468,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
              updated_at = now()
          where id = $1
          returning id`,
-        [request.params.id, role?.rows[0]?.id ?? null, request.body.status ?? null]
+        [request.params.id, role?.rows[0]?.id ?? null, body.status ?? null]
       );
       const after = await pool.query(
         `select u.id, u.email, u.name, u.status, r.name as role

@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
+import { validateBody } from "../utils/validation.js";
 
 type CustomerBody = {
   name?: string;
@@ -12,6 +14,15 @@ type CustomerBody = {
   businessCriticality?: string;
   status?: string;
 };
+
+const customerSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  industry: z.string().optional(),
+  regulatoryContext: z.string().optional(),
+  criticalSystems: z.array(z.string()).optional(),
+  businessCriticality: z.string().optional(),
+  status: z.string().optional()
+});
 
 function mapCustomer(row: Record<string, unknown>) {
   return {
@@ -48,7 +59,9 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
     "/api/customers",
     { preHandler: requireCsrfPermission("assessment.create") },
     async (request, reply) => {
-      if (!request.body.name) {
+      const body = validateBody(customerSchema.required({ name: true }), request.body, reply);
+      if (!body) return;
+      if (!body.name) {
         return reply
           .code(400)
           .send({ code: "INVALID_INPUT", message: "Customer name is required" });
@@ -61,12 +74,12 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
          returning *`,
         [
           id,
-          request.body.name,
-          request.body.industry ?? null,
-          request.body.regulatoryContext ?? null,
-          JSON.stringify(request.body.criticalSystems ?? []),
-          request.body.businessCriticality ?? null,
-          request.body.status ?? "active"
+          body.name,
+          body.industry ?? null,
+          body.regulatoryContext ?? null,
+          JSON.stringify(body.criticalSystems ?? []),
+          body.businessCriticality ?? null,
+          body.status ?? "active"
         ]
       );
       const customer = mapCustomer(result.rows[0]);
@@ -100,6 +113,8 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
     "/api/customers/:id",
     { preHandler: requireCsrfPermission("assessment.edit") },
     async (request, reply) => {
+      const body = validateBody(customerSchema, request.body, reply);
+      if (!body) return;
       const before = await loadCustomer(request.params.id);
       if (!before) {
         return reply
@@ -119,12 +134,12 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
          returning *`,
         [
           request.params.id,
-          request.body.name,
-          request.body.industry ?? null,
-          request.body.regulatoryContext ?? null,
-          JSON.stringify(request.body.criticalSystems ?? []),
-          request.body.businessCriticality ?? null,
-          request.body.status
+          body.name,
+          body.industry ?? null,
+          body.regulatoryContext ?? null,
+          JSON.stringify(body.criticalSystems ?? []),
+          body.businessCriticality ?? null,
+          body.status
         ]
       );
       const customer = mapCustomer(result.rows[0]);

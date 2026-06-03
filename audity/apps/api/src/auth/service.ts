@@ -16,6 +16,7 @@ export type AuthUser = {
   name: string;
   role: string;
   permissions: string[];
+  alphaAcceptedAt: string | null;
 };
 
 type UserRow = AuthUser & {
@@ -30,7 +31,7 @@ export async function getUserCount(): Promise<number> {
 
 export async function getUserByEmail(email: string): Promise<UserRow | null> {
   const result = await pool.query<UserRow>(
-    `select u.id, u.email, u.name, u.password_hash, u.status, r.name as role,
+    `select u.id, u.email, u.name, u.password_hash, u.status, u.alpha_accepted_at as "alphaAcceptedAt", r.name as role,
       coalesce(array_agg(p.name) filter (where p.name is not null), '{}') as permissions
      from users u
      join roles r on r.id = u.role_id
@@ -45,7 +46,7 @@ export async function getUserByEmail(email: string): Promise<UserRow | null> {
 
 export async function getUserById(id: string): Promise<AuthUser | null> {
   const result = await pool.query<AuthUser>(
-    `select u.id, u.email, u.name, r.name as role,
+    `select u.id, u.email, u.name, u.alpha_accepted_at as "alphaAcceptedAt", r.name as role,
       coalesce(array_agg(p.name) filter (where p.name is not null), '{}') as permissions
      from users u
      join roles r on r.id = u.role_id
@@ -126,7 +127,8 @@ export async function authenticateWithPassword(
     email: row.email,
     name: row.name,
     role: row.role,
-    permissions: row.permissions
+    permissions: row.permissions,
+    alphaAcceptedAt: row.alphaAcceptedAt
   };
   return user;
 }

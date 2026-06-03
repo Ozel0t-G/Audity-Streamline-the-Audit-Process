@@ -7,6 +7,7 @@ import { AdminLayout, AppLayout } from "./components/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { AlphaDisclaimerPage } from "./pages/AlphaDisclaimerPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
 import { FrameworkLibraryPage } from "./pages/frameworks/FrameworkLibraryPage";
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<PrivateRoute />}>
+            <Route path="/alpha-disclaimer" element={<AlphaDisclaimerPage />} />
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/customers" element={<CustomerListPage />} />

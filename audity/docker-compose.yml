@@ -109,7 +109,7 @@ services:
       retries: 10
 
   audity-db:
-    image: postgres:16
+    image: postgres@sha256:4b7183ac05f8ef417db21fd72d71047a4238340c261d3cc3ddb6d579ab5071ae
     container_name: audity-db
     environment:
       POSTGRES_DB: audity
@@ -124,7 +124,7 @@ services:
       retries: 10
 
   audity-redis:
-    image: redis:7-alpine
+    image: redis@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: audity-redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -133,7 +133,7 @@ services:
       retries: 10
 
   audity-storage:
-    image: minio/minio:latest
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: audity-storage
     command: server /data --console-address ":9001"
     environment:

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "bullmq": "^5.78.0",
-    "fastify": "^4.28.0",
+    "fastify": "^5.8.5",
     "minio": "^8.0.7",
     "nodemailer": "^8.0.10",
     "pg": "^8.12.0",

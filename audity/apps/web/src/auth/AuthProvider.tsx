@@ -9,13 +9,16 @@ type User = {
   email: string;
   role: string;
   permissions: string[];
+  alphaAcceptedAt?: string | null;
 };
 
 type AuthContextValue = {
   accessToken: string | null;
   csrfToken: string | null;
   user: User | null;
+  setupInitialAdmin: (input: { email: string; name: string; password: string }) => Promise<void>;
   login: (email: string, password: string) => Promise<{ mfaRequired: false } | { mfaRequired: true; challengeToken: string }>;
+  acceptAlphaDisclaimer: () => Promise<void>;
   verifyMfaChallenge: (challengeToken: string, code: string) => Promise<void>;
   setupMfa: () => Promise<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }>;
   verifyMfaSetup: (code: string) => Promise<string[]>;
@@ -64,6 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     storeSession(payload);
     return { mfaRequired: false as const };
+  }, []);
+
+  const setupInitialAdmin = useCallback(async (input: { email: string; name: string; password: string }) => {
+    const response = await fetch(`${apiBaseUrl}/api/auth/setup`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input)
+    });
+    if (!response.ok) {
+      const error = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(error?.message ?? "Setup failed");
+    }
+    storeSession((await response.json()) as { accessToken: string; csrfToken: string; user: User });
   }, []);
 
   const verifyMfaChallenge = useCallback(async (challengeToken: string, code: string) => {
@@ -123,12 +140,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, [accessToken]);
 
+  const acceptAlphaDisclaimer = useCallback(async () => {
+    const response = await fetch(`${apiBaseUrl}/api/auth/alpha-accept`, {
+      method: "POST",
+      credentials: "include",
+      headers: accessToken && csrfToken
+        ? { Authorization: `Bearer ${accessToken}`, "X-CSRF-Token": csrfToken }
+        : undefined
+    });
+    if (!response.ok) {
+      const error = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(error?.message ?? "Disclaimer acceptance failed");
+    }
+    const payload = (await response.json()) as { user: User };
+    if (payload.user) {
+      window.localStorage.setItem("audity_user", JSON.stringify(payload.user));
+      setUser(payload.user);
+    }
+  }, [accessToken, csrfToken]);
+
   const value = useMemo(
     () => ({
       accessToken,
       csrfToken,
       user,
+      setupInitialAdmin,
       login,
+      acceptAlphaDisclaimer,
       verifyMfaChallenge,
       setupMfa,
       verifyMfaSetup,
@@ -138,7 +176,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken,
       csrfToken,
       user,
+      setupInitialAdmin,
       login,
+      acceptAlphaDisclaimer,
       verifyMfaChallenge,
       setupMfa,
       verifyMfaSetup,

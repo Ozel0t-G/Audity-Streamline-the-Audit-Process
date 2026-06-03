@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { reportQueue } from "../jobs/queue.js";
 import { pool } from "../db/client.js";
+import { validateBody } from "../utils/validation.js";
 import {
   ensureBucket,
   objectDataUrl,
@@ -49,6 +51,31 @@ const defaultBlocks = [
   "Roadmap",
   "Appendix"
 ];
+
+const brandingSchema = z.object({
+  logoObjectKey: z.string().nullable().optional(),
+  logoFileName: z.string().nullable().optional(),
+  primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  secondaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  coverStyle: z.string().optional(),
+  headerText: z.string().optional(),
+  footerText: z.string().optional(),
+  confidentialityLabel: z.string().optional(),
+  watermark: z.string().optional()
+});
+
+const reportSchema = z.object({
+  templateId: z.string().uuid().nullable().optional(),
+  selectedBlocks: z.array(z.string()).optional(),
+  authorInfo: z.object({
+    name: z.string().optional(),
+    role: z.string().optional(),
+    email: z.string().optional(),
+    organization: z.string().optional(),
+    date: z.string().optional()
+  }).optional()
+});
 
 function mapBranding(row: Record<string, unknown> | undefined) {
   return {
@@ -183,7 +210,9 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
   app.put<{ Body: BrandingBody }>(
     "/api/admin/branding",
     { preHandler: requireCsrfPermission("branding.manage") },
-    async (request) => {
+    async (request, reply) => {
+      const body = validateBody(brandingSchema, request.body, reply);
+      if (!body) return;
       const id = randomUUID();
       const result = await pool.query(
         `insert into report_branding
@@ -193,16 +222,16 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
          returning *`,
         [
           id,
-          request.body.logoObjectKey ?? null,
-          request.body.logoFileName ?? null,
-          request.body.primaryColor ?? "#008CFF",
-          request.body.secondaryColor ?? "#061E3A",
-          request.body.accentColor ?? "#2ECC71",
-          request.body.coverStyle ?? "executive",
-          request.body.headerText ?? "Audity Assessment Report",
-          request.body.footerText ?? "Confidential",
-          request.body.confidentialityLabel ?? "Confidential",
-          request.body.watermark ?? ""
+          body.logoObjectKey ?? null,
+          body.logoFileName ?? null,
+          body.primaryColor ?? "#008CFF",
+          body.secondaryColor ?? "#061E3A",
+          body.accentColor ?? "#2ECC71",
+          body.coverStyle ?? "executive",
+          body.headerText ?? "Audity Assessment Report",
+          body.footerText ?? "Confidential",
+          body.confidentialityLabel ?? "Confidential",
+          body.watermark ?? ""
         ]
       );
       return { branding: mapBranding(result.rows[0]) };
@@ -245,8 +274,10 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
     "/api/assessments/:id/reports",
     { preHandler: requireCsrfPermission("report.export") },
     async (request, reply) => {
-      const blocks = request.body.selectedBlocks ?? defaultBlocks;
-      const html = await buildReportHtml(request.params.id, blocks, request.body.authorInfo);
+      const body = validateBody(reportSchema, request.body, reply);
+      if (!body) return;
+      const blocks = body.selectedBlocks ?? defaultBlocks;
+      const html = await buildReportHtml(request.params.id, blocks, body.authorInfo);
       const result = await pool.query(
         `insert into reports
           (id, assessment_id, template_id, created_by, status, content, author_info, selected_blocks, html_preview)
@@ -255,10 +286,10 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
         [
           randomUUID(),
           request.params.id,
-          request.body.templateId ?? null,
+          body.templateId ?? null,
           request.user!.sub,
           JSON.stringify({ generatedAt: new Date().toISOString() }),
-          JSON.stringify(request.body.authorInfo ?? {}),
+          JSON.stringify(body.authorInfo ?? {}),
           JSON.stringify(blocks),
           html
         ]

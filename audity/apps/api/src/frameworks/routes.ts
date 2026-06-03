@@ -1,8 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
+import { validateBody } from "../utils/validation.js";
 
 type ImportControl = {
   domain?: string;
@@ -34,6 +36,37 @@ type AnswerBody = {
   confidenceLevel?: string;
   notes?: string;
 };
+
+const importControlSchema = z.object({
+  domain: z.string().optional(),
+  code: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  question: z.string().optional()
+});
+
+const importSchema = z.object({
+  licenseConfirmed: z.literal(true),
+  name: z.string().optional(),
+  version: z.string().optional(),
+  shortName: z.string().optional(),
+  csv: z.string().optional(),
+  controls: z.array(importControlSchema).optional(),
+  framework: z.object({
+    name: z.string().optional(),
+    version: z.string().optional(),
+    shortName: z.string().optional(),
+    controls: z.array(importControlSchema).optional()
+  }).optional()
+});
+
+const answerSchema = z.object({
+  score: z.number().int().min(0).max(5).nullable().optional(),
+  answerState: z.string().optional(),
+  evidenceStatus: z.string().optional(),
+  confidenceLevel: z.string().optional(),
+  notes: z.string().optional()
+});
 
 function stableUuid(input: string): string {
   const hash = createHash("sha256").update(input).digest("hex");
@@ -248,16 +281,12 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
     "/api/frameworks/import",
     { preHandler: requireCsrfPermission("assessment.edit") },
     async (request, reply) => {
-      if (!request.body.licenseConfirmed) {
-        return reply.code(400).send({
-          code: "LICENSE_CONFIRMATION_REQUIRED",
-          message: "License confirmation is required before importing a framework"
-        });
-      }
-      const name = request.body.framework?.name ?? request.body.name;
-      const version = request.body.framework?.version ?? request.body.version ?? "User Import";
-      const shortName = request.body.framework?.shortName ?? request.body.shortName ?? name;
-      const controls = normalizeControls(request.body).filter(
+      const body = validateBody(importSchema, request.body, reply);
+      if (!body) return;
+      const name = body.framework?.name ?? body.name;
+      const version = body.framework?.version ?? body.version ?? "User Import";
+      const shortName = body.framework?.shortName ?? body.shortName ?? name;
+      const controls = normalizeControls(body).filter(
         (control) => control.domain && control.code && control.title
       );
       if (!name || controls.length === 0) {
@@ -459,6 +488,8 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
     "/api/assessments/:id/questions/:controlId/answer",
     { preHandler: requireCsrfPermission("assessment.edit") },
     async (request, reply) => {
+      const body = validateBody(answerSchema, request.body, reply);
+      if (!body) return;
       const frameworkId = await getAssessmentFrameworkId(request.params.id);
       if (!frameworkId) {
         return reply
@@ -467,9 +498,9 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
       }
       await ensureAssessmentQuestions(request.params.id, frameworkId);
       if (
-        request.body.score !== null &&
-        request.body.score !== undefined &&
-        (!Number.isInteger(request.body.score) || request.body.score < 0 || request.body.score > 5)
+        body.score !== null &&
+        body.score !== undefined &&
+        (!Number.isInteger(body.score) || body.score < 0 || body.score > 5)
       ) {
         return reply
           .code(400)
@@ -520,11 +551,11 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           answerId,
           question.rows[0].id,
           request.user!.sub,
-          request.body.score ?? null,
-          request.body.answerState ?? "answered",
-          request.body.evidenceStatus ?? "not_requested",
-          request.body.confidenceLevel ?? "medium",
-          request.body.notes ?? ""
+          body.score ?? null,
+          body.answerState ?? "answered",
+          body.evidenceStatus ?? "not_requested",
+          body.confidenceLevel ?? "medium",
+          body.notes ?? ""
         ]
       );
       const after = {

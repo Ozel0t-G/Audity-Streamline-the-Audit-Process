@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
+import { useAuth } from "../../auth/AuthProvider";
 import type { Assessment, AssessmentScope, Customer } from "./types";
 
 function csv(value: string): string[] {
@@ -23,6 +24,9 @@ const workflow = [
 export function CustomerDetailPage() {
   const { id } = useParams();
   const api = useApi();
+  const { user } = useAuth();
+  const canCreateAssessment = Boolean(user?.permissions.includes("assessment.create"));
+  const canEditAssessment = Boolean(user?.permissions.includes("assessment.edit"));
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState("");
@@ -236,9 +240,12 @@ export function CustomerDetailPage() {
                     />
                   </label>
                 ))}
-                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!selectedAssessmentId}>Save scope</button>
+                {canEditAssessment ? (
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!selectedAssessmentId}>Save scope</button>
+                ) : null}
               </form>
             </div>
+            {canCreateAssessment ? (
             <form onSubmit={createAssessment} className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Create assessment</h2>
               {[
@@ -261,6 +268,7 @@ export function CustomerDetailPage() {
               ))}
               <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create assessment</button>
             </form>
+            ) : null}
           </div>
     </>
   );
