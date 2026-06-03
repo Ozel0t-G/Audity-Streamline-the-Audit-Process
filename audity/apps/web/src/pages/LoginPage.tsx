@@ -1,17 +1,90 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { BrandMark } from "../components/BrandMark";
 
+const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
+
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, verifyMfaChallenge } = useAuth();
+  const { accessToken, csrfToken, login, setupInitialAdmin, verifyMfaChallenge } = useAuth();
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("Instance Admin");
   const [password, setPassword] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [challengeToken, setChallengeToken] = useState("");
+  const [setupRequired, setSetupRequired] = useState(false);
+  const [setupStep, setSetupStep] = useState<"account" | "optional">("account");
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [sender, setSender] = useState("");
+  const [headerText, setHeaderText] = useState("Audity Assessment Report");
+  const [footerText, setFooterText] = useState("Confidential");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`${apiBaseUrl}/api/auth/setup-status`)
+      .then((response) => response.json())
+      .then((payload: { setupRequired?: boolean }) => setSetupRequired(Boolean(payload.setupRequired)))
+      .catch(() => setSetupRequired(false));
+  }, []);
+
+  async function handleSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await setupInitialAdmin({ email, name, password });
+      setSetupStep("optional");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Setup failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveOptionalSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const token = accessToken ?? window.localStorage.getItem("audity_access_token");
+      const csrf = csrfToken ?? window.localStorage.getItem("audity_csrf_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token && csrf) {
+        headers.Authorization = `Bearer ${token}`;
+        headers["X-CSRF-Token"] = csrf;
+      }
+      if (smtpHost || smtpUser || sender) {
+        await fetch(`${apiBaseUrl}/api/admin/email-settings`, {
+          method: "PUT",
+          credentials: "include",
+          headers,
+          body: JSON.stringify({
+            smtpHost,
+            smtpPort: 587,
+            smtpTls: true,
+            smtpUser,
+            smtpPassword: smtpPassword || undefined,
+            sender
+          })
+        });
+      }
+      await fetch(`${apiBaseUrl}/api/admin/branding`, {
+        method: "PUT",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({ headerText, footerText })
+      });
+      navigate("/alpha-disclaimer", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Optional setup failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,16 +139,31 @@ export function LoginPage() {
           </p>
         </div>
         <form
-          onSubmit={challengeToken ? handleMfaSubmit : handleSubmit}
+          onSubmit={setupRequired ? (setupStep === "account" ? handleSetup : saveOptionalSetup) : challengeToken ? handleMfaSubmit : handleSubmit}
           className="rounded-audity border border-audity-border bg-audity-panel p-5"
         >
           <div className="mb-5 border-b border-audity-border pb-4">
-            <h2 className="text-xl font-semibold">{challengeToken ? "MFA Challenge" : "Login"}</h2>
+            <h2 className="text-xl font-semibold">{setupRequired ? "Setup Wizard" : challengeToken ? "MFA Challenge" : "Login"}</h2>
             <p className="mt-1 text-sm text-audity-secondary">
-              {challengeToken ? "Enter the authenticator code for this account." : "Use your Audity account credentials."}
+              {setupRequired ? "Create the first admin account, then optionally configure SMTP and branding." : challengeToken ? "Enter the authenticator code for this account." : "Use your Audity account credentials."}
             </p>
           </div>
-          {challengeToken ? (
+          {setupRequired && setupStep === "optional" ? (
+            <>
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP Host</label>
+              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={smtpHost} onChange={(event) => setSmtpHost(event.target.value)} />
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP User</label>
+              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={smtpUser} onChange={(event) => setSmtpUser(event.target.value)} />
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP Password</label>
+              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="password" value={smtpPassword} onChange={(event) => setSmtpPassword(event.target.value)} />
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Sender</label>
+              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={sender} onChange={(event) => setSender(event.target.value)} />
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Report Header</label>
+              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={headerText} onChange={(event) => setHeaderText(event.target.value)} />
+              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Report Footer</label>
+              <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={footerText} onChange={(event) => setFooterText(event.target.value)} />
+            </>
+          ) : challengeToken ? (
             <>
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
                 Authenticator code
@@ -100,6 +188,19 @@ export function LoginPage() {
                 autoComplete="email"
                 onChange={(event) => setEmail(event.target.value)}
               />
+              {setupRequired ? (
+                <>
+                  <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
+                    Name
+                  </label>
+                  <input
+                    className="mb-4 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                    value={name}
+                    autoComplete="name"
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                </>
+              ) : null}
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">
                 Password
               </label>
@@ -122,8 +223,13 @@ export function LoginPage() {
             type="submit"
             disabled={loading}
           >
-            {loading ? "Working" : challengeToken ? "Verify" : "Sign in"}
+            {loading ? "Working" : setupRequired && setupStep === "optional" ? "Save and continue" : setupRequired ? "Create admin" : challengeToken ? "Verify" : "Sign in"}
           </button>
+          {setupRequired && setupStep === "optional" ? (
+            <button className="mt-2 h-9 w-full rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" type="button" onClick={() => navigate("/alpha-disclaimer", { replace: true })}>
+              Skip optional setup
+            </button>
+          ) : null}
         </form>
       </section>
     </main>

@@ -50,7 +50,14 @@ export function AssessmentAssetsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const api = useApi();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
+  const can = (permission: string) => Boolean(user?.permissions.includes(permission));
+  const canUploadEvidence = can("evidence.upload");
+  const canDownloadEvidence = can("evidence.download");
+  const canManageBranding = can("branding.manage");
+  const canExportReport = can("report.export");
+  const canSendReport = can("report.send");
+  const canImportAssessment = can("assessment.create");
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [branding, setBranding] = useState<Branding>({
     logoObjectKey: null,
@@ -85,12 +92,12 @@ export function AssessmentAssetsPage() {
 
   async function load() {
     if (!id) return;
-    const [evidencePayload, brandingPayload] = await Promise.all([
-      api<{ evidenceItems: EvidenceItem[] }>(`/api/assessments/${id}/evidence`),
-      api<{ branding: Branding }>("/api/admin/branding")
-    ]);
+    const evidencePayload = await api<{ evidenceItems: EvidenceItem[] }>(`/api/assessments/${id}/evidence`);
     setEvidenceItems(evidencePayload.evidenceItems);
-    setBranding(brandingPayload.branding);
+    if (canManageBranding) {
+      const brandingPayload = await api<{ branding: Branding }>("/api/admin/branding");
+      setBranding(brandingPayload.branding);
+    }
   }
 
   useEffect(() => {
@@ -247,11 +254,13 @@ export function AssessmentAssetsPage() {
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Evidence</h2>
+              {canUploadEvidence ? (
               <form className="mb-4 grid gap-3 md:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_auto]" onSubmit={(event) => void uploadEvidence(event)}>
                 <input name="file" type="file" className="text-sm text-audity-secondary" />
                 <input name="notes" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Evidence notes" />
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Upload</button>
               </form>
+              ) : null}
               <div className="space-y-2">
                 {evidenceItems.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-3 rounded-audity border border-audity-border bg-audity-page px-3 py-2">
@@ -261,13 +270,18 @@ export function AssessmentAssetsPage() {
                       {item.notes ? <p className="mt-1 text-xs text-audity-secondary">{item.notes}</p> : null}
                     </div>
                     <div className="flex gap-2">
-                      <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void downloadEvidence(item)}>Download</button>
-                      <button className="h-8 rounded-audity border border-audity-error px-2 text-xs text-audity-error" onClick={() => void deleteEvidence(item)}>Delete</button>
+                      {canDownloadEvidence ? (
+                        <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void downloadEvidence(item)}>Download</button>
+                      ) : null}
+                      {canUploadEvidence ? (
+                        <button className="h-8 rounded-audity border border-audity-error px-2 text-xs text-audity-error" onClick={() => void deleteEvidence(item)}>Delete</button>
+                      ) : null}
                     </div>
                   </div>
                 ))}
               </div>
             </section>
+            {canManageBranding ? (
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Branding</h2>
               <form className="mb-3 flex gap-2" onSubmit={(event) => void uploadLogo(event)}>
@@ -287,6 +301,7 @@ export function AssessmentAssetsPage() {
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Save branding</button>
               </form>
             </section>
+            ) : null}
           </div>
           <section className="mt-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <h2 className="mb-4 text-lg font-semibold">Report Builder</h2>
@@ -303,14 +318,18 @@ export function AssessmentAssetsPage() {
                 {Object.entries(authorInfo).map(([key, value]) => (
                   <input key={key} className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={value} onChange={(event) => setAuthorInfo({ ...authorInfo, [key]: event.target.value })} />
                 ))}
-                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create report</button>
+                {canExportReport ? (
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create report</button>
+                ) : null}
               </div>
             </form>
             {report ? (
               <div className="mt-4 flex flex-wrap items-center gap-3 rounded-audity border border-audity-border bg-audity-page p-3">
                 <span className="text-sm text-audity-secondary">Report {report.id.slice(0, 8)} · {report.status}</span>
                 <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={() => void openPreview()}>Preview</button>
-                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void exportReport()}>Export PDF</button>
+                {canExportReport ? (
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void exportReport()}>Export PDF</button>
+                ) : null}
               </div>
             ) : null}
             {job ? (
@@ -320,7 +339,7 @@ export function AssessmentAssetsPage() {
                 {job.downloadUrl ? <a className="text-audity-success" href={job.downloadUrl} target="_blank" rel="noreferrer">Download PDF</a> : null}
               </div>
             ) : null}
-            {report ? (
+            {report && canSendReport ? (
               <form className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3" onSubmit={(event) => void sendReport(event)}>
                 <h3 className="mb-3 text-sm font-semibold">Send secure report package</h3>
                 <div className="grid gap-2 md:grid-cols-2">
@@ -348,16 +367,22 @@ export function AssessmentAssetsPage() {
                 ) : null}
               </form>
             ) : null}
+            {(canExportReport || canImportAssessment) ? (
             <section className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3">
               <h3 className="mb-3 text-sm font-semibold">Assessment Import / Export</h3>
               <div className="flex flex-wrap items-center gap-3">
-                <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={() => void exportAssessment()}>Export .cisoassess</button>
+                {canExportReport ? (
+                  <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={() => void exportAssessment()}>Export .cisoassess</button>
+                ) : null}
+                {canImportAssessment ? (
                 <form className="flex flex-wrap items-center gap-2" onSubmit={(event) => void importAssessment(event)}>
                   <input name="importFile" type="file" accept=".cisoassess,application/octet-stream" className="text-sm text-audity-secondary" />
                   <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Import</button>
                 </form>
+                ) : null}
               </div>
             </section>
+            ) : null}
           </section>
     </>
   );

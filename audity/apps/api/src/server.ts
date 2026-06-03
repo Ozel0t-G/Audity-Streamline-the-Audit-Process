@@ -65,10 +65,11 @@ await app.register(cors, {
 
 app.setErrorHandler((error, request, reply) => {
   request.log.error(error);
-  const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 500;
+  const detail = error as { statusCode?: number; code?: string; message?: string };
+  const statusCode = detail.statusCode && detail.statusCode >= 400 ? detail.statusCode : 500;
   reply.code(statusCode).send({
-    code: error.code ?? "INTERNAL_ERROR",
-    message: statusCode >= 500 ? "Internal server error" : error.message
+    code: detail.code ?? "INTERNAL_ERROR",
+    message: statusCode >= 500 ? "Internal server error" : detail.message
   });
 });
 

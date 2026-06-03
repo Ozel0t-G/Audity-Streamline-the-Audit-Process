@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
+import { z } from "zod";
 import { appendAuditEvent } from "../audit/service.js";
 import { loadConfig } from "../config.js";
+import { pool } from "../db/client.js";
 import { requireAuth, requireCsrf, requirePermission } from "./hooks.js";
 import {
   signMfaChallengeToken,
@@ -48,6 +50,34 @@ type MfaVerifyBody = {
   challengeToken?: string;
 };
 
+const setupSchema = z.object({
+  email: z.string().email(),
+  name: z.string().trim().min(1).max(160).optional(),
+  password: z.string().min(8).max(256)
+});
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1).max(256)
+});
+const mfaVerifySchema = z.object({
+  code: z.string().trim().min(6).max(12).optional(),
+  challengeToken: z.string().min(1).optional()
+});
+const disableMfaSchema = z.object({
+  userId: z.string().uuid().optional()
+});
+
+function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): T {
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    throw Object.assign(new Error("Invalid input"), {
+      statusCode: 400,
+      code: "INVALID_INPUT"
+    });
+  }
+  return result.data;
+}
+
 function hasCredentials<T extends SetupBody | LoginBody>(
   body: T
 ): body is T & { email: string; password: string } {
@@ -66,12 +96,12 @@ function setRefreshCookie(reply: FastifyReply, token: string): void {
 }
 
 export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
+  app.get("/api/auth/setup-status", async () => ({
+    setupRequired: (await getUserCount()) === 0
+  }));
+
   app.post<{ Body: SetupBody }>("/api/auth/setup", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
-    if (!hasCredentials(request.body)) {
-      return reply
-        .code(400)
-        .send({ code: "INVALID_INPUT", message: "Email and password are required" });
-    }
+    const body = validateBody(setupSchema, request.body);
     const count = await getUserCount();
     if (count > 0) {
       return reply
@@ -79,11 +109,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         .send({ code: "SETUP_CLOSED", message: "Initial setup is already complete" });
     }
     const user = await createInstanceAdmin({
-      email: request.body.email,
-      name: request.body.name ?? "Instance Admin",
-      password: request.body.password
+      email: body.email,
+      name: body.name ?? "Instance Admin",
+      password: body.password
     });
-    const session = await loginWithPassword(request.body.email, request.body.password);
+    const session = await loginWithPassword(body.email, body.password);
     if (!session) {
       return reply
         .code(500)
@@ -94,12 +124,8 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post<{ Body: LoginBody }>("/api/auth/login", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
-    if (!hasCredentials(request.body)) {
-      return reply
-        .code(400)
-        .send({ code: "INVALID_INPUT", message: "Email and password are required" });
-    }
-    const user = await authenticateWithPassword(request.body.email, request.body.password);
+    const body = validateBody(loginSchema, request.body);
+    const user = await authenticateWithPassword(body.email, body.password);
     if (!user) {
       await appendAuditEvent({
         actor: null,
@@ -107,7 +133,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         entity: "user",
         ip: request.ip,
         userAgent: request.headers["user-agent"] ?? null,
-        payload: { email: request.body.email }
+        payload: { email: body.email }
       });
       return reply
         .code(401)
@@ -200,15 +226,16 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post<{ Body: MfaVerifyBody }>("/api/auth/mfa/verify", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
-    const code = request.body.code;
+    const body = validateBody(mfaVerifySchema, request.body);
+    const code = body.code;
     if (!code) {
       return reply.code(400).send({ code: "INVALID_INPUT", message: "TOTP code is required" });
     }
 
-    if (request.body.challengeToken) {
+    if (body.challengeToken) {
       let challenge;
       try {
-        challenge = verifyMfaChallengeToken(request.body.challengeToken);
+        challenge = verifyMfaChallengeToken(body.challengeToken);
       } catch {
         return reply
           .code(401)
@@ -283,7 +310,8 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     "/api/auth/mfa/disable",
     { preHandler: requireCsrf },
     async (request, reply) => {
-      const targetUserId = request.body.userId ?? request.user!.sub;
+      const body = validateBody(disableMfaSchema, request.body);
+      const targetUserId = body.userId ?? request.user!.sub;
       const disablingOtherUser = targetUserId !== request.user!.sub;
       const isAdmin = ["Instance Admin", "Tenant Admin"].includes(request.user!.role);
       if (disablingOtherUser && !isAdmin) {
@@ -301,6 +329,18 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         userAgent: request.headers["user-agent"] ?? null
       });
       return { status: "ok" };
+    }
+  );
+
+  app.post(
+    "/api/auth/alpha-accept",
+    { preHandler: requireCsrf },
+    async (request) => {
+      await pool.query("update users set alpha_accepted_at = now(), updated_at = now() where id = $1", [
+        request.user!.sub
+      ]);
+      const user = await getUserById(request.user!.sub);
+      return { user };
     }
   );
 

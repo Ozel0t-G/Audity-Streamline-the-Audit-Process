@@ -22,6 +22,7 @@ export const permissions = [
   "risk.accept",
   "roadmap.edit",
   "report.export",
+  "report.send",
   "evidence.upload",
   "evidence.download",
   "auditlog.view",
@@ -47,6 +48,7 @@ export const rolePermissions: Record<(typeof roles)[number], PermissionName[]> =
     "risk.accept",
     "roadmap.edit",
     "report.export",
+    "report.send",
     "evidence.upload",
     "evidence.download",
     "activitylog.view"
@@ -60,6 +62,7 @@ export const rolePermissions: Record<(typeof roles)[number], PermissionName[]> =
     "risk.edit",
     "roadmap.edit",
     "report.export",
+    "report.send",
     "evidence.upload",
     "evidence.download"
   ],

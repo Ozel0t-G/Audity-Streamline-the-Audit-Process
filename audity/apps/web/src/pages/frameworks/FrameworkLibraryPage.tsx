@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useApi } from "../../api/client";
+import { useAuth } from "../../auth/AuthProvider";
 import type { Framework, FrameworkDomain } from "./types";
 
 function badgeClass(label: string | null) {
@@ -10,6 +11,8 @@ function badgeClass(label: string | null) {
 
 export function FrameworkLibraryPage() {
   const api = useApi();
+  const { user } = useAuth();
+  const canImportFramework = Boolean(user?.permissions.includes("assessment.edit"));
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [domains, setDomains] = useState<FrameworkDomain[]>([]);
@@ -133,6 +136,7 @@ export function FrameworkLibraryPage() {
                 ))}
               </div>
             </section>
+            {canImportFramework ? (
             <form onSubmit={importFramework} className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Import Framework</h2>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
@@ -155,6 +159,7 @@ export function FrameworkLibraryPage() {
                 Import
               </button>
             </form>
+            ) : null}
           </div>
     </>
   );

@@ -129,6 +129,8 @@ export function AppLayout() {
 }
 
 export function AdminLayout() {
+  const { user } = useAuth();
+  const can = (permission: string) => Boolean(user?.permissions.includes(permission));
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
       <TopBar adminMode />
@@ -136,13 +138,13 @@ export function AdminLayout() {
         <aside className="border-r border-audity-border bg-audity-sidebar p-5">
           <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Admin Panel</p>
           <nav className="space-y-1">
-            <NavLink className={navClass} to="/admin/activity">Activity Log</NavLink>
-            <NavLink className={navClass} to="/admin/audit">Audit Log</NavLink>
-            <NavLink className={navClass} to="/admin/users">User Management</NavLink>
-            <NavLink className={navClass} to="/admin/frameworks">Framework Library</NavLink>
-            <NavLink className={navClass} to="/admin/branding">Branding</NavLink>
-            <NavLink className={navClass} to="/admin/email">Email Settings</NavLink>
-            <NavLink className={navClass} to="/admin/backup">Backup</NavLink>
+            {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">Activity Log</NavLink> : null}
+            {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit">Audit Log</NavLink> : null}
+            {can("roles.manage") ? <NavLink className={navClass} to="/admin/users">User Management</NavLink> : null}
+            {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">Framework Library</NavLink> : null}
+            {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">Branding</NavLink> : null}
+            {can("email.manage") ? <NavLink className={navClass} to="/admin/email">Email Settings</NavLink> : null}
+            {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">Backup</NavLink> : null}
           </nav>
           <Link
             className="mt-5 block rounded-audity border border-audity-borderStrong px-3 py-2 text-sm font-semibold text-audity-secondary hover:border-audity-primary hover:text-audity-text"

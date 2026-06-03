@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
+import { validateBody } from "../utils/validation.js";
 
 type FindingBody = {
   action?: "accept" | "edit" | "dismiss" | "mark-as-accepted-risk";
@@ -35,6 +37,36 @@ type RoadmapBody = {
 };
 
 const roadmapPhases = ["0-30d", "31-90d", "3-6M", "6-12M"];
+
+const findingSchema = z.object({
+  action: z.enum(["accept", "edit", "dismiss", "mark-as-accepted-risk"]).optional(),
+  title: z.string().optional(),
+  priority: z.string().optional(),
+  observation: z.string().optional(),
+  recommendation: z.string().optional()
+});
+
+const riskSchema = z.object({
+  findingId: z.string().uuid().nullable().optional(),
+  title: z.string().optional(),
+  likelihood: z.number().int().min(1).max(5).optional(),
+  impact: z.number().int().min(1).max(5).optional(),
+  treatmentOption: z.string().optional(),
+  owner: z.string().optional(),
+  treatmentPlan: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
+  status: z.string().optional()
+});
+
+const roadmapSchema = z.object({
+  riskId: z.string().uuid().nullable().optional(),
+  phase: z.enum(["0-30d", "31-90d", "3-6M", "6-12M"]).optional(),
+  action: z.string().optional(),
+  owner: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
+  effortEstimate: z.string().optional(),
+  status: z.string().optional()
+});
 
 function mapFinding(row: Record<string, unknown>) {
   return {
@@ -279,11 +311,13 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/findings/:findingId",
     { preHandler: requireCsrfPermission("finding.approve") },
     async (request, reply) => {
+      const body = validateBody(findingSchema, request.body, reply);
+      if (!body) return;
       const before = await loadFinding(request.params.findingId);
       if (!before || before.assessmentId !== request.params.id) {
         return reply.code(404).send({ code: "FINDING_NOT_FOUND", message: "Finding not found" });
       }
-      const action = request.body.action ?? "edit";
+      const action = body.action ?? "edit";
       const nextStatus =
         action === "accept" ? "confirmed" : action === "dismiss" ? "dismissed" : before.status;
       const acceptedRisk = action === "mark-as-accepted-risk" ? true : before.acceptedRisk;
@@ -301,10 +335,10 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
          returning *`,
         [
           request.params.findingId,
-          request.body.title,
-          request.body.priority,
-          request.body.observation,
-          request.body.recommendation,
+          body.title,
+          body.priority,
+          body.observation,
+          body.recommendation,
           nextStatus,
           acceptedRisk,
           request.user!.sub
@@ -364,22 +398,24 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/risks",
     { preHandler: requireCsrfPermission("risk.edit") },
     async (request, reply) => {
+      const body = validateBody(riskSchema, request.body, reply);
+      if (!body) return;
       if (!(await ensureAssessmentExists(request.params.id))) {
         return reply
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
-      const likelihood = request.body.likelihood ?? 3;
-      const impact = request.body.impact ?? 3;
+      const likelihood = body.likelihood ?? 3;
+      const impact = body.impact ?? 3;
       if (likelihood < 1 || likelihood > 5 || impact < 1 || impact > 5) {
         return reply
           .code(400)
           .send({ code: "INVALID_RISK_SCORE", message: "Likelihood and impact must be 1-5" });
       }
       const { riskScore, rating } = ratingFor(likelihood, impact);
-      let title = request.body.title;
-      if (!title && request.body.findingId) {
-        const finding = await loadFinding(request.body.findingId);
+      let title = body.title;
+      if (!title && body.findingId) {
+        const finding = await loadFinding(body.findingId);
         title = finding?.title as string | undefined;
       }
       if (!title) {
@@ -394,17 +430,17 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         [
           randomUUID(),
           request.params.id,
-          request.body.findingId ?? null,
+          body.findingId ?? null,
           title,
           likelihood,
           impact,
           riskScore,
           rating,
-          request.body.treatmentOption ?? "mitigate",
-          request.body.owner ?? "",
-          request.body.treatmentPlan ?? "",
-          request.body.dueDate || null,
-          request.body.status ?? "open"
+          body.treatmentOption ?? "mitigate",
+          body.owner ?? "",
+          body.treatmentPlan ?? "",
+          body.dueDate || null,
+          body.status ?? "open"
         ]
       );
       const risk = await loadRisk(result.rows[0].id);
@@ -424,12 +460,14 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/risks/:riskId",
     { preHandler: requireCsrfPermission("risk.edit") },
     async (request, reply) => {
+      const body = validateBody(riskSchema, request.body, reply);
+      if (!body) return;
       const before = await loadRisk(request.params.riskId);
       if (!before || before.assessmentId !== request.params.id) {
         return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
       }
-      const likelihood = request.body.likelihood ?? (before.likelihood as number) ?? 3;
-      const impact = request.body.impact ?? (before.impact as number) ?? 3;
+      const likelihood = body.likelihood ?? (before.likelihood as number) ?? 3;
+      const impact = body.impact ?? (before.impact as number) ?? 3;
       const { riskScore, rating } = ratingFor(likelihood, impact);
       const result = await pool.query(
         `update risks
@@ -448,16 +486,16 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
          returning *`,
         [
           request.params.riskId,
-          request.body.title,
+          body.title,
           likelihood,
           impact,
           riskScore,
           rating,
-          request.body.treatmentOption,
-          request.body.owner,
-          request.body.treatmentPlan,
-          request.body.dueDate || null,
-          request.body.status
+          body.treatmentOption,
+          body.owner,
+          body.treatmentPlan,
+          body.dueDate || null,
+          body.status
         ]
       );
       const after = await loadRisk(result.rows[0].id);
@@ -506,17 +544,19 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/roadmap",
     { preHandler: requireCsrfPermission("roadmap.edit") },
     async (request, reply) => {
+      const body = validateBody(roadmapSchema, request.body, reply);
+      if (!body) return;
       if (!(await ensureAssessmentExists(request.params.id))) {
         return reply
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
-      if (!request.body.action && !request.body.riskId) {
+      if (!body.action && !body.riskId) {
         return reply
           .code(400)
           .send({ code: "INVALID_INPUT", message: "Roadmap action or risk is required" });
       }
-      const risk = request.body.riskId ? await loadRisk(request.body.riskId) : null;
+      const risk = body.riskId ? await loadRisk(body.riskId) : null;
       const result = await pool.query(
         `insert into roadmap_items
           (id, assessment_id, risk_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating)
@@ -525,13 +565,13 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         [
           randomUUID(),
           request.params.id,
-          request.body.riskId ?? null,
-          request.body.phase ?? "31-90d",
-          request.body.action ?? `Treat risk: ${risk?.title ?? "Untitled risk"}`,
-          request.body.owner ?? (risk?.owner as string) ?? "",
-          request.body.dueDate || null,
-          request.body.effortEstimate ?? "Medium",
-          request.body.status ?? "open",
+          body.riskId ?? null,
+          body.phase ?? "31-90d",
+          body.action ?? `Treat risk: ${risk?.title ?? "Untitled risk"}`,
+          body.owner ?? (risk?.owner as string) ?? "",
+          body.dueDate || null,
+          body.effortEstimate ?? "Medium",
+          body.status ?? "open",
           risk?.rating ?? null
         ]
       );
@@ -552,6 +592,8 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     "/api/assessments/:id/roadmap/:roadmapItemId",
     { preHandler: requireCsrfPermission("roadmap.edit") },
     async (request, reply) => {
+      const body = validateBody(roadmapSchema, request.body, reply);
+      if (!body) return;
       const before = await loadRoadmapItem(request.params.roadmapItemId);
       if (!before || before.assessmentId !== request.params.id) {
         return reply
@@ -571,12 +613,12 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
          returning *`,
         [
           request.params.roadmapItemId,
-          request.body.phase,
-          request.body.action,
-          request.body.owner,
-          request.body.dueDate || null,
-          request.body.effortEstimate,
-          request.body.status
+          body.phase,
+          body.action,
+          body.owner,
+          body.dueDate || null,
+          body.effortEstimate,
+          body.status
         ]
       );
       const after = await loadRoadmapItem(result.rows[0].id);

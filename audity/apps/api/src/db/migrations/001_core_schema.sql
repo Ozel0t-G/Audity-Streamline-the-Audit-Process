@@ -290,6 +290,7 @@ create table if not exists backup_jobs (
 
 alter table sessions add column if not exists csrf_token_hash text;
 alter table sessions add column if not exists last_seen_at timestamptz not null default now();
+alter table users add column if not exists alpha_accepted_at timestamptz;
 alter table mfa_settings add column if not exists secret_encrypted text;
 alter table mfa_settings add column if not exists verified_at timestamptz;
 alter table assessments add column if not exists framework text;

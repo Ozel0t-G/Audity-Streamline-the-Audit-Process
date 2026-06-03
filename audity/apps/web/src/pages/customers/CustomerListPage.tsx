@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../../api/client";
+import { useAuth } from "../../auth/AuthProvider";
 import type { Customer } from "./types";
 
 function csv(value: string): string[] {
@@ -9,6 +10,8 @@ function csv(value: string): string[] {
 
 export function CustomerListPage() {
   const api = useApi();
+  const { user } = useAuth();
+  const canCreateCustomer = Boolean(user?.permissions.includes("assessment.create"));
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [form, setForm] = useState({
     name: "",
@@ -90,6 +93,7 @@ export function CustomerListPage() {
                 </tbody>
               </table>
             </div>
+            {canCreateCustomer ? (
             <form onSubmit={createCustomer} className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Create customer</h2>
               {[
@@ -112,6 +116,7 @@ export function CustomerListPage() {
               {error ? <div className="mb-3 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
               <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create</button>
             </form>
+            ) : null}
           </div>
     </>
   );

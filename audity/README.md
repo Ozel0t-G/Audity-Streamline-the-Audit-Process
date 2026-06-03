@@ -20,6 +20,8 @@ Default local seed login:
 - Email: `admin@audity.local`
 - Password: `change-me-now`
 
+If no user exists, the login page opens the first-start setup wizard. Create the initial Instance Admin account, optionally configure SMTP and report branding, then accept the alpha disclaimer before entering the app.
+
 ## Environment
 
 Copy `.env.example` to `.env` and replace all placeholder secrets before any shared or internet-exposed deployment.
@@ -42,6 +44,13 @@ Manual backup:
 2. Open Admin > Backup.
 3. Select `Full`, `Database`, or `Evidence`.
 4. Click `Trigger backup`.
+
+API endpoints:
+
+- `GET /api/admin/backup/status`
+- `POST /api/admin/backup/trigger`
+
+Backup trigger is restricted to Instance Admin accounts.
 
 Backups are stored in the `AUDITY_BACKUP_BUCKET` bucket. A full backup creates:
 
@@ -72,3 +81,13 @@ Then verify:
 ```bash
 curl http://localhost:3000/health
 ```
+
+## Beta Smoke Checklist
+
+- `docker compose up --build -d`
+- `docker compose ps` shows web, API, worker, database, Redis, and MinIO healthy.
+- `curl http://localhost:3000/health` returns OK.
+- First-start setup creates an Instance Admin when the user table is empty.
+- First login requires alpha disclaimer acceptance.
+- Admin-only menus and normal workflow actions are hidden without matching permissions.
+- Backup status loads and Instance Admin can trigger a full backup.

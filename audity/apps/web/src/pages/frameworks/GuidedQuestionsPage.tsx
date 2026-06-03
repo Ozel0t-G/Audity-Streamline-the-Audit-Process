@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
+import { useAuth } from "../../auth/AuthProvider";
 import type { AssessmentQuestionsPayload, GuidedQuestion, QuestionDomain } from "./types";
 
 const answerStates = ["answered", "needs_follow_up", "not_applicable", "unknown"];
@@ -24,6 +25,8 @@ function progressColor(value: number) {
 export function GuidedQuestionsPage() {
   const { id } = useParams();
   const api = useApi();
+  const { user } = useAuth();
+  const canEditAssessment = Boolean(user?.permissions.includes("assessment.edit"));
   const [payload, setPayload] = useState<AssessmentQuestionsPayload | null>(null);
   const [activeDomainId, setActiveDomainId] = useState("");
   const [activeControlId, setActiveControlId] = useState("");
@@ -199,12 +202,14 @@ export function GuidedQuestionsPage() {
                       Notes
                       <textarea className="mt-2 min-h-40 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
                     </label>
+                    {canEditAssessment ? (
                     <div className="mt-4 flex items-center gap-3">
                       <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
                         Save answer
                       </button>
                       {saved ? <span className="text-sm text-audity-success">{saved}</span> : null}
                     </div>
+                    ) : null}
                   </>
                 ) : (
                   <div className="py-20 text-center text-audity-muted">No questions available</div>
