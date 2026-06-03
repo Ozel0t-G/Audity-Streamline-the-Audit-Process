@@ -1,4 +1,5 @@
 import { Client } from "minio";
+import type { Readable } from "node:stream";
 import { loadConfig } from "../config.js";
 
 const config = loadConfig();
@@ -35,4 +36,14 @@ export async function signedGetUrl(objectKey: string): Promise<string> {
     region: "us-east-1"
   });
   return publicClient.presignedGetObject(config.storageBucket, objectKey, 60 * 10);
+}
+
+export async function objectDataUrl(objectKey: string, mimeType: string): Promise<string> {
+  await ensureBucket();
+  const stream = await storageClient.getObject(config.storageBucket, objectKey);
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream as Readable) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return `data:${mimeType};base64,${Buffer.concat(chunks).toString("base64")}`;
 }

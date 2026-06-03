@@ -4,7 +4,13 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { reportQueue } from "../jobs/queue.js";
 import { pool } from "../db/client.js";
-import { ensureBucket, signedGetUrl, storageBucket, storageClient } from "../storage/service.js";
+import {
+  ensureBucket,
+  objectDataUrl,
+  signedGetUrl,
+  storageBucket,
+  storageClient
+} from "../storage/service.js";
 
 type BrandingBody = {
   logoObjectKey?: string;
@@ -109,8 +115,15 @@ async function buildReportHtml(assessmentId: string, blocks: string[], authorInf
     throw new Error("Assessment not found");
   }
   const branding = mapBranding(brandingResult.rows[0]);
+  const logoMimeType = branding.logoFileName && String(branding.logoFileName).toLowerCase().endsWith(".jpg")
+    ? "image/jpeg"
+    : "image/png";
+  const logoDataUrl = branding.logoObjectKey
+    ? await objectDataUrl(String(branding.logoObjectKey), logoMimeType).catch(() => "")
+    : "";
   const selected = blocks.length ? blocks : defaultBlocks;
   const row = assessment.rows[0];
+  const generatedAt = new Date().toISOString();
   const section = (name: string, body: string) =>
     selected.includes(name) ? `<section><h2>${escapeHtml(name)}</h2>${body}</section>` : "";
 
@@ -120,21 +133,29 @@ async function buildReportHtml(assessmentId: string, blocks: string[], authorInf
       <meta charset="utf-8" />
       <style>
         body { font-family: Arial, sans-serif; color: #1f2937; margin: 36px; }
-        header { border-bottom: 4px solid ${branding.primaryColor}; padding-bottom: 18px; margin-bottom: 24px; }
+        header { border-bottom: 4px solid ${branding.primaryColor}; padding-bottom: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+        .logo { max-width: 128px; max-height: 72px; object-fit: contain; }
         h1 { color: ${branding.secondaryColor}; margin: 0 0 8px; }
         h2 { color: ${branding.secondaryColor}; border-bottom: 1px solid #d1d5db; padding-bottom: 6px; }
         .label { color: ${branding.primaryColor}; font-weight: 700; text-transform: uppercase; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; margin-top: 8px; }
         th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
         .confidential { color: ${branding.accentColor}; font-weight: 700; }
+        .meta { color: #4b5563; font-size: 12px; line-height: 1.5; }
+        .watermark { position: fixed; inset: 42% auto auto 18%; z-index: -1; color: rgba(31, 41, 55, 0.08); font-size: 64px; transform: rotate(-28deg); white-space: nowrap; }
         footer { margin-top: 36px; color: #6b7280; font-size: 11px; }
       </style>
     </head>
     <body>
+      ${branding.watermark ? `<div class="watermark">${escapeHtml(branding.watermark)}</div>` : ""}
       <header>
-        <p class="label">${escapeHtml(branding.confidentialityLabel)}</p>
-        <h1>${escapeHtml(branding.headerText)}</h1>
-        <p>${escapeHtml(row.customer_name)} · ${escapeHtml(row.type)} · Version 1</p>
+        <div>
+          <p class="label">${escapeHtml(branding.confidentialityLabel)}</p>
+          <h1>${escapeHtml(branding.headerText)}</h1>
+          <p>${escapeHtml(row.customer_name)} · ${escapeHtml(row.type)} · Version 1</p>
+          <p class="meta">Generated: ${escapeHtml(generatedAt)} · Assessment ID: ${escapeHtml(assessmentId)}</p>
+        </div>
+        ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="Report logo" />` : ""}
       </header>
       ${section("Cover", `<p>Customer: ${escapeHtml(row.customer_name)}</p><p>Industry: ${escapeHtml(row.industry)}</p>`)}
       ${section("Executive Summary", `<p>This report summarizes assessment scope, maturity signals, findings, risks, and roadmap actions generated in Audity.</p>`)}
@@ -145,7 +166,7 @@ async function buildReportHtml(assessmentId: string, blocks: string[], authorInf
       ${section("Detailed Findings", `<table><tr><th>Finding</th><th>Status</th><th>Priority</th></tr>${findings.rows.map((finding) => `<tr><td>${escapeHtml(finding.title)}</td><td>${escapeHtml(finding.status)}</td><td>${escapeHtml(finding.priority)}</td></tr>`).join("")}</table>`)}
       ${section("Risk Register", `<table><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Rating</th></tr>${risks.rows.map((risk) => `<tr><td>${escapeHtml(risk.title)}</td><td>${escapeHtml(risk.likelihood)}</td><td>${escapeHtml(risk.impact)}</td><td>${escapeHtml(risk.rating)}</td></tr>`).join("")}</table>`)}
       ${section("Roadmap", `<table><tr><th>Phase</th><th>Action</th><th>Owner</th></tr>${roadmap.rows.map((item) => `<tr><td>${escapeHtml(item.phase)}</td><td>${escapeHtml(item.action)}</td><td>${escapeHtml(item.owner)}</td></tr>`).join("")}</table>`)}
-      ${section("Appendix", `<p>Generated ${escapeHtml(new Date().toISOString())}</p>`)}
+      ${section("Appendix", `<p>Generated ${escapeHtml(generatedAt)}</p><p>Report Version: 1</p><p>Assessment ID: ${escapeHtml(assessmentId)}</p>`)}
       <footer>
         <p class="confidential">${escapeHtml(branding.footerText)}</p>
         <p>Author: ${escapeHtml(authorInfo?.name)} · ${escapeHtml(authorInfo?.role)} · ${escapeHtml(authorInfo?.email)} · ${escapeHtml(authorInfo?.organization)} · ${escapeHtml(authorInfo?.date)}</p>
@@ -295,12 +316,20 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
       }
       const state = await job.getState();
       const returnValue = job.returnvalue as { objectKey?: string } | null;
+      const data = job.data as { reportId?: string } | null;
+      const report = data?.reportId
+        ? await pool.query<{ pdf_object_key: string | null }>(
+            "select pdf_object_key from reports where id = $1",
+            [data.reportId]
+          )
+        : null;
+      const objectKey = returnValue?.objectKey ?? report?.rows[0]?.pdf_object_key;
       return {
         id: job.id,
         status: state,
         progress: job.progress,
         failedReason: job.failedReason,
-        downloadUrl: returnValue?.objectKey ? await signedGetUrl(returnValue.objectKey) : null
+        downloadUrl: objectKey ? await signedGetUrl(objectKey) : null
       };
     }
   );

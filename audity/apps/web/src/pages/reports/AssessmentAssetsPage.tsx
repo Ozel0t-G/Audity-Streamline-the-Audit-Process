@@ -4,11 +4,14 @@ import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { BrandMark } from "../../components/BrandMark";
 
+const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
+
 type EvidenceItem = {
   id: string;
   fileName: string;
   mimeType: string;
   fileSize: number;
+  notes: string;
   createdAt: string;
 };
 
@@ -47,7 +50,7 @@ const blocks = [
 export function AssessmentAssetsPage() {
   const { id } = useParams();
   const api = useApi();
-  const { logout } = useAuth();
+  const { accessToken, logout } = useAuth();
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [branding, setBranding] = useState<Branding>({
     logoObjectKey: null,
@@ -94,7 +97,8 @@ export function AssessmentAssetsPage() {
     if (!input.files?.[0]) return;
     const body = new FormData();
     body.set("file", input.files[0]);
-    body.set("notes", "Uploaded from Step 8 evidence panel");
+    const notes = form.elements.namedItem("notes") as HTMLInputElement;
+    body.set("notes", notes.value);
     await api(`/api/assessments/${id}/evidence`, { method: "POST", body });
     form.reset();
     await load();
@@ -159,6 +163,20 @@ export function AssessmentAssetsPage() {
     setJob(payload);
   }
 
+  async function openPreview() {
+    if (!id || !report) return;
+    const response = await fetch(`${apiBaseUrl}/api/assessments/${id}/reports/${report.id}/preview`, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
+    });
+    if (!response.ok) {
+      throw new Error(`Preview failed: ${response.status}`);
+    }
+    const html = await response.text();
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    window.open(url, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
       <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
@@ -186,8 +204,9 @@ export function AssessmentAssetsPage() {
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Evidence</h2>
-              <form className="mb-4 flex flex-wrap items-center gap-3" onSubmit={(event) => void uploadEvidence(event)}>
+              <form className="mb-4 grid gap-3 md:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_auto]" onSubmit={(event) => void uploadEvidence(event)}>
                 <input name="file" type="file" className="text-sm text-audity-secondary" />
+                <input name="notes" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Evidence notes" />
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Upload</button>
               </form>
               <div className="space-y-2">
@@ -196,6 +215,7 @@ export function AssessmentAssetsPage() {
                     <div>
                       <p className="text-sm font-semibold">{item.fileName}</p>
                       <p className="text-xs text-audity-muted">{item.mimeType} · {Math.round(item.fileSize / 1024)} KB</p>
+                      {item.notes ? <p className="mt-1 text-xs text-audity-secondary">{item.notes}</p> : null}
                     </div>
                     <div className="flex gap-2">
                       <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void downloadEvidence(item)}>Download</button>
@@ -246,7 +266,7 @@ export function AssessmentAssetsPage() {
             {report ? (
               <div className="mt-4 flex flex-wrap items-center gap-3 rounded-audity border border-audity-border bg-audity-page p-3">
                 <span className="text-sm text-audity-secondary">Report {report.id.slice(0, 8)} · {report.status}</span>
-                <a className="h-9 rounded-audity border border-audity-borderStrong px-3 py-2 text-sm text-audity-primary" href={`http://localhost:3000/api/assessments/${id}/reports/${report.id}/preview`} target="_blank" rel="noreferrer">Preview</a>
+                <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={() => void openPreview()}>Preview</button>
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void exportReport()}>Export PDF</button>
               </div>
             ) : null}
