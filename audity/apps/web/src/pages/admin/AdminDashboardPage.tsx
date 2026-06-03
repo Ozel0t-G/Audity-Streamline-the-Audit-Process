@@ -1,8 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
-import { BrandMark } from "../../components/BrandMark";
 import type { ActivityLog, AdminUser, AuditLog, RoleOption } from "./types";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
@@ -29,9 +27,23 @@ function queryString(filters: Record<string, string>) {
   return text ? `?${text}` : "";
 }
 
-export function AdminDashboardPage() {
+type AdminSection = "activity" | "audit" | "users" | "branding";
+
+type Branding = {
+  logoObjectKey: string | null;
+  logoFileName: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  headerText: string;
+  footerText: string;
+  confidentialityLabel: string;
+  watermark: string;
+};
+
+export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const api = useApi();
-  const { logout, accessToken } = useAuth();
+  const { accessToken } = useAuth();
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -52,6 +64,17 @@ export function AdminDashboardPage() {
     password: "Change-me-now-123"
   });
   const [verify, setVerify] = useState<{ valid: boolean; brokenAt: string | null; checked?: number } | null>(null);
+  const [branding, setBranding] = useState<Branding>({
+    logoObjectKey: null,
+    logoFileName: null,
+    primaryColor: "#008CFF",
+    secondaryColor: "#061E3A",
+    accentColor: "#2ECC71",
+    headerText: "Audity Assessment Report",
+    footerText: "Confidential",
+    confidentialityLabel: "Confidential",
+    watermark: ""
+  });
   const [error, setError] = useState("");
 
   const selectedLog = useMemo(
@@ -81,9 +104,14 @@ export function AdminDashboardPage() {
     }
   }
 
+  async function loadBranding() {
+    const payload = await api<{ branding: Branding }>("/api/admin/branding");
+    setBranding(payload.branding);
+  }
+
   async function loadAll() {
     setError("");
-    await Promise.all([loadActivity(), loadAudit(), loadUsers()]);
+    await Promise.all([loadActivity(), loadAudit(), loadUsers(), loadBranding()]);
   }
 
   useEffect(() => {
@@ -144,31 +172,45 @@ export function AdminDashboardPage() {
     }
   }
 
+  async function uploadLogo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const input = form.elements.namedItem("logo") as HTMLInputElement;
+    if (!input.files?.[0]) return;
+    const body = new FormData();
+    body.set("file", input.files[0]);
+    const logo = await api<{ logoObjectKey: string; logoFileName: string }>("/api/admin/branding/logo", {
+      method: "POST",
+      body
+    });
+    setBranding({ ...branding, logoObjectKey: logo.logoObjectKey, logoFileName: logo.logoFileName });
+    form.reset();
+  }
+
+  async function saveBranding(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const payload = await api<{ branding: Branding }>("/api/admin/branding", {
+      method: "PUT",
+      body: JSON.stringify(branding)
+    });
+    setBranding(payload.branding);
+  }
+
+  const title = {
+    activity: "Activity Log",
+    audit: "Audit Log",
+    users: "User Management",
+    branding: "Branding Settings"
+  }[section];
+
   return (
-    <main className="min-h-screen bg-audity-app text-audity-text">
-      <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
-        <div className="flex items-center gap-3">
-          <BrandMark />
-          <span className="text-sm font-semibold">Audity</span>
-        </div>
-        <button className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panel px-3 text-sm text-audity-secondary hover:border-audity-primary hover:text-audity-text" onClick={() => void logout()}>
-          Logout
-        </button>
-      </header>
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-5">
-          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Workspace</p>
-          <Link className="block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/dashboard">Dashboard</Link>
-          <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/customers">Customers</Link>
-          <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/frameworks">Framework Library</Link>
-          <Link className="mt-1 block rounded-audity bg-audity-primaryActive px-3 py-2 text-sm font-semibold" to="/admin">Admin</Link>
-        </aside>
-        <section className="bg-audity-page p-5">
+    <>
           <div className="mb-5 border-b border-audity-border pb-4">
             <p className="text-xs font-semibold uppercase text-audity-primary">Administration</p>
-            <h1 className="mt-1 text-2xl font-semibold">Activity, Audit & Users</h1>
+            <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+          {section === "activity" ? (
           <section className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="mb-4 flex flex-wrap items-end gap-3">
               {[
@@ -249,7 +291,9 @@ export function AdminDashboardPage() {
               </aside>
             </div>
           </section>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          ) : null}
+          {section === "audit" ? (
+          <div className="grid gap-4">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Security Audit Log</h2>
@@ -269,6 +313,10 @@ export function AdminDashboardPage() {
                 ))}
               </div>
             </section>
+          </div>
+          ) : null}
+          {section === "users" ? (
+          <div className="grid gap-4">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">User Management</h2>
               <form className="mb-4 space-y-3" onSubmit={inviteUser}>
@@ -300,8 +348,31 @@ export function AdminDashboardPage() {
               </div>
             </section>
           </div>
-        </section>
-      </div>
-    </main>
+          ) : null}
+          {section === "branding" ? (
+            <section className="max-w-3xl rounded-audity border border-audity-border bg-audity-panel p-4">
+              <form className="mb-4 flex flex-wrap items-center gap-3" onSubmit={(event) => void uploadLogo(event)}>
+                <input name="logo" type="file" accept="image/png,image/jpeg" className="text-sm text-audity-secondary" />
+                <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary">Upload logo</button>
+                {branding.logoFileName ? <span className="text-sm text-audity-secondary">{branding.logoFileName}</span> : null}
+              </form>
+              <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveBranding(event)}>
+                {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
+                  <label key={key} className="text-xs font-semibold uppercase text-audity-secondary">
+                    {key}
+                    <input type="color" className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
+                  </label>
+                ))}
+                {(["headerText", "footerText", "confidentialityLabel", "watermark"] as const).map((key) => (
+                  <label key={key} className="text-xs font-semibold uppercase text-audity-secondary">
+                    {key}
+                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
+                  </label>
+                ))}
+                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Save branding</button>
+              </form>
+            </section>
+          ) : null}
+    </>
   );
 }
