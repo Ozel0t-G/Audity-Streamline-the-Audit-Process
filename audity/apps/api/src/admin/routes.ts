@@ -4,6 +4,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
+import { backupQueue } from "../jobs/queue.js";
 
 type LogFilters = {
   userId?: string;
@@ -25,6 +26,17 @@ type UserUpdateBody = {
   role?: string;
   status?: "active" | "disabled";
 };
+
+function mapBackup(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    jobType: row.job_type,
+    status: row.status,
+    startedAt: row.started_at,
+    finishedAt: row.finished_at,
+    metadata: row.metadata
+  };
+}
 
 const adminRoles = new Set(["Instance Admin", "Tenant Admin"]);
 
@@ -142,6 +154,57 @@ function eventHash(row: {
 }
 
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
+  app.get(
+    "/api/admin/backup/status",
+    { preHandler: requireAdminPermission("backup.manage") },
+    async () => {
+      const result = await pool.query(
+        `select * from backup_jobs
+         order by coalesce(started_at, finished_at, now()) desc, id desc
+         limit 20`
+      );
+      return {
+        latestBackup: result.rows[0] ? mapBackup(result.rows[0]) : null,
+        backupJobs: result.rows.map(mapBackup)
+      };
+    }
+  );
+
+  app.post<{ Body: { jobType?: "full" | "database" | "evidence" } }>(
+    "/api/admin/backup/trigger",
+    { preHandler: requireCsrfPermission("backup.manage") },
+    async (request, reply) => {
+      const jobType = request.body.jobType ?? "full";
+      const id = randomUUID();
+      await pool.query(
+        `insert into backup_jobs (id, job_type, status, started_at, metadata)
+         values ($1, $2, 'queued', now(), $3)`,
+        [
+          id,
+          jobType,
+          JSON.stringify({
+            requestedBy: request.user!.sub,
+            requestedAt: new Date().toISOString()
+          })
+        ]
+      );
+      const job = await backupQueue.add("run-backup", {
+        backupJobId: id,
+        jobType,
+        userId: request.user!.sub
+      });
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "backup.triggered",
+        entityType: "backup_job",
+        entityId: id,
+        before: null,
+        after: { backupJobId: id, jobType, queueJobId: job.id }
+      });
+      return reply.code(202).send({ backupJobId: id, queueJobId: job.id });
+    }
+  );
+
   app.get<{ Querystring: LogFilters }>(
     "/api/admin/activity-logs",
     { preHandler: requireAdminPermission("activitylog.view") },

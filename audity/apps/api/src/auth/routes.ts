@@ -30,6 +30,7 @@ import {
 } from "./service.js";
 
 const refreshCookieName = "audity_refresh";
+const authRateLimit = { max: 5, timeWindow: "1 minute" };
 
 type SetupBody = {
   email?: string;
@@ -65,7 +66,7 @@ function setRefreshCookie(reply: FastifyReply, token: string): void {
 }
 
 export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
-  app.post<{ Body: SetupBody }>("/api/auth/setup", async (request, reply) => {
+  app.post<{ Body: SetupBody }>("/api/auth/setup", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
     if (!hasCredentials(request.body)) {
       return reply
         .code(400)
@@ -92,7 +93,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return { accessToken: session.accessToken, csrfToken: session.csrfToken, user };
   });
 
-  app.post<{ Body: LoginBody }>("/api/auth/login", async (request, reply) => {
+  app.post<{ Body: LoginBody }>("/api/auth/login", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
     if (!hasCredentials(request.body)) {
       return reply
         .code(400)
@@ -161,7 +162,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return { status: "ok" };
   });
 
-  app.post("/api/auth/refresh", async (request, reply) => {
+  app.post("/api/auth/refresh", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
     const refreshToken = request.cookies[refreshCookieName];
     if (!refreshToken) {
       return reply
@@ -198,7 +199,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return setup;
   });
 
-  app.post<{ Body: MfaVerifyBody }>("/api/auth/mfa/verify", async (request, reply) => {
+  app.post<{ Body: MfaVerifyBody }>("/api/auth/mfa/verify", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
     const code = request.body.code;
     if (!code) {
       return reply.code(400).send({ code: "INVALID_INPUT", message: "TOTP code is required" });

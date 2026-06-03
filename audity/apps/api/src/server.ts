@@ -1,7 +1,10 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import { AUDITY_VERSION, type HealthResponse } from "@audity/shared";
+import { Redis } from "ioredis";
 import { registerAdminRoutes } from "./admin/routes.js";
 import { registerAssessmentRoutes } from "./assessments/routes.js";
 import { registerAuthRoutes } from "./auth/routes.js";
@@ -21,11 +24,52 @@ const app = Fastify({
     level: config.logLevel
   }
 });
+const rateLimitRedis = new Redis(config.redisUrl, {
+  maxRetriesPerRequest: 1,
+  enableReadyCheck: false
+});
 
+await app.register(helmet, {
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      connectSrc: ["'self'", "http://localhost:3000", "http://127.0.0.1:3000"],
+      fontSrc: ["'self'", "data:"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"]
+    }
+  },
+  global: true,
+  hsts: config.publicUrl.startsWith("https:")
+});
+await app.register(rateLimit, {
+  global: true,
+  max: 200,
+  timeWindow: "1 minute",
+  redis: rateLimitRedis,
+  errorResponseBuilder: () => ({
+    code: "RATE_LIMITED",
+    message: "Too many requests"
+  })
+});
 await app.register(cookie);
 await app.register(cors, {
   credentials: true,
   origin: ["http://localhost", "http://127.0.0.1"]
+});
+
+app.setErrorHandler((error, request, reply) => {
+  request.log.error(error);
+  const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 500;
+  reply.code(statusCode).send({
+    code: error.code ?? "INTERNAL_ERROR",
+    message: statusCode >= 500 ? "Internal server error" : error.message
+  });
 });
 
 app.get("/health", async (): Promise<HealthResponse> => ({
