@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { canAccessAssessment } from "../customers/access.js";
 import { reportQueue } from "../jobs/queue.js";
 import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
@@ -276,6 +277,9 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
     async (request, reply) => {
       const body = validateBody(reportSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const blocks = body.selectedBlocks ?? defaultBlocks;
       const html = await buildReportHtml(request.params.id, blocks, body.authorInfo);
       const result = await pool.query(
@@ -302,6 +306,9 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
     "/api/assessments/:id/reports/:reportId/preview",
     { preHandler: requirePermission("assessment.view") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const result = await pool.query(
         "select * from reports where id = $1 and assessment_id = $2",
         [request.params.reportId, request.params.id]
@@ -318,6 +325,9 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
     "/api/assessments/:id/reports/:reportId/export",
     { preHandler: requireCsrfPermission("report.export") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const report = await pool.query(
         "select id from reports where id = $1 and assessment_id = $2",
         [request.params.reportId, request.params.id]
@@ -369,6 +379,9 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
     "/api/assessments/:id/reports/:reportId/download",
     { preHandler: requirePermission("report.export") },
     async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const result = await pool.query(
         "select pdf_object_key from reports where id = $1 and assessment_id = $2",
         [request.params.reportId, request.params.id]

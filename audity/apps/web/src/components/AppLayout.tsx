@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { BrandMark } from "./BrandMark";
 
@@ -14,9 +15,58 @@ function isAdminRole(role?: string) {
   return role === "Instance Admin" || role === "Tenant Admin";
 }
 
+function useIdleLogout() {
+  const api = useApi();
+  const { accessToken, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let timer: number | undefined;
+    let cancelled = false;
+    const activityEvents = ["click", "keydown", "mousemove", "scroll", "touchstart"];
+
+    const schedule = async () => {
+      const payload = await api<{ sessionIdleTimeoutMinutes: number }>("/api/system/session-timeout").catch(() => ({
+        sessionIdleTimeoutMinutes: 30
+      }));
+      if (cancelled) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        window.localStorage.setItem("audity_login_notice", "Your session timed out because of inactivity.");
+        void logout().finally(() => navigate("/login", { replace: true }));
+      }, Math.max(5, payload.sessionIdleTimeoutMinutes) * 60 * 1000);
+    };
+
+    const reset = () => {
+      void schedule();
+    };
+
+    void schedule();
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, reset, { passive: true }));
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, reset));
+    };
+  }, [accessToken, api, logout, navigate]);
+}
+
 function TopBar({ adminMode = false }: { adminMode?: boolean }) {
   const { user, logout } = useAuth();
+  const api = useApi();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    title: string;
+    message: string;
+    customerId?: string | null;
+    readAt?: string | null;
+    createdAt: string;
+  }>>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [customerLabel, setCustomerLabel] = useState(() =>
     window.localStorage.getItem("audity_current_customer_label") ?? ""
   );
@@ -32,6 +82,30 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     window.addEventListener("audity-customer-context", handleContext);
     return () => window.removeEventListener("audity-customer-context", handleContext);
   }, []);
+
+  async function loadNotifications() {
+    const payload = await api<{ unreadCount: number; notifications: typeof notifications }>("/api/notifications");
+    setNotifications(payload.notifications);
+    setUnreadCount(payload.unreadCount);
+  }
+
+  useEffect(() => {
+    void loadNotifications().catch(() => undefined);
+    const timer = window.setInterval(() => void loadNotifications().catch(() => undefined), 30000);
+    return () => window.clearInterval(timer);
+  }, [api]);
+
+  async function openNotification(notification: (typeof notifications)[number]) {
+    await api(`/api/notifications/${notification.id}/read`, { method: "PATCH" });
+    await loadNotifications();
+    setNotificationsOpen(false);
+    if (notification.customerId) navigate(`/customers/${notification.customerId}`);
+  }
+
+  async function markAllRead() {
+    await api("/api/notifications/mark-all-read", { method: "POST" });
+    await loadNotifications();
+  }
 
   return (
     <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
@@ -50,6 +124,49 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         ) : null}
       </div>
       <div className="flex items-center gap-2">
+        <div className="relative">
+          <button
+            className="relative flex h-8 w-9 items-center justify-center rounded-audity border border-audity-borderStrong bg-audity-panel text-audity-secondary hover:border-audity-primary hover:text-audity-text"
+            onClick={() => setNotificationsOpen(!notificationsOpen)}
+            aria-label="Notifications"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+            </svg>
+            {unreadCount ? (
+              <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-audity-primary px-1 text-[10px] font-semibold text-white">
+                {unreadCount}
+              </span>
+            ) : null}
+          </button>
+          {notificationsOpen ? (
+            <div className="absolute right-0 z-20 mt-2 w-96 overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-xl">
+              <div className="flex items-center justify-between border-b border-audity-border px-3 py-2">
+                <span className="text-sm font-semibold">Notifications</span>
+                <button className="text-xs font-semibold text-audity-primary" onClick={() => void markAllRead()}>
+                  Mark all read
+                </button>
+              </div>
+              <div className="max-h-96 overflow-auto">
+                {notifications.map((notification) => (
+                  <button
+                    key={notification.id}
+                    className="block w-full border-b border-audity-border px-3 py-3 text-left last:border-0 hover:bg-audity-page"
+                    onClick={() => void openNotification(notification)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-semibold text-audity-text">{notification.title}</p>
+                      {!notification.readAt ? <span className="mt-1 h-2 w-2 rounded-full bg-audity-primary" /> : null}
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs text-audity-secondary">{notification.message}</p>
+                    <p className="mt-1 text-[11px] text-audity-muted">{new Date(notification.createdAt).toLocaleString()}</p>
+                  </button>
+                ))}
+                {!notifications.length ? <div className="px-3 py-8 text-center text-sm text-audity-muted">No notifications</div> : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
         {admin && !adminMode ? (
           <Link
             className="h-8 rounded-audity border border-audity-primary bg-audity-primaryActive px-3 py-1.5 text-sm font-semibold text-audity-primary hover:bg-audity-panel"
@@ -71,6 +188,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
 
 export function AppLayout() {
   const location = useLocation();
+  useIdleLogout();
   const [assessmentId, setAssessmentId] = useState(() =>
     window.localStorage.getItem("audity_last_assessment_id") ?? ""
   );
@@ -105,19 +223,11 @@ export function AppLayout() {
           <nav className="space-y-1">
             <NavLink className={navClass} to="/dashboard">Dashboard</NavLink>
             <NavLink className={navClass} to="/customers">Customers</NavLink>
-            {assessmentId ? (
-              <>
-                <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>Questions</NavLink>
-                <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>Findings & Risk</NavLink>
-                <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>Evidence & Reports</NavLink>
-              </>
-            ) : (
-              <>
-                <span className={assessmentClass}>Questions</span>
-                <span className={assessmentClass}>Findings & Risk</span>
-                <span className={assessmentClass}>Evidence & Reports</span>
-              </>
-            )}
+            <NavLink className={navClass} to="/customers/my">My Customers</NavLink>
+            <NavLink className={navClass} to="/customers/shared">Shared Customers</NavLink>
+            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>Questions</NavLink> : <span className={assessmentClass}>Questions</span>}
+            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>Findings & Risk</NavLink> : <span className={assessmentClass}>Findings & Risk</span>}
+            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>Evidence & Reports</NavLink> : <span className={assessmentClass}>Evidence & Reports</span>}
           </nav>
         </aside>
         <section className="bg-audity-page p-5">
@@ -130,6 +240,7 @@ export function AppLayout() {
 
 export function AdminLayout() {
   const { user } = useAuth();
+  useIdleLogout();
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
@@ -144,6 +255,7 @@ export function AdminLayout() {
             {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">Framework Library</NavLink> : null}
             {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">Branding</NavLink> : null}
             {can("email.manage") ? <NavLink className={navClass} to="/admin/email">Email Settings</NavLink> : null}
+            {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">System</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">Backup</NavLink> : null}
           </nav>
           <Link

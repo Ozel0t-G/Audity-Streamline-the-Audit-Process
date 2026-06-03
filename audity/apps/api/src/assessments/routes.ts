@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { canAccessAssessment, canAccessCustomer } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
 
@@ -10,6 +11,7 @@ type AssessmentBody = {
   type?: string;
   audience?: string;
   framework?: string;
+  frameworkId?: string;
   language?: string;
   targetDate?: string;
   status?: string;
@@ -29,6 +31,7 @@ const assessmentSchema = z.object({
   type: z.string().trim().min(1).optional(),
   audience: z.string().optional(),
   framework: z.string().optional(),
+  frameworkId: z.string().min(1).optional(),
   language: z.string().optional(),
   targetDate: z.string().optional(),
   status: z.string().optional()
@@ -55,6 +58,7 @@ function mapAssessment(row: Record<string, unknown>) {
     targetDate: row.target_date,
     status: row.status,
     scope: row.scope,
+    frameworkId: row.framework_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -69,7 +73,10 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
   app.get<{ Params: { id: string } }>(
     "/api/customers/:id/assessments",
     { preHandler: requirePermission("assessment.view") },
-    async (request) => {
+    async (request, reply) => {
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
       const result = await pool.query(
         "select * from assessments where customer_id = $1 order by created_at desc",
         [request.params.id]
@@ -89,6 +96,9 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
           .code(400)
           .send({ code: "INVALID_INPUT", message: "Assessment type is required" });
       }
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
       const customer = await pool.query("select id from customers where id = $1", [
         request.params.id
       ]);
@@ -97,18 +107,37 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
           .code(404)
           .send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
       }
+      const framework = body.frameworkId
+        ? await pool.query<{ id: string; label: string }>(
+            `select id, coalesce(short_name, name) as label
+             from frameworks
+             where id = $1
+               and exists (
+                 select 1 from customer_frameworks cf
+                 where cf.customer_id = $2 and cf.framework_id = frameworks.id
+               )`,
+            [body.frameworkId, request.params.id]
+          )
+        : null;
+      if (body.frameworkId && !framework?.rows[0]) {
+        return reply.code(400).send({
+          code: "FRAMEWORK_OUT_OF_CUSTOMER_SCOPE",
+          message: "Select a framework that is in this customer scope"
+        });
+      }
       const id = randomUUID();
       const result = await pool.query(
         `insert into assessments
-          (id, customer_id, type, audience, framework, language, target_date, status)
-         values ($1, $2, $3, $4, $5, $6, $7, $8)
+          (id, customer_id, type, audience, framework, framework_id, language, target_date, status)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          returning *`,
         [
           id,
           request.params.id,
           body.type,
           body.audience ?? null,
-          body.framework ?? null,
+          framework?.rows[0]?.label ?? body.framework ?? null,
+          framework?.rows[0]?.id ?? null,
           body.language ?? "en",
           body.targetDate || null,
           body.status ?? "draft"
@@ -137,6 +166,9 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
           .code(404)
           .send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       await appendActivityEvent({
         userId: request.user!.sub,
         action: "assessment.opened",
@@ -155,6 +187,9 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
     async (request, reply) => {
       const body = validateBody(assessmentSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const before = await loadAssessment(request.params.id);
       if (!before) {
         return reply
@@ -201,6 +236,9 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
     async (request, reply) => {
       const body = validateBody(scopeSchema, request.body, reply);
       if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const before = await loadAssessment(request.params.id);
       if (!before) {
         return reply

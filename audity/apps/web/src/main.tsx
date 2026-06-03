@@ -27,6 +27,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/customers" element={<CustomerListPage />} />
+              <Route path="/customers/my" element={<CustomerListPage mode="my" />} />
+              <Route path="/customers/shared" element={<CustomerListPage mode="shared" />} />
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
               <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
@@ -40,6 +42,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/frameworks" element={<FrameworkLibraryPage />} />
               <Route path="/admin/branding" element={<AdminDashboardPage section="branding" />} />
               <Route path="/admin/email" element={<AdminDashboardPage section="email" />} />
+              <Route path="/admin/system" element={<AdminDashboardPage section="system" />} />
               <Route path="/admin/backup" element={<AdminDashboardPage section="backup" />} />
             </Route>
           </Route>

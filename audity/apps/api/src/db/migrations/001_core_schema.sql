@@ -53,6 +53,7 @@ create table if not exists mfa_settings (
 create table if not exists customers (
   id uuid primary key,
   name text not null,
+  created_by_user_id uuid references users(id),
   industry text,
   regulatory_context text,
   critical_systems jsonb not null default '[]'::jsonb,
@@ -60,6 +61,31 @@ create table if not exists customers (
   status text not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists customer_shares (
+  id uuid primary key,
+  customer_id uuid not null references customers(id) on delete cascade,
+  shared_with_user_id uuid not null references users(id),
+  shared_by_user_id uuid not null references users(id),
+  message text,
+  created_at timestamptz not null default now(),
+  revoked_at timestamptz,
+  revoked_by_user_id uuid references users(id)
+);
+
+create table if not exists notifications (
+  id uuid primary key,
+  recipient_user_id uuid not null references users(id) on delete cascade,
+  type text not null,
+  title text not null,
+  message text not null,
+  entity_type text,
+  entity_id text,
+  customer_id uuid references customers(id) on delete cascade,
+  created_by_user_id uuid references users(id),
+  created_at timestamptz not null default now(),
+  read_at timestamptz
 );
 
 create table if not exists frameworks (
@@ -105,6 +131,14 @@ create table if not exists assessment_frameworks (
   framework_id uuid not null references frameworks(id) on delete cascade,
   mode text not null default 'supporting',
   primary key (assessment_id, framework_id)
+);
+
+create table if not exists customer_frameworks (
+  customer_id uuid not null references customers(id) on delete cascade,
+  framework_id uuid not null references frameworks(id) on delete cascade,
+  selected_by_user_id uuid references users(id),
+  created_at timestamptz not null default now(),
+  primary key (customer_id, framework_id)
 );
 
 create table if not exists framework_domains (
@@ -339,6 +373,8 @@ create table if not exists backup_jobs (
 alter table sessions add column if not exists csrf_token_hash text;
 alter table sessions add column if not exists last_seen_at timestamptz not null default now();
 alter table users add column if not exists alpha_accepted_at timestamptz;
+alter table customers add column if not exists created_by_user_id uuid references users(id);
+alter table customers add column if not exists archived_at timestamptz;
 alter table mfa_settings add column if not exists secret_encrypted text;
 alter table mfa_settings add column if not exists verified_at timestamptz;
 alter table assessments add column if not exists framework text;
@@ -413,6 +449,34 @@ create unique index if not exists control_answers_question_unique
 create unique index if not exists findings_assessment_control_unique
   on findings (assessment_id, framework_control_id)
   where framework_control_id is not null;
+
+create unique index if not exists customer_shares_active_unique
+  on customer_shares (customer_id, shared_with_user_id)
+  where revoked_at is null;
+
+create index if not exists notifications_recipient_created_idx
+  on notifications (recipient_user_id, read_at, created_at desc);
+
+insert into settings (key, value)
+values ('session_idle_timeout_minutes', '30'::jsonb)
+on conflict (key) do nothing;
+
+update customers
+set created_by_user_id = (
+  select u.id
+  from users u
+  join roles r on r.id = u.role_id
+  where r.name in ('Instance Admin', 'Tenant Admin')
+  order by case when r.name = 'Instance Admin' then 0 else 1 end, u.created_at
+  limit 1
+)
+where created_by_user_id is null
+  and exists (
+    select 1
+    from users u
+    join roles r on r.id = u.role_id
+    where r.name in ('Instance Admin', 'Tenant Admin')
+  );
 
 create or replace function prevent_append_only_change()
 returns trigger as $$

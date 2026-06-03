@@ -22,9 +22,15 @@ export function LoginPage() {
   const [headerText, setHeaderText] = useState("Audity Assessment Report");
   const [footerText, setFooterText] = useState("Confidential");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const storedNotice = window.localStorage.getItem("audity_login_notice");
+    if (storedNotice) {
+      setNotice(storedNotice);
+      window.localStorage.removeItem("audity_login_notice");
+    }
     fetch(`${apiBaseUrl}/api/auth/setup-status`)
       .then((response) => response.json())
       .then((payload: { setupRequired?: boolean }) => setSetupRequired(Boolean(payload.setupRequired)))
@@ -92,6 +98,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       const result = await login(email, password);
+      setNotice("");
       if (result.mfaRequired) {
         setChallengeToken(result.challengeToken);
         return;
@@ -216,6 +223,11 @@ export function LoginPage() {
           {error ? (
             <div className="mt-4 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">
               {error}
+            </div>
+          ) : null}
+          {notice ? (
+            <div className="mt-4 rounded-audity border border-audity-primary bg-audity-primaryActive px-3 py-2 text-sm text-audity-primary">
+              {notice}
             </div>
           ) : null}
           <button

@@ -4,6 +4,9 @@ import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import type { Assessment, AssessmentScope, Customer } from "./types";
 
+type FrameworkOption = { id: string; name: string; shortName: string | null };
+type ShareTarget = { id: string; name: string | null; email: string; role: string; status: string };
+
 function csv(value: string): string[] {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
@@ -29,11 +32,18 @@ export function CustomerDetailPage() {
   const canEditAssessment = Boolean(user?.permissions.includes("assessment.edit"));
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [frameworks, setFrameworks] = useState<FrameworkOption[]>([]);
+  const [shareTargets, setShareTargets] = useState<ShareTarget[]>([]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareSearch, setShareSearch] = useState("");
+  const [shareUserId, setShareUserId] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
+  const [scopeFrameworkIds, setScopeFrameworkIds] = useState<string[]>([]);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState("");
   const [assessmentForm, setAssessmentForm] = useState({
     type: "Full Security Maturity Assessment",
     audience: "Management + Technical Team",
-    framework: "NIST CSF 2.0",
+    frameworkId: "",
     language: "en",
     targetDate: "",
     status: "draft"
@@ -50,14 +60,23 @@ export function CustomerDetailPage() {
   const [error, setError] = useState("");
 
   const selectedAssessment = assessments.find((assessment) => assessment.id === selectedAssessmentId);
+  const currentUserId = user?.id ?? user?.sub;
+  const canManageAccess = Boolean(customer && (user?.role === "Instance Admin" || user?.role === "Tenant Admin" || customer.createdByUserId === currentUserId));
 
   async function load() {
     if (!id) return;
-    const [customerPayload, assessmentPayload] = await Promise.all([
+    const [customerPayload, assessmentPayload, frameworkPayload] = await Promise.all([
       api<{ customer: Customer }>(`/api/customers/${id}`),
-      api<{ assessments: Assessment[] }>(`/api/customers/${id}/assessments`)
+      api<{ assessments: Assessment[] }>(`/api/customers/${id}/assessments`),
+      api<{ frameworks: FrameworkOption[] }>("/api/frameworks")
     ]);
     setCustomer(customerPayload.customer);
+    setFrameworks(frameworkPayload.frameworks);
+    const selected = customerPayload.customer.selectedFrameworks?.map((framework) => framework.id) ?? [];
+    setScopeFrameworkIds(selected);
+    if (!assessmentForm.frameworkId && selected[0]) {
+      setAssessmentForm((current) => ({ ...current, frameworkId: selected[0] }));
+    }
     window.localStorage.setItem("audity_current_customer_label", customerPayload.customer.name);
     window.dispatchEvent(new CustomEvent("audity-customer-context", { detail: customerPayload.customer.name }));
     setAssessments(assessmentPayload.assessments);
@@ -85,6 +104,15 @@ export function CustomerDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    void api<{ users: ShareTarget[] }>(`/api/users/share-targets?search=${encodeURIComponent(shareSearch)}`)
+      .then((payload) => {
+        setShareTargets(payload.users);
+        if (!shareUserId && payload.users[0]) setShareUserId(payload.users[0].id);
+      })
+      .catch(() => undefined);
+  }, [shareSearch]);
+
+  useEffect(() => {
     if (selectedAssessment) {
       loadScopeIntoForm(selectedAssessment.scope);
     }
@@ -106,6 +134,38 @@ export function CustomerDetailPage() {
       setSelectedAssessmentId(payload.assessment.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create assessment failed");
+    }
+  }
+
+  async function shareCustomer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      await api(`/api/customers/${id}/share`, {
+        method: "POST",
+        body: JSON.stringify({ userId: shareUserId, message: shareMessage || undefined })
+      });
+      setShareMessage("");
+      setShareOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Share failed");
+    }
+  }
+
+  async function saveFrameworkScope() {
+    setError("");
+    try {
+      const payload = await api<{ customer: Customer }>(`/api/customers/${id}/frameworks`, {
+        method: "PATCH",
+        body: JSON.stringify({ frameworkIds: scopeFrameworkIds })
+      });
+      setCustomer(payload.customer);
+      if (!assessmentForm.frameworkId && scopeFrameworkIds[0]) {
+        setAssessmentForm({ ...assessmentForm, frameworkId: scopeFrameworkIds[0] });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save framework scope failed");
     }
   }
 
@@ -158,6 +218,42 @@ export function CustomerDetailPage() {
           {error ? <div className="mb-4 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div className="space-y-4">
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <h2 className="text-lg font-semibold">Access</h2>
+                    <p className="mt-2 text-sm text-audity-secondary">
+                      Created by: {customer?.createdByName ?? "-"} {customer?.createdByEmail ? `<${customer.createdByEmail}>` : ""}
+                    </p>
+                    <p className="mt-2 text-sm text-audity-secondary">
+                      Shared with: {customer?.sharedWith?.map((share) => share.name ?? share.email).join(", ") || "Not shared"}
+                    </p>
+                  </div>
+                  {canManageAccess ? (
+                    <div className="flex justify-end">
+                      <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => setShareOpen(true)}>
+                        Share Customer
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </section>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">Framework Scope</h2>
+                    <p className="mt-2 text-sm text-audity-secondary">
+                      {customer?.selectedFrameworks?.map((framework) => framework.shortName ?? framework.name).join(", ") || "No framework selected. Please select at least one framework to generate the question catalog."}
+                    </p>
+                  </div>
+                  {canManageAccess ? <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void saveFrameworkScope()}>Save scope</button> : null}
+                </div>
+                {canManageAccess ? (
+                  <select multiple className="mt-3 min-h-36 w-full rounded-audity border border-audity-border bg-audity-page px-2 py-2 text-sm text-audity-text outline-none focus:border-audity-primary" value={scopeFrameworkIds} onChange={(event) => setScopeFrameworkIds(Array.from(event.target.selectedOptions).map((option) => option.value))}>
+                    {frameworks.map((framework) => <option key={framework.id} value={framework.id}>{framework.shortName ?? framework.name}</option>)}
+                  </select>
+                ) : null}
+              </section>
               <section className="overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
                 <div className="border-b border-audity-border px-4 py-3">
                   <h2 className="text-lg font-semibold">Assessments</h2>
@@ -251,7 +347,6 @@ export function CustomerDetailPage() {
               {[
                 ["type", "Type"],
                 ["audience", "Audience"],
-                ["framework", "Framework"],
                 ["language", "Language"],
                 ["targetDate", "Target date"],
                 ["status", "Status"]
@@ -266,10 +361,48 @@ export function CustomerDetailPage() {
                   />
                 </label>
               ))}
+              <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                Framework
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={assessmentForm.frameworkId} onChange={(event) => setAssessmentForm({ ...assessmentForm, frameworkId: event.target.value })}>
+                  {(customer?.selectedFrameworks ?? []).map((framework) => <option key={framework.id} value={framework.id}>{framework.shortName ?? framework.name}</option>)}
+                </select>
+              </label>
+              {!customer?.selectedFrameworks?.length ? <p className="mb-3 text-sm text-audity-muted">No framework selected. Add a framework scope before creating assessments.</p> : null}
               <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create assessment</button>
             </form>
             ) : null}
           </div>
+          {shareOpen ? (
+            <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 px-4">
+              <form className="w-full max-w-lg rounded-audity border border-audity-border bg-audity-panel p-5 shadow-2xl" onSubmit={shareCustomer}>
+                <div className="mb-4 border-b border-audity-border pb-3">
+                  <h2 className="text-lg font-semibold">Share Customer</h2>
+                </div>
+                <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                  Search active users
+                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={shareSearch} onChange={(event) => setShareSearch(event.target.value)} />
+                </label>
+                <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                  User
+                  <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={shareUserId} onChange={(event) => setShareUserId(event.target.value)}>
+                    {shareTargets.map((target) => <option key={target.id} value={target.id}>{target.name ?? target.email} · {target.email}</option>)}
+                  </select>
+                </label>
+                <label className="mb-4 block text-xs font-semibold uppercase text-audity-secondary">
+                  Invitation message
+                  <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" placeholder="Optional message, for example: Please review the evidence section and check the open findings." value={shareMessage} onChange={(event) => setShareMessage(event.target.value)} />
+                </label>
+                <div className="flex justify-end gap-2">
+                  <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" type="button" onClick={() => setShareOpen(false)}>
+                    Cancel
+                  </button>
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!shareUserId}>
+                    Share
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : null}
     </>
   );
 }

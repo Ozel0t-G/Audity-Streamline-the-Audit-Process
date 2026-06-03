@@ -27,7 +27,7 @@ function queryString(filters: Record<string, string>) {
   return text ? `?${text}` : "";
 }
 
-type AdminSection = "activity" | "audit" | "users" | "branding" | "email" | "backup";
+type AdminSection = "activity" | "audit" | "users" | "branding" | "email" | "system" | "backup";
 
 type Branding = {
   logoObjectKey: string | null;
@@ -114,6 +114,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     sender: ""
   });
   const [emailDeliveryLog, setEmailDeliveryLog] = useState<EmailDelivery[]>([]);
+  const [systemSettings, setSystemSettings] = useState({ sessionIdleTimeoutMinutes: 30 });
   const [backupJobs, setBackupJobs] = useState<BackupJob[]>([]);
   const [backupType, setBackupType] = useState<"full" | "database" | "evidence">("full");
   const [error, setError] = useState("");
@@ -160,6 +161,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     setEmailDeliveryLog(deliveryPayload.emailDeliveryLog);
   }
 
+  async function loadSystemSettings() {
+    const payload = await api<{ sessionIdleTimeoutMinutes: number }>("/api/admin/system-settings");
+    setSystemSettings(payload);
+  }
+
   async function loadBackup() {
     const payload = await api<{ latestBackup: BackupJob | null; backupJobs: BackupJob[] }>("/api/admin/backup/status");
     setBackupJobs(payload.backupJobs);
@@ -172,6 +178,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     if (section === "users") await loadUsers();
     if (section === "branding") await loadBranding();
     if (section === "email") await loadEmail();
+    if (section === "system") await loadSystemSettings();
     if (section === "backup") await loadBackup();
   }
 
@@ -270,6 +277,20 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     await loadEmail();
   }
 
+  async function saveSystemSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      const payload = await api<{ sessionIdleTimeoutMinutes: number }>("/api/admin/system-settings", {
+        method: "PATCH",
+        body: JSON.stringify(systemSettings)
+      });
+      setSystemSettings(payload);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save system settings failed");
+    }
+  }
+
   async function triggerBackup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -290,6 +311,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     users: "User Management",
     branding: "Branding Settings",
     email: "Email Settings",
+    system: "System Settings",
     backup: "Backup & Recovery"
   }[section];
 
@@ -494,6 +516,27 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 </div>
               </section>
             </div>
+          ) : null}
+          {section === "system" ? (
+            <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+              <form className="max-w-md space-y-3" onSubmit={saveSystemSettings}>
+                <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                  Session idle timeout
+                  <select
+                    className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
+                    value={systemSettings.sessionIdleTimeoutMinutes}
+                    onChange={(event) => setSystemSettings({ sessionIdleTimeoutMinutes: Number(event.target.value) })}
+                  >
+                    {Array.from({ length: 12 }, (_, index) => (index + 1) * 5).map((minutes) => (
+                      <option key={minutes} value={minutes}>{minutes} minutes</option>
+                    ))}
+                  </select>
+                </label>
+                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                  Save system settings
+                </button>
+              </form>
+            </section>
           ) : null}
           {section === "backup" ? (
             <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
