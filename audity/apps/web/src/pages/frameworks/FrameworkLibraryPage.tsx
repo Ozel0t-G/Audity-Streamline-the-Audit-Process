@@ -1,8 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useApi } from "../../api/client";
-import { useAuth } from "../../auth/AuthProvider";
-import { BrandMark } from "../../components/BrandMark";
 import type { Framework, FrameworkDomain } from "./types";
 
 function badgeClass(label: string | null) {
@@ -13,7 +10,6 @@ function badgeClass(label: string | null) {
 
 export function FrameworkLibraryPage() {
   const api = useApi();
-  const { logout } = useAuth();
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [domains, setDomains] = useState<FrameworkDomain[]>([]);
@@ -75,24 +71,7 @@ export function FrameworkLibraryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-audity-app text-audity-text">
-      <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
-        <div className="flex items-center gap-3">
-          <BrandMark />
-          <span className="text-sm font-semibold">Audity</span>
-        </div>
-        <button className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panel px-3 text-sm text-audity-secondary hover:border-audity-primary hover:text-audity-text" onClick={() => void logout()}>
-          Logout
-        </button>
-      </header>
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-5">
-          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Workspace</p>
-          <Link className="block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/dashboard">Dashboard</Link>
-          <Link className="mt-1 block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/customers">Customers</Link>
-          <Link className="mt-1 block rounded-audity bg-audity-primaryActive px-3 py-2 text-sm font-semibold" to="/frameworks">Framework Library</Link>
-        </aside>
-        <section className="bg-audity-page p-5">
+    <>
           <div className="mb-5 border-b border-audity-border pb-4">
             <p className="text-xs font-semibold uppercase text-audity-primary">Framework Engine</p>
             <h1 className="mt-1 text-2xl font-semibold">Framework Library</h1>
@@ -177,8 +156,6 @@ export function FrameworkLibraryPage() {
               </button>
             </form>
           </div>
-        </section>
-      </div>
-    </main>
+    </>
   );
 }

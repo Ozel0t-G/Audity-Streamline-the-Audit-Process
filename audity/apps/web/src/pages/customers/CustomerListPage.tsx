@@ -1,8 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../../api/client";
-import { useAuth } from "../../auth/AuthProvider";
-import { BrandMark } from "../../components/BrandMark";
 import type { Customer } from "./types";
 
 function csv(value: string): string[] {
@@ -11,7 +9,6 @@ function csv(value: string): string[] {
 
 export function CustomerListPage() {
   const api = useApi();
-  const { logout } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [form, setForm] = useState({
     name: "",
@@ -58,23 +55,7 @@ export function CustomerListPage() {
   }
 
   return (
-    <main className="min-h-screen bg-audity-app text-audity-text">
-      <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
-        <div className="flex items-center gap-3">
-          <BrandMark />
-          <span className="text-sm font-semibold">Audity</span>
-        </div>
-        <button className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panel px-3 text-sm text-audity-secondary hover:border-audity-primary hover:text-audity-text" onClick={() => void logout()}>
-          Logout
-        </button>
-      </header>
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-5">
-          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Workspace</p>
-          <Link className="block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel" to="/dashboard">Dashboard</Link>
-          <div className="mt-1 rounded-audity bg-audity-primaryActive px-3 py-2 text-sm font-semibold">Customers</div>
-        </aside>
-        <section className="bg-audity-page p-5">
+    <>
           <div className="mb-5 border-b border-audity-border pb-4">
             <p className="text-xs font-semibold uppercase text-audity-primary">Customer Management</p>
             <h1 className="mt-1 text-2xl font-semibold">Customers</h1>
@@ -132,8 +113,6 @@ export function CustomerListPage() {
               <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create</button>
             </form>
           </div>
-        </section>
-      </div>
-    </main>
+    </>
   );
 }

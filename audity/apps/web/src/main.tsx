@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import { PrivateRoute } from "./auth/PrivateRoute";
+import { AdminLayout, AppLayout } from "./components/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
@@ -21,14 +22,22 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<PrivateRoute />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/customers" element={<CustomerListPage />} />
-            <Route path="/customers/:id" element={<CustomerDetailPage />} />
-            <Route path="/frameworks" element={<FrameworkLibraryPage />} />
-            <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
-            <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
-            <Route path="/assessments/:id/assets" element={<AssessmentAssetsPage />} />
-            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/customers" element={<CustomerListPage />} />
+              <Route path="/customers/:id" element={<CustomerDetailPage />} />
+              <Route path="/frameworks" element={<FrameworkLibraryPage />} />
+              <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
+              <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
+              <Route path="/assessments/:id/assets" element={<AssessmentAssetsPage />} />
+            </Route>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<Navigate to="/admin/activity" replace />} />
+              <Route path="/admin/activity" element={<AdminDashboardPage section="activity" />} />
+              <Route path="/admin/audit" element={<AdminDashboardPage section="audit" />} />
+              <Route path="/admin/users" element={<AdminDashboardPage section="users" />} />
+              <Route path="/admin/branding" element={<AdminDashboardPage section="branding" />} />
+            </Route>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
