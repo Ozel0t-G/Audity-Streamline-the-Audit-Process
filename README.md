@@ -1,942 +1,235 @@
-# Audity — Streamline the Cybersecurity Audit Process
-
-<p align="center">
-  <img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/f82acd21-5df9-4865-b79d-802dec8c7fad" />
-</p>
-
-**Audity** is a local-first, security-first audit and assessment workspace for cybersecurity consultants, CISOs, GRC teams, auditors, and security managers.
-
-The application guides users step by step through structured cybersecurity and compliance assessments, from initial client setup to scope definition, control evaluation, finding review, risk register generation, remediation roadmap planning, and final report export.
-
-Audity is designed for sensitive audit, security, and GRC work where client data, assessment evidence, internal control weaknesses, risk ratings, and remediation plans should not be uploaded to an external SaaS platform by default.
-
-Unlike hosted web services, Audity runs locally on the user’s machine through a lightweight local web server. Productive assessment data is written to a real local project file in a folder selected by the user through the browser’s File System Access API. This follows a **local-first, security-first** operating model: keep sensitive client data close to the assessor, reduce unnecessary exposure, and avoid placing confidential assessment material on external infrastructure unless there is a clear business, legal, and contractual basis for doing so.
-
-This design aligns with common security and GRC principles. ISO/IEC 27001 describes an ISMS as a structured system for managing risks related to information handled by an organization and emphasizes confidentiality, integrity, and availability of information assets. NIST CSF 2.0 is intended to help organizations understand, assess, prioritize, and communicate cybersecurity risk. NIS2 Article 21 requires appropriate and proportionate technical, operational, and organizational measures to manage risks to network and information systems. Audity is built around the same practical idea: assessment data should be handled with the same care as the risks being assessed.
-
-<img width="1021" height="467" alt="Bildschirmfoto 2026-05-15 um 14 16 14" src="https://github.com/user-attachments/assets/5ef8bef4-e89f-4f90-9bbe-0072d910f405" />
+<img width="203" height="254" alt="grc_template_repo_logo_clean_transparent" src="https://github.com/user-attachments/assets/53b3e596-f962-4029-b83f-09dd9f943466" />
 
 
-## Why Audity Exists
-Many audits and security assessments still happen across spreadsheets, Word documents, screenshots, interview notes, and manually maintained risk registers. That works, but it is inefficient, inconsistent, and hard to reproduce.
+# Audity — Self-Hosted Audit & GRC Assessment Platform
 
-Audity solves this by providing a guided assessment workflow that standardizes how security assessments are performed, documented, reviewed, and reported.
+Audity is a self-hosted audit and security assessment platform for security consultants, GRC professionals, CISOs, and internal security teams. It takes you from assessment planning through findings, risk register, remediation roadmap, and final report — without sending your client's data to someone else's cloud.
 
-The goal is not to replace professional judgment. The goal is to make the assessment process cleaner, faster, more consistent, and easier to explain to clients, management, auditors, and technical teams.
+---
 
+## What Audity does for you
 
+Security assessments involve a lot of moving parts: scope definition, control questions, evidence collection, findings, risk scoring, roadmap items, and a professional report at the end. Most consultants manage this across a mix of spreadsheets, Word documents, and whatever their firm's template looks like this year. It works, but it doesn't scale well, and it makes consistency hard.
 
-## Core Design Principles
+Audity gives that process a proper structure. You work through a guided workflow — scope and context first, then domain-based control questions with maturity scoring, finding review, risk register, roadmap planning, and finally a branded report export. Each step feeds into the next. The system keeps track of what changed and when, so you can always reconstruct the reasoning behind an assessment result.
 
-### Local First
+It is not a compliance certification tool. Audity will not tell you that your client is ISO 27001 certified. What it does is help you run a thorough, traceable assessment and produce documentation that a professional can stand behind.
 
-Audity is not a hosted SaaS platform. It runs locally through a lightweight local web server on the user’s machine.
+**The guided workflow looks like this:**
 
-This matters because cybersecurity assessments often contain highly sensitive information, including:
-
-- security weaknesses
-- missing controls
-- privileged access issues
-- incident response gaps
-- backup and recovery weaknesses
-- regulatory exposure
-- internal risk ratings
-- client infrastructure context
-- remediation priorities
-- audit evidence metadata
-
-This type of information should not be uploaded to a third-party web service by default.
-
-### Security First
-
-Audity is designed for environments where confidentiality and control over assessment data matter.
-
-The application keeps the assessment workflow local and supports project export/import so that users remain in control of how audit data is stored, transferred, backed up, and archived.
-
-### Guided Workflow
-
-Audity is not built as a complex GRC database where users must understand every module before starting.
-
-Instead, it guides the user through a clear process:
-
-```text
-Setup
-→ Scope & Context
-→ Guided Questions
-→ Finding Review
-→ Risk & Roadmap
-→ Report
+```
+Setup → Scope & Context → Guided Questions → Finding Review → Risk Register → Roadmap → Report
 ```
 
-The user always knows what the next step is.
+**Key capabilities:**
 
-### Human-in-the-Loop Assessment
+- Domain-based control questions with 0–5 maturity scoring
+- Framework support for ISO 27001 readiness, NIST CSF 2.0, NIS2, CIS Controls, MITRE ATT&CK, NSM Grunnprinsipper, and custom frameworks
+- Finding review with accept / edit / dismiss workflow
+- Risk register with likelihood × impact scoring and treatment tracking
+- Remediation roadmap with phase-based prioritization (30 / 90 / 180 / 365 days)
+- Branded PDF report export with modular report sections
+- Encrypted report delivery via SMTP
+- Evidence file management
+- Project export and import in an encrypted `.cisoassess` container
+- Full activity and audit logging
 
-Audity can suggest findings, priorities, risks, and roadmap actions based on assessment answers and business context.
+---
 
-However, the user remains the final decision-maker.
+## Who it is for
 
-Suggested findings must be reviewed, accepted, edited, or dismissed before they become part of the report.
+- Security consultants running assessments for multiple clients
+- CISOs managing internal security programs
+- GRC professionals working with ISO 27001, NIS2, or NIST frameworks
+- Internal security teams that need structured, repeatable assessment processes
+- Managed security service providers that want to keep client data off shared platforms
+- Auditors who need a traceable record of assessment decisions
 
+---
 
+## Self-hosted by design
 
-# Application Features
+Audity runs as a Docker Compose stack. There is no hosted backend. Your data stays on your infrastructure — your PostgreSQL database, your object storage, your encryption keys.
 
-## 1. Guided Assessment Flow
+The deployment model is intentionally one stack per client or organization:
 
-Audity uses a step-by-step assessment workflow instead of exposing users to a complicated module structure.
-
-The main assessment flow consists of:
-
-```text
-1. Setup
-2. Scope & Context
-3. Guided Questions
-4. Finding Review
-5. Risk & Roadmap
-6. Report
+```
+audity-artemis/   ← your client's dedicated stack
+├── docker-compose.yml
+├── .env
+└── volumes/
+    ├── postgres/
+    ├── storage/
+    └── backups/
 ```
 
-Each step is designed around one clear task and one primary user decision.
+Each stack has its own database, storage, secrets, encryption keys, and logs. There is no shared multi-tenant database that a misconfigured permission could leak across. If you have five clients, you run five independent stacks. This is more operational overhead than a shared platform, and that tradeoff is deliberate.
 
+---
 
+## Security architecture
 
-## 2. Assessment Setup
+This section is intentionally detailed. The platform handles assessment data — which means it handles security weaknesses, control gaps, infrastructure details, risk ratings, and remediation plans. That data needs to be protected seriously.
 
-The setup process helps the user define the assessment before any control questions are answered.
+### Passwords
 
-Supported setup fields include:
+Passwords are hashed with Argon2id with a unique salt per password. The option for a pepper stored outside the database is included. Plaintext passwords are never stored, never logged, and never sent back to a client. Password reset tokens are single-use, time-limited, and stored hashed.
 
-- client or organization name
-- assessment type
-- report audience
-- selected security frameworks
-- report language
-- assessment status
-- target date
-- business context
+### Multi-factor authentication
 
-Example assessment types:
+MFA via TOTP is required for production deployments. QR code enrollment, recovery codes, admin reset flow, and tenant-wide MFA enforcement are all included. Every MFA event — enabled, disabled, reset, bypassed — is written to the audit log.
 
-- Full Security Maturity Assessment
-- ISO 27001 Readiness Assessment
-- NIS2 Readiness Assessment
-- Ransomware Readiness Assessment
-- Incident Response Readiness Assessment
-- SOC / Detection Maturity Assessment
-- Third-Party Risk Assessment
+### Session security
 
+Sessions use HTTP-only secure cookies with SameSite policy and CSRF protection. Idle timeout, session expiration, refresh token rotation, logout from all devices, and admin-initiated session revocation are all part of the model.
 
+### Data encryption
 
-## 3. Scope & Context Management
+Sensitive fields are encrypted at the application layer — assessment notes, answers, findings, risks, evidence notes, report drafts, and customer infrastructure details. The storage layer (MinIO or mounted volume) is encrypted. The master encryption key is configured through an environment variable or secret file, never baked into the container image, never committed to Git.
 
-Audity helps the user define the scope before scoring controls.
-
-This includes:
-
-- in-scope domains
-- out-of-scope areas
-- critical systems
-- business-critical processes
-- regulatory context
-- key assumptions
-- known limitations
-- business criticality level
-
-This is important because the same technical weakness can have a very different risk rating depending on the organization’s context.
-
-For example, missing restore testing in a small non-critical environment is serious. Missing restore testing in healthcare, finance, or critical infrastructure can be critical.
-
-
-
-## 4. Guided Questions
-
-<img width="1021" height="467" alt="Bildschirmfoto 2026-05-15 um 14 19 40" src="https://github.com/user-attachments/assets/44da0a40-87b4-4f62-b000-f959015970d5" />
-
-
-The assessment questionnaire is presented domain by domain.
-
-Instead of showing the user a large spreadsheet-like control table, Audity presents clear assessment cards.
-
-Each question can include:
-
-- control question
-- plain-language explanation
-- domain
-- mapped framework controls
-- answer status
-- maturity score
-- evidence status
-- confidence level
-- notes
-- suggested finding logic
-
-Supported maturity scoring:
-
-```text
-0 = Not existing
-1 = Ad hoc
-2 = Partially documented
-3 = Defined and implemented
-4 = Measured and regularly reviewed
-5 = Optimized
+```env
+AUDITY_ENCRYPTION_KEY=base64-encoded-32-byte-key
+AUDITY_APP_SECRET=replace-with-secure-random-secret
 ```
 
-Supported answer states:
+If the encryption key is lost, encrypted customer data is not recoverable. Backup your key.
 
-```text
-Yes
-Partially
-No
-Unknown
-Not applicable
+### Role-based access control
+
+Every API request checks who the user is, which tenant they belong to, what role they hold, and whether they are allowed to perform the requested action on the requested resource.
+
+Roles: Instance Admin, Tenant Admin, Assessment Manager, Auditor, Contributor, Reviewer, Viewer.
+
+Permissions are granular — `finding.approve`, `risk.accept`, `report.export`, `evidence.upload`, `auditlog.view`, and so on. Standard users cannot access audit logs or activity logs. They cannot change branding, email settings, or tenant configuration.
+
+### Immutable activity logging
+
+Every assessment-relevant action is written to an append-only activity log with before/after values:
+
+```json
+{
+  "action": "control_answer.updated",
+  "field": "maturityScore",
+  "before": 1,
+  "after": 3,
+  "userId": "usr_123",
+  "assessmentId": "assess_456",
+  "timestamp": "2026-05-15T12:00:00Z"
+}
 ```
 
-Supported evidence states:
+The application layer has no update or delete operation on activity log records. The database user running the application does not have those permissions. Optional hash chaining links each event to the previous one, so a gap or modification in the log is detectable.
 
-```text
-Not requested
-Requested
-Provided
-Reviewed
-Missing
-Outdated
-Not applicable
+The Tenant Admin UI can filter logs by user, assessment, action type, date range, and entity, and can export the full log. High-risk actions — accepting a risk, reducing a maturity score, exporting a report, disabling MFA — are highlighted.
+
+### Secure report delivery
+
+Reports are packaged into an encrypted `.auditysecure` container before sending. The package contains the PDF report, optional risk register export, a metadata file, and a checksum. The encryption key is delivered through a separate channel. No plaintext report is left in temporary directories after sending. Every email action is logged with recipient, report ID, encryption method, and SMTP delivery status.
+
+### Evidence security
+
+Evidence uploads have file size limits and file type restrictions. There are no public object storage buckets. Download URLs are short-lived and signed. Every upload, download, delete, and export action is logged.
+
+---
+
+## Framework support
+
+Audity supports frameworks in different modes depending on licensing:
+
+| Framework | Mode |
+|---|---|
+| NIST Cybersecurity Framework 2.0 | Built-in |
+| NIS2 | Built-in legal requirement mapping |
+| MITRE ATT&CK | Built-in detection mapping |
+| HIPAA Security Rule | Built-in requirement mapping |
+| NSM Grunnprinsipper | Built-in or referenced |
+| ISO/IEC 27001:2022 | Audity readiness workflow + user-provided licensed content |
+| Custom frameworks | User-created or imported |
+
+ISO 27001 deserves a specific note: Audity includes original assessment questions for ISO 27001 readiness coverage — ISMS scope, risk assessment, access control, incident management, supplier security, and so on. It does not include the official ISO standard text, control catalogue, or ISO implementation guidance. Those are copyrighted materials that require a license from ISO. If your organization has a license, you can import that content. Audity stores it locally under your tenant and marks it as user-imported, not redistributed by Audity.
+
+Audity uses readiness language throughout: "coverage," "potential gap," "assessment result," "framework mapping." Not "certified," "fully compliant," or "audit-proof."
+
+---
+
+## Minimum requirements
+
+| Setup | CPU | RAM | Storage |
+|---|---|---|---|
+| Test / lab | 2 vCPU | 4 GB | 40–60 GB SSD |
+| Production (≤25 users) | 4 vCPU | 8 GB | 100–200 GB SSD |
+| Active consulting team | 4–8 vCPU | 16 GB | 250–500 GB NVMe |
+
+OS: Linux. Runtime: Docker + Docker Compose.
+
+---
+
+## Stack overview
+
 ```
-
-Supported confidence levels:
-
-```text
-Low
-Medium
-High
-```
-
-
-
-## 5. Suggestion Engine
-
-Audity includes a rule-based suggestion engine for Alpha testing.
-
-The app can suggest:
-
-- finding title
-- finding priority
-- business impact
-- recommendation
-- risk rating
-- roadmap phase
-- potential owner
-- evidence warning
-
-Example:
-
-```text
-Question:
-Is MFA enforced for all privileged accounts?
-
-Answer:
-Partially
-
-Business criticality:
-High
-
-Suggested finding:
-Privileged accounts are not consistently protected with MFA.
-
-Suggested priority:
-Critical
-
-Suggested roadmap phase:
-0–30 days
-```
-
-The user can then:
-
-```text
-Accept
-Edit
-Dismiss
-Review later
-```
-
-
-
-## 6. Finding Review
-
-Potential findings are collected during the assessment and reviewed in a dedicated step.
-
-This prevents the assessment flow from being interrupted while the user answers questions.
-
-Each suggested finding can include:
-
-- title
-- category
-- observation
-- risk
-- business impact
-- recommendation
-- priority
-- likelihood
-- impact
-- affected systems
-- owner
-- due date
-- roadmap phase
-- framework mapping
-- confidence level
-- evidence status
-
-Findings can be accepted, edited, or dismissed before being included in the final report.
-
-
-
-## 7. Risk Register
-
-Audity translates weak assessment answers, missing evidence, low maturity scores, and confirmed findings into structured risk register entries.
-
-The Risk Register is stored per customer in the selected project folder:
-
-```text
-risk_registers/
-  risk_register_<customerId>.json
-```
-
-Automatically generated risks use stable source links so repeated saves update existing entries instead of creating duplicates:
-
-```text
-assessmentId + sourceType + sourceId + controlId
-```
-
-Risk records include:
-
-- risk title
-- description
-- category
-- control mapping
-- source reference
-- likelihood score
-- impact score
-- inherent risk score
-- risk level
-- risk owner
-- treatment option
-- mitigation plan
-- residual likelihood
-- residual impact
-- residual risk score
-- due date
-- status
-- notes
-- automatic/manual indicator
-- manual edit indicator
-
-Supported treatment options:
-
-```text
-Mitigate
-Accept
-Transfer
-Avoid
-Monitor
-```
-
-Risk scoring follows a simple likelihood x impact model:
-
-```text
-Risk Score = Likelihood x Impact
-```
-
-Rating model:
-
-```text
-1–4     = Low
-5–9     = Medium
-10–16   = High
-17–25   = Critical
-```
-
-Users can edit the Risk Register like a simple spreadsheet. System-calculated fields such as risk score, risk level, residual score, updated timestamp, and manual edit flags are recalculated automatically.
-
-Risk deletion uses soft delete in the app and is written to the Activity Log.
-
-Risk Register PDF exports are saved in the selected project folder:
-
-```text
-reports/
-  risk_register_<customerId>_<timestamp>.pdf
-```
-
-
-
-## 8. Activity Logging
-
-Audity stores a customer-specific Activity Log in JSON Lines format:
-
-```text
-logs/
-  customer_<customerId>/
-    activity_log.jsonl
-    activity_log_integrity.json
-```
-
-Activity Logs are read-only in the app. There is no UI function to edit, delete, reset, or remove log entries.
-
-Each log entry includes:
-
-- timestamp
-- customer ID
-- assessment ID
-- action
-- entity type
-- entity ID
-- summary
-- details
-- previous hash
-- entry hash
-
-Audity uses a hash chain:
-
-```text
-entryHash = SHA-256(canonicalJson(logEntryWithoutEntryHash))
-previousHash = previous entry entryHash
-```
-
-On project load, Audity verifies the chain and shows a warning if the log appears to have been modified outside the app.
-
-Important clarification:
-
-```text
-Local logs are tamper-evident, not tamper-proof.
-```
-
-Activity logs cannot be edited in Audity. Audity also verifies log integrity and warns if log files appear to have been modified outside the app.
-
-Activity Log PDF exports are saved in the selected project folder:
-
-```text
-reports/
-  activity_log_<customerId>_<timestamp>.pdf
-```
-
-
-
-## 9. Roadmap Builder
-
-Audity converts risks and findings into a remediation roadmap.
-
-Roadmap phases:
-
-```text
-0–30 days
-31–90 days
-3–6 months
-6–12 months
-```
-
-Roadmap items can include:
-
-- title
-- description
-- linked finding
-- linked risk
-- priority
-- owner
-- effort
-- dependency
-- status
-- target phase
-
-The goal is to help the user move from assessment results to actionable remediation planning.
-
-
-
-## 10. Report Preview
-
-Audity includes a report preview area for reviewing assessment output before export.
-
-The report structure can include:
-
-- executive summary
-- scope and methodology
-- organization context
-- scoring model
-- maturity overview
-- top risks
-- detailed findings
-- risk register
-- quick wins
-- remediation roadmap
-- framework mapping
-- evidence overview
-- assumptions and limitations
-
-For the Alpha version, the report can be printed or saved as PDF using the browser’s print functionality.
-
-
-
-## 11. Local Project Folder Mode
-
-Audity uses local project files for professional use.
-
-At startup, the app checks whether the browser supports project folder mode:
-
-```text
-window.showDirectoryPicker
-secure context
-```
-
-If this capability is missing, Audity does not start and does not fall back to IndexedDB or browser-local productive storage.
-
-Recommended browser:
-
-```text
-Google Chrome
-```
-
-Alternative browser:
-
-```text
-Microsoft Edge
-```
-
-Not supported for productive use:
-
-```text
-Safari
-Firefox
-older browsers
-mobile browsers
-embedded WebViews without File System Access API
-```
-
-When a project folder is selected, Audity creates or opens:
-
-```text
-audity-project.cisoassess
-```
-
-The selected folder should be controlled by the user, for example a client project folder in Documents or an encrypted local workspace.
-
-## 12. Project Export and Import
-
-Audity can still export portable project copies as:
-
-```text
-*.cisoassess
-```
-
-This allows users to:
-
-- back up assessment data
-- move a project to another machine
-- archive a client assessment
-- share a project internally under controlled conditions
-- restore a previous assessment state
-
-The main project state is stored in the selected project folder, not in productive browser-local storage.
-
-
-
-## 13. Framework Library
-
-Audity Alpha includes initial support for the following frameworks and control libraries:
-
-```text
-ISO/IEC 27001:2022
-NIS2
-NIST Cybersecurity Framework 2.0
-CIS Controls v8
-MITRE ATT&CK
-HIPAA Security Rule
-NSM Grunnprinsipper for IKT-sikkerhet
-```
-<img width="1021" height="467" alt="Bildschirmfoto 2026-05-15 um 14 17 53" src="https://github.com/user-attachments/assets/7fdb52b9-9fb8-4d7a-925d-d506efb10ae3" />
-
-The framework support in the Alpha version is intended for guided assessment structure, mapping, and testing. It should not yet be treated as a complete legal or certification-grade control catalogue.
-
-
-
-## Planned Frameworks for Beta
-
-Additional frameworks planned for the Beta version:
-
-```text
-DORA
-NIST SP 800-53
-NIST SP 800-61
-ISO/IEC 27002:2022
-SOC 2 Trust Services Criteria
-```
-
-Potential later additions:
-
-```text
-PCI DSS
-CMMC
-CSA Cloud Controls Matrix
-GDPR assessment mapping
-ENISA cybersecurity guidance mappings
-```
-
-
-
-# Installation and Local Execution
-
-Audity is distributed as a portable local web application.
-
-No cloud account is required.  
-No hosted backend is required.  
-No external database is required.  
-No client data is uploaded to a remote web service by design.
-
-The application is started through a small OS-specific launcher script. The launcher starts a local HTTP server and opens Audity in the default browser.
-
-Default local URL:
-
-```text
-http://127.0.0.1:8787
-```
-
-This means Audity is only served locally on the user’s machine.
-
-
-
-# macOS Installation
-
-## Requirements
-
-Audity requires a modern macOS system with a browser installed.
-
-Recommended browsers:
-
-```text
-Google Chrome
-Microsoft Edge
-```
-
-## Steps
-
-1. Download the Audity ZIP package.
-
-```text
-Audity-Alpha.zip
-```
-
-2. Extract the ZIP archive.
-
-3. Open the extracted folder.
-
-4. Start the macOS launcher:
-
-```text
-START_MAC.command
-```
-
-5. If macOS Gatekeeper blocks the script, use:
-
-```text
-Right-click → Open
-```
-
-Then confirm the security prompt.
-
-6. The launcher starts a local web server on:
-
-```text
-127.0.0.1:8787
-```
-
-7. Audity opens automatically in a new browser window.
-
-## Technical Behavior
-
-The macOS launcher starts a lightweight local HTTP server from the extracted application directory. The browser loads the static Audity frontend from localhost and requires project folder mode through the File System Access API.
-
-No remote backend is contacted for application hosting.
-
-
-
-# Linux Installation
-
-## Requirements
-
-Audity requires a Linux distribution with a modern browser and shell environment.
-
-Recommended browsers:
-
-```text
-Google Chrome
-Microsoft Edge
-```
-
-## Steps
-
-1. Download the Audity ZIP package.
-
-```text
-Audity-Alpha.zip
-```
-
-2. Extract the archive.
-
-Example:
-
-```bash
-unzip Audity-Alpha.zip
-```
-
-3. Enter the extracted directory.
-
-```bash
-cd Audity-Alpha
-```
-
-4. Make the launcher executable if required:
-
-```bash
-chmod +x start-linux.sh
-```
-
-5. Start Audity:
-
-```bash
-./start-linux.sh
-```
-
-6. The launcher starts a local web server on:
-
-```text
-127.0.0.1:8787
-```
-
-7. Audity opens in the default browser.
-
-## Technical Behavior
-
-The Linux launcher serves the local static application bundle through a local HTTP listener. The application executes in the browser runtime and stores assessment data in the selected local project folder.
-
-No cloud-hosted application backend is required.
-
-
-
-# Windows Installation
-
-## Requirements
-
-Audity requires Windows 10 or Windows 11 and a modern browser.
-
-Recommended browsers:
-
-```text
-Microsoft Edge
-Google Chrome
-```
-
-## Steps
-
-1. Download the Audity ZIP package.
-
-```text
-Audity-Alpha.zip
-```
-
-2. Extract the ZIP archive.
-
-Recommended location:
-
-```text
-C:\Users\<User>\Documents\Audity
-```
-
-3. Open the extracted folder.
-
-4. Start the Windows launcher:
-
-```text
-START_WINDOWS.bat
-```
-
-5. If Windows SmartScreen or endpoint protection warns about the script, verify that the ZIP package came from a trusted internal source before allowing execution.
-
-6. The launcher starts a local web server on:
-
-```text
-127.0.0.1:8787
-```
-
-7. Audity opens automatically in a new browser window.
-
-## Technical Behavior
-
-The Windows batch launcher starts a local web server from the extracted application directory and opens the local Audity frontend in the default browser. Audity requires a supported Chromium-based desktop browser for project folder mode.
-
-The application is not hosted on an external web service and does not require a remote database.
-
-
-
-# Security Model
-
-## Local-First, Security-First
-
-Audity follows a local-first security model because assessment data is sensitive by nature.
-
-Cybersecurity and GRC assessments may contain:
-
-```text
-Known control weaknesses
-Risk ratings
-Infrastructure details
-Identity and access gaps
-Backup and recovery weaknesses
-Incident response maturity gaps
-Regulatory exposure
-Supplier risk information
-Management-level remediation priorities
-```
-
-This information can be valuable to attackers, competitors, insurers, auditors, regulators, and third parties. Hosting it by default on an external SaaS platform would increase the exposure surface and introduce additional vendor, contractual, jurisdictional, and data-processing considerations.
-
-Audity avoids that default exposure by running locally.
-
-## Framework Alignment
-
-Audity’s local-first model supports common information security principles:
-
-- **ISO/IEC 27001** focuses on managing risks related to information handled by an organization and preserving confidentiality, integrity, and availability.
-- **NIST CSF 2.0** provides a structure for organizations to assess, prioritize, manage, and communicate cybersecurity risk.
-- **NIS2 Article 21** requires appropriate and proportionate technical, operational, and organizational cybersecurity risk-management measures for network and information systems.
-
-Audity applies these principles pragmatically by minimizing unnecessary data movement and keeping audit work local by default.
-
-## Compliance Engine Alpha
-
-Audity now includes a local compliance engine for framework readiness support.
-
-The engine is data-driven and works from local static files only:
-
-```text
-Framework control database
-Control-to-question mappings
-Evidence expectations
-Control evaluation
-Framework coverage
-Gap analysis
-Suggested findings
-Risk and roadmap impact
-Report readiness sections
-```
-
-Supported Alpha framework structures:
-
-```text
-ISO/IEC 27001:2022
-NIS2
-NIST Cybersecurity Framework 2.0
-CIS Controls v8
-MITRE ATT&CK
-HIPAA Security Rule
-NSM Grunnprinsipper for IKT-sikkerhet
-```
-
-The Alpha engine intentionally uses original control summaries, assessment questions, evidence expectations, and mapping rationale. It does not copy full official control catalogues or certification material.
-
-The UI uses the terms:
-
-```text
-Readiness
-Coverage
-Evidence completeness
-Potential gap
-Assessment result
-```
-
-It should not describe a result as certified, guaranteed, audit-proof, or fully compliant.
-
-Framework content in this Alpha version is intended for workflow testing and assessment support. It should not be treated as a complete certification-grade control catalogue. Framework mappings are provided to support assessment consistency and reporting. They should be reviewed by a qualified professional before being used for formal audit or regulatory conclusions.
-
-Audity supports professional judgment. It does not replace legal, regulatory, audit, or certification advice.
-
-
-
-# Alpha Version Notice
-
-Audity Alpha is intended for internal testing, workflow validation, and early feedback.
-
-The Alpha version is not yet intended as a certification-grade audit platform or a replacement for professional legal, regulatory, or audit advice.
-
-Known Alpha limitations:
-
-```text
-Framework mappings are initial and not complete certification catalogues.
-Main report PDF export uses browser print/save functionality.
-Risk Register and Activity Log PDF exports are intentionally simple.
-Multi-user collaboration is not included.
-Cloud sync is not included.
-Role-based access control is not included.
-Encryption for project files is planned for a later version.
-The selected project folder must be opened again after a browser restart.
-Activity logs are tamper-evident, not tamper-proof against direct file-system changes.
+audity-web       React + TypeScript frontend (served by NGINX)
+audity-api       Node.js + TypeScript API (Fastify/NestJS)
+audity-worker    Background jobs — PDF generation, email delivery, backups
+audity-db        PostgreSQL 16
+audity-redis     Redis 7 — queues, rate limiting, session cache
+audity-storage   MinIO or local volume — evidence files, report packages
+audity-ai        Optional, disabled by default — tenant-local LLM runtime
 ```
 
 ---
 
-# Recommended Alpha Test Workflow
+## Getting started
 
-1. Start Audity locally.
-2. Open the included test assessment.
-3. Walk through the guided workflow.
-4. Review the sample controls and findings.
-5. Accept, edit, or dismiss suggested findings.
-6. Review generated risks.
-7. Review the remediation roadmap.
-8. Open the report preview.
-9. Export a project backup.
-10. Re-import the backup and verify the assessment state.
-
-## Compliance Engine Alpha Test Notes
-
-Suggested manual checks for the current Alpha build:
-
-```text
-ISO 27001 Readiness:
-Select ISO 27001 as Primary and NIS2 as Supporting.
-Regenerate questions.
-Set privileged MFA to No, score 1, evidence Missing.
-Confirm access-control readiness drops and a framework-gap finding appears.
-
-NIS2 Readiness:
-Select NIS2 as Primary.
-Mark incident response and restore testing as weak.
-Confirm business continuity and incident handling gaps appear.
-Confirm roadmap phases include 0-30 days and 31-90 days.
-
-SOC / Detection Maturity:
-Select MITRE ATT&CK as Supporting.
-Answer logging and detection questions.
-Confirm MITRE mappings appear as detection coverage support.
-Confirm the UI avoids final compliance wording for MITRE.
-
-Evidence Missing:
-Set high-impact questions to score 1 and evidence Missing.
-Confirm control status becomes Evidence missing or Not implemented.
-Confirm suggested findings mention evidence gaps.
-
-Export / Import:
-Export .cisoassess after answering questions and accepting a framework gap.
-Reset the selected project file.
-Import the file.
-Confirm selected frameworks, usage modes, questions, findings, risks, roadmap, and report sections still render.
+```bash
+git clone https://github.com/your-org/audity
+cd audity-yourtenantname
+cp .env.example .env
+# Edit .env — set AUDITY_APP_SECRET, AUDITY_ENCRYPTION_KEY, database credentials
+docker compose up -d
 ```
 
+See the [deployment guide](./docs/deployment.md) for full setup instructions, TLS configuration, and backup setup.
 
+---
 
-# Project Status
+## Backup and key management
 
-```text
-Status: Alpha
-Architecture: Portable local web application
-Execution model: Local web server + browser runtime
-Storage model: File System Access API project folder + .cisoassess project file
-Primary use case: Cybersecurity, audit, and GRC assessment workflow
-```
+Run daily PostgreSQL backups, daily evidence storage backups, and weekly full archives. Keep your `AUDITY_ENCRYPTION_KEY` backed up separately from the database — if you lose it, the encrypted data is gone. Test your restore procedure before you need it.
+
+Recommended monitoring: Uptime Kuma or Prometheus + Grafana for container health, Loki for log aggregation, Docker health checks for all services.
+
+---
+
+## Implementation status
+
+| Phase | Description | Status |
+|---|---|---|
+| 1 | Docker foundation — frontend/backend split, PostgreSQL, Docker Compose | In progress |
+| 2 | Authentication — password hashing, TOTP MFA, sessions, RBAC, audit logging | Done |
+| 3 | Data persistence — customers, assessments, framework engine, findings, risks | In progress |
+| 4 | Traceability — immutable activity log, before/after tracking, tamper-evident hashing | Done |
+| 5 | Reporting — branded templates, modular report builder, PDF export | In progress |
+| 6 | Secure email — SMTP, encrypted packages, delivery audit trail | Done |
+| 7 | Evidence and export hardening — file uploads, `.cisoassess` packages | In progress |
+| 8 | Platform hardening — field-level encryption, backup/restore, rate limiting | In progress |
+| 9 | Optional AI — tenant-local runtime, AI job queue, per-tenant vector store | Future |
+
+---
+
+## Alpha limitations
+
+Audity does not provide legal advice. It does not certify compliance with any standard or regulation. Framework mappings in the alpha are initial and not certification-grade. Professional review is required before any formal audit conclusions.
+
+Operators are responsible for securing their own deployment — host hardening, TLS, firewall configuration, secret rotation, backup strategy, and key management. The platform gives you the structure. The operational security is yours to maintain.
+
+---
+
+## License
+
+Community Edition is released under [MIT License](./LICENSE).
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
