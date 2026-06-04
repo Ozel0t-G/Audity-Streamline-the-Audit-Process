@@ -24,31 +24,37 @@ function useIdleLogout() {
     if (!accessToken) return;
     let timer: number | undefined;
     let cancelled = false;
+    let timeoutMinutes = 30;
     const activityEvents = ["click", "keydown", "mousemove", "scroll", "touchstart"];
 
-    const schedule = async () => {
-      const payload = await api<{ sessionIdleTimeoutMinutes: number }>("/api/system/session-timeout").catch(() => ({
-        sessionIdleTimeoutMinutes: 30
-      }));
+    const schedule = () => {
       if (cancelled) return;
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         window.localStorage.setItem("audity_login_notice", "Your session timed out because of inactivity.");
         void logout().finally(() => navigate("/login", { replace: true }));
-      }, Math.max(5, payload.sessionIdleTimeoutMinutes) * 60 * 1000);
+      }, Math.max(5, timeoutMinutes) * 60 * 1000);
     };
 
-    const reset = () => {
-      void schedule();
+    const loadTimeout = async () => {
+      const payload = await api<{ sessionIdleTimeoutMinutes: number }>("/api/system/session-timeout").catch(() => ({
+        sessionIdleTimeoutMinutes: 30
+      }));
+      timeoutMinutes = payload.sessionIdleTimeoutMinutes;
+      schedule();
     };
 
-    void schedule();
+    void loadTimeout();
     activityEvents.forEach((eventName) => window.addEventListener(eventName, reset, { passive: true }));
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
       activityEvents.forEach((eventName) => window.removeEventListener(eventName, reset));
     };
+
+    function reset() {
+      schedule();
+    }
   }, [accessToken, api, logout, navigate]);
 }
 
