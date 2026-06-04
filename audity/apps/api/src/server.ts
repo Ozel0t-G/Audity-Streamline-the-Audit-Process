@@ -67,9 +67,14 @@ await app.register(cors, {
 app.setErrorHandler((error, request, reply) => {
   request.log.error(error);
   const detail = error as { statusCode?: number; code?: string; message?: string };
-  const statusCode = detail.statusCode && detail.statusCode >= 400 ? detail.statusCode : 500;
+  const statusCode =
+    detail.statusCode && detail.statusCode >= 400
+      ? detail.statusCode
+      : detail.code === "RATE_LIMITED"
+        ? 429
+        : 500;
   reply.code(statusCode).send({
-    code: detail.code ?? "INTERNAL_ERROR",
+    code: statusCode >= 500 ? "INTERNAL_ERROR" : detail.code ?? "REQUEST_ERROR",
     message: statusCode >= 500 ? "Internal server error" : detail.message
   });
 });

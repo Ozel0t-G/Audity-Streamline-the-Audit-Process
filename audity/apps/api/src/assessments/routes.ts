@@ -27,11 +27,16 @@ type ScopeBody = {
   criticality?: string;
 };
 
+const postgresUuidSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
 const assessmentSchema = z.object({
   type: z.string().trim().min(1).optional(),
   audience: z.string().optional(),
   framework: z.string().optional(),
-  frameworkId: z.string().min(1).optional(),
+  frameworkId: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    postgresUuidSchema.optional()
+  ),
   language: z.string().optional(),
   targetDate: z.string().optional(),
   status: z.string().optional()
