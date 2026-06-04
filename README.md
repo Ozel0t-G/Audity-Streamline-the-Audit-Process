@@ -230,6 +230,7 @@ Community Edition is released under [MIT License](./LICENSE).
 
 ---
 
-## Contributing
+<img width="1015" height="473" alt="Bildschirmfoto 2026-06-04 um 15 34 49" src="https://github.com/user-attachments/assets/f1887c8c-a390-4f24-8dd7-d3fe2bc32d1f" />
+<img width="1015" height="473" alt="Bildschirmfoto 2026-06-04 um 15 35 00" src="https://github.com/user-attachments/assets/69811fe1-698c-42cd-86e0-78b62c76308b" />
+<img width="1015" height="473" alt="Bildschirmfoto 2026-06-04 um 15 34 34" src="https://github.com/user-attachments/assets/d0b1931c-3af9-4f0c-b3d8-00a524406a6f" />
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
