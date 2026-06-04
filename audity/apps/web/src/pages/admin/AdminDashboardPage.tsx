@@ -65,10 +65,35 @@ type EmailDelivery = {
 type BackupJob = {
   id: string;
   jobType: string;
+  source?: string;
   status: string;
+  createdAt?: string | null;
   startedAt: string | null;
   finishedAt: string | null;
+  completedAt?: string | null;
+  failedAt?: string | null;
+  failureReason?: string | null;
+  storageLocation?: string | null;
+  downloadExpiresAt?: string | null;
+  isDownloadableZip?: boolean;
+  backupManifest?: Record<string, unknown> | null;
   metadata: Record<string, unknown>;
+};
+
+type BackupSettings = {
+  automaticBackupsEnabled: boolean;
+  backupType: "full" | "database" | "evidence";
+  includeDatabase: boolean;
+  includeEvidenceFiles: boolean;
+  includeReports: boolean;
+  includeFrameworkImports: boolean;
+  includeAuditLogs: boolean;
+  includeActivityLogs: boolean;
+  includeSystemSettings: boolean;
+  includeNotifications: boolean;
+  scheduleTimezone: string;
+  scheduleCron: string;
+  retentionDays: number;
 };
 
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
@@ -117,6 +142,24 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [systemSettings, setSystemSettings] = useState({ sessionIdleTimeoutMinutes: 30 });
   const [backupJobs, setBackupJobs] = useState<BackupJob[]>([]);
   const [backupType, setBackupType] = useState<"full" | "database" | "evidence">("full");
+  const [backupSettings, setBackupSettings] = useState<BackupSettings>({
+    automaticBackupsEnabled: false,
+    backupType: "full",
+    includeDatabase: true,
+    includeEvidenceFiles: true,
+    includeReports: true,
+    includeFrameworkImports: true,
+    includeAuditLogs: true,
+    includeActivityLogs: true,
+    includeSystemSettings: true,
+    includeNotifications: true,
+    scheduleTimezone: "Europe/Oslo",
+    scheduleCron: "0 2 * * *",
+    retentionDays: 30
+  });
+  const [backupPassword, setBackupPassword] = useState("");
+  const [restoreBackupId, setRestoreBackupId] = useState("");
+  const [restorePrecheck, setRestorePrecheck] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
 
   const selectedLog = useMemo(
@@ -167,8 +210,13 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   }
 
   async function loadBackup() {
-    const payload = await api<{ latestBackup: BackupJob | null; backupJobs: BackupJob[] }>("/api/admin/backup/status");
-    setBackupJobs(payload.backupJobs);
+    const [jobsPayload, settingsPayload] = await Promise.all([
+      api<{ latestBackup: BackupJob | null; backupJobs: BackupJob[] }>("/api/admin/backups"),
+      api<{ backupSettings: BackupSettings }>("/api/admin/backup-settings")
+    ]);
+    setBackupJobs(jobsPayload.backupJobs);
+    setBackupSettings(settingsPayload.backupSettings);
+    if (!restoreBackupId && jobsPayload.backupJobs[0]) setRestoreBackupId(jobsPayload.backupJobs[0].id);
   }
 
   async function loadSection() {
@@ -295,13 +343,66 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     event.preventDefault();
     setError("");
     try {
-      await api("/api/admin/backup/trigger", {
+      await api("/api/admin/backups/manual", {
         method: "POST",
         body: JSON.stringify({ jobType: backupType })
       });
       await loadBackup();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Backup trigger failed");
+    }
+  }
+
+  async function triggerDownloadBackup() {
+    setError("");
+    setBackupPassword("");
+    try {
+      const payload = await api<{ backupJobId: string; downloadPassword: string }>("/api/admin/backups/manual-download-zip", {
+        method: "POST",
+        body: JSON.stringify({ jobType: backupType })
+      });
+      setBackupPassword(payload.downloadPassword);
+      await loadBackup();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Download backup trigger failed");
+    }
+  }
+
+  async function downloadBackup(job: BackupJob) {
+    setError("");
+    try {
+      const payload = await api<{ downloadUrl: string }>(`/api/admin/backups/${job.id}/download`);
+      window.open(payload.downloadUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Backup download failed");
+    }
+  }
+
+  async function saveBackupSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      const payload = await api<{ backupSettings: BackupSettings }>("/api/admin/backup-settings", {
+        method: "PATCH",
+        body: JSON.stringify(backupSettings)
+      });
+      setBackupSettings(payload.backupSettings);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Backup settings save failed");
+    }
+  }
+
+  async function runRestorePrecheck(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      const payload = await api<{ precheck: Record<string, unknown> }>("/api/admin/backups/restore-precheck", {
+        method: "POST",
+        body: JSON.stringify({ backupJobId: restoreBackupId, passwordProvided: true })
+      });
+      setRestorePrecheck(payload.precheck);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Restore precheck failed");
     }
   }
 
@@ -539,26 +640,75 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </section>
           ) : null}
           {section === "backup" ? (
-            <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-4 text-lg font-semibold">Manual Backup</h2>
-                {user?.role === "Instance Admin" ? <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
-                    Backup Type
-                    <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={backupType} onChange={(event) => setBackupType(event.target.value as typeof backupType)}>
-                      <option value="full">Full</option>
-                      <option value="database">Database</option>
-                      <option value="evidence">Evidence</option>
-                    </select>
-                  </label>
-                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
-                    Trigger backup
-                  </button>
-                </form> : <p className="text-sm text-audity-muted">Instance Admin required.</p>}
-              </section>
+            <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
+              <div className="space-y-4">
+                <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                  <h2 className="mb-4 text-lg font-semibold">Manual Backup</h2>
+                  {user?.role === "Instance Admin" ? <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>
+                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                      Backup Type
+                      <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={backupType} onChange={(event) => setBackupType(event.target.value as typeof backupType)}>
+                        <option value="full">Full</option>
+                        <option value="database">Database</option>
+                        <option value="evidence">Evidence</option>
+                      </select>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                        Trigger backup
+                      </button>
+                      <button type="button" className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void triggerDownloadBackup()}>
+                        Create download package
+                      </button>
+                    </div>
+                    {backupPassword ? (
+                      <div className="rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-xs text-audity-warning">
+                        One-time password: <span className="font-mono">{backupPassword}</span>
+                      </div>
+                    ) : null}
+                  </form> : <p className="text-sm text-audity-muted">Instance Admin required.</p>}
+                </section>
+                <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                  <h2 className="mb-4 text-lg font-semibold">Automatic Backups</h2>
+                  <form className="space-y-3" onSubmit={(event) => void saveBackupSettings(event)}>
+                    <label className="flex items-center gap-2 text-sm text-audity-text">
+                      <input type="checkbox" checked={backupSettings.automaticBackupsEnabled} onChange={(event) => setBackupSettings({ ...backupSettings, automaticBackupsEnabled: event.target.checked })} />
+                      Enabled
+                    </label>
+                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                      Schedule
+                      <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={backupSettings.scheduleCron} onChange={(event) => setBackupSettings({ ...backupSettings, scheduleCron: event.target.value })} />
+                    </label>
+                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                      Retention days
+                      <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min={1} max={3650} value={backupSettings.retentionDays} onChange={(event) => setBackupSettings({ ...backupSettings, retentionDays: Number(event.target.value) })} />
+                    </label>
+                    <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                      Save schedule
+                    </button>
+                  </form>
+                </section>
+                <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                  <h2 className="mb-4 text-lg font-semibold">Restore Precheck</h2>
+                  <form className="space-y-3" onSubmit={(event) => void runRestorePrecheck(event)}>
+                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                      Backup
+                      <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={restoreBackupId} onChange={(event) => setRestoreBackupId(event.target.value)}>
+                        {backupJobs.map((job) => (
+                          <option key={job.id} value={job.id}>{job.jobType} - {job.status}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary">
+                      Run precheck
+                    </button>
+                    {restorePrecheck ? <pre className="max-h-48 overflow-auto rounded-audity bg-audity-page p-3 text-xs text-audity-secondary">{jsonBlock(restorePrecheck)}</pre> : null}
+                  </form>
+                </section>
+              </div>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold">Backup Jobs</h2>
+                  <h2 className="text-lg font-semibold">Backup History</h2>
                   <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void loadBackup()}>
                     Refresh
                   </button>
@@ -566,16 +716,22 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 <div className="space-y-2">
                   {backupJobs.map((job) => (
                     <div key={job.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-audity-primary">{job.jobType}</p>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-audity-primary">{job.jobType} <span className="text-xs font-normal text-audity-muted">{job.source ?? "manual"}</span></p>
                         <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{job.status}</span>
                       </div>
                       <p className="mt-1 text-xs text-audity-secondary">
-                        Started: {job.startedAt ? new Date(job.startedAt).toLocaleString() : "-"}
+                        Started: {job.startedAt ? new Date(job.startedAt).toLocaleString() : "-"} | Completed: {job.completedAt ? new Date(job.completedAt).toLocaleString() : "-"}
                       </p>
                       <p className="mt-1 text-xs text-audity-muted">
                         Objects: {Array.isArray(job.metadata?.objects) ? job.metadata.objects.length : 0}
                       </p>
+                      {job.failureReason ? <p className="mt-1 text-xs text-audity-error">{job.failureReason}</p> : null}
+                      {job.isDownloadableZip ? (
+                        <button className="mt-2 h-8 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-xs text-audity-text hover:border-audity-primary" onClick={() => void downloadBackup(job)} disabled={job.status !== "completed"}>
+                          Download package
+                        </button>
+                      ) : null}
                     </div>
                   ))}
                   {!backupJobs.length ? <p className="text-sm text-audity-muted">No backup jobs yet</p> : null}

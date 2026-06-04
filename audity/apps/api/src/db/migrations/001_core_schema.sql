@@ -370,6 +370,72 @@ create table if not exists backup_jobs (
   metadata jsonb not null default '{}'::jsonb
 );
 
+alter table backup_jobs add column if not exists source text;
+alter table backup_jobs add column if not exists created_by_user_id uuid references users(id);
+alter table backup_jobs add column if not exists created_at timestamptz not null default now();
+alter table backup_jobs add column if not exists completed_at timestamptz;
+alter table backup_jobs add column if not exists failed_at timestamptz;
+alter table backup_jobs add column if not exists failure_reason text;
+alter table backup_jobs add column if not exists storage_location text;
+alter table backup_jobs add column if not exists download_expires_at timestamptz;
+alter table backup_jobs add column if not exists is_downloadable_zip boolean not null default false;
+alter table backup_jobs add column if not exists backup_manifest jsonb;
+
+create table if not exists backup_settings (
+  id text primary key default 'default',
+  automatic_backups_enabled boolean not null default false,
+  backup_type text not null default 'full',
+  include_database boolean not null default true,
+  include_evidence_files boolean not null default true,
+  include_generated_reports boolean not null default true,
+  include_framework_imports boolean not null default true,
+  include_audit_logs boolean not null default true,
+  include_user_activity_logs boolean not null default true,
+  include_system_settings boolean not null default true,
+  include_notifications boolean not null default true,
+  schedule_mode text not null default 'Daily',
+  daily_time text,
+  weekly_day text,
+  weekly_time text,
+  monthly_day integer,
+  monthly_time text,
+  custom_interval_hours integer,
+  retention_keep_last integer not null default 7,
+  updated_by_user_id uuid references users(id),
+  updated_at timestamptz not null default now()
+);
+
+alter table backup_settings add column if not exists automatic_backups_enabled boolean not null default false;
+alter table backup_settings add column if not exists backup_type text not null default 'full';
+alter table backup_settings add column if not exists include_database boolean not null default true;
+alter table backup_settings add column if not exists include_evidence_files boolean not null default true;
+alter table backup_settings add column if not exists include_reports boolean not null default true;
+alter table backup_settings add column if not exists include_framework_imports boolean not null default true;
+alter table backup_settings add column if not exists include_audit_logs boolean not null default true;
+alter table backup_settings add column if not exists include_activity_logs boolean not null default true;
+alter table backup_settings add column if not exists include_system_settings boolean not null default true;
+alter table backup_settings add column if not exists include_notifications boolean not null default true;
+alter table backup_settings add column if not exists schedule_timezone text not null default 'Europe/Oslo';
+alter table backup_settings add column if not exists schedule_cron text not null default '0 2 * * *';
+alter table backup_settings add column if not exists retention_days integer not null default 30;
+alter table backup_settings add column if not exists updated_by_user_id uuid references users(id);
+alter table backup_settings add column if not exists updated_at timestamptz not null default now();
+
+create table if not exists restore_jobs (
+  id uuid primary key,
+  backup_job_id uuid references backup_jobs(id),
+  uploaded_archive_path text,
+  status text not null default 'pending',
+  started_by_user_id uuid references users(id),
+  created_at timestamptz not null default now(),
+  started_at timestamptz,
+  completed_at timestamptz,
+  failed_at timestamptz,
+  failure_reason text,
+  precheck_result jsonb,
+  safety_backup_job_id uuid references backup_jobs(id)
+);
+
 alter table sessions add column if not exists csrf_token_hash text;
 alter table sessions add column if not exists last_seen_at timestamptz not null default now();
 alter table users add column if not exists alpha_accepted_at timestamptz;

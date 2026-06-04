@@ -1,7 +1,7 @@
 import Fastify from "fastify";
-import { Queue, Worker } from "bullmq";
+import { Worker } from "bullmq";
 import { Client } from "minio";
-import { createDecipheriv, createHash, randomUUID } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { spawn } from "node:child_process";
 import nodemailer from "nodemailer";
 import pg from "pg";
@@ -112,6 +112,55 @@ function decryptText(payload: string): string {
     decipher.update(Buffer.from(encryptedRaw, "base64url")),
     decipher.final()
   ]).toString("utf8");
+}
+
+function encryptBackupPackage(
+  files: Array<{ path: string; contentType: string; content: Buffer }>,
+  password: string
+): Buffer {
+  const bundle = Buffer.from(
+    JSON.stringify(
+      {
+        format: "audity-encrypted-backup-package",
+        version: 1,
+        generatedAt: new Date().toISOString(),
+        files: files.map((file) => ({
+          path: file.path,
+          contentType: file.contentType,
+          size: file.content.length,
+          sha256: createHash("sha256").update(file.content).digest("hex"),
+          contentBase64: file.content.toString("base64")
+        }))
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
+  const salt = randomBytes(16);
+  const iv = randomBytes(12);
+  const key = scryptSync(password, salt, 32);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([cipher.update(bundle), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.from(
+    JSON.stringify(
+      {
+        format: "audity-encrypted-backup-package",
+        version: 1,
+        encryption: "AES-256-GCM",
+        kdf: "scrypt",
+        salt: salt.toString("base64url"),
+        iv: iv.toString("base64url"),
+        tag: tag.toString("base64url"),
+        checksum: createHash("sha256").update(bundle).digest("hex"),
+        encryptedContentBase64: encrypted.toString("base64")
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
 }
 
 async function sendSecureReportEmail(jobData: {
@@ -264,30 +313,138 @@ async function evidenceSnapshot(prefix: string): Promise<{ manifest: Buffer; cop
   };
 }
 
-async function ensureBackupRecord(backupJobId: string | undefined, jobType: string) {
+async function ensureBackupRecord(
+  backupJobId: string | undefined,
+  jobType: string,
+  source: string,
+  userId?: string
+) {
   if (backupJobId) {
     await pool.query(
-      "update backup_jobs set status = 'running', started_at = coalesce(started_at, now()) where id = $1",
-      [backupJobId]
+      `update backup_jobs
+       set status = 'running',
+           source = coalesce(source, $2),
+           started_at = coalesce(started_at, now()),
+           created_by_user_id = coalesce(created_by_user_id, $3)
+       where id = $1`,
+      [backupJobId, source, userId ?? null]
     );
     return backupJobId;
   }
+  const running = await pool.query(
+    "select id from backup_jobs where job_type = 'full' and status in ('queued','running') limit 1"
+  );
+  if (jobType === "full" && running.rows[0]) {
+    throw new Error("A backup is already running. Please wait until it finishes.");
+  }
   const id = randomUUID();
   await pool.query(
-    `insert into backup_jobs (id, job_type, status, started_at, metadata)
-     values ($1, $2, 'running', now(), $3)`,
-    [id, jobType, JSON.stringify({ scheduled: true, requestedAt: new Date().toISOString() })]
+    `insert into backup_jobs (id, job_type, source, status, started_at, created_by_user_id, metadata)
+     values ($1, $2, $3, 'running', now(), $4, $5)`,
+    [
+      id,
+      jobType,
+      source,
+      userId ?? null,
+      JSON.stringify({ scheduled: source === "automatic", requestedAt: new Date().toISOString() })
+    ]
   );
   return id;
+}
+
+async function writeBackupManifest(input: {
+  backupJobId: string;
+  jobType: string;
+  source: string;
+  userId?: string;
+  prefix: string;
+  metadata: Record<string, unknown>;
+}) {
+  const user = input.userId
+    ? await pool.query<{ email: string }>("select email from users where id = $1", [input.userId])
+    : null;
+  const manifest = {
+    backupId: input.backupJobId,
+    backupType: input.jobType,
+    source: input.source,
+    createdAt: new Date().toISOString(),
+    createdByUserId: input.userId ?? null,
+    createdByUserEmail: user?.rows[0]?.email ?? null,
+    audityVersion: "0.1.0",
+    databaseSchemaVersion: "core",
+    includes: {
+      database: input.jobType === "full" || input.jobType === "database",
+      evidenceFiles: input.jobType === "full" || input.jobType === "evidence",
+      reports: input.jobType === "full",
+      frameworkImports: input.jobType === "full",
+      auditLogs: input.jobType === "full",
+      activityLogs: input.jobType === "full",
+      systemSettings: input.jobType === "full",
+      notifications: input.jobType === "full"
+    },
+    storage: {
+      provider: "minio",
+      bucket: backupBucket,
+      prefix: input.prefix,
+      objectCount: Array.isArray(input.metadata.objects) ? input.metadata.objects.length : 0
+    },
+    checksums: {
+      databaseDump: input.metadata.databaseDumpSha256 ? `sha256:${input.metadata.databaseDumpSha256}` : null,
+      evidenceManifest: input.metadata.evidenceManifestSha256 ? `sha256:${input.metadata.evidenceManifestSha256}` : null
+    }
+  };
+  const manifestBuffer = Buffer.from(JSON.stringify(manifest, null, 2), "utf8");
+  const objectKey = `${input.prefix}/backup-manifest.json`;
+  await storageClient.putObject(backupBucket, objectKey, manifestBuffer, manifestBuffer.length, {
+    "Content-Type": "application/json"
+  });
+  (input.metadata.objects as string[]).push(objectKey);
+  input.metadata.manifestObjectKey = objectKey;
+  return manifest;
+}
+
+async function ensureNoConcurrentFullBackup(backupJobId: string, jobType: string): Promise<void> {
+  if (jobType !== "full") return;
+  const running = await pool.query(
+    `select id from backup_jobs
+     where id <> $1 and job_type = 'full' and status in ('queued','running')
+     limit 1`,
+    [backupJobId]
+  );
+  if (running.rows[0]) {
+    throw new Error("A backup is already running. Please wait until it finishes.");
+  }
+}
+
+function twelveHoursFromNow(): Date {
+  return new Date(Date.now() + 12 * 60 * 60 * 1000);
+}
+
+async function markBackupRunning(backupJobId: string, source: string, userId?: string): Promise<void> {
+  await pool.query(
+    `update backup_jobs
+     set status = 'running',
+         source = coalesce(source, $2),
+         started_at = coalesce(started_at, now()),
+         created_by_user_id = coalesce(created_by_user_id, $3)
+     where id = $1`,
+    [backupJobId, source, userId ?? null]
+  );
 }
 
 async function runBackup(jobData: {
   backupJobId?: string;
   jobType?: "full" | "database" | "evidence";
   userId?: string;
+  source?: string;
+  downloadableZip?: boolean;
+  downloadPassword?: string;
 }) {
   const jobType = jobData.jobType ?? "full";
-  const backupJobId = await ensureBackupRecord(jobData.backupJobId, jobType);
+  const source = jobData.source ?? (jobData.downloadableZip ? "manual_download_zip" : jobData.userId ? "manual" : "automatic");
+  const backupJobId = await ensureBackupRecord(jobData.backupJobId, jobType, source, jobData.userId);
+  await ensureNoConcurrentFullBackup(backupJobId, jobType);
+  await markBackupRunning(backupJobId, source, jobData.userId);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const prefix = `backups/${timestamp}-${backupJobId}`;
   const metadata: Record<string, unknown> = {
@@ -296,19 +453,32 @@ async function runBackup(jobData: {
     backupBucket,
     objects: []
   };
+  const packageFiles: Array<{ path: string; contentType: string; content: Buffer }> = [];
   try {
     await ensureBucket();
     if (jobType === "full" || jobType === "database") {
       const dump = await pgDump();
+      packageFiles.push({
+        path: "database.dump",
+        contentType: "application/octet-stream",
+        content: dump
+      });
       const objectKey = `${prefix}/database.dump`;
       await storageClient.putObject(backupBucket, objectKey, dump, dump.length, {
         "Content-Type": "application/octet-stream"
       });
       (metadata.objects as string[]).push(objectKey);
       metadata.databaseDumpBytes = dump.length;
+      metadata.databaseDumpObjectKey = objectKey;
+      metadata.databaseDumpSha256 = createHash("sha256").update(dump).digest("hex");
     }
     if (jobType === "full" || jobType === "evidence") {
       const snapshot = await evidenceSnapshot(prefix);
+      packageFiles.push({
+        path: "evidence-manifest.json",
+        contentType: "application/json",
+        content: snapshot.manifest
+      });
       const objectKey = `${prefix}/evidence-manifest.json`;
       await storageClient.putObject(backupBucket, objectKey, snapshot.manifest, snapshot.manifest.length, {
         "Content-Type": "application/json"
@@ -317,10 +487,39 @@ async function runBackup(jobData: {
       (metadata.objects as string[]).push(...snapshot.copiedObjects);
       metadata.evidenceManifestBytes = snapshot.manifest.length;
       metadata.evidenceObjectCount = snapshot.copiedObjects.length;
+      metadata.evidenceManifestObjectKey = objectKey;
+      metadata.evidenceManifestSha256 = createHash("sha256").update(snapshot.manifest).digest("hex");
+    }
+    const manifest = await writeBackupManifest({ backupJobId, jobType, source, userId: jobData.userId, prefix, metadata });
+    packageFiles.push({
+      path: "backup-manifest.json",
+      contentType: "application/json",
+      content: Buffer.from(JSON.stringify(manifest, null, 2), "utf8")
+    });
+    if (jobData.downloadableZip && jobData.downloadPassword) {
+      const packageBuffer = encryptBackupPackage(packageFiles, jobData.downloadPassword);
+      const packageObjectKey = `${prefix}/audity-${jobType}-backup-${timestamp}.auditybackup`;
+      await storageClient.putObject(backupBucket, packageObjectKey, packageBuffer, packageBuffer.length, {
+        "Content-Type": "application/octet-stream"
+      });
+      (metadata.objects as string[]).push(packageObjectKey);
+      metadata.downloadObjectKey = packageObjectKey;
+      metadata.downloadPackageBytes = packageBuffer.length;
+      metadata.downloadPackageSha256 = createHash("sha256").update(packageBuffer).digest("hex");
+      metadata.downloadPackageFormat = "audity-encrypted-backup-package";
+      metadata.downloadPackageEncryption = "AES-256-GCM";
     }
     await pool.query(
-      "update backup_jobs set status = 'completed', finished_at = now(), metadata = metadata || $2::jsonb where id = $1",
-      [backupJobId, JSON.stringify(metadata)]
+      `update backup_jobs
+       set status = 'completed',
+           finished_at = now(),
+           completed_at = now(),
+           storage_location = $2,
+           download_expires_at = case when is_downloadable_zip then $3 else download_expires_at end,
+           backup_manifest = $4::jsonb,
+           metadata = metadata || $5::jsonb
+       where id = $1`,
+      [backupJobId, `${backupBucket}/${prefix}`, twelveHoursFromNow().toISOString(), JSON.stringify(manifest), JSON.stringify(metadata)]
     );
     if (jobData.userId) {
       await appendActivityEvent(
@@ -335,9 +534,16 @@ async function runBackup(jobData: {
     return metadata;
   } catch (error) {
     await pool.query(
-      "update backup_jobs set status = 'failed', finished_at = now(), metadata = metadata || $2::jsonb where id = $1",
+      `update backup_jobs
+       set status = 'failed',
+           finished_at = now(),
+           failed_at = now(),
+           failure_reason = $2,
+           metadata = metadata || $3::jsonb
+       where id = $1`,
       [
         backupJobId,
+        error instanceof Error ? error.message : "Backup failed",
         JSON.stringify({ error: error instanceof Error ? error.message : "Backup failed" })
       ]
     );
@@ -451,25 +657,14 @@ new Worker(
     backupJobId?: string;
     jobType?: "full" | "database" | "evidence";
     userId?: string;
+    source?: string;
+    downloadableZip?: boolean;
+    downloadPassword?: string;
   }),
   {
     connection: {
       url: redisUrl
     }
-  }
-);
-
-const backupQueue = new Queue("audity-backup", {
-  connection: {
-    url: redisUrl
-  }
-});
-await backupQueue.add(
-  "run-backup",
-  { jobType: "full" },
-  {
-    jobId: "daily-full-backup",
-    repeat: { pattern: "0 2 * * *" }
   }
 );
 

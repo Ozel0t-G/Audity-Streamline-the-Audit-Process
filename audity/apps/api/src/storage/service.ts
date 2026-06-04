@@ -21,8 +21,19 @@ export async function ensureBucket(): Promise<void> {
   }
 }
 
+export async function ensureBackupBucket(): Promise<void> {
+  const exists = await storageClient.bucketExists(config.backupBucket);
+  if (!exists) {
+    await storageClient.makeBucket(config.backupBucket);
+  }
+}
+
 export function storageBucket(): string {
   return config.storageBucket;
+}
+
+export function backupBucket(): string {
+  return config.backupBucket;
 }
 
 export async function signedGetUrl(objectKey: string): Promise<string> {
@@ -36,6 +47,19 @@ export async function signedGetUrl(objectKey: string): Promise<string> {
     region: "us-east-1"
   });
   return publicClient.presignedGetObject(config.storageBucket, objectKey, 60 * 10);
+}
+
+export async function signedBackupGetUrl(objectKey: string): Promise<string> {
+  await ensureBackupBucket();
+  const publicClient = new Client({
+    endPoint: "localhost",
+    port: 9000,
+    useSSL: false,
+    accessKey: config.storageAccessKey,
+    secretKey: config.storageSecretKey,
+    region: "us-east-1"
+  });
+  return publicClient.presignedGetObject(config.backupBucket, objectKey, 60 * 10);
 }
 
 export async function objectDataUrl(objectKey: string, mimeType: string): Promise<string> {

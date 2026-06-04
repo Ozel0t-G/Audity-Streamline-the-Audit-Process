@@ -29,7 +29,7 @@ export function GuidedQuestionsPage() {
   const canEditAssessment = Boolean(user?.permissions.includes("assessment.edit"));
   const [payload, setPayload] = useState<AssessmentQuestionsPayload | null>(null);
   const [activeDomainId, setActiveDomainId] = useState("");
-  const [activeControlId, setActiveControlId] = useState("");
+  const [activeQuestionId, setActiveQuestionId] = useState("");
   const [form, setForm] = useState({
     score: 0,
     answerState: "answered",
@@ -48,11 +48,11 @@ export function GuidedQuestionsPage() {
   const activeQuestion = useMemo<GuidedQuestion | null>(() => {
     if (!activeDomain) return null;
     return (
-      activeDomain.questions.find((question) => question.controlId === activeControlId) ??
+      activeDomain.questions.find((question) => question.questionId === activeQuestionId) ??
       activeDomain.questions[0] ??
       null
     );
-  }, [activeDomain, activeControlId]);
+  }, [activeDomain, activeQuestionId]);
 
   async function load() {
     if (!id) return;
@@ -60,10 +60,10 @@ export function GuidedQuestionsPage() {
     setPayload(next);
     const nextDomain = next.domains.find((domain) => domain.id === activeDomainId) ?? next.domains[0];
     const nextQuestion =
-      nextDomain?.questions.find((question) => question.controlId === activeControlId) ??
+      nextDomain?.questions.find((question) => question.questionId === activeQuestionId) ??
       nextDomain?.questions[0];
     if (nextDomain) setActiveDomainId(nextDomain.id);
-    if (nextQuestion) setActiveControlId(nextQuestion.controlId);
+    if (nextQuestion) setActiveQuestionId(nextQuestion.questionId);
   }
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function GuidedQuestionsPage() {
       notes: activeQuestion.answer?.notes ?? ""
     });
     setSaved("");
-  }, [activeQuestion?.controlId]);
+  }, [activeQuestion?.questionId]);
 
   async function saveAnswer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,7 +130,7 @@ export function GuidedQuestionsPage() {
                     className={`block w-full px-4 py-3 text-left hover:bg-audity-panelAlt ${domain.id === activeDomain?.id ? "bg-audity-primaryActive/25" : ""}`}
                     onClick={() => {
                       setActiveDomainId(domain.id);
-                      setActiveControlId(domain.questions[0]?.controlId ?? "");
+                      setActiveQuestionId(domain.questions[0]?.questionId ?? "");
                     }}
                   >
                     <div className="mb-2 flex items-center justify-between gap-3">
@@ -153,12 +153,13 @@ export function GuidedQuestionsPage() {
                 <div className="divide-y divide-audity-border">
                   {activeDomain?.questions.map((question) => (
                     <button
-                      key={question.controlId}
-                      className={`block w-full px-4 py-3 text-left hover:bg-audity-panelAlt ${question.controlId === activeQuestion?.controlId ? "bg-audity-primaryActive/25" : ""}`}
-                      onClick={() => setActiveControlId(question.controlId)}
+                      key={question.questionId}
+                      className={`block w-full px-4 py-3 text-left hover:bg-audity-panelAlt ${question.questionId === activeQuestion?.questionId ? "bg-audity-primaryActive/25" : ""}`}
+                      onClick={() => setActiveQuestionId(question.questionId)}
                     >
                       <p className="text-xs font-semibold text-audity-primary">{question.code}</p>
                       <p className="mt-1 text-sm font-semibold">{question.title}</p>
+                      <p className="mt-1 text-xs text-audity-secondary">{question.sourceQuestionId ?? question.questionId.slice(0, 8)}</p>
                       <p className="mt-1 text-xs text-audity-muted">Score {question.answer?.score ?? "-"}</p>
                     </button>
                   ))}

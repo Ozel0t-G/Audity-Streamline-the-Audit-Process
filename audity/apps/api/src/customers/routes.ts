@@ -19,6 +19,8 @@ type CustomerBody = {
   frameworkIds?: string[];
 };
 
+const postgresUuidSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
 const customerSchema = z.object({
   name: z.string().trim().min(1).optional(),
   industry: z.string().optional(),
@@ -26,7 +28,7 @@ const customerSchema = z.object({
   criticalSystems: z.array(z.string()).optional(),
   businessCriticality: z.string().optional(),
   status: z.string().optional(),
-  frameworkIds: z.array(z.string().min(1)).optional()
+  frameworkIds: z.array(postgresUuidSchema).optional()
 });
 
 const shareSchema = z.object({
@@ -35,7 +37,7 @@ const shareSchema = z.object({
 });
 
 const frameworkScopeSchema = z.object({
-  frameworkIds: z.array(z.string().min(1))
+  frameworkIds: z.array(postgresUuidSchema)
 });
 
 function mapCustomer(row: Record<string, unknown>) {
@@ -147,12 +149,13 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
     async (request) => {
       const search = `%${(request.query.search ?? "").trim()}%`;
       const result = await pool.query(
-        `select id, name, email, role, status
-         from users
-         where status = 'active'
-           and id <> $1
-           and ($2 = '%%' or name ilike $2 or email ilike $2)
-         order by name, email
+        `select u.id, u.name, u.email, r.name as role, u.status
+         from users u
+         join roles r on r.id = u.role_id
+         where u.status = 'active'
+           and u.id <> $1
+           and ($2 = '%%' or u.name ilike $2 or u.email ilike $2)
+         order by u.name, u.email
          limit 20`,
         [request.user!.sub, search]
       );

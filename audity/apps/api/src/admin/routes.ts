@@ -6,6 +6,7 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrf, requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { backupQueue } from "../jobs/queue.js";
+import { signedBackupGetUrl } from "../storage/service.js";
 import { validateBody } from "../utils/validation.js";
 
 type LogFilters = {
@@ -31,6 +32,33 @@ type UserUpdateBody = {
 
 const backupTriggerSchema = z.object({
   jobType: z.enum(["full", "database", "evidence"]).optional()
+});
+
+const backupSettingsSchema = z.object({
+  automaticBackupsEnabled: z.boolean(),
+  backupType: z.enum(["full", "database", "evidence"]),
+  includeDatabase: z.boolean(),
+  includeEvidenceFiles: z.boolean(),
+  includeReports: z.boolean(),
+  includeFrameworkImports: z.boolean(),
+  includeAuditLogs: z.boolean(),
+  includeActivityLogs: z.boolean(),
+  includeSystemSettings: z.boolean(),
+  includeNotifications: z.boolean(),
+  scheduleTimezone: z.string().trim().min(1).max(80),
+  scheduleCron: z.string().trim().min(3).max(120),
+  retentionDays: z.number().int().min(1).max(3650)
+});
+
+const restorePrecheckSchema = z.object({
+  backupJobId: z.string().uuid(),
+  passwordProvided: z.boolean().optional()
+});
+
+const restoreStartSchema = z.object({
+  backupJobId: z.string().uuid(),
+  confirmationPhrase: z.literal("RESTORE AUDITY"),
+  passwordProvided: z.boolean().optional()
 });
 
 const inviteSchema = z.object({
@@ -66,11 +94,70 @@ function mapBackup(row: Record<string, unknown>) {
   return {
     id: row.id,
     jobType: row.job_type,
+    source: row.source,
     status: row.status,
+    createdAt: row.created_at,
     startedAt: row.started_at,
     finishedAt: row.finished_at,
-    metadata: row.metadata
+    completedAt: row.completed_at,
+    failedAt: row.failed_at,
+    failureReason: row.failure_reason,
+    storageLocation: row.storage_location,
+    downloadExpiresAt: row.download_expires_at,
+    isDownloadableZip: row.is_downloadable_zip,
+    backupManifest: row.backup_manifest,
+    metadata: row.metadata ?? {}
   };
+}
+
+function mapBackupSettings(row: Record<string, unknown> | undefined) {
+  return {
+    automaticBackupsEnabled: Boolean(row?.automatic_backups_enabled ?? false),
+    backupType: (row?.backup_type as string | undefined) ?? "full",
+    includeDatabase: Boolean(row?.include_database ?? true),
+    includeEvidenceFiles: Boolean(row?.include_evidence_files ?? true),
+    includeReports: Boolean(row?.include_reports ?? true),
+    includeFrameworkImports: Boolean(row?.include_framework_imports ?? true),
+    includeAuditLogs: Boolean(row?.include_audit_logs ?? true),
+    includeActivityLogs: Boolean(row?.include_activity_logs ?? true),
+    includeSystemSettings: Boolean(row?.include_system_settings ?? true),
+    includeNotifications: Boolean(row?.include_notifications ?? true),
+    scheduleTimezone: (row?.schedule_timezone as string | undefined) ?? "Europe/Oslo",
+    scheduleCron: (row?.schedule_cron as string | undefined) ?? "0 2 * * *",
+    retentionDays: Number(row?.retention_days ?? 30),
+    updatedAt: row?.updated_at ?? null
+  };
+}
+
+function randomBackupPassword(): string {
+  return crypto.randomBytes(18).toString("base64url");
+}
+
+async function syncBackupScheduler(settings: z.infer<typeof backupSettingsSchema>): Promise<void> {
+  const schedulerId = "audity-scheduled-backup";
+  if (!settings.automaticBackupsEnabled) {
+    await backupQueue.removeJobScheduler(schedulerId);
+    return;
+  }
+  await backupQueue.upsertJobScheduler(
+    schedulerId,
+    {
+      pattern: settings.scheduleCron,
+      tz: settings.scheduleTimezone
+    },
+    {
+      name: "run-backup",
+      data: {
+        jobType: settings.backupType,
+        source: "automatic"
+      },
+      opts: {
+        attempts: 1,
+        removeOnComplete: 50,
+        removeOnFail: 100
+      }
+    }
+  );
 }
 
 const adminRoles = new Set(["Instance Admin", "Tenant Admin"]);
@@ -252,19 +339,138 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
+  async function listBackups(limit = 50) {
+    const result = await pool.query(
+      `select * from backup_jobs
+       order by coalesce(created_at, started_at, finished_at, now()) desc, id desc
+       limit $1`,
+      [limit]
+    );
+    return result.rows.map(mapBackup);
+  }
+
+  async function createBackupJob(input: {
+    jobType: "full" | "database" | "evidence";
+    userId: string;
+    source: "manual" | "manual_download_zip";
+    downloadableZip?: boolean;
+    downloadPassword?: string;
+  }) {
+    const running = await pool.query(
+      "select id from backup_jobs where job_type = 'full' and status in ('queued','running') limit 1"
+    );
+    if (input.jobType === "full" && running.rows[0]) {
+      const error = new Error("A full backup is already queued or running.");
+      (error as Error & { statusCode?: number }).statusCode = 409;
+      throw error;
+    }
+    const id = randomUUID();
+    await pool.query(
+      `insert into backup_jobs
+        (id, job_type, source, status, started_at, created_by_user_id, is_downloadable_zip, metadata)
+       values ($1, $2, $3, 'queued', now(), $4, $5, $6::jsonb)`,
+      [
+        id,
+        input.jobType,
+        input.source,
+        input.userId,
+        Boolean(input.downloadableZip),
+        JSON.stringify({
+          requestedBy: input.userId,
+          requestedAt: new Date().toISOString(),
+          downloadPasswordShownOnce: Boolean(input.downloadableZip)
+        })
+      ]
+    );
+    const job = await backupQueue.add("run-backup", {
+      backupJobId: id,
+      jobType: input.jobType,
+      userId: input.userId,
+      source: input.source,
+      downloadableZip: Boolean(input.downloadableZip),
+      downloadPassword: input.downloadPassword
+    });
+    await appendActivityEvent({
+      userId: input.userId,
+      action: input.downloadableZip ? "backup.download_requested" : "backup.triggered",
+      entityType: "backup_job",
+      entityId: id,
+      before: null,
+      after: { backupJobId: id, jobType: input.jobType, source: input.source, queueJobId: job.id }
+    });
+    return { backupJobId: id, queueJobId: job.id };
+  }
+
+  app.get(
+    "/api/admin/backups",
+    { preHandler: requireAdminPermission("backup.manage") },
+    async () => {
+      const backupJobs = await listBackups();
+      return {
+        latestBackup: backupJobs[0] ?? null,
+        backupJobs
+      };
+    }
+  );
+
   app.get(
     "/api/admin/backup/status",
     { preHandler: requireAdminPermission("backup.manage") },
     async () => {
-      const result = await pool.query(
-        `select * from backup_jobs
-         order by coalesce(started_at, finished_at, now()) desc, id desc
-         limit 20`
-      );
+      const backupJobs = await listBackups(20);
       return {
-        latestBackup: result.rows[0] ? mapBackup(result.rows[0]) : null,
-        backupJobs: result.rows.map(mapBackup)
+        latestBackup: backupJobs[0] ?? null,
+        backupJobs
       };
+    }
+  );
+
+  app.post<{ Body: { jobType?: "full" | "database" | "evidence" } }>(
+    "/api/admin/backups/manual",
+    { preHandler: requireInstanceAdminCsrf },
+    async (request, reply) => {
+      const body = validateBody(backupTriggerSchema, request.body ?? {}, reply);
+      if (!body) return;
+      try {
+        const result = await createBackupJob({
+          jobType: body.jobType ?? "full",
+          userId: request.user!.sub,
+          source: "manual"
+        });
+        return reply.code(202).send(result);
+      } catch (error) {
+        return reply
+          .code((error as Error & { statusCode?: number }).statusCode ?? 500)
+          .send({ code: "BACKUP_QUEUE_FAILED", message: error instanceof Error ? error.message : "Backup queue failed" });
+      }
+    }
+  );
+
+  app.post<{ Body: { jobType?: "full" | "database" | "evidence" } }>(
+    "/api/admin/backups/manual-download-zip",
+    { preHandler: requireInstanceAdminCsrf },
+    async (request, reply) => {
+      const body = validateBody(backupTriggerSchema, request.body ?? {}, reply);
+      if (!body) return;
+      const downloadPassword = randomBackupPassword();
+      try {
+        const result = await createBackupJob({
+          jobType: body.jobType ?? "full",
+          userId: request.user!.sub,
+          source: "manual_download_zip",
+          downloadableZip: true,
+          downloadPassword
+        });
+        return reply.code(202).send({
+          ...result,
+          downloadPassword,
+          passwordNotice: "This password is shown once and is required to open the encrypted backup package."
+        });
+      } catch (error) {
+        return reply
+          .code((error as Error & { statusCode?: number }).statusCode ?? 500)
+          .send({ code: "BACKUP_QUEUE_FAILED", message: error instanceof Error ? error.message : "Backup queue failed" });
+      }
     }
   );
 
@@ -274,34 +480,193 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const body = validateBody(backupTriggerSchema, request.body ?? {}, reply);
       if (!body) return;
-      const jobType = body.jobType ?? "full";
-      const id = randomUUID();
+      try {
+        const result = await createBackupJob({
+          jobType: body.jobType ?? "full",
+          userId: request.user!.sub,
+          source: "manual"
+        });
+        return reply.code(202).send(result);
+      } catch (error) {
+        return reply
+          .code((error as Error & { statusCode?: number }).statusCode ?? 500)
+          .send({ code: "BACKUP_QUEUE_FAILED", message: error instanceof Error ? error.message : "Backup queue failed" });
+      }
+    }
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/admin/backups/:id/manifest",
+    { preHandler: requireAdminPermission("backup.manage") },
+    async (request, reply) => {
+      const result = await pool.query("select backup_manifest from backup_jobs where id = $1", [request.params.id]);
+      if (!result.rows[0]) {
+        return reply.code(404).send({ code: "BACKUP_NOT_FOUND", message: "Backup not found" });
+      }
+      return { manifest: result.rows[0].backup_manifest ?? null };
+    }
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/admin/backups/:id/download",
+    { preHandler: requireAdminPermission("backup.manage") },
+    async (request, reply) => {
+      const result = await pool.query(
+        "select status, download_expires_at, metadata from backup_jobs where id = $1",
+        [request.params.id]
+      );
+      const backup = result.rows[0];
+      if (!backup) {
+        return reply.code(404).send({ code: "BACKUP_NOT_FOUND", message: "Backup not found" });
+      }
+      if (backup.status !== "completed") {
+        return reply.code(409).send({ code: "BACKUP_NOT_READY", message: "Backup is not completed yet" });
+      }
+      if (backup.download_expires_at && new Date(backup.download_expires_at).getTime() < Date.now()) {
+        return reply.code(410).send({ code: "BACKUP_DOWNLOAD_EXPIRED", message: "Backup download has expired" });
+      }
+      const objectKey = backup.metadata?.downloadObjectKey;
+      if (typeof objectKey !== "string") {
+        return reply.code(404).send({ code: "BACKUP_PACKAGE_NOT_FOUND", message: "Download package not found" });
+      }
+      return {
+        downloadUrl: await signedBackupGetUrl(objectKey),
+        expiresInSeconds: 600,
+        objectKey
+      };
+    }
+  );
+
+  app.get(
+    "/api/admin/backup-settings",
+    { preHandler: requireAdminPermission("backup.manage") },
+    async () => {
+      const result = await pool.query("select * from backup_settings where id = 'default'");
+      return { backupSettings: mapBackupSettings(result.rows[0]) };
+    }
+  );
+
+  app.patch<{ Body: z.infer<typeof backupSettingsSchema> }>(
+    "/api/admin/backup-settings",
+    { preHandler: requireInstanceAdminCsrf },
+    async (request, reply) => {
+      const body = validateBody(backupSettingsSchema, request.body, reply);
+      if (!body) return;
       await pool.query(
-        `insert into backup_jobs (id, job_type, status, started_at, metadata)
-         values ($1, $2, 'queued', now(), $3)`,
+        `insert into backup_settings
+          (id, automatic_backups_enabled, backup_type, include_database, include_evidence_files,
+           include_reports, include_framework_imports, include_audit_logs, include_activity_logs,
+           include_system_settings, include_notifications, schedule_timezone, schedule_cron,
+           retention_days, updated_by_user_id, updated_at)
+         values ('default',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,now())
+         on conflict (id) do update set
+           automatic_backups_enabled = excluded.automatic_backups_enabled,
+           backup_type = excluded.backup_type,
+           include_database = excluded.include_database,
+           include_evidence_files = excluded.include_evidence_files,
+           include_reports = excluded.include_reports,
+           include_framework_imports = excluded.include_framework_imports,
+           include_audit_logs = excluded.include_audit_logs,
+           include_activity_logs = excluded.include_activity_logs,
+           include_system_settings = excluded.include_system_settings,
+           include_notifications = excluded.include_notifications,
+           schedule_timezone = excluded.schedule_timezone,
+           schedule_cron = excluded.schedule_cron,
+           retention_days = excluded.retention_days,
+           updated_by_user_id = excluded.updated_by_user_id,
+           updated_at = now()`,
         [
-          id,
-          jobType,
-          JSON.stringify({
-            requestedBy: request.user!.sub,
-            requestedAt: new Date().toISOString()
-          })
+          body.automaticBackupsEnabled,
+          body.backupType,
+          body.includeDatabase,
+          body.includeEvidenceFiles,
+          body.includeReports,
+          body.includeFrameworkImports,
+          body.includeAuditLogs,
+          body.includeActivityLogs,
+          body.includeSystemSettings,
+          body.includeNotifications,
+          body.scheduleTimezone,
+          body.scheduleCron,
+          body.retentionDays,
+          request.user!.sub
         ]
       );
-      const job = await backupQueue.add("run-backup", {
-        backupJobId: id,
-        jobType,
-        userId: request.user!.sub
-      });
+      await syncBackupScheduler(body);
       await appendActivityEvent({
         userId: request.user!.sub,
-        action: "backup.triggered",
-        entityType: "backup_job",
-        entityId: id,
+        action: "backup.settings.updated",
+        entityType: "backup_settings",
+        entityId: "default",
         before: null,
-        after: { backupJobId: id, jobType, queueJobId: job.id }
+        after: body
       });
-      return reply.code(202).send({ backupJobId: id, queueJobId: job.id });
+      const result = await pool.query("select * from backup_settings where id = 'default'");
+      return { backupSettings: mapBackupSettings(result.rows[0]) };
+    }
+  );
+
+  app.post<{ Body: z.infer<typeof restorePrecheckSchema> }>(
+    "/api/admin/backups/restore-precheck",
+    { preHandler: requireInstanceAdminCsrf },
+    async (request, reply) => {
+      const body = validateBody(restorePrecheckSchema, request.body, reply);
+      if (!body) return;
+      const result = await pool.query("select * from backup_jobs where id = $1", [body.backupJobId]);
+      const backup = result.rows[0];
+      if (!backup) {
+        return reply.code(404).send({ code: "BACKUP_NOT_FOUND", message: "Backup not found" });
+      }
+      const issues: string[] = [];
+      if (backup.status !== "completed") issues.push("Backup is not completed");
+      if (!backup.backup_manifest) issues.push("Backup manifest is missing");
+      if (backup.is_downloadable_zip && !body.passwordProvided) issues.push("Download package password is required");
+      const precheck = {
+        backupJobId: body.backupJobId,
+        ok: issues.length === 0,
+        issues,
+        checkedAt: new Date().toISOString(),
+        manifestPresent: Boolean(backup.backup_manifest),
+        status: backup.status
+      };
+      return { precheck };
+    }
+  );
+
+  app.post<{ Params: { id: string }; Body: z.infer<typeof restoreStartSchema> }>(
+    "/api/admin/backups/:id/restore",
+    { preHandler: requireInstanceAdminCsrf },
+    async (request, reply) => {
+      const body = validateBody(restoreStartSchema, { ...request.body, backupJobId: request.params.id }, reply);
+      if (!body) return;
+      const backup = await pool.query("select * from backup_jobs where id = $1", [request.params.id]);
+      if (!backup.rows[0]) {
+        return reply.code(404).send({ code: "BACKUP_NOT_FOUND", message: "Backup not found" });
+      }
+      const restoreJobId = randomUUID();
+      const precheck = {
+        backupJobId: request.params.id,
+        ok: backup.rows[0].status === "completed" && Boolean(backup.rows[0].backup_manifest),
+        checkedAt: new Date().toISOString()
+      };
+      await pool.query(
+        `insert into restore_jobs
+          (id, backup_job_id, status, started_by_user_id, started_at, failed_at, failure_reason, precheck_result)
+         values ($1,$2,'failed',$3,now(),now(),$4,$5::jsonb)`,
+        [
+          restoreJobId,
+          request.params.id,
+          request.user!.sub,
+          "Automated full restore execution is not enabled in this build.",
+          JSON.stringify(precheck)
+        ]
+      );
+      return reply.code(501).send({
+        restoreJobId,
+        code: "RESTORE_EXECUTION_NOT_ENABLED",
+        message: "Restore precheck is available, but destructive full restore execution is not enabled in this build.",
+        precheck
+      });
     }
   );
 

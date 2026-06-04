@@ -7,6 +7,7 @@ export type AudityConfig = {
   port: number;
   publicUrl: string;
   redisUrl: string;
+  backupBucket: string;
   sessionIdleTimeoutMinutes: number;
   storageAccessKey: string;
   storageBucket: string;
@@ -28,6 +29,7 @@ export function loadConfig(): AudityConfig {
     port: Number(process.env.PORT ?? 3000),
     publicUrl: process.env.AUDITY_PUBLIC_URL ?? "http://localhost",
     redisUrl: process.env.AUDITY_REDIS_URL ?? "redis://audity-redis:6379",
+    backupBucket: process.env.AUDITY_BACKUP_BUCKET ?? "audity-backups",
     sessionIdleTimeoutMinutes: Number(
       process.env.AUDITY_SESSION_IDLE_TIMEOUT_MINUTES ?? 30
     ),
