@@ -14,6 +14,7 @@ import { verifyDatabaseConnection } from "./db/client.js";
 import { applyCoreSchema } from "./db/schema.js";
 import { registerEvidenceRoutes } from "./evidence/routes.js";
 import { registerFrameworkRoutes } from "./frameworks/routes.js";
+import { startFrameworkYamlAutoSync } from "./frameworks/yamlImporter.js";
 import { registerNotificationRoutes } from "./notifications/routes.js";
 import { registerReportRoutes } from "./reports/routes.js";
 import { registerSecureRoutes } from "./secure/routes.js";
@@ -91,6 +92,7 @@ app.get("/ready", async () => {
 
 await verifyDatabaseConnection();
 await applyCoreSchema();
+startFrameworkYamlAutoSync(app.log);
 await registerAuthRoutes(app);
 await registerCustomerRoutes(app);
 await registerAssessmentRoutes(app);

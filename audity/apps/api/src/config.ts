@@ -3,6 +3,8 @@ export type AudityConfig = {
   databaseUrl: string;
   encryptionKey: string;
   env: string;
+  frameworkYamlDirectory: string;
+  frameworkYamlSyncIntervalSeconds: number;
   logLevel: string;
   port: number;
   publicUrl: string;
@@ -25,6 +27,8 @@ export function loadConfig(): AudityConfig {
       "postgres://audity:change-me@audity-db:5432/audity",
     env: process.env.AUDITY_ENV ?? "production",
     encryptionKey: process.env.AUDITY_ENCRYPTION_KEY ?? process.env.AUDITY_APP_SECRET ?? "change-me",
+    frameworkYamlDirectory: process.env.AUDITY_FRAMEWORK_YAML_DIR ?? "frameworks",
+    frameworkYamlSyncIntervalSeconds: Number(process.env.AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS ?? 10),
     logLevel: process.env.AUDITY_LOG_LEVEL ?? "info",
     port: Number(process.env.PORT ?? 3000),
     publicUrl: process.env.AUDITY_PUBLIC_URL ?? "http://localhost",

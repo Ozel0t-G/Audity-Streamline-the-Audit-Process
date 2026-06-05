@@ -152,11 +152,11 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
         `select u.id, u.name, u.email, r.name as role, u.status
          from users u
          join roles r on r.id = u.role_id
-         where u.status = 'active'
+         where u.status <> 'disabled'
            and u.id <> $1
            and ($2 = '%%' or u.name ilike $2 or u.email ilike $2)
-         order by u.name, u.email
-         limit 20`,
+         order by u.created_at desc, u.name, u.email
+         limit 100`,
         [request.user!.sub, search]
       );
       return { users: result.rows };
@@ -375,9 +375,9 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
       if (body.userId === request.user!.sub) {
         return reply.code(400).send({ code: "INVALID_SHARE_TARGET", message: "The current user cannot be selected" });
       }
-      const target = await pool.query("select id, name, email from users where id = $1 and status = 'active'", [body.userId]);
+      const target = await pool.query("select id, name, email from users where id = $1 and status <> 'disabled'", [body.userId]);
       if (!target.rows[0]) {
-        return reply.code(400).send({ code: "USER_NOT_FOUND", message: "Only registered active users can be selected" });
+        return reply.code(400).send({ code: "USER_NOT_FOUND", message: "Only non-disabled users can be selected" });
       }
       const shareId = randomUUID();
       try {
