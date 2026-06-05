@@ -1,9 +1,18 @@
 COMPOSE ?= docker compose
 
-.PHONY: up down logs db\:migrate db\:seed
+.PHONY: install update health up down logs db\:migrate db\:seed
+
+install:
+	./scripts/install.sh
+
+update:
+	./scripts/update.sh
+
+health:
+	./scripts/healthcheck.sh
 
 up:
-	$(COMPOSE) up --build
+	$(COMPOSE) up --build -d
 
 down:
 	$(COMPOSE) down

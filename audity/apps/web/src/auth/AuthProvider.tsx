@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
+const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
 type User = {
   sub?: string;

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 
-const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
+const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
 type EvidenceItem = {
   id: string;

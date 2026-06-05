@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { BrandMark } from "../components/BrandMark";
 
-const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
+const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
 export function LoginPage() {
   const navigate = useNavigate();

@@ -8,7 +8,7 @@ COPY apps/worker/package.json apps/worker/package.json
 RUN npm install
 COPY packages/shared packages/shared
 COPY apps/worker apps/worker
-RUN npm run build --workspace @audity/worker
+RUN npm run build --workspace @audity/shared && npm run build --workspace @audity/worker
 
 FROM node:22-alpine
 WORKDIR /app
