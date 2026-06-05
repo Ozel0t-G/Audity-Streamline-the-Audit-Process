@@ -433,8 +433,13 @@ create table if not exists restore_jobs (
   failed_at timestamptz,
   failure_reason text,
   precheck_result jsonb,
-  safety_backup_job_id uuid references backup_jobs(id)
+  metadata jsonb not null default '{}'::jsonb,
+  safety_backup_job_id uuid
 );
+
+alter table restore_jobs drop constraint if exists restore_jobs_safety_backup_job_id_fkey;
+alter table restore_jobs add column if not exists safety_backup_job_id uuid;
+alter table restore_jobs add column if not exists metadata jsonb not null default '{}'::jsonb;
 
 alter table sessions add column if not exists csrf_token_hash text;
 alter table sessions add column if not exists last_seen_at timestamptz not null default now();

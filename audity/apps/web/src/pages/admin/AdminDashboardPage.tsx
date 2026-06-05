@@ -160,6 +160,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [backupPassword, setBackupPassword] = useState("");
   const [restoreBackupId, setRestoreBackupId] = useState("");
   const [restorePrecheck, setRestorePrecheck] = useState<Record<string, unknown> | null>(null);
+  const [restoreConfirmation, setRestoreConfirmation] = useState("");
   const [error, setError] = useState("");
 
   const selectedLog = useMemo(
@@ -403,6 +404,20 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
       setRestorePrecheck(payload.precheck);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Restore precheck failed");
+    }
+  }
+
+  async function startFullRestore() {
+    setError("");
+    try {
+      await api(`/api/admin/backups/${restoreBackupId}/restore`, {
+        method: "POST",
+        body: JSON.stringify({ confirmationPhrase: restoreConfirmation, passwordProvided: true })
+      });
+      setRestoreConfirmation("");
+      await loadBackup();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Restore start failed");
     }
   }
 
@@ -704,6 +719,24 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     </button>
                     {restorePrecheck ? <pre className="max-h-48 overflow-auto rounded-audity bg-audity-page p-3 text-xs text-audity-secondary">{jsonBlock(restorePrecheck)}</pre> : null}
                   </form>
+                  <div className="mt-4 border-t border-audity-border pt-4">
+                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                      Confirm Full Restore
+                      <input
+                        className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
+                        placeholder="RESTORE AUDITY"
+                        value={restoreConfirmation}
+                        onChange={(event) => setRestoreConfirmation(event.target.value)}
+                      />
+                    </label>
+                    <button
+                      className="mt-3 h-9 rounded-audity border border-audity-error bg-[#2A1C17] px-3 text-sm font-semibold text-[#FFB199] disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={!restoreBackupId || restoreConfirmation !== "RESTORE AUDITY"}
+                      onClick={() => void startFullRestore()}
+                    >
+                      Start full restore
+                    </button>
+                  </div>
                 </section>
               </div>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
