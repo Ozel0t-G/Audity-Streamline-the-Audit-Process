@@ -5,6 +5,7 @@ import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrf, requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
+import { syncFrameworkYamlFiles } from "../frameworks/yamlImporter.js";
 import { backupQueue, restoreQueue } from "../jobs/queue.js";
 import { signedBackupGetUrl } from "../storage/service.js";
 import { validateBody } from "../utils/validation.js";
@@ -336,6 +337,14 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         after: { value: body.sessionIdleTimeoutMinutes }
       });
       return { sessionIdleTimeoutMinutes: body.sessionIdleTimeoutMinutes };
+    }
+  );
+
+  app.post(
+    "/api/admin/frameworks/sync-yaml",
+    { preHandler: requireInstanceAdminCsrf },
+    async () => {
+      return { sync: await syncFrameworkYamlFiles({ force: true }) };
     }
   );
 
