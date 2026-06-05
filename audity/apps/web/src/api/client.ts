@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useAuth } from "../auth/AuthProvider";
 
-const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
+const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
 export function useApi() {
   const { accessToken, csrfToken } = useAuth();

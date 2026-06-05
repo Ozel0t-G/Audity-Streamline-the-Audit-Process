@@ -1,0 +1,10 @@
+.env
+.git
+.DS_Store
+node_modules
+**/node_modules
+**/dist
+coverage
+npm-debug.log*
+Dockerfile.local
+docker-compose.override.yml

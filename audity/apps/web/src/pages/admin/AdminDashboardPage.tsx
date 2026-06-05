@@ -3,7 +3,7 @@ import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import type { ActivityLog, AdminUser, AuditLog, RoleOption } from "./types";
 
-const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "http://localhost:3000";
+const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 const highRiskActions = new Set([
   "finding.dismissed",
   "risk.accepted",

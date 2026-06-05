@@ -4,6 +4,14 @@ Audity is a local Docker-based GRC assessment application for customer assessmen
 
 ## Quick Start
 
+Recommended self-hosted install:
+
+```bash
+./scripts/install.sh
+```
+
+Manual Docker start:
+
 ```bash
 docker compose up --build -d
 docker compose run --rm audity-api node apps/api/dist/db/seed.js
@@ -15,12 +23,16 @@ Open:
 - API health: http://localhost:3000/health
 - MinIO console: http://localhost:9001
 
-Default local seed login:
+Default manual local seed login:
 
 - Email: `admin@audity.local`
 - Password: `change-me-now`
 
+The installer generates a unique initial admin password and prints it at the end.
+
 If no user exists, the login page opens the first-start setup wizard. Create the initial Instance Admin account, optionally configure SMTP and report branding, then accept the alpha disclaimer before entering the app.
+
+For a server installation guide, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Environment
 
@@ -30,10 +42,13 @@ Important variables:
 
 - `AUDITY_APP_SECRET`: JWT/session signing secret.
 - `AUDITY_ENCRYPTION_KEY`: master key input for AES-256-GCM encryption.
+- `AUDITY_PUBLIC_URL`: browser-facing URL, for example `https://audity.example.com`.
+- `AUDITY_WEB_PORT`: host port for the web app, default `80`.
 - `AUDITY_DATABASE_URL`: PostgreSQL connection string.
 - `AUDITY_REDIS_URL`: Redis connection string for queues and rate limits.
 - `AUDITY_STORAGE_*`: MinIO/S3-compatible evidence storage settings.
 - `AUDITY_BACKUP_BUCKET`: MinIO/S3 bucket for database dumps and evidence manifests.
+- `AUDITY_FRAMEWORK_YAML_*`: directory and polling interval for YAML-managed frameworks.
 - `AUDITY_SMTP_*`: optional SMTP defaults; runtime SMTP settings are managed in Admin > Email Settings.
 
 ## Backup And Restore
@@ -70,16 +85,13 @@ Evidence restore is object-storage based: use the manifest to verify expected ob
 ## Update Process
 
 ```bash
-docker compose down
-docker compose up --build -d
-docker compose run --rm audity-api node apps/api/dist/db/migrate.js
-docker compose run --rm audity-api node apps/api/dist/db/seed.js
+./scripts/update.sh
 ```
 
 Then verify:
 
 ```bash
-curl http://localhost:3000/health
+./scripts/healthcheck.sh
 ```
 
 ## Beta Smoke Checklist
