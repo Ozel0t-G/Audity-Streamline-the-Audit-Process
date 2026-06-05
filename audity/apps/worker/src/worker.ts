@@ -3,6 +3,9 @@ import { Worker } from "bullmq";
 import { Client } from "minio";
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { spawn } from "node:child_process";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import nodemailer from "nodemailer";
 import pg from "pg";
 import puppeteer from "puppeteer-core";
@@ -266,6 +269,42 @@ function pgDump(): Promise<Buffer> {
   });
 }
 
+function runCommand(command: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const errors: Buffer[] = [];
+    const child = spawn(command, args);
+    child.stderr.on("data", (chunk) => errors.push(Buffer.from(chunk)));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(Buffer.concat(errors).toString("utf8") || `${command} exited with ${code}`));
+      }
+    });
+  });
+}
+
+async function pgRestore(dump: Buffer): Promise<void> {
+  const dir = await mkdtemp(join(tmpdir(), "audity-restore-"));
+  const dumpPath = join(dir, "database.dump");
+  try {
+    await writeFile(dumpPath, dump);
+    await runCommand("pg_restore", [
+      "--clean",
+      "--if-exists",
+      "--no-owner",
+      "--no-privileges",
+      "--exit-on-error",
+      "--dbname",
+      process.env.AUDITY_DATABASE_URL ?? "postgres://audity:change-me@audity-db:5432/audity",
+      dumpPath
+    ]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 async function listEvidenceObjects(): Promise<Array<{ name: string; size?: number; lastModified?: Date; etag?: string }>> {
   const objects: Array<{ name: string; size?: number; lastModified?: Date; etag?: string }> = [];
   const stream = storageClient.listObjectsV2(storageBucket, "", true);
@@ -277,6 +316,17 @@ async function listEvidenceObjects(): Promise<Array<{ name: string; size?: numbe
         lastModified: item.lastModified,
         etag: item.etag
       });
+    }
+  }
+  return objects;
+}
+
+async function listStorageObjects(bucket: string, prefix = ""): Promise<string[]> {
+  const objects: string[] = [];
+  const stream = storageClient.listObjectsV2(bucket, prefix, true);
+  for await (const item of stream) {
+    if (item.name) {
+      objects.push(item.name);
     }
   }
   return objects;
@@ -313,12 +363,55 @@ async function evidenceSnapshot(prefix: string): Promise<{ manifest: Buffer; cop
   };
 }
 
+function parseEvidenceManifest(manifest: Buffer): { copiedObjects: string[] } {
+  const parsed = JSON.parse(manifest.toString("utf8")) as { copiedObjects?: unknown };
+  if (!Array.isArray(parsed.copiedObjects)) {
+    throw new Error("Evidence manifest is invalid");
+  }
+  return {
+    copiedObjects: parsed.copiedObjects.filter((value): value is string => typeof value === "string")
+  };
+}
+
+async function restoreEvidenceObjects(copiedObjects: string[]): Promise<{ restoredObjects: string[]; removedObjects: number }> {
+  const currentObjects = await listStorageObjects(storageBucket);
+  if (currentObjects.length > 0) {
+    await storageClient.removeObjects(storageBucket, currentObjects);
+  }
+  const restoredObjects: string[] = [];
+  for (const objectKey of copiedObjects) {
+    const evidenceMarker = "/evidence/";
+    const markerIndex = objectKey.indexOf(evidenceMarker);
+    if (markerIndex === -1) {
+      throw new Error(`Invalid evidence backup object key: ${objectKey}`);
+    }
+    const destinationKey = objectKey.slice(markerIndex + evidenceMarker.length);
+    if (!destinationKey) continue;
+    const content = await streamToBuffer(await storageClient.getObject(backupBucket, objectKey));
+    await storageClient.putObject(storageBucket, destinationKey, content, content.length, {
+      "Content-Type": "application/octet-stream"
+    });
+    restoredObjects.push(destinationKey);
+  }
+  return { restoredObjects, removedObjects: currentObjects.length };
+}
+
 async function ensureBackupRecord(
   backupJobId: string | undefined,
   jobType: string,
   source: string,
   userId?: string
 ) {
+  await pool.query(
+    `update backup_jobs
+     set status = 'failed',
+         failed_at = coalesce(failed_at, now()),
+         finished_at = coalesce(finished_at, now()),
+         failure_reason = coalesce(failure_reason, 'Backup job timed out before completion')
+     where job_type = 'full'
+       and status in ('queued','running')
+       and coalesce(started_at, created_at) < now() - interval '1 hour'`
+  );
   if (backupJobId) {
     await pool.query(
       `update backup_jobs
@@ -405,6 +498,16 @@ async function writeBackupManifest(input: {
 
 async function ensureNoConcurrentFullBackup(backupJobId: string, jobType: string): Promise<void> {
   if (jobType !== "full") return;
+  await pool.query(
+    `update backup_jobs
+     set status = 'failed',
+         failed_at = coalesce(failed_at, now()),
+         finished_at = coalesce(finished_at, now()),
+         failure_reason = coalesce(failure_reason, 'Backup job timed out before completion')
+     where job_type = 'full'
+       and status in ('queued','running')
+       and coalesce(started_at, created_at) < now() - interval '1 hour'`
+  );
   const running = await pool.query(
     `select id from backup_jobs
      where id <> $1 and job_type = 'full' and status in ('queued','running')
@@ -551,6 +654,187 @@ async function runBackup(jobData: {
   }
 }
 
+async function writeRestoreStatus(input: {
+  restoreJobId: string;
+  backupJobId: string;
+  userId: string;
+  status: "running" | "completed" | "failed";
+  precheck?: unknown;
+  safetyBackupJobId?: string;
+  failureReason?: string;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  await pool.query(
+    `insert into restore_jobs
+      (id, backup_job_id, status, started_by_user_id, created_at, started_at, completed_at, failed_at,
+       failure_reason, precheck_result, metadata, safety_backup_job_id)
+     values
+      ($1,$2,$3,$4,now(),now(),
+       case when $3 = 'completed' then now() else null end,
+       case when $3 = 'failed' then now() else null end,
+       $5,$6::jsonb,$7::jsonb,$8)
+     on conflict (id) do update set
+       backup_job_id = excluded.backup_job_id,
+       status = excluded.status,
+       started_by_user_id = excluded.started_by_user_id,
+       started_at = coalesce(restore_jobs.started_at, now()),
+       completed_at = case when excluded.status = 'completed' then now() else restore_jobs.completed_at end,
+       failed_at = case when excluded.status = 'failed' then now() else restore_jobs.failed_at end,
+       failure_reason = excluded.failure_reason,
+       precheck_result = coalesce(excluded.precheck_result, restore_jobs.precheck_result),
+       metadata = restore_jobs.metadata || excluded.metadata,
+       safety_backup_job_id = coalesce(excluded.safety_backup_job_id, restore_jobs.safety_backup_job_id)`,
+    [
+      input.restoreJobId,
+      input.backupJobId,
+      input.status,
+      input.userId,
+      input.failureReason ?? null,
+      JSON.stringify(input.precheck ?? null),
+      JSON.stringify(input.metadata ?? {}),
+      input.safetyBackupJobId ?? null
+    ]
+  );
+}
+
+function backupPrefixFromRow(row: {
+  backup_manifest?: { storage?: { prefix?: unknown } } | null;
+  metadata?: Record<string, unknown>;
+  storage_location?: string | null;
+}): string {
+  const manifestPrefix = row.backup_manifest?.storage?.prefix;
+  if (typeof manifestPrefix === "string" && manifestPrefix.length > 0) return manifestPrefix;
+  const objectKey = row.metadata?.databaseDumpObjectKey;
+  if (typeof objectKey === "string" && objectKey.endsWith("/database.dump")) {
+    return objectKey.slice(0, -"/database.dump".length);
+  }
+  if (row.storage_location?.startsWith(`${backupBucket}/`)) {
+    return row.storage_location.slice(`${backupBucket}/`.length);
+  }
+  throw new Error("Backup storage prefix is missing");
+}
+
+async function runRestore(jobData: {
+  restoreJobId: string;
+  backupJobId: string;
+  userId: string;
+}) {
+  await ensureBucket();
+  const backupResult = await pool.query<{
+    id: string;
+    job_type: string;
+    status: string;
+    metadata: Record<string, unknown>;
+    backup_manifest: { storage?: { prefix?: unknown } } | null;
+    storage_location: string | null;
+  }>("select * from backup_jobs where id = $1", [jobData.backupJobId]);
+  const backup = backupResult.rows[0];
+  if (!backup) throw new Error("Backup not found");
+  if (backup.status !== "completed") throw new Error("Backup is not completed");
+  if (backup.job_type !== "full") throw new Error("Only full backups can be restored");
+  const databaseDumpObjectKey = backup.metadata?.databaseDumpObjectKey;
+  if (typeof databaseDumpObjectKey !== "string") {
+    throw new Error("Database dump object key is missing");
+  }
+  const evidenceManifestObjectKey = backup.metadata?.evidenceManifestObjectKey;
+  if (typeof evidenceManifestObjectKey !== "string") {
+    throw new Error("Evidence manifest object key is missing");
+  }
+  const backupPrefix = backupPrefixFromRow(backup);
+  const databaseDump = await streamToBuffer(await storageClient.getObject(backupBucket, databaseDumpObjectKey));
+  const evidenceManifest = parseEvidenceManifest(
+    await streamToBuffer(await storageClient.getObject(backupBucket, evidenceManifestObjectKey))
+  );
+  await writeRestoreStatus({
+    restoreJobId: jobData.restoreJobId,
+    backupJobId: jobData.backupJobId,
+    userId: jobData.userId,
+    status: "running",
+    metadata: {
+      backupJobId: jobData.backupJobId,
+      backupPrefix,
+      phase: "safety_backup",
+      startedAt: new Date().toISOString()
+    }
+  });
+  try {
+    const safetyBackupMetadata = await runBackup({
+      jobType: "full",
+      source: "pre_restore_safety",
+      userId: jobData.userId
+    });
+    const safetyBackupJobId =
+      typeof safetyBackupMetadata.backupJobId === "string" ? safetyBackupMetadata.backupJobId : undefined;
+    await writeRestoreStatus({
+      restoreJobId: jobData.restoreJobId,
+      backupJobId: jobData.backupJobId,
+      userId: jobData.userId,
+      status: "running",
+      safetyBackupJobId,
+      metadata: {
+        backupJobId: jobData.backupJobId,
+        backupPrefix,
+        safetyBackupJobId,
+        phase: "database_restore"
+      }
+    });
+    await pgRestore(databaseDump);
+    await pool.query(
+      `update backup_jobs
+       set status = 'completed',
+           finished_at = coalesce(finished_at, now()),
+           completed_at = coalesce(completed_at, now())
+       where id = $1 and status in ('queued', 'running')`,
+      [jobData.backupJobId]
+    );
+    await writeRestoreStatus({
+      restoreJobId: jobData.restoreJobId,
+      backupJobId: jobData.backupJobId,
+      userId: jobData.userId,
+      status: "running",
+      safetyBackupJobId,
+      metadata: {
+        backupJobId: jobData.backupJobId,
+        backupPrefix,
+        safetyBackupJobId,
+        phase: "evidence_restore"
+      }
+    });
+    const evidenceResult = await restoreEvidenceObjects(evidenceManifest.copiedObjects);
+    await writeRestoreStatus({
+      restoreJobId: jobData.restoreJobId,
+      backupJobId: jobData.backupJobId,
+      userId: jobData.userId,
+      status: "completed",
+      safetyBackupJobId,
+      metadata: {
+        backupJobId: jobData.backupJobId,
+        backupPrefix,
+        safetyBackupJobId,
+        phase: "completed",
+        evidenceRestoredObjects: evidenceResult.restoredObjects.length,
+        evidenceRemovedObjects: evidenceResult.removedObjects,
+        completedAt: new Date().toISOString()
+      }
+    });
+    return { safetyBackupJobId, ...evidenceResult };
+  } catch (error) {
+    await writeRestoreStatus({
+      restoreJobId: jobData.restoreJobId,
+      backupJobId: jobData.backupJobId,
+      userId: jobData.userId,
+      status: "failed",
+      failureReason: error instanceof Error ? error.message : "Restore failed",
+      metadata: {
+        backupJobId: jobData.backupJobId,
+        phase: "failed",
+        error: error instanceof Error ? error.message : "Restore failed"
+      }
+    });
+    throw error;
+  }
+}
+
 async function verifyDatabaseConnection(): Promise<void> {
   const result = await pool.query<{ ok: number }>("select 1 as ok");
   if (result.rows[0]?.ok !== 1) {
@@ -660,6 +944,20 @@ new Worker(
     source?: string;
     downloadableZip?: boolean;
     downloadPassword?: string;
+  }),
+  {
+    connection: {
+      url: redisUrl
+    }
+  }
+);
+
+new Worker(
+  "audity-restore",
+  async (job) => runRestore(job.data as {
+    restoreJobId: string;
+    backupJobId: string;
+    userId: string;
   }),
   {
     connection: {

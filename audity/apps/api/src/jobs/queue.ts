@@ -20,3 +20,9 @@ export const backupQueue = new Queue("audity-backup", {
     url: config.redisUrl
   }
 });
+
+export const restoreQueue = new Queue("audity-restore", {
+  connection: {
+    url: config.redisUrl
+  }
+});

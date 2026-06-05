@@ -5,7 +5,7 @@ import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrf, requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
-import { backupQueue } from "../jobs/queue.js";
+import { backupQueue, restoreQueue } from "../jobs/queue.js";
 import { signedBackupGetUrl } from "../storage/service.js";
 import { validateBody } from "../utils/validation.js";
 
@@ -356,6 +356,16 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     downloadableZip?: boolean;
     downloadPassword?: string;
   }) {
+    await pool.query(
+      `update backup_jobs
+       set status = 'failed',
+           failed_at = coalesce(failed_at, now()),
+           finished_at = coalesce(finished_at, now()),
+           failure_reason = coalesce(failure_reason, 'Backup job timed out before completion')
+       where job_type = 'full'
+         and status in ('queued','running')
+         and coalesce(started_at, created_at) < now() - interval '1 hour'`
+    );
     const running = await pool.query(
       "select id from backup_jobs where job_type = 'full' and status in ('queued','running') limit 1"
     );
@@ -619,7 +629,10 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       }
       const issues: string[] = [];
       if (backup.status !== "completed") issues.push("Backup is not completed");
+      if (backup.job_type !== "full") issues.push("Only full backups can be restored");
       if (!backup.backup_manifest) issues.push("Backup manifest is missing");
+      if (typeof backup.metadata?.databaseDumpObjectKey !== "string") issues.push("Database dump is missing");
+      if (typeof backup.metadata?.evidenceManifestObjectKey !== "string") issues.push("Evidence manifest is missing");
       if (backup.is_downloadable_zip && !body.passwordProvided) issues.push("Download package password is required");
       const precheck = {
         backupJobId: body.backupJobId,
@@ -627,6 +640,9 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         issues,
         checkedAt: new Date().toISOString(),
         manifestPresent: Boolean(backup.backup_manifest),
+        databaseDumpPresent: typeof backup.metadata?.databaseDumpObjectKey === "string",
+        evidenceManifestPresent: typeof backup.metadata?.evidenceManifestObjectKey === "string",
+        backupType: backup.job_type,
         status: backup.status
       };
       return { precheck };
@@ -640,31 +656,62 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const body = validateBody(restoreStartSchema, { ...request.body, backupJobId: request.params.id }, reply);
       if (!body) return;
       const backup = await pool.query("select * from backup_jobs where id = $1", [request.params.id]);
-      if (!backup.rows[0]) {
+      const backupRow = backup.rows[0];
+      if (!backupRow) {
         return reply.code(404).send({ code: "BACKUP_NOT_FOUND", message: "Backup not found" });
       }
-      const restoreJobId = randomUUID();
+      const running = await pool.query("select id from restore_jobs where status in ('queued','running') limit 1");
+      if (running.rows[0]) {
+        return reply.code(409).send({ code: "RESTORE_ALREADY_RUNNING", message: "A restore is already queued or running" });
+      }
+      const issues: string[] = [];
+      if (backupRow.status !== "completed") issues.push("Backup is not completed");
+      if (backupRow.job_type !== "full") issues.push("Only full backups can be restored");
+      if (!backupRow.backup_manifest) issues.push("Backup manifest is missing");
+      if (typeof backupRow.metadata?.databaseDumpObjectKey !== "string") issues.push("Database dump is missing");
+      if (typeof backupRow.metadata?.evidenceManifestObjectKey !== "string") issues.push("Evidence manifest is missing");
       const precheck = {
         backupJobId: request.params.id,
-        ok: backup.rows[0].status === "completed" && Boolean(backup.rows[0].backup_manifest),
-        checkedAt: new Date().toISOString()
+        ok: issues.length === 0,
+        issues,
+        checkedAt: new Date().toISOString(),
+        manifestPresent: Boolean(backupRow.backup_manifest),
+        databaseDumpPresent: typeof backupRow.metadata?.databaseDumpObjectKey === "string",
+        evidenceManifestPresent: typeof backupRow.metadata?.evidenceManifestObjectKey === "string",
+        backupType: backupRow.job_type,
+        status: backupRow.status
       };
+      if (!precheck.ok) {
+        return reply.code(409).send({ code: "RESTORE_PRECHECK_FAILED", message: "Restore precheck failed", precheck });
+      }
+      const restoreJobId = randomUUID();
       await pool.query(
         `insert into restore_jobs
-          (id, backup_job_id, status, started_by_user_id, started_at, failed_at, failure_reason, precheck_result)
-         values ($1,$2,'failed',$3,now(),now(),$4,$5::jsonb)`,
+          (id, backup_job_id, status, started_by_user_id, created_at, precheck_result)
+         values ($1,$2,'queued',$3,now(),$4::jsonb)`,
         [
           restoreJobId,
           request.params.id,
           request.user!.sub,
-          "Automated full restore execution is not enabled in this build.",
           JSON.stringify(precheck)
         ]
       );
-      return reply.code(501).send({
+      const job = await restoreQueue.add("run-restore", {
         restoreJobId,
-        code: "RESTORE_EXECUTION_NOT_ENABLED",
-        message: "Restore precheck is available, but destructive full restore execution is not enabled in this build.",
+        backupJobId: request.params.id,
+        userId: request.user!.sub
+      });
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "restore.queued",
+        entityType: "restore_job",
+        entityId: restoreJobId,
+        before: null,
+        after: { restoreJobId, backupJobId: request.params.id, queueJobId: job.id, precheck }
+      });
+      return reply.code(202).send({
+        restoreJobId,
+        queueJobId: job.id,
         precheck
       });
     }
