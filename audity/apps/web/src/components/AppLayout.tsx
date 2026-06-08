@@ -213,7 +213,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
             className="h-8 rounded-audity border border-audity-primary bg-audity-primaryActive px-3 py-1.5 text-sm font-semibold text-audity-primary hover:bg-audity-panel"
             to="/admin/activity"
           >
-            Admin
+            Admin Menu
           </Link>
         ) : null}
         <button
@@ -300,7 +300,7 @@ export function AdminLayout() {
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">Backup</NavLink> : null}
           </nav>
           <Link
-            className="mt-5 block rounded-audity border border-audity-borderStrong px-3 py-2 text-sm font-semibold text-audity-secondary hover:border-audity-primary hover:text-audity-text"
+            className="mt-5 block rounded-audity border border-audity-error/60 bg-[#2A1C17] px-3 py-2 text-sm font-semibold text-[#FFB199] hover:border-audity-error hover:bg-[#351F19] hover:text-white"
             to="/dashboard"
           >
             Leave Admin Panel
