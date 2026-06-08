@@ -10,6 +10,51 @@ import nodemailer from "nodemailer";
 import pg from "pg";
 import puppeteer from "puppeteer-core";
 
+const insecureValues = new Set([
+  "change-me",
+  "change-me-now",
+  "replace-me",
+  "replace-with-secure-random-secret",
+  "replace-with-base64-encoded-32-byte-key",
+  "replace-with-secure-database-password",
+  "replace-with-secure-initial-admin-password"
+]);
+
+function isInsecureValue(value: string): boolean {
+  return insecureValues.has(value) || value.includes("change-me") || value.includes("replace-with");
+}
+
+function requiredEnv(name: string, fallback: string): string {
+  return process.env[name] ?? fallback;
+}
+
+function validateProductionConfig(): void {
+  if (process.env.AUDITY_ALLOW_INSECURE_DEFAULTS === "true") return;
+  if ((process.env.AUDITY_ENV ?? "production") !== "production") return;
+  const insecureKeys = [
+    ["AUDITY_APP_SECRET", requiredEnv("AUDITY_APP_SECRET", "change-me")],
+    [
+      "AUDITY_ENCRYPTION_KEY",
+      process.env.AUDITY_ENCRYPTION_KEY ?? process.env.AUDITY_APP_SECRET ?? "change-me"
+    ],
+    [
+      "AUDITY_DATABASE_URL",
+      requiredEnv("AUDITY_DATABASE_URL", "postgres://audity:change-me@audity-db:5432/audity")
+    ],
+    ["AUDITY_STORAGE_ACCESS_KEY", requiredEnv("AUDITY_STORAGE_ACCESS_KEY", "replace-me")],
+    ["AUDITY_STORAGE_SECRET_KEY", requiredEnv("AUDITY_STORAGE_SECRET_KEY", "replace-me")]
+  ].filter(([, value]) => isInsecureValue(value));
+  if (insecureKeys.length > 0) {
+    throw new Error(
+      `Refusing to start production worker with insecure default values: ${insecureKeys
+        .map(([key]) => key)
+        .join(", ")}. Run ./scripts/install.sh or set secure values in .env.`
+    );
+  }
+}
+
+validateProductionConfig();
+
 const app = Fastify({
   logger: {
     level: process.env.AUDITY_LOG_LEVEL ?? "info"

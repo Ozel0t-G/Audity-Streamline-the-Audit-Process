@@ -4,6 +4,7 @@ import { loadConfig } from "../config.js";
 
 const config = loadConfig();
 const endpoint = new URL(config.storageEndpoint);
+const publicEndpoint = new URL(config.storagePublicEndpoint);
 
 export const storageClient = new Client({
   endPoint: endpoint.hostname,
@@ -39,9 +40,9 @@ export function backupBucket(): string {
 export async function signedGetUrl(objectKey: string): Promise<string> {
   await ensureBucket();
   const publicClient = new Client({
-    endPoint: "localhost",
-    port: 9000,
-    useSSL: false,
+    endPoint: publicEndpoint.hostname,
+    port: Number(publicEndpoint.port || (publicEndpoint.protocol === "https:" ? 443 : 80)),
+    useSSL: publicEndpoint.protocol === "https:",
     accessKey: config.storageAccessKey,
     secretKey: config.storageSecretKey,
     region: "us-east-1"
@@ -52,9 +53,9 @@ export async function signedGetUrl(objectKey: string): Promise<string> {
 export async function signedBackupGetUrl(objectKey: string): Promise<string> {
   await ensureBackupBucket();
   const publicClient = new Client({
-    endPoint: "localhost",
-    port: 9000,
-    useSSL: false,
+    endPoint: publicEndpoint.hostname,
+    port: Number(publicEndpoint.port || (publicEndpoint.protocol === "https:" ? 443 : 80)),
+    useSSL: publicEndpoint.protocol === "https:",
     accessKey: config.storageAccessKey,
     secretKey: config.storageSecretKey,
     region: "us-east-1"

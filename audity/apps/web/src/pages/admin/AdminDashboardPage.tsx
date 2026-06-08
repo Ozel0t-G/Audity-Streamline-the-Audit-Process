@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import type { ActivityLog, AdminUser, AuditLog, RoleOption } from "./types";
@@ -98,7 +99,8 @@ type BackupSettings = {
 
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const api = useApi();
-  const { accessToken, user } = useAuth();
+  const navigate = useNavigate();
+  const { accessToken, expireSession, user } = useAuth();
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -249,6 +251,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       credentials: "include"
     });
+    if (response.status === 401) {
+      expireSession("Your session expired. Please sign in again.");
+      navigate("/login", { replace: true });
+      return;
+    }
     if (!response.ok) throw new Error(`Export failed: ${response.status}`);
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);

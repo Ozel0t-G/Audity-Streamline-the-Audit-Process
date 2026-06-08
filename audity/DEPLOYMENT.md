@@ -37,11 +37,14 @@ AUDITY_WEB_PORT=80
 AUDITY_API_PORT=3000
 AUDITY_MINIO_API_PORT=9000
 AUDITY_MINIO_CONSOLE_PORT=9001
+AUDITY_STORAGE_PUBLIC_ENDPOINT=https://your-domain.example:9000
 ```
 
 For a public server, put TLS in front of Audity with a reverse proxy such as Caddy, Traefik, nginx, or a managed load balancer. The included web container serves the app on port `80` and proxies `/api/*` plus `/health` internally to the API container.
 
 Do not expose MinIO ports publicly unless you know you need them. Prefer firewalling `9000` and `9001` to trusted admin IPs.
+
+Production startup refuses known placeholder values such as `change-me`, `replace-me`, and `replace-with-*`. This is intentional. Use `./scripts/install.sh` or replace all secrets manually before exposing the server.
 
 ## Daily Operations
 

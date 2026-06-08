@@ -22,6 +22,7 @@ type AuthContextValue = {
   verifyMfaChallenge: (challengeToken: string, code: string) => Promise<void>;
   setupMfa: () => Promise<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }>;
   verifyMfaSetup: (code: string) => Promise<string[]>;
+  expireSession: (notice?: string) => void;
   logout: () => Promise<void>;
 };
 
@@ -47,6 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCsrfToken(payload.csrfToken);
     setUser(payload.user);
   }
+
+  const expireSession = useCallback((notice = "Your session expired. Please sign in again.") => {
+    window.localStorage.removeItem("audity_access_token");
+    window.localStorage.removeItem("audity_csrf_token");
+    window.localStorage.removeItem("audity_user");
+    window.localStorage.setItem("audity_login_notice", notice);
+    setAccessToken(null);
+    setCsrfToken(null);
+    setUser(null);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
@@ -104,10 +115,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
     });
     if (!response.ok) {
+      if (response.status === 401) {
+        expireSession("Your session expired. Please sign in again.");
+      }
       throw new Error("MFA setup failed");
     }
     return (await response.json()) as { secret: string; otpauthUrl: string; qrCodeDataUrl: string };
-  }, [accessToken]);
+  }, [accessToken, expireSession]);
 
   const verifyMfaSetup = useCallback(async (code: string) => {
     const response = await fetch(`${apiBaseUrl}/api/auth/mfa/verify`, {
@@ -120,11 +134,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (!response.ok) {
       const error = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (response.status === 401) {
+        expireSession("Your session expired. Please sign in again.");
+      }
       throw new Error(error?.message ?? "MFA verification failed");
     }
     const payload = (await response.json()) as { recoveryCodes: string[] };
     return payload.recoveryCodes;
-  }, [accessToken]);
+  }, [accessToken, expireSession]);
 
   const logout = useCallback(async () => {
     await fetch(`${apiBaseUrl}/api/auth/logout`, {
@@ -150,6 +167,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (!response.ok) {
       const error = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (response.status === 401 || response.status === 403) {
+        expireSession("Your session expired. Please sign in again.");
+      }
       throw new Error(error?.message ?? "Disclaimer acceptance failed");
     }
     const payload = (await response.json()) as { user: User };
@@ -157,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem("audity_user", JSON.stringify(payload.user));
       setUser(payload.user);
     }
-  }, [accessToken, csrfToken]);
+  }, [accessToken, csrfToken, expireSession]);
 
   const value = useMemo(
     () => ({
@@ -170,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyMfaChallenge,
       setupMfa,
       verifyMfaSetup,
+      expireSession,
       logout
     }),
     [
@@ -182,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyMfaChallenge,
       setupMfa,
       verifyMfaSetup,
+      expireSession,
       logout
     ]
   );

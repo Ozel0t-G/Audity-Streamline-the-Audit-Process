@@ -14,13 +14,61 @@ export type AudityConfig = {
   storageAccessKey: string;
   storageBucket: string;
   storageEndpoint: string;
+  storagePublicEndpoint: string;
   storageSecretKey: string;
   uploadMaxBytes: number;
   uploadAllowedTypes: string[];
 };
 
+const insecureValues = new Set([
+  "change-me",
+  "change-me-now",
+  "replace-me",
+  "replace-with-secure-random-secret",
+  "replace-with-base64-encoded-32-byte-key",
+  "replace-with-secure-database-password",
+  "replace-with-secure-initial-admin-password"
+]);
+
+function isInsecureValue(value: string): boolean {
+  return insecureValues.has(value) || value.includes("change-me") || value.includes("replace-with");
+}
+
+function publicStorageEndpoint(publicUrl: string, storageEndpoint: string): string {
+  const explicit = process.env.AUDITY_STORAGE_PUBLIC_ENDPOINT;
+  if (explicit) return explicit;
+  const internal = new URL(storageEndpoint);
+  if (!["audity-storage", "localhost", "127.0.0.1"].includes(internal.hostname)) {
+    return storageEndpoint;
+  }
+  const publicOrigin = new URL(publicUrl.includes("://") ? publicUrl : `http://${publicUrl}`);
+  const minioPort = process.env.AUDITY_MINIO_API_PORT ?? "9000";
+  return `${publicOrigin.protocol}//${publicOrigin.hostname}:${minioPort}`;
+}
+
+function validateProductionConfig(config: AudityConfig): void {
+  if (process.env.AUDITY_ALLOW_INSECURE_DEFAULTS === "true") return;
+  if (config.env !== "production") return;
+  const insecureKeys = [
+    ["AUDITY_APP_SECRET", config.appSecret],
+    ["AUDITY_ENCRYPTION_KEY", config.encryptionKey],
+    ["AUDITY_DATABASE_URL", config.databaseUrl],
+    ["AUDITY_STORAGE_ACCESS_KEY", config.storageAccessKey],
+    ["AUDITY_STORAGE_SECRET_KEY", config.storageSecretKey]
+  ].filter(([, value]) => isInsecureValue(value));
+  if (insecureKeys.length > 0) {
+    throw new Error(
+      `Refusing to start production with insecure default values: ${insecureKeys
+        .map(([key]) => key)
+        .join(", ")}. Run ./scripts/install.sh or set secure values in .env.`
+    );
+  }
+}
+
 export function loadConfig(): AudityConfig {
-  return {
+  const storageEndpoint = process.env.AUDITY_STORAGE_ENDPOINT ?? "http://audity-storage:9000";
+  const publicUrl = process.env.AUDITY_PUBLIC_URL ?? "http://localhost";
+  const config = {
     appSecret: process.env.AUDITY_APP_SECRET ?? "change-me",
     databaseUrl:
       process.env.AUDITY_DATABASE_URL ??
@@ -31,20 +79,23 @@ export function loadConfig(): AudityConfig {
     frameworkYamlSyncIntervalSeconds: Number(process.env.AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS ?? 10),
     logLevel: process.env.AUDITY_LOG_LEVEL ?? "info",
     port: Number(process.env.PORT ?? 3000),
-    publicUrl: process.env.AUDITY_PUBLIC_URL ?? "http://localhost",
+    publicUrl,
     redisUrl: process.env.AUDITY_REDIS_URL ?? "redis://audity-redis:6379",
     backupBucket: process.env.AUDITY_BACKUP_BUCKET ?? "audity-backups",
     sessionIdleTimeoutMinutes: Number(
       process.env.AUDITY_SESSION_IDLE_TIMEOUT_MINUTES ?? 30
     ),
-    storageEndpoint: process.env.AUDITY_STORAGE_ENDPOINT ?? "http://audity-storage:9000",
+    storageEndpoint,
     storageBucket: process.env.AUDITY_STORAGE_BUCKET ?? "audity-evidence",
     storageAccessKey: process.env.AUDITY_STORAGE_ACCESS_KEY ?? "replace-me",
+    storagePublicEndpoint: publicStorageEndpoint(publicUrl, storageEndpoint),
     storageSecretKey: process.env.AUDITY_STORAGE_SECRET_KEY ?? "replace-me",
     uploadMaxBytes: Number(process.env.AUDITY_UPLOAD_MAX_BYTES ?? 25 * 1024 * 1024),
     uploadAllowedTypes: (
       process.env.AUDITY_UPLOAD_ALLOWED_TYPES ??
       "application/pdf,text/plain,text/csv,image/png,image/jpeg,application/json"
-    ).split(",")
+    ).split(",").map((type) => type.trim()).filter(Boolean)
   };
+  validateProductionConfig(config);
+  return config;
 }

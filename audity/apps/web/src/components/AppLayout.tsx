@@ -73,21 +73,56 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     createdAt: string;
   }>>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [customerLabel, setCustomerLabel] = useState(() =>
-    window.localStorage.getItem("audity_current_customer_label") ?? ""
-  );
+  const [customerLabel, setCustomerLabel] = useState("");
   const admin = isAdminRole(user?.role);
   const showCustomerContext =
-    /^\/customers\/[^/]+/.test(location.pathname) || /^\/assessments\/[^/]+/.test(location.pathname);
+    /^\/customers\/[0-9a-f-]{36}$/i.test(location.pathname) ||
+    /^\/assessments\/[0-9a-f-]{36}\//i.test(location.pathname);
+
+  function setCurrentCustomerLabel(label: string) {
+    setCustomerLabel(label);
+    if (label) {
+      window.localStorage.setItem("audity_current_customer_label", label);
+    } else {
+      window.localStorage.removeItem("audity_current_customer_label");
+    }
+  }
 
   useEffect(() => {
     const handleContext = (event: Event) => {
       const nextLabel = (event as CustomEvent<string>).detail;
-      setCustomerLabel(nextLabel);
+      setCurrentCustomerLabel(nextLabel);
     };
     window.addEventListener("audity-customer-context", handleContext);
     return () => window.removeEventListener("audity-customer-context", handleContext);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const customerMatch = location.pathname.match(/^\/customers\/([0-9a-f-]{36})$/i);
+    const assessmentMatch = location.pathname.match(/^\/assessments\/([0-9a-f-]{36})\//i);
+    setCurrentCustomerLabel("");
+    if (customerMatch) {
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (assessmentMatch) {
+      void api<{ assessment: { customerId: string } }>(`/api/assessments/${assessmentMatch[1]}`)
+        .then((assessmentPayload) =>
+          api<{ customer: { name: string } }>(`/api/customers/${assessmentPayload.assessment.customerId}`)
+        )
+        .then((customerPayload) => {
+          if (!cancelled) setCurrentCustomerLabel(customerPayload.customer.name);
+        })
+        .catch(() => {
+          if (!cancelled) setCurrentCustomerLabel("");
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [api, location.pathname]);
 
   async function loadNotifications() {
     const payload = await api<{ unreadCount: number; notifications: typeof notifications }>("/api/notifications");

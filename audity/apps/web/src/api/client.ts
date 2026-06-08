@@ -1,10 +1,12 @@
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
 export function useApi() {
-  const { accessToken, csrfToken } = useAuth();
+  const { accessToken, csrfToken, expireSession } = useAuth();
+  const navigate = useNavigate();
 
   return useCallback(
     async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
@@ -24,11 +26,18 @@ export function useApi() {
         headers
       });
       if (!response.ok) {
-        const error = (await response.json().catch(() => null)) as { message?: string } | null;
+        const error = (await response.json().catch(() => null)) as { code?: string; message?: string } | null;
+        if (
+          response.status === 401 ||
+          (response.status === 403 && error?.code === "CSRF_INVALID")
+        ) {
+          expireSession("Your session expired. Please sign in again.");
+          navigate("/login", { replace: true });
+        }
         throw new Error(error?.message ?? `Request failed: ${response.status}`);
       }
       return (await response.json()) as T;
     },
-    [accessToken, csrfToken]
+    [accessToken, csrfToken, expireSession, navigate]
   );
 }
