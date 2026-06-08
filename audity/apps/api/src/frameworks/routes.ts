@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { parse } from "yaml";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
@@ -17,10 +18,12 @@ type ImportControl = {
 
 type ImportBody = {
   licenseConfirmed?: boolean;
+  publishToTenant?: boolean;
   name?: string;
   version?: string;
   shortName?: string;
   csv?: string;
+  yaml?: string;
   controls?: ImportControl[];
   framework?: {
     name?: string;
@@ -48,10 +51,12 @@ const importControlSchema = z.object({
 
 const importSchema = z.object({
   licenseConfirmed: z.literal(true),
+  publishToTenant: z.boolean().optional().default(true),
   name: z.string().optional(),
   version: z.string().optional(),
   shortName: z.string().optional(),
   csv: z.string().optional(),
+  yaml: z.string().optional(),
   controls: z.array(importControlSchema).optional(),
   framework: z.object({
     name: z.string().optional(),
@@ -120,11 +125,65 @@ function parseCsvControls(csv: string): ImportControl[] {
   });
 }
 
+function parseYamlImport(yaml: string): { name?: string; version?: string; shortName?: string; controls: ImportControl[] } {
+  const schema = z.object({
+    framework: z.object({
+      name: z.string().optional(),
+      version: z.string().optional(),
+      shortName: z.string().optional()
+    }).optional(),
+    domains: z.array(z.object({
+      name: z.string().optional(),
+      controls: z.array(z.object({
+        id: z.string().optional(),
+        code: z.string().optional(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        question: z.string().optional(),
+        questions: z.array(z.object({
+          text: z.string().optional()
+        })).optional()
+      })).optional()
+    })).optional()
+  });
+  const parsed = schema.parse(parse(yaml));
+  return {
+    name: parsed.framework?.name,
+    version: parsed.framework?.version,
+    shortName: parsed.framework?.shortName,
+    controls: (parsed.domains ?? []).flatMap((domain) =>
+      (domain.controls ?? []).map((control) => ({
+        domain: domain.name,
+        code: control.code ?? control.id,
+        title: control.title,
+        description: control.description,
+        question: control.question ?? control.questions?.[0]?.text
+      }))
+    )
+  };
+}
+
 function normalizeControls(body: ImportBody): ImportControl[] {
+  if (body.yaml) {
+    return parseYamlImport(body.yaml).controls;
+  }
   if (body.csv) {
     return parseCsvControls(body.csv);
   }
   return body.framework?.controls ?? body.controls ?? [];
+}
+
+async function publishFrameworkToActiveCustomers(frameworkId: string, userId: string): Promise<number> {
+  const result = await pool.query(
+    `insert into customer_frameworks (customer_id, framework_id, selected_by_user_id)
+     select c.id, $1, $2
+     from customers c
+     where c.status = 'active'
+       and c.archived_at is null
+     on conflict (customer_id, framework_id) do nothing`,
+    [frameworkId, userId]
+  );
+  return result.rowCount ?? 0;
 }
 
 async function getDefaultFrameworkId(): Promise<string | null> {
@@ -314,14 +373,23 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
 
   app.post<{ Body: ImportBody }>(
     "/api/frameworks/import",
-    { preHandler: requireCsrfPermission("assessment.edit") },
+    { preHandler: requireCsrfPermission("frameworks.manage") },
     async (request, reply) => {
       const body = validateBody(importSchema, request.body, reply);
       if (!body) return;
-      const name = body.framework?.name ?? body.name;
-      const version = body.framework?.version ?? body.version ?? "User Import";
-      const shortName = body.framework?.shortName ?? body.shortName ?? name;
-      const controls = normalizeControls(body).filter(
+      let yamlImport: ReturnType<typeof parseYamlImport> | null = null;
+      try {
+        yamlImport = body.yaml ? parseYamlImport(body.yaml) : null;
+      } catch (error) {
+        return reply.code(400).send({
+          code: "INVALID_IMPORT",
+          message: error instanceof Error ? `Invalid YAML framework: ${error.message}` : "Invalid YAML framework"
+        });
+      }
+      const name = yamlImport?.name ?? body.framework?.name ?? body.name;
+      const version = yamlImport?.version ?? body.framework?.version ?? body.version ?? "User Import";
+      const shortName = yamlImport?.shortName ?? body.framework?.shortName ?? body.shortName ?? name;
+      const controls = (yamlImport?.controls ?? normalizeControls(body)).filter(
         (control) => control.domain && control.code && control.title
       );
       if (!name || controls.length === 0) {
@@ -336,14 +404,14 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
         `insert into frameworks
           (id, name, short_name, version, source_type, license_status, distributed_by_audity,
            status_label, disclaimer, imported_by, imported_at, license_confirmed)
-         values ($1, $2, $3, $4, 'user_imported', 'user_license_required', false,
-          'User License Required', $5, $6, now(), true)`,
+         values ($1, $2, $3, $4, 'tenant_published', 'tenant_license_confirmed', false,
+          'Tenant Published', $5, $6, now(), true)`,
         [
           frameworkId,
           name,
           shortName,
           version,
-          "Imported frameworks are stored for this workspace only. The importing user confirmed they have the required license or permission.",
+          "This framework was published by an Instance Admin for tenant-wide use. The publisher confirmed they have the required license or permission.",
           request.user!.sub
         ]
       );
@@ -356,13 +424,13 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           domainId = randomUUID();
           domainIds.set(domainName, domainId);
           await pool.query(
-            `insert into framework_domains (id, framework_id, name, description, sort_order)
+          `insert into framework_domains (id, framework_id, name, description, sort_order)
              values ($1, $2, $3, $4, $5)`,
             [
               domainId,
               frameworkId,
               domainName,
-              "User-imported framework domain",
+              "Tenant-published framework domain",
               domainIds.size
             ]
           );
@@ -400,6 +468,10 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
         );
       }
 
+      const publishedCustomerCount = body.publishToTenant
+        ? await publishFrameworkToActiveCustomers(frameworkId, request.user!.sub)
+        : 0;
+
       const saved = await pool.query(
         `select f.*, count(fc.id)::int as control_count
          from frameworks f
@@ -409,7 +481,22 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
          group by f.id`,
         [frameworkId]
       );
-      return reply.code(201).send({ framework: mapFramework(saved.rows[0]) });
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "framework.tenant_published",
+        entityType: "framework",
+        entityId: frameworkId,
+        before: null,
+        after: {
+          framework: mapFramework(saved.rows[0]),
+          publishToTenant: body.publishToTenant,
+          publishedCustomerCount
+        }
+      });
+      return reply.code(201).send({
+        framework: mapFramework(saved.rows[0]),
+        publishedCustomerCount
+      });
     }
   );
 

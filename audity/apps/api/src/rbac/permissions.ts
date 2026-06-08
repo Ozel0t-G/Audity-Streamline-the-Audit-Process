@@ -30,6 +30,7 @@ export const permissions = [
   "settings.manage",
   "branding.manage",
   "email.manage",
+  "frameworks.manage",
   "backup.manage"
 ] as const;
 
@@ -37,7 +38,7 @@ export type PermissionName = (typeof permissions)[number];
 
 export const rolePermissions: Record<(typeof roles)[number], PermissionName[]> = {
   "Instance Admin": [...permissions],
-  "Tenant Admin": permissions.filter((permission) => permission !== "settings.manage"),
+  "Tenant Admin": permissions.filter((permission) => !["settings.manage", "frameworks.manage"].includes(permission)),
   "Assessment Manager": [
     "assessment.create",
     "assessment.edit",

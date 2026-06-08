@@ -30,13 +30,15 @@ const rateLimitRedis = new Redis(config.redisUrl, {
   maxRetriesPerRequest: 1,
   enableReadyCheck: false
 });
+const publicOrigin = new URL(config.publicUrl.includes("://") ? config.publicUrl : `http://${config.publicUrl}`).origin;
+const allowedOrigins = Array.from(new Set([publicOrigin, "http://localhost", "http://127.0.0.1"]));
 
 await app.register(helmet, {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       baseUri: ["'self'"],
-      connectSrc: ["'self'", "http://localhost:3000", "http://127.0.0.1:3000"],
+      connectSrc: ["'self'", config.storagePublicEndpoint, ...allowedOrigins],
       fontSrc: ["'self'", "data:"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
@@ -62,7 +64,7 @@ await app.register(rateLimit, {
 await app.register(cookie);
 await app.register(cors, {
   credentials: true,
-  origin: ["http://localhost", "http://127.0.0.1"]
+  origin: allowedOrigins
 });
 
 app.setErrorHandler((error, request, reply) => {
@@ -81,6 +83,10 @@ app.setErrorHandler((error, request, reply) => {
 });
 
 app.get("/health", async (): Promise<HealthResponse> => ({
+  status: "ok",
+  version: AUDITY_VERSION
+}));
+app.get("/api/health", async (): Promise<HealthResponse> => ({
   status: "ok",
   version: AUDITY_VERSION
 }));

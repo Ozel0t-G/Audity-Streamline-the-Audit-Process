@@ -36,7 +36,31 @@ set_env() {
 
 env_value() {
   key="$1"
-  grep "^${key}=" .env | tail -n 1 | cut -d= -f2-
+  grep "^${key}=" .env 2>/dev/null | tail -n 1 | cut -d= -f2- || true
+}
+
+is_placeholder() {
+  case "$1" in
+    ""|change-me|change-me-now|replace-me|replace-with-*) return 0 ;;
+    *change-me*|*replace-with*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+env_or_default() {
+  key="$1"
+  default_value="$2"
+  eval "shell_value=\${$key:-}"
+  if [ -n "$shell_value" ]; then
+    printf '%s' "$shell_value"
+    return
+  fi
+  current_value="$(env_value "$key")"
+  if ! is_placeholder "$current_value"; then
+    printf '%s' "$current_value"
+    return
+  fi
+  printf '%s' "$default_value"
 }
 
 need_command docker
@@ -49,33 +73,54 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
+if [ ! -f .env ] && docker volume inspect audity_audity-db-data >/dev/null 2>&1; then
+  echo "Existing Audity database volume found, but .env is missing." >&2
+  echo "Refusing to generate new database credentials because they would not match the existing database user." >&2
+  echo "Restore the original .env, or intentionally remove/recreate the Docker volumes before a fresh install." >&2
+  exit 1
+fi
+
 if [ ! -f .env ]; then
   cp .env.example .env
   echo "Created .env from .env.example"
 fi
 
-postgres_password="${AUDITY_POSTGRES_PASSWORD:-$(secret_hex)}"
-storage_access_key="${AUDITY_STORAGE_ACCESS_KEY:-audity$(openssl rand -hex 8)}"
-storage_secret_key="${AUDITY_STORAGE_SECRET_KEY:-$(secret_hex)}"
+postgres_password="$(env_or_default AUDITY_POSTGRES_PASSWORD "$(secret_hex)")"
+storage_access_key="$(env_or_default AUDITY_STORAGE_ACCESS_KEY "audity$(openssl rand -hex 8)")"
+storage_secret_key="$(env_or_default AUDITY_STORAGE_SECRET_KEY "$(secret_hex)")"
 
-set_env AUDITY_ENV "${AUDITY_ENV:-production}"
-set_env AUDITY_PUBLIC_URL "${AUDITY_PUBLIC_URL:-http://localhost}"
-set_env AUDITY_WEB_PORT "${AUDITY_WEB_PORT:-80}"
-set_env AUDITY_API_PORT "${AUDITY_API_PORT:-3000}"
-set_env AUDITY_MINIO_API_PORT "${AUDITY_MINIO_API_PORT:-9000}"
-set_env AUDITY_MINIO_CONSOLE_PORT "${AUDITY_MINIO_CONSOLE_PORT:-9001}"
-set_env AUDITY_APP_SECRET "${AUDITY_APP_SECRET:-$(secret_hex)}"
-set_env AUDITY_ENCRYPTION_KEY "${AUDITY_ENCRYPTION_KEY:-$(secret_base64_32)}"
-set_env AUDITY_POSTGRES_DB "${AUDITY_POSTGRES_DB:-audity}"
-set_env AUDITY_POSTGRES_USER "${AUDITY_POSTGRES_USER:-audity}"
+set_env AUDITY_ENV "$(env_or_default AUDITY_ENV production)"
+set_env AUDITY_PUBLIC_URL "$(env_or_default AUDITY_PUBLIC_URL http://localhost)"
+set_env AUDITY_WEB_PORT "$(env_or_default AUDITY_WEB_PORT 80)"
+set_env AUDITY_API_PORT "$(env_or_default AUDITY_API_PORT 3000)"
+set_env AUDITY_MINIO_API_PORT "$(env_or_default AUDITY_MINIO_API_PORT 9000)"
+set_env AUDITY_MINIO_CONSOLE_PORT "$(env_or_default AUDITY_MINIO_CONSOLE_PORT 9001)"
+set_env AUDITY_APP_SECRET "$(env_or_default AUDITY_APP_SECRET "$(secret_hex)")"
+set_env AUDITY_ENCRYPTION_KEY "$(env_or_default AUDITY_ENCRYPTION_KEY "$(secret_base64_32)")"
+set_env AUDITY_POSTGRES_DB "$(env_or_default AUDITY_POSTGRES_DB audity)"
+set_env AUDITY_POSTGRES_USER "$(env_or_default AUDITY_POSTGRES_USER audity)"
 set_env AUDITY_POSTGRES_PASSWORD "$postgres_password"
 set_env AUDITY_DATABASE_URL "postgres://$(env_value AUDITY_POSTGRES_USER):${postgres_password}@audity-db:5432/$(env_value AUDITY_POSTGRES_DB)"
 set_env AUDITY_STORAGE_ACCESS_KEY "$storage_access_key"
 set_env AUDITY_STORAGE_SECRET_KEY "$storage_secret_key"
-set_env AUDITY_FRAMEWORK_YAML_DIR "${AUDITY_FRAMEWORK_YAML_DIR:-frameworks}"
-set_env AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS "${AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS:-10}"
-set_env AUDITY_SEED_ADMIN_EMAIL "${AUDITY_SEED_ADMIN_EMAIL:-admin@audity.local}"
-set_env AUDITY_SEED_ADMIN_PASSWORD "${AUDITY_SEED_ADMIN_PASSWORD:-$(secret_hex)}"
+public_url="$(env_value AUDITY_PUBLIC_URL)"
+case "$public_url" in
+  *://*)
+    public_scheme="${public_url%%://*}"
+    public_host="${public_url#*://}"
+    ;;
+  *)
+    public_scheme="http"
+    public_host="$public_url"
+    ;;
+esac
+public_host="${public_host%%/*}"
+public_host="${public_host%%:*}"
+set_env AUDITY_STORAGE_PUBLIC_ENDPOINT "$(env_or_default AUDITY_STORAGE_PUBLIC_ENDPOINT "${public_scheme}://${public_host}:$(env_value AUDITY_MINIO_API_PORT)")"
+set_env AUDITY_FRAMEWORK_YAML_DIR "$(env_or_default AUDITY_FRAMEWORK_YAML_DIR frameworks)"
+set_env AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS "$(env_or_default AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS 10)"
+set_env AUDITY_SEED_ADMIN_EMAIL "$(env_or_default AUDITY_SEED_ADMIN_EMAIL admin@audity.local)"
+set_env AUDITY_SEED_ADMIN_PASSWORD "$(env_or_default AUDITY_SEED_ADMIN_PASSWORD "$(secret_hex)")"
 
 echo "Building and starting Audity..."
 compose up --build -d

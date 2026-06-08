@@ -10,9 +10,11 @@ Recommended self-hosted install:
 ./scripts/install.sh
 ```
 
-Manual Docker start:
+Manual Docker start after creating a secure `.env`:
 
 ```bash
+cp .env.example .env
+# Replace all placeholder secrets in .env first.
 docker compose up --build -d
 docker compose run --rm audity-api node apps/api/dist/db/seed.js
 ```
@@ -47,6 +49,7 @@ Important variables:
 - `AUDITY_DATABASE_URL`: PostgreSQL connection string.
 - `AUDITY_REDIS_URL`: Redis connection string for queues and rate limits.
 - `AUDITY_STORAGE_*`: MinIO/S3-compatible evidence storage settings.
+- `AUDITY_STORAGE_PUBLIC_ENDPOINT`: browser-facing MinIO/S3 endpoint used for signed downloads.
 - `AUDITY_BACKUP_BUCKET`: MinIO/S3 bucket for database dumps and evidence manifests.
 - `AUDITY_FRAMEWORK_YAML_*`: directory and polling interval for YAML-managed frameworks.
 - `AUDITY_SMTP_*`: optional SMTP defaults; runtime SMTP settings are managed in Admin > Email Settings.
@@ -97,6 +100,7 @@ Then verify:
 ## Beta Smoke Checklist
 
 - `docker compose up --build -d`
+- `.env` contains generated or manually replaced secrets, not placeholder values.
 - `docker compose ps` shows web, API, worker, database, Redis, and MinIO healthy.
 - `curl http://localhost:3000/health` returns OK.
 - First-start setup creates an Instance Admin when the user table is empty.
