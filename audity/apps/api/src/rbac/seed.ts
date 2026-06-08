@@ -29,6 +29,15 @@ export async function seedRolesAndPermissions(): Promise<void> {
   }
 
   for (const [role, assignedPermissions] of Object.entries(rolePermissions)) {
+    await pool.query(
+      `delete from role_permissions
+       where role_id = $1
+         and permission_id <> all($2::uuid[])`,
+      [
+        roleIds.get(role),
+        assignedPermissions.map((permission) => permissionIds.get(permission))
+      ]
+    );
     for (const permission of assignedPermissions) {
       await pool.query(
         `insert into role_permissions (role_id, permission_id)
