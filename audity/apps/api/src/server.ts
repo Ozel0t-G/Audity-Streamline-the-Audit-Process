@@ -67,6 +67,17 @@ await app.register(cors, {
   origin: allowedOrigins
 });
 
+app.addHook("preHandler", async (request, reply) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return;
+  const origin = request.headers.origin;
+  if (!origin) return;
+  if (!allowedOrigins.includes(origin)) {
+    await reply
+      .code(403)
+      .send({ code: "ORIGIN_DENIED", message: "Request origin is not allowed" });
+  }
+});
+
 app.setErrorHandler((error, request, reply) => {
   request.log.error(error);
   const detail = error as { statusCode?: number; code?: string; message?: string };

@@ -63,6 +63,18 @@ function validateProductionConfig(config: AudityConfig): void {
         .join(", ")}. Run ./scripts/install.sh or set secure values in .env.`
     );
   }
+  const weakKeys = [
+    ["AUDITY_APP_SECRET", config.appSecret, 32],
+    ["AUDITY_ENCRYPTION_KEY", config.encryptionKey, 32],
+    ["AUDITY_STORAGE_SECRET_KEY", config.storageSecretKey, 24]
+  ].filter(([, value, minLength]) => String(value).length < Number(minLength));
+  if (weakKeys.length > 0) {
+    throw new Error(
+      `Refusing to start production with weak secret values: ${weakKeys
+        .map(([key]) => key)
+        .join(", ")}. Use ./scripts/install.sh or generate new random values.`
+    );
+  }
 }
 
 export function loadConfig(): AudityConfig {

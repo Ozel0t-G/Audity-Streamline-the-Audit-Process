@@ -56,12 +56,10 @@ export function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const token = accessToken ?? window.localStorage.getItem("audity_access_token");
-      const csrf = csrfToken ?? window.localStorage.getItem("audity_csrf_token");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token && csrf) {
-        headers.Authorization = `Bearer ${token}`;
-        headers["X-CSRF-Token"] = csrf;
+      if (accessToken && csrfToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+        headers["X-CSRF-Token"] = csrfToken;
       }
       if (smtpHost || smtpUser || sender) {
         await fetch(`${apiBaseUrl}/api/admin/email-settings`, {

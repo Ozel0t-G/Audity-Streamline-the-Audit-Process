@@ -100,10 +100,7 @@ export async function createSession(user: AuthUser): Promise<{
   return {
     accessToken: signAccessToken({
       sub: user.id,
-      sid: sessionId,
-      email: user.email,
-      role: user.role,
-      permissions: user.permissions
+      sid: sessionId
     }),
     refreshToken,
     csrfToken

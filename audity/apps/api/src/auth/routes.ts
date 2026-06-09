@@ -20,6 +20,7 @@ import {
 } from "./mfa.js";
 import {
   authenticateWithPassword,
+  type AuthUser,
   createSession,
   createInstanceAdmin,
   getUserById,
@@ -49,6 +50,17 @@ type MfaVerifyBody = {
   code?: string;
   challengeToken?: string;
 };
+
+function publicUser(user: AuthUser) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    permissions: user.permissions,
+    alphaAcceptedAt: user.alphaAcceptedAt
+  };
+}
 
 const setupSchema = z.object({
   email: z.string().email(),
@@ -120,7 +132,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         .send({ code: "SETUP_SESSION_FAILED", message: "Setup session failed" });
     }
     setRefreshCookie(reply, session.refreshToken);
-    return { accessToken: session.accessToken, csrfToken: session.csrfToken, user };
+    return { accessToken: session.accessToken, csrfToken: session.csrfToken, user: publicUser(user) };
   });
 
   app.post<{ Body: LoginBody }>("/api/auth/login", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
@@ -158,7 +170,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return {
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
-      user
+      user: publicUser(user)
     };
   });
 
@@ -206,7 +218,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return {
       accessToken: session.accessToken,
       csrfToken: session.csrfToken,
-      user: session.user
+      user: publicUser(session.user)
     };
   });
 
@@ -274,7 +286,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       return {
         accessToken: session.accessToken,
         csrfToken: session.csrfToken,
-        user
+        user: publicUser(user)
       };
     }
 
@@ -340,7 +352,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         request.user!.sub
       ]);
       const user = await getUserById(request.user!.sub);
-      return { user };
+      return user ? { user: publicUser(user) } : { user: null };
     }
   );
 
@@ -348,7 +360,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     "/api/auth/me",
     { preHandler: requirePermission("assessment.view") },
     async (request) => ({
-      user: request.user
+      user: publicUser(request.user!)
     })
   );
 }

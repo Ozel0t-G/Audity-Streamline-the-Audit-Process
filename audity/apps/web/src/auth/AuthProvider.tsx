@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
@@ -15,6 +15,7 @@ type User = {
 type AuthContextValue = {
   accessToken: string | null;
   csrfToken: string | null;
+  isLoading: boolean;
   user: User | null;
   setupInitialAdmin: (input: { email: string; name: string; password: string }) => Promise<void>;
   login: (email: string, password: string) => Promise<{ mfaRequired: false } | { mfaRequired: true; challengeToken: string }>;
@@ -22,6 +23,7 @@ type AuthContextValue = {
   verifyMfaChallenge: (challengeToken: string, code: string) => Promise<void>;
   setupMfa: () => Promise<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }>;
   verifyMfaSetup: (code: string) => Promise<string[]>;
+  refreshSession: () => Promise<{ accessToken: string; csrfToken: string; user: User } | null>;
   expireSession: (notice?: string) => void;
   logout: () => Promise<void>;
 };
@@ -29,21 +31,12 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(() =>
-    window.localStorage.getItem("audity_access_token")
-  );
-  const [csrfToken, setCsrfToken] = useState<string | null>(() =>
-    window.localStorage.getItem("audity_csrf_token")
-  );
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = window.localStorage.getItem("audity_user");
-    return stored ? (JSON.parse(stored) as User) : null;
-  });
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   function storeSession(payload: { accessToken: string; csrfToken: string; user: User }) {
-    window.localStorage.setItem("audity_access_token", payload.accessToken);
-    window.localStorage.setItem("audity_csrf_token", payload.csrfToken);
-    window.localStorage.setItem("audity_user", JSON.stringify(payload.user));
     setAccessToken(payload.accessToken);
     setCsrfToken(payload.csrfToken);
     setUser(payload.user);
@@ -58,6 +51,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCsrfToken(null);
     setUser(null);
   }, []);
+
+  const refreshSession = useCallback(async () => {
+    const response = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include"
+    });
+    if (!response.ok) {
+      setAccessToken(null);
+      setCsrfToken(null);
+      setUser(null);
+      return null;
+    }
+    const payload = (await response.json()) as { accessToken: string; csrfToken: string; user: User };
+    storeSession(payload);
+    return payload;
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.removeItem("audity_access_token");
+    window.localStorage.removeItem("audity_csrf_token");
+    window.localStorage.removeItem("audity_user");
+    void refreshSession().finally(() => setIsLoading(false));
+  }, [refreshSession]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const timer = window.setInterval(() => {
+      void refreshSession();
+    }, 12 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [accessToken, refreshSession]);
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
@@ -174,7 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const payload = (await response.json()) as { user: User };
     if (payload.user) {
-      window.localStorage.setItem("audity_user", JSON.stringify(payload.user));
       setUser(payload.user);
     }
   }, [accessToken, csrfToken, expireSession]);
@@ -183,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       accessToken,
       csrfToken,
+      isLoading,
       user,
       setupInitialAdmin,
       login,
@@ -190,12 +214,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyMfaChallenge,
       setupMfa,
       verifyMfaSetup,
+      refreshSession,
       expireSession,
       logout
     }),
     [
       accessToken,
       csrfToken,
+      isLoading,
       user,
       setupInitialAdmin,
       login,
@@ -203,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyMfaChallenge,
       setupMfa,
       verifyMfaSetup,
+      refreshSession,
       expireSession,
       logout
     ]

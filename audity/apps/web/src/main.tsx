@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
-import { PrivateRoute } from "./auth/PrivateRoute";
+import { PrivateRoute, RequirePermission } from "./auth/PrivateRoute";
 import { AdminLayout, AppLayout } from "./components/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -36,14 +36,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             </Route>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<Navigate to="/admin/activity" replace />} />
-              <Route path="/admin/activity" element={<AdminDashboardPage section="activity" />} />
-              <Route path="/admin/audit" element={<AdminDashboardPage section="audit" />} />
-              <Route path="/admin/users" element={<AdminDashboardPage section="users" />} />
-              <Route path="/admin/frameworks" element={<FrameworkLibraryPage />} />
-              <Route path="/admin/branding" element={<AdminDashboardPage section="branding" />} />
-              <Route path="/admin/email" element={<AdminDashboardPage section="email" />} />
-              <Route path="/admin/system" element={<AdminDashboardPage section="system" />} />
-              <Route path="/admin/backup" element={<AdminDashboardPage section="backup" />} />
+              <Route path="/admin/activity" element={<RequirePermission permission="activitylog.view"><AdminDashboardPage section="activity" /></RequirePermission>} />
+              <Route path="/admin/audit" element={<RequirePermission permission="auditlog.view"><AdminDashboardPage section="audit" /></RequirePermission>} />
+              <Route path="/admin/users" element={<RequirePermission permission="roles.manage"><AdminDashboardPage section="users" /></RequirePermission>} />
+              <Route path="/admin/frameworks" element={<RequirePermission permission="assessment.view"><FrameworkLibraryPage /></RequirePermission>} />
+              <Route path="/admin/branding" element={<RequirePermission permission="branding.manage"><AdminDashboardPage section="branding" /></RequirePermission>} />
+              <Route path="/admin/email" element={<RequirePermission permission="email.manage"><AdminDashboardPage section="email" /></RequirePermission>} />
+              <Route path="/admin/system" element={<RequirePermission permission="settings.manage"><AdminDashboardPage section="system" /></RequirePermission>} />
+              <Route path="/admin/backup" element={<RequirePermission instanceAdminOnly><AdminDashboardPage section="backup" /></RequirePermission>} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

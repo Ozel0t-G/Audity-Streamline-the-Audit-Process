@@ -8,9 +8,6 @@ const refreshTokenTtlDays = 30;
 export type AccessTokenPayload = {
   sub: string;
   sid: string;
-  email: string;
-  role: string;
-  permissions: string[];
 };
 
 export type MfaChallengePayload = {

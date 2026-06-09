@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
@@ -27,6 +28,11 @@ type BrandingBody = {
   confidentialityLabel?: string;
   watermark?: string;
 };
+
+function safeFileName(fileName: string): string {
+  const baseName = path.basename(fileName).replace(/[^\w.-]+/g, "_");
+  return baseName.slice(0, 180) || "upload.bin";
+}
 
 type ReportBody = {
   templateId?: string | null;
@@ -250,9 +256,10 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
       if (!["image/png", "image/jpeg"].includes(file.mimetype)) {
         return reply.code(400).send({ code: "FILE_TYPE_BLOCKED", message: "Logo must be PNG or JPEG" });
       }
+      const fileName = safeFileName(file.filename);
       await ensureBucket();
       const id = randomUUID();
-      const objectKey = `branding/${id}/${file.filename}`;
+      const objectKey = `branding/${id}/${fileName}`;
       const chunks: Buffer[] = [];
       let size = 0;
       for await (const chunk of file.file) {
@@ -265,7 +272,7 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
       });
       return {
         logoObjectKey: objectKey,
-        logoFileName: file.filename,
+        logoFileName: fileName,
         previewUrl: await signedGetUrl(objectKey)
       };
     }

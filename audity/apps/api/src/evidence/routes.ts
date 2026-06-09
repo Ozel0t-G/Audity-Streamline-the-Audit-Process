@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import multipart from "@fastify/multipart";
 import { appendActivityEvent } from "../activity/service.js";
@@ -17,6 +18,11 @@ function multipartTextField(value: unknown): string {
     return String((value as MultipartField).value ?? "");
   }
   return "";
+}
+
+function safeFileName(fileName: string): string {
+  const baseName = path.basename(fileName).replace(/[^\w.-]+/g, "_");
+  return baseName.slice(0, 180) || "upload.bin";
 }
 
 function mapEvidence(row: Record<string, unknown>) {
@@ -61,10 +67,11 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
       if (!config.uploadAllowedTypes.includes(file.mimetype)) {
         return reply.code(400).send({ code: "FILE_TYPE_BLOCKED", message: "File type is not allowed" });
       }
+      const fileName = safeFileName(file.filename);
       const notes = multipartTextField(file.fields.notes);
       await ensureBucket();
       const id = randomUUID();
-      const objectKey = `evidence/${request.params.id}/${id}/${file.filename}`;
+      const objectKey = `evidence/${request.params.id}/${id}/${fileName}`;
       const chunks: Buffer[] = [];
       let size = 0;
       for await (const chunk of file.file) {
@@ -85,7 +92,7 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
           request.params.id,
           request.user!.sub,
           objectKey,
-          file.filename,
+          fileName,
           file.mimetype,
           size,
           notes
