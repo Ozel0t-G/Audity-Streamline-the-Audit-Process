@@ -28,6 +28,40 @@ function queryString(filters: Record<string, string>) {
   return text ? `?${text}` : "";
 }
 
+function formatBytes(value: number) {
+  if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(1)} GB`;
+  if (value >= 1024 ** 2) return `${(value / 1024 ** 2).toFixed(1)} MB`;
+  return `${Math.round(value / 1024)} KB`;
+}
+
+function formatUptime(seconds: number) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  if (days) return `${days}d ${hours}h`;
+  return `${hours}h ${Math.floor((seconds % 3600) / 60)}m`;
+}
+
+function ProgressBar({ value }: { value: number }) {
+  return (
+    <div className="h-2 overflow-hidden rounded-full bg-audity-page">
+      <div className="h-full bg-audity-primary" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    </div>
+  );
+}
+
+function Metric({ label, value, detail }: { label: string; value: number; detail: string }) {
+  return (
+    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-xs font-semibold uppercase text-audity-muted">{label}</span>
+        <span className="text-sm font-semibold text-audity-text">{value}%</span>
+      </div>
+      <ProgressBar value={value} />
+      <p className="mt-2 text-xs text-audity-secondary">{detail}</p>
+    </div>
+  );
+}
+
 type AdminSection = "activity" | "audit" | "users" | "branding" | "email" | "system" | "backup";
 
 type Branding = {
@@ -97,6 +131,36 @@ type BackupSettings = {
   retentionDays: number;
 };
 
+type DashboardRange = "6h" | "24h" | "1w" | "1m";
+
+type DashboardSystem = {
+  range: DashboardRange;
+  snapshot: {
+    status: string;
+    cpuPercent: number;
+    memoryPercent: number;
+    storagePercent: number;
+    memoryUsedBytes: number;
+    memoryTotalBytes: number;
+    storageUsedBytes: number;
+    storageTotalBytes: number;
+    serverIp: string;
+    hostname: string;
+    uptimeSeconds: number;
+    issues: string[];
+  };
+  timeline: Array<{
+    status: string;
+    cpuPercent: number;
+    memoryPercent: number;
+    storagePercent: number;
+    serverIp: string;
+    createdAt: string;
+  }>;
+};
+
+const rangeOptions: DashboardRange[] = ["6h", "24h", "1w", "1m"];
+
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const api = useApi();
   const navigate = useNavigate();
@@ -142,6 +206,8 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   });
   const [emailDeliveryLog, setEmailDeliveryLog] = useState<EmailDelivery[]>([]);
   const [systemSettings, setSystemSettings] = useState({ sessionIdleTimeoutMinutes: 30 });
+  const [systemMonitor, setSystemMonitor] = useState<DashboardSystem | null>(null);
+  const [systemRange, setSystemRange] = useState<DashboardRange>("24h");
   const [backupJobs, setBackupJobs] = useState<BackupJob[]>([]);
   const [backupType, setBackupType] = useState<"full" | "database" | "evidence">("full");
   const [backupSettings, setBackupSettings] = useState<BackupSettings>({
@@ -229,8 +295,12 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   }
 
   async function loadSystemSettings() {
-    const payload = await api<{ sessionIdleTimeoutMinutes: number }>("/api/admin/system-settings");
-    setSystemSettings(payload);
+    const [settingsPayload, dashboardPayload] = await Promise.all([
+      api<{ sessionIdleTimeoutMinutes: number }>("/api/admin/system-settings"),
+      api<{ system: DashboardSystem | null }>(`/api/dashboard?range=${systemRange}`)
+    ]);
+    setSystemSettings(settingsPayload);
+    setSystemMonitor(dashboardPayload.system);
   }
 
   async function loadBackup() {
@@ -257,6 +327,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   useEffect(() => {
     void loadSection().catch((err) => setError(err instanceof Error ? err.message : "Admin load failed"));
   }, [section]);
+
+  useEffect(() => {
+    if (section !== "system") return;
+    void loadSystemSettings().catch((err) => setError(err instanceof Error ? err.message : "System monitor load failed"));
+  }, [section, systemRange]);
 
   async function verifyHashChain() {
     setError("");
@@ -655,25 +730,103 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </div>
           ) : null}
           {section === "system" ? (
-            <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-              <form className="max-w-md space-y-3" onSubmit={saveSystemSettings}>
-                <label className="block text-xs font-semibold uppercase text-audity-secondary">
-                  Session idle timeout
-                  <select
-                    className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
-                    value={systemSettings.sessionIdleTimeoutMinutes}
-                    onChange={(event) => setSystemSettings({ sessionIdleTimeoutMinutes: Number(event.target.value) })}
-                  >
-                    {Array.from({ length: 12 }, (_, index) => (index + 1) * 5).map((minutes) => (
-                      <option key={minutes} value={minutes}>{minutes} minutes</option>
-                    ))}
-                  </select>
-                </label>
-                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
-                  Save system settings
-                </button>
-              </form>
-            </section>
+            <div className="grid gap-4">
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <form className="max-w-md space-y-3" onSubmit={saveSystemSettings}>
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    Session idle timeout
+                    <select
+                      className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
+                      value={systemSettings.sessionIdleTimeoutMinutes}
+                      onChange={(event) => setSystemSettings({ sessionIdleTimeoutMinutes: Number(event.target.value) })}
+                    >
+                      {Array.from({ length: 12 }, (_, index) => (index + 1) * 5).map((minutes) => (
+                        <option key={minutes} value={minutes}>{minutes} minutes</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                    Save system settings
+                  </button>
+                </form>
+              </section>
+              {systemMonitor ? (
+                <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-audity-border pb-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-audity-muted">Admin System Monitor</p>
+                      <h2 className="mt-1 text-lg font-semibold">Docker / Server Status</h2>
+                      <p className="mt-1 text-xs text-audity-secondary">
+                        {systemMonitor.snapshot.hostname} · {systemMonitor.snapshot.serverIp} · Uptime {formatUptime(systemMonitor.snapshot.uptimeSeconds)}
+                      </p>
+                    </div>
+                    <div className="flex rounded-audity border border-audity-border bg-audity-page p-1">
+                      {rangeOptions.map((option) => (
+                        <button
+                          key={option}
+                          className={`h-8 rounded-audity px-3 text-sm ${
+                            systemRange === option ? "bg-audity-primary text-white" : "text-audity-secondary hover:text-audity-text"
+                          }`}
+                          onClick={() => setSystemRange(option)}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <Metric label="CPU" value={systemMonitor.snapshot.cpuPercent} detail={`Load on ${systemMonitor.snapshot.hostname}`} />
+                    <Metric
+                      label="RAM"
+                      value={systemMonitor.snapshot.memoryPercent}
+                      detail={`${formatBytes(systemMonitor.snapshot.memoryUsedBytes)} / ${formatBytes(systemMonitor.snapshot.memoryTotalBytes)}`}
+                    />
+                    <Metric
+                      label="Storage"
+                      value={systemMonitor.snapshot.storagePercent}
+                      detail={`${formatBytes(systemMonitor.snapshot.storageUsedBytes)} / ${formatBytes(systemMonitor.snapshot.storageTotalBytes)}`}
+                    />
+                  </div>
+                  <div className="mt-4 grid gap-4 xl:grid-cols-[360px_1fr]">
+                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">System Problems</p>
+                      {systemMonitor.snapshot.issues.length ? (
+                        <div className="space-y-2">
+                          {systemMonitor.snapshot.issues.map((issue) => (
+                            <div key={issue} className="rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">
+                              {issue}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="rounded-audity border border-audity-border bg-audity-panel px-3 py-6 text-center text-sm text-audity-muted">
+                          No system problems detected
+                        </p>
+                      )}
+                    </div>
+                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase text-audity-muted">Server Timeline</p>
+                        <span className="text-xs text-audity-secondary">{systemMonitor.timeline.length} samples</span>
+                      </div>
+                      <div className="flex h-28 items-end gap-1 overflow-hidden rounded-audity border border-audity-border bg-audity-panel p-2">
+                        {systemMonitor.timeline.map((sample) => (
+                          <div
+                            key={sample.createdAt}
+                            className={sample.status === "online" ? "flex-1 bg-audity-primary" : "flex-1 bg-[#FF4B00]"}
+                            title={`${new Date(sample.createdAt).toLocaleString()} · ${sample.status} · CPU ${sample.cpuPercent}% · RAM ${sample.memoryPercent}% · Storage ${sample.storagePercent}% · ${sample.serverIp}`}
+                            style={{ height: `${Math.max(8, sample.cpuPercent)}%` }}
+                          />
+                        ))}
+                        {!systemMonitor.timeline.length ? (
+                          <p className="m-auto text-sm text-audity-muted">No timeline samples yet</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              ) : null}
+            </div>
           ) : null}
           {section === "backup" ? (
             <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">

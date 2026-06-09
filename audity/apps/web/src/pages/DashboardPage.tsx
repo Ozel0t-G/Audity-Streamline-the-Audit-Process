@@ -36,60 +36,10 @@ type SharedCustomer = {
   assessments: AssessmentSummary[];
 };
 
-type SystemSnapshot = {
-  status: string;
-  cpuPercent: number;
-  memoryPercent: number;
-  storagePercent: number;
-  memoryUsedBytes: number;
-  memoryTotalBytes: number;
-  storageUsedBytes: number;
-  storageTotalBytes: number;
-  serverIp: string;
-  hostname: string;
-  uptimeSeconds: number;
-  issues: string[];
-};
-
-type TimelineSample = {
-  status: string;
-  cpuPercent: number;
-  memoryPercent: number;
-  storagePercent: number;
-  serverIp: string;
-  createdAt: string;
-};
-
 type DashboardPayload = {
   ownedCustomers: OwnedCustomer[];
   sharedCustomers: SharedCustomer[];
-  system: null | {
-    range: DashboardRange;
-    snapshot: SystemSnapshot;
-    timeline: TimelineSample[];
-  };
 };
-
-type DashboardRange = "6h" | "24h" | "1w" | "1m";
-
-const rangeOptions: DashboardRange[] = ["6h", "24h", "1w", "1m"];
-
-function isAdminRole(role?: string) {
-  return role === "Instance Admin" || role === "Tenant Admin";
-}
-
-function formatBytes(value: number) {
-  if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(1)} GB`;
-  if (value >= 1024 ** 2) return `${(value / 1024 ** 2).toFixed(1)} MB`;
-  return `${Math.round(value / 1024)} KB`;
-}
-
-function formatUptime(seconds: number) {
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  if (days) return `${days}d ${hours}h`;
-  return `${hours}h ${Math.floor((seconds % 3600) / 60)}m`;
-}
 
 function ProgressBar({ value }: { value: number }) {
   return (
@@ -99,24 +49,10 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-function Metric({ label, value, detail }: { label: string; value: number; detail: string }) {
-  return (
-    <div className="rounded-audity border border-audity-border bg-audity-panel p-3">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-xs font-semibold uppercase text-audity-muted">{label}</span>
-        <span className="text-sm font-semibold text-audity-text">{value}%</span>
-      </div>
-      <ProgressBar value={value} />
-      <p className="mt-2 text-xs text-audity-secondary">{detail}</p>
-    </div>
-  );
-}
-
 export function DashboardPage() {
   const { user, setupMfa, verifyMfaSetup } = useAuth();
   const api = useApi();
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
-  const [range, setRange] = useState<DashboardRange>("24h");
   const [mfaSetup, setMfaSetup] = useState<{
     secret: string;
     otpauthUrl: string;
@@ -127,10 +63,10 @@ export function DashboardPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    void api<DashboardPayload>(`/api/dashboard?range=${range}`)
+    void api<DashboardPayload>("/api/dashboard")
       .then(setDashboard)
       .catch((err) => setError(err instanceof Error ? err.message : "Dashboard load failed"));
-  }, [api, range]);
+  }, [api]);
 
   async function startMfaSetup() {
     setError("");
@@ -151,9 +87,6 @@ export function DashboardPage() {
       setError(err instanceof Error ? err.message : "MFA verification failed");
     }
   }
-
-  const admin = isAdminRole(user?.role);
-  const system = dashboard?.system;
 
   return (
     <>
@@ -304,89 +237,6 @@ export function DashboardPage() {
         </aside>
       </div>
 
-      {admin && system ? (
-        <section className="mt-4 rounded-audity border border-audity-border bg-audity-panel p-4">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-audity-border pb-3">
-            <div>
-              <p className="text-xs font-semibold uppercase text-audity-muted">Admin System Monitor</p>
-              <h2 className="mt-1 text-lg font-semibold">Docker / Server Status</h2>
-              <p className="mt-1 text-xs text-audity-secondary">
-                {system.snapshot.hostname} · {system.snapshot.serverIp} · Uptime {formatUptime(system.snapshot.uptimeSeconds)}
-              </p>
-            </div>
-            <div className="flex rounded-audity border border-audity-border bg-audity-page p-1">
-              {rangeOptions.map((option) => (
-                <button
-                  key={option}
-                  className={`h-8 rounded-audity px-3 text-sm ${
-                    range === option ? "bg-audity-primary text-white" : "text-audity-secondary hover:text-audity-text"
-                  }`}
-                  onClick={() => setRange(option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <Metric
-              label="CPU"
-              value={system.snapshot.cpuPercent}
-              detail={`Load on ${system.snapshot.hostname}`}
-            />
-            <Metric
-              label="RAM"
-              value={system.snapshot.memoryPercent}
-              detail={`${formatBytes(system.snapshot.memoryUsedBytes)} / ${formatBytes(system.snapshot.memoryTotalBytes)}`}
-            />
-            <Metric
-              label="Storage"
-              value={system.snapshot.storagePercent}
-              detail={`${formatBytes(system.snapshot.storageUsedBytes)} / ${formatBytes(system.snapshot.storageTotalBytes)}`}
-            />
-          </div>
-
-          <div className="mt-4 grid gap-4 xl:grid-cols-[360px_1fr]">
-            <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">System Problems</p>
-              {system.snapshot.issues.length ? (
-                <div className="space-y-2">
-                  {system.snapshot.issues.map((issue) => (
-                    <div key={issue} className="rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">
-                      {issue}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="rounded-audity border border-audity-border bg-audity-panel px-3 py-6 text-center text-sm text-audity-muted">
-                  No system problems detected
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Server Timeline</p>
-                <span className="text-xs text-audity-secondary">{system.timeline.length} samples</span>
-              </div>
-              <div className="flex h-28 items-end gap-1 overflow-hidden rounded-audity border border-audity-border bg-audity-panel p-2">
-                {system.timeline.map((sample) => (
-                  <div
-                    key={sample.createdAt}
-                    className={sample.status === "online" ? "flex-1 bg-audity-primary" : "flex-1 bg-[#FF4B00]"}
-                    title={`${new Date(sample.createdAt).toLocaleString()} · ${sample.status} · CPU ${sample.cpuPercent}% · RAM ${sample.memoryPercent}% · Storage ${sample.storagePercent}% · ${sample.serverIp}`}
-                    style={{ height: `${Math.max(8, sample.cpuPercent)}%` }}
-                  />
-                ))}
-                {!system.timeline.length ? (
-                  <p className="m-auto text-sm text-audity-muted">No timeline samples yet</p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : null}
     </>
   );
 }
