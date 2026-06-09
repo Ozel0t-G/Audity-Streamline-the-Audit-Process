@@ -361,6 +361,19 @@ create table if not exists settings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists system_health_samples (
+  id uuid primary key,
+  status text not null,
+  cpu_percent numeric not null default 0,
+  memory_percent numeric not null default 0,
+  storage_percent numeric not null default 0,
+  server_ip text,
+  issues jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_system_health_samples_created_at on system_health_samples(created_at desc);
+
 create table if not exists backup_jobs (
   id uuid primary key,
   job_type text not null,
