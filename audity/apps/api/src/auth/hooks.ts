@@ -1,10 +1,12 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { isCsrfTokenValid, isSessionActive } from "./service.js";
+import { getUserById, isCsrfTokenValid, isSessionActive, type AuthUser } from "./service.js";
 import { verifyAccessToken, type AccessTokenPayload } from "./tokens.js";
+
+export type AuthenticatedUser = AuthUser & Pick<AccessTokenPayload, "sid" | "sub">;
 
 declare module "fastify" {
   interface FastifyRequest {
-    user?: AccessTokenPayload;
+    user?: AuthenticatedUser;
   }
 }
 
@@ -38,12 +40,21 @@ export async function requireAuth(
     return;
   }
   try {
-    request.user = verifyAccessToken(token);
-    if (!(await isSessionActive(request.user.sid))) {
+    const payload = verifyAccessToken(token);
+    if (!(await isSessionActive(payload.sid))) {
       await reply
         .code(401)
         .send({ code: "SESSION_REVOKED", message: "Session is no longer active" });
+      return;
     }
+    const user = await getUserById(payload.sub);
+    if (!user) {
+      await reply
+        .code(401)
+        .send({ code: "USER_INACTIVE", message: "User is no longer active" });
+      return;
+    }
+    request.user = { ...user, sub: user.id, sid: payload.sid };
   } catch {
     if (!reply.sent) {
       await reply

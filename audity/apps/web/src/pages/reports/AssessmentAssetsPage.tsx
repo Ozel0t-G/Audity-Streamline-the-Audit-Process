@@ -50,7 +50,7 @@ export function AssessmentAssetsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const api = useApi();
-  const { accessToken, expireSession, user } = useAuth();
+  const { accessToken, expireSession, refreshSession, user } = useAuth();
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
   const canUploadEvidence = can("evidence.upload");
   const canDownloadEvidence = can("evidence.download");
@@ -89,6 +89,27 @@ export function AssessmentAssetsPage() {
     warningAccepted: false
   });
   const [error, setError] = useState("");
+
+  async function fetchWithFreshAuth(path: string, init: RequestInit = {}) {
+    const send = (token: string | null) =>
+      fetch(`${apiBaseUrl}${path}`, {
+        ...init,
+        credentials: "include",
+        headers: token ? { ...Object.fromEntries(new Headers(init.headers)), Authorization: `Bearer ${token}` } : init.headers
+      });
+    let response = await send(accessToken);
+    if (response.status === 401) {
+      const refreshed = await refreshSession();
+      if (refreshed) {
+        response = await send(refreshed.accessToken);
+      }
+    }
+    if (response.status === 401) {
+      expireSession("Your session expired. Please sign in again.");
+      navigate("/login", { replace: true });
+    }
+    return response;
+  }
 
   async function load() {
     if (!id) return;
@@ -201,15 +222,9 @@ export function AssessmentAssetsPage() {
   }
 
   async function exportAssessment() {
-    if (!id || !accessToken) return;
-    const response = await fetch(`${apiBaseUrl}/api/assessments/${id}/export`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    if (response.status === 401) {
-      expireSession("Your session expired. Please sign in again.");
-      navigate("/login", { replace: true });
-      return;
-    }
+    if (!id) return;
+    const response = await fetchWithFreshAuth(`/api/assessments/${id}/export`);
+    if (response.status === 401) return;
     if (!response.ok) throw new Error(`Export failed: ${response.status}`);
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
@@ -237,14 +252,8 @@ export function AssessmentAssetsPage() {
 
   async function openPreview() {
     if (!id || !report) return;
-    const response = await fetch(`${apiBaseUrl}/api/assessments/${id}/reports/${report.id}/preview`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
-    });
-    if (response.status === 401) {
-      expireSession("Your session expired. Please sign in again.");
-      navigate("/login", { replace: true });
-      return;
-    }
+    const response = await fetchWithFreshAuth(`/api/assessments/${id}/reports/${report.id}/preview`);
+    if (response.status === 401) return;
     if (!response.ok) {
       throw new Error(`Preview failed: ${response.status}`);
     }

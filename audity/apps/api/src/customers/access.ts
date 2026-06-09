@@ -1,11 +1,11 @@
-import type { AccessTokenPayload } from "../auth/tokens.js";
+import type { AuthenticatedUser } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 
 export function isAdminRole(role?: string): boolean {
   return role === "Instance Admin" || role === "Tenant Admin";
 }
 
-export async function canAccessCustomer(user: AccessTokenPayload, customerId: string): Promise<boolean> {
+export async function canAccessCustomer(user: AuthenticatedUser, customerId: string): Promise<boolean> {
   if (isAdminRole(user.role)) return true;
   const result = await pool.query<{ allowed: boolean }>(
     `select exists(
@@ -27,7 +27,7 @@ export async function canAccessCustomer(user: AccessTokenPayload, customerId: st
   return result.rows[0]?.allowed === true;
 }
 
-export async function canManageCustomerAccess(user: AccessTokenPayload, customerId: string): Promise<boolean> {
+export async function canManageCustomerAccess(user: AuthenticatedUser, customerId: string): Promise<boolean> {
   if (isAdminRole(user.role)) return true;
   const result = await pool.query<{ allowed: boolean }>(
     "select exists(select 1 from customers where id = $1 and created_by_user_id = $2 and archived_at is null) as allowed",
@@ -36,7 +36,7 @@ export async function canManageCustomerAccess(user: AccessTokenPayload, customer
   return result.rows[0]?.allowed === true;
 }
 
-export async function canAccessAssessment(user: AccessTokenPayload, assessmentId: string): Promise<boolean> {
+export async function canAccessAssessment(user: AuthenticatedUser, assessmentId: string): Promise<boolean> {
   if (isAdminRole(user.role)) return true;
   const result = await pool.query<{ allowed: boolean }>(
     `select exists(

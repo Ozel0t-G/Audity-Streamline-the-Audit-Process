@@ -100,7 +100,7 @@ type BackupSettings = {
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const api = useApi();
   const navigate = useNavigate();
-  const { accessToken, expireSession, user } = useAuth();
+  const { accessToken, expireSession, refreshSession, user } = useAuth();
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -164,6 +164,27 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [restorePrecheck, setRestorePrecheck] = useState<Record<string, unknown> | null>(null);
   const [restoreConfirmation, setRestoreConfirmation] = useState("");
   const [error, setError] = useState("");
+
+  async function fetchWithFreshAuth(path: string, init: RequestInit = {}) {
+    const send = (token: string | null) =>
+      fetch(`${apiBaseUrl}${path}`, {
+        ...init,
+        credentials: "include",
+        headers: token ? { ...Object.fromEntries(new Headers(init.headers)), Authorization: `Bearer ${token}` } : init.headers
+      });
+    let response = await send(accessToken);
+    if (response.status === 401) {
+      const refreshed = await refreshSession();
+      if (refreshed) {
+        response = await send(refreshed.accessToken);
+      }
+    }
+    if (response.status === 401) {
+      expireSession("Your session expired. Please sign in again.");
+      navigate("/login", { replace: true });
+    }
+    return response;
+  }
 
   const selectedLog = useMemo(
     () => activityLogs.find((log) => log.id === selectedLogId) ?? activityLogs[0],
@@ -247,15 +268,8 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   }
 
   async function exportCsv(path: string, filename: string) {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      credentials: "include"
-    });
-    if (response.status === 401) {
-      expireSession("Your session expired. Please sign in again.");
-      navigate("/login", { replace: true });
-      return;
-    }
+    const response = await fetchWithFreshAuth(path);
+    if (response.status === 401) return;
     if (!response.ok) throw new Error(`Export failed: ${response.status}`);
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
