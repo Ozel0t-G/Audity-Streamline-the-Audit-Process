@@ -11,6 +11,13 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
       : "text-audity-secondary hover:bg-audity-panel hover:text-audity-text"
   }`;
 
+const subNavClass = ({ isActive }: { isActive: boolean }) =>
+  `ml-3 block rounded-audity px-3 py-2 text-sm ${
+    isActive
+      ? "bg-audity-primaryActive font-semibold text-audity-text"
+      : "text-audity-secondary hover:bg-audity-panel hover:text-audity-text"
+  }`;
+
 function isAdminRole(role?: string) {
   return role === "Instance Admin" || role === "Tenant Admin";
 }
@@ -263,9 +270,9 @@ export function AppLayout() {
           <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Workspace</p>
           <nav className="space-y-1">
             <NavLink className={navClass} to="/dashboard">Dashboard</NavLink>
-            <NavLink className={navClass} to="/customers">Customers</NavLink>
-            <NavLink className={navClass} to="/customers/my">My Customers</NavLink>
-            <NavLink className={navClass} to="/customers/shared">Shared Customers</NavLink>
+            <span className="block px-3 pt-3 pb-1 text-xs font-semibold uppercase text-audity-muted">Customer</span>
+            <NavLink className={subNavClass} to="/customers/my">My Customers</NavLink>
+            <NavLink className={subNavClass} to="/customers/shared">Shared Customers</NavLink>
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>Questions</NavLink> : <span className={assessmentClass}>Questions</span>}
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>Findings & Risk</NavLink> : <span className={assessmentClass}>Findings & Risk</span>}
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>Evidence & Reports</NavLink> : <span className={assessmentClass}>Evidence & Reports</span>}
