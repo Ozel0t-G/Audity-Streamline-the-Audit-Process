@@ -6,6 +6,7 @@ import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
+import { ensureAutomaticRiskRegister, ensureSuggestedFindings, ratingFor } from "./suggestions.js";
 
 type FindingBody = {
   action?: "accept" | "edit" | "dismiss" | "mark-as-accepted-risk";
@@ -131,19 +132,6 @@ function mapRoadmapItem(row: Record<string, unknown>) {
   };
 }
 
-function priorityForScore(score: number): string {
-  if (score <= 1) return "high";
-  return "medium";
-}
-
-function ratingFor(likelihood = 1, impact = 1): { riskScore: number; rating: string } {
-  const riskScore = likelihood * impact;
-  if (riskScore >= 20) return { riskScore, rating: "Critical" };
-  if (riskScore >= 12) return { riskScore, rating: "High" };
-  if (riskScore >= 5) return { riskScore, rating: "Medium" };
-  return { riskScore, rating: "Low" };
-}
-
 function riskActivityAction(before: Record<string, unknown> | null, after: Record<string, unknown>) {
   if (!before) return "risk.created";
   if (before.status !== after.status && after.status === "accepted") return "risk.accepted";
@@ -154,60 +142,6 @@ function riskActivityAction(before: Record<string, unknown> | null, after: Recor
 async function ensureAssessmentExists(assessmentId: string): Promise<boolean> {
   const result = await pool.query("select id from assessments where id = $1", [assessmentId]);
   return Boolean(result.rows[0]);
-}
-
-async function ensureSuggestedFindings(assessmentId: string): Promise<void> {
-  const candidates = await pool.query<{
-    question_id: string;
-    framework_control_id: string;
-    control_code: string;
-    control_title: string;
-    question: string;
-    score: number;
-    evidence_status: string;
-    notes: string | null;
-  }>(
-    `select aq.id as question_id, aq.framework_control_id, fc.control_code,
-      fc.title as control_title, aq.question, ca.score, ca.evidence_status, ca.notes
-     from assessment_questions aq
-     join framework_controls fc on fc.id = aq.framework_control_id
-     join control_answers ca on ca.assessment_question_id = aq.id
-     where aq.assessment_id = $1 and ca.score <= 2`,
-    [assessmentId]
-  );
-
-  for (const candidate of candidates.rows) {
-    const title = `${candidate.control_code}: ${candidate.control_title} needs attention`;
-    const observation = `Score ${candidate.score}/5 indicates a control gap. Evidence status: ${candidate.evidence_status}.`;
-    const recommendation =
-      "Review the control owner, collect supporting evidence, and define a risk treatment action.";
-    const sourceExplanation = `Suggested because the guided question for ${candidate.control_code} was scored ${candidate.score}, which is at or below the Step 6 threshold of 2.`;
-    await pool.query(
-      `insert into findings
-        (id, assessment_id, assessment_question_id, framework_control_id, title, status,
-         priority, observation, recommendation, source_explanation)
-       values ($1, $2, $3, $4, $5, 'suggested', $6, $7, $8, $9)
-       on conflict (assessment_id, framework_control_id) where framework_control_id is not null
-       do update set
-        title = case when findings.status = 'suggested' then excluded.title else findings.title end,
-        priority = case when findings.status = 'suggested' then excluded.priority else findings.priority end,
-        observation = case when findings.status = 'suggested' then excluded.observation else findings.observation end,
-        recommendation = case when findings.status = 'suggested' then excluded.recommendation else findings.recommendation end,
-        source_explanation = excluded.source_explanation,
-        updated_at = now()`,
-      [
-        randomUUID(),
-        assessmentId,
-        candidate.question_id,
-        candidate.framework_control_id,
-        title,
-        priorityForScore(candidate.score),
-        observation,
-        recommendation,
-        sourceExplanation
-      ]
-    );
-  }
 }
 
 async function loadFinding(id: string) {
@@ -392,11 +326,13 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         before: null,
         after: { assessmentId: request.params.id }
       });
+      await ensureAutomaticRiskRegister(request.params.id);
       const result = await pool.query(
         `select r.*, f.title as finding_title
          from risks r
          left join findings f on f.id = r.finding_id
          where r.assessment_id = $1
+           and r.status <> 'deleted'
          order by r.risk_score desc nulls last, r.created_at desc`,
         [request.params.id]
       );
@@ -495,7 +431,7 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
              treatment_option = coalesce($7, treatment_option),
              owner = coalesce($8, owner),
              treatment_plan = coalesce($9, treatment_plan),
-             due_date = $10,
+             due_date = case when $10::text is null then due_date else nullif($10, '')::date end,
              status = coalesce($11, status),
              updated_at = now()
          where id = $1
@@ -510,7 +446,7 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           body.treatmentOption,
           body.owner,
           body.treatmentPlan,
-          body.dueDate || null,
+          body.dueDate,
           body.status
         ]
       );
@@ -524,6 +460,37 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         after
       });
       return { risk: after };
+    }
+  );
+
+  app.delete<{ Params: { id: string; riskId: string } }>(
+    "/api/assessments/:id/risks/:riskId",
+    { preHandler: requireCsrfPermission("risk.edit") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const before = await loadRisk(request.params.riskId);
+      if (!before || before.assessmentId !== request.params.id) {
+        return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
+      }
+      const result = await pool.query(
+        `update risks
+         set status = 'deleted',
+             updated_at = now()
+         where id = $1
+         returning *`,
+        [request.params.riskId]
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "risk.deleted",
+        entityType: "risk",
+        entityId: request.params.riskId,
+        before,
+        after: result.rows[0]
+      });
+      return reply.code(204).send();
     }
   );
 

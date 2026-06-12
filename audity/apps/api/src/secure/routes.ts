@@ -101,7 +101,7 @@ function decryptZipPackage(payload: { encrypted?: string; checksum?: string }) {
 async function riskRegisterCsv(assessmentId: string): Promise<string> {
   const risks = await pool.query(
     `select title, likelihood, impact, risk_score, rating, treatment_option, owner, treatment_plan, due_date, status
-     from risks where assessment_id = $1 order by risk_score desc nulls last`,
+     from risks where assessment_id = $1 and status <> 'deleted' order by risk_score desc nulls last`,
     [assessmentId]
   );
   const columns = ["title", "likelihood", "impact", "risk_score", "rating", "treatment_option", "owner", "treatment_plan", "due_date", "status"];
@@ -185,7 +185,7 @@ async function loadAssessmentBundle(assessmentId: string) {
       [assessmentId]
     ),
     pool.query("select * from findings where assessment_id = $1", [assessmentId]),
-    pool.query("select * from risks where assessment_id = $1", [assessmentId]),
+    pool.query("select * from risks where assessment_id = $1 and status <> 'deleted'", [assessmentId]),
     pool.query("select * from roadmap_items where assessment_id = $1", [assessmentId]),
     pool.query("select * from evidence_items where assessment_id = $1 and deleted_at is null", [assessmentId]),
     pool.query("select * from reports where assessment_id = $1", [assessmentId])
