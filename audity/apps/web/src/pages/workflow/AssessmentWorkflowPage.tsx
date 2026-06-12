@@ -7,6 +7,8 @@ import type { Finding, Risk, RoadmapItem } from "./types";
 
 const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
 const ratings = ["Low", "Medium", "High", "Critical"];
+const treatmentOptions = ["mitigate", "accept", "transfer", "avoid"];
+const riskStatuses = ["open", "in_treatment", "accepted", "closed"];
 
 function ratingClass(rating: string | null) {
   if (rating === "Critical") return "border-audity-error text-audity-error";
@@ -77,6 +79,17 @@ export function AssessmentWorkflowPage() {
   const [selectedFindingId, setSelectedFindingId] = useState("");
   const [selectedRiskId, setSelectedRiskId] = useState("");
   const [riskForm, setRiskForm] = useState({
+    title: "",
+    likelihood: 3,
+    impact: 3,
+    treatmentOption: "mitigate",
+    owner: "",
+    treatmentPlan: "",
+    dueDate: "",
+    status: "open"
+  });
+  const [riskEditForm, setRiskEditForm] = useState({
+    title: "",
     likelihood: 3,
     impact: 3,
     treatmentOption: "mitigate",
@@ -123,6 +136,20 @@ export function AssessmentWorkflowPage() {
     void load().catch((err) => setError(err instanceof Error ? err.message : "Workflow load failed"));
   }, [id]);
 
+  useEffect(() => {
+    if (!selectedRisk) return;
+    setRiskEditForm({
+      title: selectedRisk.title,
+      likelihood: selectedRisk.likelihood,
+      impact: selectedRisk.impact,
+      treatmentOption: selectedRisk.treatmentOption ?? "mitigate",
+      owner: selectedRisk.owner ?? "",
+      treatmentPlan: selectedRisk.treatmentPlan ?? "",
+      dueDate: selectedRisk.dueDate ?? "",
+      status: selectedRisk.status
+    });
+  }, [selectedRisk]);
+
   async function updateFinding(action: "accept" | "dismiss" | "mark-as-accepted-risk") {
     if (!id || !selectedFinding) return;
     setError("");
@@ -141,16 +168,16 @@ export function AssessmentWorkflowPage() {
 
   async function createRisk(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!id || !selectedFinding) return;
+    if (!id) return;
     setError("");
     setSaved("");
     try {
       const payload = await api<{ risk: Risk }>(`/api/assessments/${id}/risks`, {
         method: "POST",
         body: JSON.stringify({
-          findingId: selectedFinding.id,
-          title: selectedFinding.title,
-          ...riskForm
+          findingId: selectedFinding?.id,
+          ...riskForm,
+          title: riskForm.title || selectedFinding?.title
         })
       });
       await load();
@@ -158,6 +185,40 @@ export function AssessmentWorkflowPage() {
       setSaved("Risk created");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Risk create failed");
+    }
+  }
+
+  async function updateRisk(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id || !selectedRisk) return;
+    setError("");
+    setSaved("");
+    try {
+      const payload = await api<{ risk: Risk }>(`/api/assessments/${id}/risks/${selectedRisk.id}`, {
+        method: "PUT",
+        body: JSON.stringify(riskEditForm)
+      });
+      await load();
+      setSelectedRiskId(payload.risk.id);
+      setSaved("Risk updated");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Risk update failed");
+    }
+  }
+
+  async function deleteRisk() {
+    if (!id || !selectedRisk) return;
+    setError("");
+    setSaved("");
+    try {
+      await api(`/api/assessments/${id}/risks/${selectedRisk.id}`, {
+        method: "DELETE"
+      });
+      setSelectedRiskId("");
+      await load();
+      setSaved("Risk deleted");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Risk delete failed");
     }
   }
 
@@ -248,13 +309,13 @@ export function AssessmentWorkflowPage() {
                       {(canApproveFindings || canAcceptRisk) ? (
                       <div className="mt-4 flex flex-wrap gap-2">
                         {canApproveFindings ? (
-                        <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void updateFinding("accept")}>Accept</button>
+                        <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void updateFinding("accept")}>Confirm finding</button>
                         ) : null}
                         {canAcceptRisk ? (
-                        <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void updateFinding("mark-as-accepted-risk")}>Accepted risk</button>
+                        <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void updateFinding("mark-as-accepted-risk")}>Mark residual risk accepted</button>
                         ) : null}
                         {canApproveFindings ? (
-                        <button className="h-9 rounded-audity border border-audity-error bg-audity-panelAlt px-3 text-sm text-audity-error hover:bg-[#2A1C17]" onClick={() => void updateFinding("dismiss")}>Dismiss</button>
+                        <button className="h-9 rounded-audity border border-audity-error bg-audity-panelAlt px-3 text-sm text-audity-error hover:bg-[#2A1C17]" onClick={() => void updateFinding("dismiss")}>Reject finding</button>
                         ) : null}
                       </div>
                       ) : null}
@@ -275,28 +336,11 @@ export function AssessmentWorkflowPage() {
               </div>
             </section>
             <aside className="space-y-4">
-              {canEditRisk ? (
-              <form onSubmit={createRisk} className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-4 text-lg font-semibold">Create Risk</h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Likelihood
-                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min="1" max="5" value={riskForm.likelihood} onChange={(event) => setRiskForm({ ...riskForm, likelihood: Number(event.target.value) })} />
-                  </label>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Impact
-                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min="1" max="5" value={riskForm.impact} onChange={(event) => setRiskForm({ ...riskForm, impact: Number(event.target.value) })} />
-                  </label>
-                </div>
-                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Owner
-                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskForm.owner} onChange={(event) => setRiskForm({ ...riskForm, owner: event.target.value })} />
-                </label>
-                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Treatment Plan
-                  <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskForm.treatmentPlan} onChange={(event) => setRiskForm({ ...riskForm, treatmentPlan: event.target.value })} />
-                </label>
-                <button className="mt-3 h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!selectedFinding}>Create risk from finding</button>
-              </form>
-              ) : null}
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-4 text-lg font-semibold">Risk Matrix</h2>
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold">Risk Register</h2>
+                  <p className="mt-1 text-xs text-audity-muted">Risks are drafted automatically from guided answers with score 0-2. You can edit, re-score, close, or delete every entry.</p>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {ratings.map((rating) => (
                     <div key={rating} className={`rounded-audity border p-3 ${ratingClass(rating)}`}>
@@ -312,11 +356,76 @@ export function AssessmentWorkflowPage() {
                         <p className="text-sm font-semibold">{risk.title}</p>
                         <span className={`rounded-audity border px-2 py-1 text-[11px] ${ratingClass(risk.rating)}`}>{risk.rating}</span>
                       </div>
-                      <p className="mt-1 text-xs text-audity-muted">L{risk.likelihood} x I{risk.impact} = {risk.riskScore}</p>
+                      <p className="mt-1 text-xs text-audity-muted">L{risk.likelihood} x I{risk.impact} = {risk.riskScore} · {risk.status}</p>
                     </button>
                   ))}
+                  {!risks.length ? <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-8 text-center text-sm text-audity-muted">No risks yet</div> : null}
                 </div>
               </section>
+              {canEditRisk ? (
+              <form onSubmit={updateRisk} className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-4 text-lg font-semibold">Edit Selected Risk</h2>
+                <label className="block text-xs font-semibold uppercase text-audity-secondary">Title
+                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.title} onChange={(event) => setRiskEditForm({ ...riskEditForm, title: event.target.value })} disabled={!selectedRisk} />
+                </label>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Likelihood
+                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min="1" max="5" value={riskEditForm.likelihood} onChange={(event) => setRiskEditForm({ ...riskEditForm, likelihood: Number(event.target.value) })} disabled={!selectedRisk} />
+                  </label>
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Impact
+                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min="1" max="5" value={riskEditForm.impact} onChange={(event) => setRiskEditForm({ ...riskEditForm, impact: Number(event.target.value) })} disabled={!selectedRisk} />
+                  </label>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Treatment
+                    <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.treatmentOption} onChange={(event) => setRiskEditForm({ ...riskEditForm, treatmentOption: event.target.value })} disabled={!selectedRisk}>
+                      {treatmentOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  </label>
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Status
+                    <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.status} onChange={(event) => setRiskEditForm({ ...riskEditForm, status: event.target.value })} disabled={!selectedRisk}>
+                      {riskStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Owner
+                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.owner} onChange={(event) => setRiskEditForm({ ...riskEditForm, owner: event.target.value })} disabled={!selectedRisk} />
+                </label>
+                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Due Date
+                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="date" value={riskEditForm.dueDate} onChange={(event) => setRiskEditForm({ ...riskEditForm, dueDate: event.target.value })} disabled={!selectedRisk} />
+                </label>
+                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Treatment Plan
+                  <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.treatmentPlan} onChange={(event) => setRiskEditForm({ ...riskEditForm, treatmentPlan: event.target.value })} disabled={!selectedRisk} />
+                </label>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60" disabled={!selectedRisk}>Save risk</button>
+                  <button type="button" className="h-9 rounded-audity border border-audity-error bg-audity-panelAlt px-3 text-sm text-audity-error hover:bg-[#2A1C17] disabled:cursor-not-allowed disabled:opacity-60" onClick={() => void deleteRisk()} disabled={!selectedRisk}>Delete</button>
+                </div>
+              </form>
+              ) : null}
+              {canEditRisk ? (
+              <form onSubmit={createRisk} className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-4 text-lg font-semibold">Add Manual Risk</h2>
+                <label className="block text-xs font-semibold uppercase text-audity-secondary">Title
+                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskForm.title} onChange={(event) => setRiskForm({ ...riskForm, title: event.target.value })} placeholder={selectedFinding?.title ?? "Risk title"} />
+                </label>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Likelihood
+                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min="1" max="5" value={riskForm.likelihood} onChange={(event) => setRiskForm({ ...riskForm, likelihood: Number(event.target.value) })} />
+                  </label>
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Impact
+                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min="1" max="5" value={riskForm.impact} onChange={(event) => setRiskForm({ ...riskForm, impact: Number(event.target.value) })} />
+                  </label>
+                </div>
+                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Owner
+                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskForm.owner} onChange={(event) => setRiskForm({ ...riskForm, owner: event.target.value })} />
+                </label>
+                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Treatment Plan
+                  <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskForm.treatmentPlan} onChange={(event) => setRiskForm({ ...riskForm, treatmentPlan: event.target.value })} />
+                </label>
+                <button className="mt-3 h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Add risk</button>
+              </form>
+              ) : null}
             </aside>
           </div>
           <section className="mt-4 rounded-audity border border-audity-border bg-audity-panel p-4">

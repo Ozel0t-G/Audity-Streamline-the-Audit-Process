@@ -141,7 +141,7 @@ async function buildReportHtml(assessmentId: string, blocks: string[], authorInf
       [assessmentId]
     ),
     pool.query("select * from findings where assessment_id = $1 order by created_at desc", [assessmentId]),
-    pool.query("select * from risks where assessment_id = $1 order by risk_score desc nulls last", [assessmentId]),
+    pool.query("select * from risks where assessment_id = $1 and status <> 'deleted' order by risk_score desc nulls last", [assessmentId]),
     pool.query("select * from roadmap_items where assessment_id = $1 order by phase, created_at", [assessmentId]),
     pool.query("select * from report_branding order by updated_at desc limit 1")
   ]);

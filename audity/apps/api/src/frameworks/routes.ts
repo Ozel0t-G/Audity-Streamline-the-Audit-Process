@@ -7,6 +7,7 @@ import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
+import { ensureAutomaticRiskRegister } from "../workflow/suggestions.js";
 
 type ImportControl = {
   domain?: string;
@@ -729,6 +730,7 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
         before,
         after
       });
+      await ensureAutomaticRiskRegister(request.params.id);
       return {
         answer: {
           id: result.rows[0].id,
