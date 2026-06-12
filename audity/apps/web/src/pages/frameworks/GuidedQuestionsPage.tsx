@@ -63,6 +63,27 @@ export function GuidedQuestionsPage() {
     );
   }, [activeDomain, activeQuestionId]);
 
+  const progressSummary = useMemo(() => {
+    const questions = payload?.domains.flatMap((domain) => domain.questions) ?? [];
+    return {
+      answered: questions.filter((question) => question.answer?.answerState === "answered").length,
+      followUp: questions.filter((question) => question.answer?.answerState === "needs_follow_up").length,
+      evidenceGaps: questions.filter((question) => question.evidenceGap).length,
+      lowConfidence: questions.filter((question) => question.answer?.confidenceLevel === "low").length
+    };
+  }, [payload]);
+
+  const smartSuggestions = useMemo(() => {
+    if (!activeQuestion) return [];
+    const suggestions: string[] = [];
+    if ((form.score ?? 0) <= 2) suggestions.push("Create or review the related risk because this control has a low maturity score.");
+    if (form.evidenceStatus === "missing" || activeQuestion.evidenceGap) suggestions.push("Request evidence and attach it before the finding is closed.");
+    if (form.confidenceLevel === "low") suggestions.push("Add a review note or assign follow-up because confidence is low.");
+    if (form.answerState === "needs_follow_up") suggestions.push("Keep this question in review until the missing information is clarified.");
+    if (!form.notes.trim()) suggestions.push("Add concise notes explaining the score decision.");
+    return suggestions.slice(0, 4);
+  }, [activeQuestion, form]);
+
   async function load() {
     if (!id) return;
     const next = await api<AssessmentQuestionsPayload>(`/api/assessments/${id}/questions`);
@@ -146,6 +167,24 @@ export function GuidedQuestionsPage() {
             </div>
             <div className="h-3 overflow-hidden rounded-audity bg-audity-page">
               <div className={`h-full ${progressColor(payload?.coverage.percentage ?? 0)}`} style={{ width: `${payload?.coverage.percentage ?? 0}%` }} />
+            </div>
+            <div className="mt-3 grid gap-2 md:grid-cols-4">
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Answered</p>
+                <p className="mt-1 text-xl font-semibold">{progressSummary.answered}</p>
+              </div>
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Follow-up</p>
+                <p className="mt-1 text-xl font-semibold">{progressSummary.followUp}</p>
+              </div>
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Evidence Gaps</p>
+                <p className="mt-1 text-xl font-semibold">{progressSummary.evidenceGaps}</p>
+              </div>
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Low Confidence</p>
+                <p className="mt-1 text-xl font-semibold">{progressSummary.lowConfidence}</p>
+              </div>
             </div>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
@@ -257,6 +296,17 @@ export function GuidedQuestionsPage() {
               </form>
             </section>
             <aside className="space-y-4">
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-3 text-lg font-semibold">Smart Suggestions</h2>
+                <div className="space-y-2">
+                  {smartSuggestions.map((suggestion) => (
+                    <div key={suggestion} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm text-audity-secondary">
+                      {suggestion}
+                    </div>
+                  ))}
+                  {!smartSuggestions.length ? <p className="text-sm text-audity-muted">No suggestions for the current answer.</p> : null}
+                </div>
+              </section>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-3 text-lg font-semibold">Framework Mapping</h2>
                 {activeQuestion?.mappings.length ? (

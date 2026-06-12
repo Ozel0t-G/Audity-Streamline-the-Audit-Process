@@ -9,12 +9,15 @@ const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
 const ratings = ["Low", "Medium", "High", "Critical"];
 const treatmentOptions = ["mitigate", "accept", "transfer", "avoid"];
 const riskStatuses = ["open", "in_treatment", "accepted", "closed"];
-const findingStatuses = ["suggested", "confirmed", "dismissed"];
+const findingStatuses = ["suggested", "in_review", "needs_changes", "confirmed", "approved", "dismissed"];
 const findingPriorities = ["low", "medium", "high", "critical"];
 const scoreAxis = [5, 4, 3, 2, 1];
 const statusLabels: Record<string, string> = {
   suggested: "Draft Finding",
+  in_review: "In Review",
+  needs_changes: "Needs Changes",
   confirmed: "Confirmed",
+  approved: "Approved",
   dismissed: "Rejected",
   open: "Open",
   in_treatment: "In Treatment",
@@ -100,6 +103,18 @@ function formatDateTime(value: string | null | undefined) {
   return new Date(value).toLocaleString();
 }
 
+function summarizeHistory(event: HistoryEvent) {
+  const before = event.before && typeof event.before === "object" ? event.before as Record<string, unknown> : null;
+  const after = event.after && typeof event.after === "object" ? event.after as Record<string, unknown> : null;
+  if (!before || !after) return "";
+  const importantFields = ["title", "status", "priority", "rating", "riskScore", "likelihood", "impact", "treatmentOption", "owner", "dueDate", "draft"];
+  const changes = importantFields
+    .filter((field) => before[field] !== after[field])
+    .slice(0, 4)
+    .map((field) => `${field}: ${String(before[field] ?? "-")} -> ${String(after[field] ?? "-")}`);
+  return changes.join(" · ");
+}
+
 function HistoryList({ events }: { events: HistoryEvent[] }) {
   return (
     <div className="space-y-2">
@@ -110,6 +125,7 @@ function HistoryList({ events }: { events: HistoryEvent[] }) {
             <p className="text-[11px] text-audity-muted">{formatDateTime(event.createdAt)}</p>
           </div>
           <p className="mt-1 text-xs text-audity-secondary">{event.userEmail ?? "System"}</p>
+          {summarizeHistory(event) ? <p className="mt-1 text-xs text-audity-muted">{summarizeHistory(event)}</p> : null}
         </div>
       ))}
       {!events.length ? <p className="text-sm text-audity-muted">No changes recorded yet</p> : null}
@@ -219,6 +235,12 @@ export function AssessmentWorkflowPage() {
   );
   const dueRiskCount = useMemo(() => risks.filter((risk) => Boolean(dueState(risk.dueDate)) && risk.status !== "closed").length, [risks]);
   const dueRoadmapCount = useMemo(() => roadmapItems.filter((item) => Boolean(dueState(item.dueDate)) && item.status !== "closed").length, [roadmapItems]);
+  const reviewSummary = useMemo(() => ({
+    draft: findings.filter((finding) => finding.status === "suggested").length,
+    inReview: findings.filter((finding) => finding.status === "in_review").length,
+    needsChanges: findings.filter((finding) => finding.status === "needs_changes").length,
+    approved: findings.filter((finding) => finding.status === "approved" || finding.status === "confirmed").length
+  }), [findings]);
 
   async function load() {
     if (!id) return;
@@ -585,6 +607,26 @@ export function AssessmentWorkflowPage() {
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-[#17251D] px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
+          <section className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-4">
+            <div className="grid gap-2 md:grid-cols-4">
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Draft</p>
+                <p className="mt-1 text-xl font-semibold">{reviewSummary.draft}</p>
+              </div>
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">In Review</p>
+                <p className="mt-1 text-xl font-semibold">{reviewSummary.inReview}</p>
+              </div>
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Needs Changes</p>
+                <p className="mt-1 text-xl font-semibold">{reviewSummary.needsChanges}</p>
+              </div>
+              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold uppercase text-audity-muted">Approved</p>
+                <p className="mt-1 text-xl font-semibold">{reviewSummary.approved}</p>
+              </div>
+            </div>
+          </section>
           {(dueRiskCount || dueRoadmapCount) ? (
           <section className="mb-4 rounded-audity border border-audity-warning bg-audity-panel p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -691,6 +733,15 @@ export function AssessmentWorkflowPage() {
                       <div className="mt-4 flex flex-wrap gap-2">
                         {canApproveFindings ? (
                         <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void updateFinding("accept")}>Confirm finding</button>
+                        ) : null}
+                        {canApproveFindings ? (
+                        <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void updateFinding("edit", { status: "in_review" })}>Send to review</button>
+                        ) : null}
+                        {canApproveFindings ? (
+                        <button className="h-9 rounded-audity border border-audity-warning bg-audity-panelAlt px-3 text-sm text-audity-warning hover:border-audity-warning" onClick={() => void updateFinding("edit", { status: "needs_changes" })}>Needs changes</button>
+                        ) : null}
+                        {canApproveFindings ? (
+                        <button className="h-9 rounded-audity border border-audity-success bg-audity-panelAlt px-3 text-sm text-audity-success hover:border-audity-success" onClick={() => void updateFinding("edit", { status: "approved" })}>Approve</button>
                         ) : null}
                         {canAcceptRisk ? (
                         <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void updateFinding("mark-as-accepted-risk")}>Mark residual risk accepted</button>

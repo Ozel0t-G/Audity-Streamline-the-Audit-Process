@@ -1,0 +1,173 @@
+import { FormEvent, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useApi } from "../api/client";
+import { useAuth } from "../auth/AuthProvider";
+import { translate, type AudityLanguage } from "../i18n";
+
+export function UserSettingsPage() {
+  const api = useApi();
+  const { user } = useAuth();
+  const [tooltipsEnabled, setTooltipsEnabled] = useState(() => window.localStorage.getItem("audity_tooltips_enabled") !== "false");
+  const [preferences, setPreferences] = useState(() => ({
+    language: (window.localStorage.getItem("audity_language") === "Deutsch" ? "Deutsch" : "English") as AudityLanguage,
+    theme: window.localStorage.getItem("audity_theme") ?? "System",
+    notifications: window.localStorage.getItem("audity_notifications") !== "false",
+    defaultView: window.localStorage.getItem("audity_default_view") ?? "Dashboard",
+    tableDensity: window.localStorage.getItem("audity_table_density") ?? "Comfortable",
+    exportFormat: window.localStorage.getItem("audity_export_format") ?? "CSV"
+  }));
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState("");
+  const t = (label: string) => translate(label, preferences.language);
+
+  useEffect(() => {
+    window.localStorage.setItem("audity_tooltips_enabled", String(tooltipsEnabled));
+    window.dispatchEvent(new CustomEvent("audity-tooltips-changed", { detail: tooltipsEnabled }));
+  }, [tooltipsEnabled]);
+
+  useEffect(() => {
+    window.localStorage.setItem("audity_language", preferences.language);
+    window.localStorage.setItem("audity_theme", preferences.theme);
+    window.localStorage.setItem("audity_notifications", String(preferences.notifications));
+    window.localStorage.setItem("audity_default_view", preferences.defaultView);
+    window.localStorage.setItem("audity_table_density", preferences.tableDensity);
+    window.localStorage.setItem("audity_export_format", preferences.exportFormat);
+    window.dispatchEvent(new CustomEvent("audity-language-changed", { detail: preferences.language }));
+    window.dispatchEvent(new CustomEvent("audity-theme-changed", { detail: preferences.theme }));
+  }, [preferences]);
+
+  async function changePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSaved("");
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setError(t("New passwords do not match"));
+      return;
+    }
+    try {
+      await api("/api/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setSaved(t("Password changed"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Password change failed");
+    }
+  }
+
+  return (
+    <>
+      <div className="mb-5 border-b border-audity-border pb-4">
+        <p className="text-xs font-semibold uppercase text-audity-primary">{t("Account")}</p>
+        <h1 className="mt-1 text-2xl font-semibold">{t("User Settings")}</h1>
+        <p className="mt-2 text-sm text-audity-secondary">{user?.email} · {user?.role}</p>
+      </div>
+      {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+      {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-[#17251D] px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+          <h2 className="mb-4 text-lg font-semibold">{t("Password")}</h2>
+          <form className="space-y-3" onSubmit={changePassword}>
+            <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Enter your current password to confirm this change.">
+              {t("Current Password")}
+              <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} />
+            </label>
+            <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Use at least 8 characters. Prefer a unique password stored in a password manager.">
+              {t("New Password")}
+              <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} />
+            </label>
+            <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Repeat the new password to avoid typos.">
+              {t("Confirm Password")}
+              <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })} />
+            </label>
+            <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" data-tooltip="Save your new password and keep this session active.">
+              {t("Change password")}
+            </button>
+          </form>
+        </section>
+        <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+          <h2 className="mb-4 text-lg font-semibold">{t("Interface")}</h2>
+          <div className="space-y-3">
+            <label className="flex items-center justify-between gap-4 rounded-audity border border-audity-border bg-audity-page px-3 py-3" data-tooltip="Turn hover explanations for buttons, links, and form fields on or off.">
+              <span>
+                <span className="block text-sm font-semibold text-audity-text">{t("Tooltips")}</span>
+                <span className="mt-1 block text-xs text-audity-muted">Show small explanations while hovering UI elements.</span>
+              </span>
+              <input type="checkbox" checked={tooltipsEnabled} onChange={(event) => setTooltipsEnabled(event.target.checked)} />
+            </label>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose the language preference saved for your browser.">
+                {t("Language")}
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.language} onChange={(event) => setPreferences({ ...preferences, language: event.target.value as AudityLanguage })}>
+                  <option>English</option>
+                  <option>Deutsch</option>
+                </select>
+              </label>
+              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose how the interface should look on this browser.">
+                {t("Theme")}
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.theme} onChange={(event) => setPreferences({ ...preferences, theme: event.target.value })}>
+                  <option>System</option>
+                  <option>Dark</option>
+                  <option>Light</option>
+                </select>
+              </label>
+              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose the first workspace view you normally want to open.">
+                {t("Default View")}
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.defaultView} onChange={(event) => setPreferences({ ...preferences, defaultView: event.target.value })}>
+                  <option>Dashboard</option>
+                  <option>Customers</option>
+                  <option>My Customers</option>
+                  <option>Shared Customers</option>
+                </select>
+              </label>
+              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose how compact tables and lists should appear.">
+                {t("Table Density")}
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.tableDensity} onChange={(event) => setPreferences({ ...preferences, tableDensity: event.target.value })}>
+                  <option>Comfortable</option>
+                  <option>Compact</option>
+                </select>
+              </label>
+              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Set your preferred default file type for exports.">
+                {t("Export Format")}
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.exportFormat} onChange={(event) => setPreferences({ ...preferences, exportFormat: event.target.value })}>
+                  <option>CSV</option>
+                  <option>PDF</option>
+                  <option>Word</option>
+                </select>
+              </label>
+              <label className="flex items-center justify-between gap-4 rounded-audity border border-audity-border bg-audity-page px-3 py-3 normal-case" data-tooltip="Choose whether Audity should show in-app notifications for your work.">
+                <span>
+                  <span className="block text-sm font-semibold text-audity-text">{t("Notifications")}</span>
+                  <span className="mt-1 block text-xs text-audity-muted">{t("Show reminders and review messages.")}</span>
+                </span>
+                <input type="checkbox" checked={preferences.notifications} onChange={(event) => setPreferences({ ...preferences, notifications: event.target.checked })} />
+              </label>
+            </div>
+          </div>
+        </section>
+        {user?.role === "Instance Admin" ? (
+        <section className="rounded-audity border border-audity-border bg-audity-panel p-4 xl:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">{t("Backup & Restore")}</h2>
+              <p className="mt-1 text-sm text-audity-secondary">Create backups, download encrypted packages, run restore prechecks, and manage retention.</p>
+            </div>
+            <Link className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 py-2 text-sm text-audity-primary hover:border-audity-primary" to="/admin/backup">
+              {t("Open Backup")}
+            </Link>
+          </div>
+        </section>
+        ) : null}
+      </div>
+    </>
+  );
+}

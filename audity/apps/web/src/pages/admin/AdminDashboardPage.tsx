@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
-import type { ActivityLog, AdminUser, AuditLog, RoleOption } from "./types";
+import type { ActivityLog, AdminUser, AuditLog, PermissionOption, RoleOption } from "./types";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 const highRiskActions = new Set([
@@ -169,12 +169,19 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [permissions, setPermissions] = useState<PermissionOption[]>([]);
+  const [rolePermissionDrafts, setRolePermissionDrafts] = useState<Record<string, string[]>>({});
   const [selectedLogId, setSelectedLogId] = useState("");
   const [filters, setFilters] = useState({
     userId: "",
     assessmentId: "",
     action: "",
     entityType: "",
+    dateFrom: "",
+    dateTo: ""
+  });
+  const [auditFilters, setAuditFilters] = useState({
+    action: "",
     dateFrom: "",
     dateTo: ""
   });
@@ -267,14 +274,16 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   }
 
   async function loadAudit() {
-    const payload = await api<{ auditLogs: AuditLog[] }>("/api/admin/audit-logs");
+    const payload = await api<{ auditLogs: AuditLog[] }>(`/api/admin/audit-logs${queryString(auditFilters)}`);
     setAuditLogs(payload.auditLogs);
   }
 
   async function loadUsers() {
-    const payload = await api<{ users: AdminUser[]; roles: RoleOption[] }>("/api/admin/users");
+    const payload = await api<{ users: AdminUser[]; roles: RoleOption[]; permissions: PermissionOption[] }>("/api/admin/users");
     setUsers(payload.users);
     setRoles(payload.roles);
+    setPermissions(payload.permissions);
+    setRolePermissionDrafts(Object.fromEntries(payload.roles.map((role) => [role.id, role.permissions ?? []])));
     if (payload.roles[0] && !payload.roles.find((role) => role.name === inviteForm.role)) {
       setInviteForm((current) => ({ ...current, role: payload.roles[0].name }));
     }
@@ -383,6 +392,32 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "User update failed");
     }
+  }
+
+  async function saveRolePermissions(role: RoleOption) {
+    setError("");
+    try {
+      await api(`/api/admin/roles/${role.id}/permissions`, {
+        method: "PATCH",
+        body: JSON.stringify({ permissions: rolePermissionDrafts[role.id] ?? [] })
+      });
+      await loadUsers();
+      await refreshSession();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Role permission update failed");
+    }
+  }
+
+  function toggleRolePermission(roleId: string, permission: string) {
+    setRolePermissionDrafts((current) => {
+      const next = new Set(current[roleId] ?? []);
+      if (next.has(permission)) {
+        next.delete(permission);
+      } else {
+        next.add(permission);
+      }
+      return { ...current, [roleId]: Array.from(next).sort() };
+    });
   }
 
   async function uploadLogo(event: FormEvent<HTMLFormElement>) {
@@ -619,11 +654,28 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           {section === "audit" ? (
           <div className="grid gap-4">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-              <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <h2 className="text-lg font-semibold">Security Audit Log</h2>
-                {can("auditlog.view") ? <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void exportCsv("/api/admin/audit-logs/export", "audity-audit-logs.csv")}>
-                  Export
-                </button> : null}
+                <div className="flex flex-wrap items-end gap-2">
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    Action
+                    <input className="mt-2 h-9 w-44 rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={auditFilters.action} onChange={(event) => setAuditFilters({ ...auditFilters, action: event.target.value })} />
+                  </label>
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    From
+                    <input className="mt-2 h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="date" value={auditFilters.dateFrom} onChange={(event) => setAuditFilters({ ...auditFilters, dateFrom: event.target.value })} />
+                  </label>
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    To
+                    <input className="mt-2 h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="date" value={auditFilters.dateTo} onChange={(event) => setAuditFilters({ ...auditFilters, dateTo: event.target.value })} />
+                  </label>
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void loadAudit()}>
+                    Apply
+                  </button>
+                  {can("auditlog.view") ? <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void exportCsv("/api/admin/audit-logs/export", "audity-audit-logs.csv")}>
+                    Export
+                  </button> : null}
+                </div>
               </div>
               <div className="space-y-2">
                 {auditLogs.slice(0, 12).map((log) => (
@@ -643,6 +695,31 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           <div className="grid gap-4">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">User Management</h2>
+              <div className="mb-4 grid gap-2 xl:grid-cols-2">
+                {roles.map((role) => (
+                  <div key={role.id} className="rounded-audity border border-audity-border bg-audity-page p-3">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-audity-text">{role.name}</p>
+                      <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void saveRolePermissions(role)}>
+                        Save rights
+                      </button>
+                    </div>
+                    <p className="mb-2 text-xs text-audity-muted">{rolePermissionDrafts[role.id]?.length ?? 0} permissions active</p>
+                    <div className="grid max-h-48 gap-1 overflow-auto rounded-audity border border-audity-border bg-audity-panel p-2 md:grid-cols-2">
+                      {permissions.map((permission) => (
+                        <label key={`${role.id}-${permission.id}`} className="flex items-center gap-2 text-xs text-audity-secondary">
+                          <input
+                            type="checkbox"
+                            checked={(rolePermissionDrafts[role.id] ?? []).includes(permission.name)}
+                            onChange={() => toggleRolePermission(role.id, permission.name)}
+                          />
+                          {permission.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
               {can("users.invite") ? <form className="mb-4 space-y-3" onSubmit={inviteUser}>
                 <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} />
                 <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Name" value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} />
