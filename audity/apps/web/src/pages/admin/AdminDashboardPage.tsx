@@ -171,6 +171,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [permissions, setPermissions] = useState<PermissionOption[]>([]);
   const [rolePermissionDrafts, setRolePermissionDrafts] = useState<Record<string, string[]>>({});
+  const [expandedRoleIds, setExpandedRoleIds] = useState<string[]>([]);
   const [selectedLogId, setSelectedLogId] = useState("");
   const [filters, setFilters] = useState({
     userId: "",
@@ -418,6 +419,12 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
       }
       return { ...current, [roleId]: Array.from(next).sort() };
     });
+  }
+
+  function toggleRoleExpanded(roleId: string) {
+    setExpandedRoleIds((current) =>
+      current.includes(roleId) ? current.filter((id) => id !== roleId) : [...current, roleId]
+    );
   }
 
   async function uploadLogo(event: FormEvent<HTMLFormElement>) {
@@ -696,29 +703,48 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">User Management</h2>
               <div className="mb-4 grid gap-2 xl:grid-cols-2">
-                {roles.map((role) => (
+                {roles.map((role) => {
+                  const expanded = expandedRoleIds.includes(role.id);
+                  return (
                   <div key={role.id} className="rounded-audity border border-audity-border bg-audity-page p-3">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-audity-text">{role.name}</p>
-                      <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void saveRolePermissions(role)}>
-                        Save rights
-                      </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 text-left"
+                      onClick={() => toggleRoleExpanded(role.id)}
+                      aria-expanded={expanded}
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-audity-text">{role.name}</p>
+                        <p className="mt-1 text-xs text-audity-muted">{rolePermissionDrafts[role.id]?.length ?? 0} permissions active</p>
+                      </div>
+                      <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-primary">
+                        {expanded ? "Collapse" : "Edit rights"}
+                      </span>
+                    </button>
+                    {expanded ? (
+                    <div className="mt-3 border-t border-audity-border pt-3">
+                      <div className="mb-3 flex justify-end">
+                        <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void saveRolePermissions(role)}>
+                          Save rights
+                        </button>
+                      </div>
+                      <div className="grid max-h-56 gap-1 overflow-auto rounded-audity border border-audity-border bg-audity-panel p-2 md:grid-cols-2">
+                        {permissions.map((permission) => (
+                          <label key={`${role.id}-${permission.id}`} className="flex items-center gap-2 text-xs text-audity-secondary">
+                            <input
+                              type="checkbox"
+                              checked={(rolePermissionDrafts[role.id] ?? []).includes(permission.name)}
+                              onChange={() => toggleRolePermission(role.id, permission.name)}
+                            />
+                            {permission.name}
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                    <p className="mb-2 text-xs text-audity-muted">{rolePermissionDrafts[role.id]?.length ?? 0} permissions active</p>
-                    <div className="grid max-h-48 gap-1 overflow-auto rounded-audity border border-audity-border bg-audity-panel p-2 md:grid-cols-2">
-                      {permissions.map((permission) => (
-                        <label key={`${role.id}-${permission.id}`} className="flex items-center gap-2 text-xs text-audity-secondary">
-                          <input
-                            type="checkbox"
-                            checked={(rolePermissionDrafts[role.id] ?? []).includes(permission.name)}
-                            onChange={() => toggleRolePermission(role.id, permission.name)}
-                          />
-                          {permission.name}
-                        </label>
-                      ))}
-                    </div>
+                    ) : null}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {can("users.invite") ? <form className="mb-4 space-y-3" onSubmit={inviteUser}>
                 <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} />
