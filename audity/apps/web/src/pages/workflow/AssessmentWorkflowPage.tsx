@@ -3,18 +3,47 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
-import type { Finding, Risk, RoadmapItem } from "./types";
+import type { Finding, HistoryEvent, ReviewComment, Risk, RoadmapItem } from "./types";
 
 const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
 const ratings = ["Low", "Medium", "High", "Critical"];
 const treatmentOptions = ["mitigate", "accept", "transfer", "avoid"];
 const riskStatuses = ["open", "in_treatment", "accepted", "closed"];
+const findingStatuses = ["suggested", "confirmed", "dismissed"];
+const findingPriorities = ["low", "medium", "high", "critical"];
+const scoreAxis = [5, 4, 3, 2, 1];
+const statusLabels: Record<string, string> = {
+  suggested: "Draft Finding",
+  confirmed: "Confirmed",
+  dismissed: "Rejected",
+  open: "Open",
+  in_treatment: "In Treatment",
+  accepted: "Accepted Risk",
+  closed: "Closed",
+  deleted: "Deleted"
+};
 
 function ratingClass(rating: string | null) {
   if (rating === "Critical") return "border-audity-error text-audity-error";
   if (rating === "High") return "border-audity-warning text-audity-warning";
   if (rating === "Medium") return "border-audity-primary text-audity-primary";
   return "border-audity-borderStrong text-audity-secondary";
+}
+
+function statusLabel(value: string | null | undefined) {
+  return statusLabels[String(value ?? "")] ?? String(value ?? "-");
+}
+
+function dueState(value: string | null | undefined) {
+  if (!value) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(value);
+  due.setHours(0, 0, 0, 0);
+  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  if (days < 0) return { label: "Overdue", tone: "border-audity-error text-audity-error" };
+  if (days <= 14) return { label: `Due in ${days}d`, tone: "border-audity-warning text-audity-warning" };
+  return null;
 }
 
 function RoadmapPhaseColumn({
@@ -50,6 +79,7 @@ function RoadmapCard({ item, canDrag }: { item: RoadmapItem; canDrag: boolean })
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
     : undefined;
+  const due = dueState(item.dueDate);
   return (
     <div
       ref={setNodeRef}
@@ -59,7 +89,47 @@ function RoadmapCard({ item, canDrag }: { item: RoadmapItem; canDrag: boolean })
       className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} rounded-audity border border-audity-borderStrong bg-audity-panel px-3 py-2 ${isDragging ? "opacity-70" : ""}`}
     >
       <p className="text-sm font-semibold">{item.action}</p>
-      <p className="mt-1 text-xs text-audity-muted">{item.riskTitle} · {item.effortEstimate}</p>
+      <p className="mt-1 text-xs text-audity-muted">{item.riskTitle} · {item.effortEstimate} · {statusLabel(item.status)}</p>
+      {due ? <span className={`mt-2 inline-block rounded-audity border px-2 py-0.5 text-[11px] ${due.tone}`}>{due.label}</span> : null}
+    </div>
+  );
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "Unknown time";
+  return new Date(value).toLocaleString();
+}
+
+function HistoryList({ events }: { events: HistoryEvent[] }) {
+  return (
+    <div className="space-y-2">
+      {events.slice(0, 5).map((event) => (
+        <div key={event.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-audity-primary">{event.action}</p>
+            <p className="text-[11px] text-audity-muted">{formatDateTime(event.createdAt)}</p>
+          </div>
+          <p className="mt-1 text-xs text-audity-secondary">{event.userEmail ?? "System"}</p>
+        </div>
+      ))}
+      {!events.length ? <p className="text-sm text-audity-muted">No changes recorded yet</p> : null}
+    </div>
+  );
+}
+
+function CommentList({ comments }: { comments: ReviewComment[] }) {
+  return (
+    <div className="space-y-2">
+      {comments.slice(0, 5).map((comment) => (
+        <div key={comment.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-audity-primary">{comment.userEmail ?? "System"}</p>
+            <p className="text-[11px] text-audity-muted">{formatDateTime(comment.createdAt)}</p>
+          </div>
+          <p className="mt-1 text-sm text-audity-secondary">{comment.comment}</p>
+        </div>
+      ))}
+      {!comments.length ? <p className="text-sm text-audity-muted">No comments yet</p> : null}
     </div>
   );
 }
@@ -67,7 +137,7 @@ function RoadmapCard({ item, canDrag }: { item: RoadmapItem; canDrag: boolean })
 export function AssessmentWorkflowPage() {
   const { id } = useParams();
   const api = useApi();
-  const { user } = useAuth();
+  const { accessToken, user } = useAuth();
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
   const canApproveFindings = can("finding.approve");
   const canAcceptRisk = can("risk.accept");
@@ -76,8 +146,26 @@ export function AssessmentWorkflowPage() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [risks, setRisks] = useState<Risk[]>([]);
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
+  const [findingHistory, setFindingHistory] = useState<HistoryEvent[]>([]);
+  const [riskHistory, setRiskHistory] = useState<HistoryEvent[]>([]);
+  const [findingComments, setFindingComments] = useState<ReviewComment[]>([]);
+  const [riskComments, setRiskComments] = useState<ReviewComment[]>([]);
   const [selectedFindingId, setSelectedFindingId] = useState("");
   const [selectedRiskId, setSelectedRiskId] = useState("");
+  const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>([]);
+  const [selectedRiskIds, setSelectedRiskIds] = useState<string[]>([]);
+  const [matrixFilter, setMatrixFilter] = useState<{ likelihood: number; impact: number } | null>(null);
+  const [findingBulkForm, setFindingBulkForm] = useState({ status: "", priority: "" });
+  const [riskBulkForm, setRiskBulkForm] = useState({ status: "", owner: "", dueDate: "", treatmentOption: "", draft: "" });
+  const [findingComment, setFindingComment] = useState("");
+  const [riskComment, setRiskComment] = useState("");
+  const [findingEditForm, setFindingEditForm] = useState({
+    title: "",
+    priority: "medium",
+    status: "suggested",
+    observation: "",
+    recommendation: ""
+  });
   const [riskForm, setRiskForm] = useState({
     title: "",
     likelihood: 3,
@@ -86,7 +174,10 @@ export function AssessmentWorkflowPage() {
     owner: "",
     treatmentPlan: "",
     dueDate: "",
-    status: "open"
+    status: "open",
+    draft: false,
+    acceptanceReason: "",
+    acceptanceExpiresAt: ""
   });
   const [riskEditForm, setRiskEditForm] = useState({
     title: "",
@@ -96,7 +187,10 @@ export function AssessmentWorkflowPage() {
     owner: "",
     treatmentPlan: "",
     dueDate: "",
-    status: "open"
+    status: "open",
+    draft: false,
+    acceptanceReason: "",
+    acceptanceExpiresAt: ""
   });
   const [roadmapForm, setRoadmapForm] = useState({
     phase: "31-90d",
@@ -117,6 +211,14 @@ export function AssessmentWorkflowPage() {
     () => risks.find((risk) => risk.id === selectedRiskId) ?? risks[0],
     [risks, selectedRiskId]
   );
+  const filteredRisks = useMemo(
+    () => matrixFilter
+      ? risks.filter((risk) => risk.likelihood === matrixFilter.likelihood && risk.impact === matrixFilter.impact)
+      : risks,
+    [risks, matrixFilter]
+  );
+  const dueRiskCount = useMemo(() => risks.filter((risk) => Boolean(dueState(risk.dueDate)) && risk.status !== "closed").length, [risks]);
+  const dueRoadmapCount = useMemo(() => roadmapItems.filter((item) => Boolean(dueState(item.dueDate)) && item.status !== "closed").length, [roadmapItems]);
 
   async function load() {
     if (!id) return;
@@ -137,6 +239,17 @@ export function AssessmentWorkflowPage() {
   }, [id]);
 
   useEffect(() => {
+    if (!selectedFinding) return;
+    setFindingEditForm({
+      title: selectedFinding.title,
+      priority: selectedFinding.priority ?? "medium",
+      status: selectedFinding.status,
+      observation: selectedFinding.observation ?? "",
+      recommendation: selectedFinding.recommendation ?? ""
+    });
+  }, [selectedFinding]);
+
+  useEffect(() => {
     if (!selectedRisk) return;
     setRiskEditForm({
       title: selectedRisk.title,
@@ -146,23 +259,110 @@ export function AssessmentWorkflowPage() {
       owner: selectedRisk.owner ?? "",
       treatmentPlan: selectedRisk.treatmentPlan ?? "",
       dueDate: selectedRisk.dueDate ?? "",
-      status: selectedRisk.status
+      status: selectedRisk.status,
+      draft: Boolean(selectedRisk.draft),
+      acceptanceReason: selectedRisk.acceptanceReason ?? "",
+      acceptanceExpiresAt: selectedRisk.acceptanceExpiresAt ?? selectedRisk.dueDate ?? ""
     });
   }, [selectedRisk]);
 
-  async function updateFinding(action: "accept" | "dismiss" | "mark-as-accepted-risk") {
+  useEffect(() => {
+    if (!id || !selectedFinding) {
+      setFindingHistory([]);
+      setFindingComments([]);
+      return;
+    }
+    api<{ history: HistoryEvent[] }>(`/api/assessments/${id}/history?entityType=finding&entityId=${selectedFinding.id}`)
+      .then((payload) => setFindingHistory(payload.history))
+      .catch(() => setFindingHistory([]));
+    api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=finding&entityId=${selectedFinding.id}`)
+      .then((payload) => setFindingComments(payload.comments))
+      .catch(() => setFindingComments([]));
+  }, [api, id, selectedFinding]);
+
+  useEffect(() => {
+    if (!id || !selectedRisk) {
+      setRiskHistory([]);
+      setRiskComments([]);
+      return;
+    }
+    api<{ history: HistoryEvent[] }>(`/api/assessments/${id}/history?entityType=risk&entityId=${selectedRisk.id}`)
+      .then((payload) => setRiskHistory(payload.history))
+      .catch(() => setRiskHistory([]));
+    api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=risk&entityId=${selectedRisk.id}`)
+      .then((payload) => setRiskComments(payload.comments))
+      .catch(() => setRiskComments([]));
+  }, [api, id, selectedRisk]);
+
+  async function updateFinding(action: "accept" | "dismiss" | "mark-as-accepted-risk" | "edit", fields = {}) {
     if (!id || !selectedFinding) return;
     setError("");
     setSaved("");
     try {
       await api(`/api/assessments/${id}/findings/${selectedFinding.id}`, {
         method: "PUT",
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ action, ...fields })
       });
       await load();
       setSaved("Finding updated");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Finding update failed");
+    }
+  }
+
+  async function updateFindingDetails(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await updateFinding("edit", findingEditForm);
+  }
+
+  async function addComment(entityType: "finding" | "risk", entityId: string, comment: string) {
+    if (!id || !comment.trim()) return;
+    await api(`/api/assessments/${id}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ entityType, entityId, comment })
+    });
+    if (entityType === "finding") {
+      setFindingComment("");
+      const payload = await api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=finding&entityId=${entityId}`);
+      setFindingComments(payload.comments);
+    } else {
+      setRiskComment("");
+      const payload = await api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=risk&entityId=${entityId}`);
+      setRiskComments(payload.comments);
+    }
+  }
+
+  function toggleFindingSelection(findingId: string) {
+    setSelectedFindingIds((current) =>
+      current.includes(findingId) ? current.filter((id) => id !== findingId) : [...current, findingId]
+    );
+  }
+
+  function toggleRiskSelection(riskId: string) {
+    setSelectedRiskIds((current) =>
+      current.includes(riskId) ? current.filter((id) => id !== riskId) : [...current, riskId]
+    );
+  }
+
+  async function bulkUpdateFindings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id || !selectedFindingIds.length) return;
+    setError("");
+    setSaved("");
+    try {
+      await api(`/api/assessments/${id}/findings/bulk`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          findingIds: selectedFindingIds,
+          status: findingBulkForm.status || undefined,
+          priority: findingBulkForm.priority || undefined
+        })
+      });
+      setSelectedFindingIds([]);
+      await load();
+      setSaved("Findings updated");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk finding update failed");
     }
   }
 
@@ -193,6 +393,13 @@ export function AssessmentWorkflowPage() {
     if (!id || !selectedRisk) return;
     setError("");
     setSaved("");
+    if (
+      (riskEditForm.treatmentOption === "accept" || riskEditForm.status === "accepted") &&
+      (!riskEditForm.owner.trim() || !riskEditForm.acceptanceReason.trim() || !riskEditForm.acceptanceExpiresAt)
+    ) {
+      setError("Accepted risks require owner, acceptance reason, and expiration date.");
+      return;
+    }
     try {
       const payload = await api<{ risk: Risk }>(`/api/assessments/${id}/risks/${selectedRisk.id}`, {
         method: "PUT",
@@ -220,6 +427,117 @@ export function AssessmentWorkflowPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Risk delete failed");
     }
+  }
+
+  async function bulkUpdateRisks(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id || !selectedRiskIds.length) return;
+    setError("");
+    setSaved("");
+    try {
+      await api(`/api/assessments/${id}/risks/bulk`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          riskIds: selectedRiskIds,
+          status: riskBulkForm.status || undefined,
+          owner: riskBulkForm.owner || undefined,
+          dueDate: riskBulkForm.dueDate || undefined,
+          treatmentOption: riskBulkForm.treatmentOption || undefined,
+          draft: riskBulkForm.draft === "" ? undefined : riskBulkForm.draft === "true"
+        })
+      });
+      setSelectedRiskIds([]);
+      await load();
+      setSaved("Risks updated");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk risk update failed");
+    }
+  }
+
+  async function bulkDeleteRisks() {
+    if (!id || !selectedRiskIds.length) return;
+    setError("");
+    setSaved("");
+    try {
+      await api(`/api/assessments/${id}/risks/bulk`, {
+        method: "PATCH",
+        body: JSON.stringify({ riskIds: selectedRiskIds, delete: true })
+      });
+      setSelectedRiskIds([]);
+      await load();
+      setSaved("Risks deleted");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk risk delete failed");
+    }
+  }
+
+  async function generateRoadmapFromRisks() {
+    if (!id) return;
+    setError("");
+    setSaved("");
+    try {
+      const payload = await api<{ created: number }>(`/api/assessments/${id}/roadmap/generate`, {
+        method: "POST"
+      });
+      await load();
+      setSaved(`${payload.created} roadmap items generated`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Roadmap generation failed");
+    }
+  }
+
+  async function exportRiskRegister() {
+    if (!id) return;
+    const response = await fetch(`/api/assessments/${id}/risks/export`, {
+      credentials: "include",
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
+    });
+    if (!response.ok) {
+      setError(`Risk export failed: ${response.status}`);
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `audity-risk-register-${id}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importRiskRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id) return;
+    const input = event.currentTarget.elements.namedItem("riskCsv") as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    setError("");
+    setSaved("");
+    try {
+      const csv = await file.text();
+      const payload = await api<{ imported: number }>(`/api/assessments/${id}/risks/import`, {
+        method: "POST",
+        body: JSON.stringify({ csv })
+      });
+      event.currentTarget.reset();
+      await load();
+      setSaved(`${payload.imported} risks imported`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Risk import failed");
+    }
+  }
+
+  function downloadRiskCsvTemplate() {
+    const csv = [
+      '"title","likelihood","impact","treatment_option","owner","treatment_plan","due_date","status","draft","acceptance_reason","acceptance_expires_at"',
+      '"Example access risk","3","4","mitigate","Security Owner","Define MFA rollout and review privileged access","","open","true","",""'
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "audity-risk-register-template.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   async function createRoadmapItem(event: FormEvent<HTMLFormElement>) {
@@ -267,26 +585,58 @@ export function AssessmentWorkflowPage() {
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-[#17251D] px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
+          {(dueRiskCount || dueRoadmapCount) ? (
+          <section className="mb-4 rounded-audity border border-audity-warning bg-audity-panel p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-audity-warning">Due Reminders</h2>
+                <p className="mt-1 text-sm text-audity-secondary">{dueRiskCount} risks and {dueRoadmapCount} roadmap items are overdue or due within 14 days.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-audity border border-audity-warning px-2 py-1 text-xs text-audity-warning">Risks {dueRiskCount}</span>
+                <span className="rounded-audity border border-audity-warning px-2 py-1 text-xs text-audity-warning">Roadmap {dueRoadmapCount}</span>
+              </div>
+            </div>
+          </section>
+          ) : null}
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-4 py-3">
                 <h2 className="text-lg font-semibold">Finding Review</h2>
               </div>
+              {canApproveFindings ? (
+              <form className="flex flex-wrap items-end gap-2 border-b border-audity-border px-4 py-3" onSubmit={bulkUpdateFindings}>
+                <label className="block text-xs font-semibold uppercase text-audity-secondary">Status
+                  <select className="mt-2 h-9 rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text" value={findingBulkForm.status} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, status: event.target.value })}>
+                    <option value="">No change</option>
+                    {findingStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                  </select>
+                </label>
+                <label className="block text-xs font-semibold uppercase text-audity-secondary">Priority
+                  <select className="mt-2 h-9 rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text" value={findingBulkForm.priority} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, priority: event.target.value })}>
+                    <option value="">No change</option>
+                    {findingPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                  </select>
+                </label>
+                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60" disabled={!selectedFindingIds.length}>Update {selectedFindingIds.length || ""}</button>
+              </form>
+              ) : null}
               <div className="grid lg:grid-cols-[320px_minmax(0,1fr)]">
                 <div className="divide-y divide-audity-border border-r border-audity-border">
                   {findings.map((finding) => (
-                    <button
-                      key={finding.id}
-                      className={`block w-full px-4 py-3 text-left hover:bg-audity-panelAlt ${finding.id === selectedFinding?.id ? "bg-audity-primaryActive/25" : ""}`}
-                      onClick={() => setSelectedFindingId(finding.id)}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold text-audity-primary">{finding.controlCode}</p>
-                        <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{finding.status}</span>
-                      </div>
-                      <p className="mt-1 text-sm font-semibold">{finding.title}</p>
-                      <p className="mt-1 text-xs text-audity-muted">Score {finding.score} · {finding.priority}</p>
-                    </button>
+                    <div key={finding.id} className={`flex gap-2 px-4 py-3 hover:bg-audity-panelAlt ${finding.id === selectedFinding?.id ? "bg-audity-primaryActive/25" : ""}`}>
+                      {canApproveFindings ? (
+                      <input className="mt-1" type="checkbox" checked={selectedFindingIds.includes(finding.id)} onChange={() => toggleFindingSelection(finding.id)} />
+                      ) : null}
+                      <button className="min-w-0 flex-1 text-left" onClick={() => setSelectedFindingId(finding.id)}>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs font-semibold text-audity-primary">{finding.controlCode}</p>
+                          <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{statusLabel(finding.status)}</span>
+                        </div>
+                        <p className="mt-1 text-sm font-semibold">{finding.title}</p>
+                        <p className="mt-1 text-xs text-audity-muted">Score {finding.score} · {finding.priority}</p>
+                      </button>
+                    </div>
                   ))}
                   {!findings.length ? <div className="px-4 py-10 text-center text-sm text-audity-muted">No suggested findings yet</div> : null}
                 </div>
@@ -296,6 +646,36 @@ export function AssessmentWorkflowPage() {
                       <p className="text-xs font-semibold uppercase text-audity-primary">{selectedFinding.controlCode}</p>
                       <h3 className="mt-1 text-xl font-semibold">{selectedFinding.title}</h3>
                       <p className="mt-3 text-sm text-audity-secondary">{selectedFinding.sourceExplanation}</p>
+                      {canApproveFindings ? (
+                      <form className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3" onSubmit={updateFindingDetails}>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="block text-xs font-semibold uppercase text-audity-secondary">Title
+                            <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-panel px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={findingEditForm.title} onChange={(event) => setFindingEditForm({ ...findingEditForm, title: event.target.value })} />
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="block text-xs font-semibold uppercase text-audity-secondary">Priority
+                              <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-panel px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={findingEditForm.priority} onChange={(event) => setFindingEditForm({ ...findingEditForm, priority: event.target.value })}>
+                                {findingPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                              </select>
+                            </label>
+                            <label className="block text-xs font-semibold uppercase text-audity-secondary">Status
+                              <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-panel px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={findingEditForm.status} onChange={(event) => setFindingEditForm({ ...findingEditForm, status: event.target.value })}>
+                                {findingStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                              </select>
+                            </label>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          <label className="block text-xs font-semibold uppercase text-audity-secondary">Observation
+                            <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={findingEditForm.observation} onChange={(event) => setFindingEditForm({ ...findingEditForm, observation: event.target.value })} />
+                          </label>
+                          <label className="block text-xs font-semibold uppercase text-audity-secondary">Recommendation
+                            <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={findingEditForm.recommendation} onChange={(event) => setFindingEditForm({ ...findingEditForm, recommendation: event.target.value })} />
+                          </label>
+                        </div>
+                        <button className="mt-3 h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Save finding</button>
+                      </form>
+                      ) : (
                       <div className="mt-4 grid gap-3 md:grid-cols-2">
                         <div className="rounded-audity border border-audity-border bg-audity-page p-3">
                           <p className="text-xs font-semibold uppercase text-audity-muted">Observation</p>
@@ -306,6 +686,7 @@ export function AssessmentWorkflowPage() {
                           <p className="mt-2 text-sm text-audity-secondary">{selectedFinding.recommendation}</p>
                         </div>
                       </div>
+                      )}
                       {(canApproveFindings || canAcceptRisk) ? (
                       <div className="mt-4 flex flex-wrap gap-2">
                         {canApproveFindings ? (
@@ -330,6 +711,23 @@ export function AssessmentWorkflowPage() {
                           ))}
                         </div>
                       </div>
+                      <div className="mt-5">
+                        <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Change History</p>
+                        <HistoryList events={findingHistory} />
+                      </div>
+                      <div className="mt-5">
+                        <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Review Comments</p>
+                        <CommentList comments={findingComments} />
+                        {canApproveFindings ? (
+                        <form className="mt-3 flex gap-2" onSubmit={(event) => {
+                          event.preventDefault();
+                          void addComment("finding", selectedFinding.id, findingComment);
+                        }}>
+                          <input className="h-9 min-w-0 flex-1 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={findingComment} onChange={(event) => setFindingComment(event.target.value)} placeholder="Add review note" />
+                          <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary">Add</button>
+                        </form>
+                        ) : null}
+                      </div>
                     </>
                   ) : null}
                 </div>
@@ -341,6 +739,48 @@ export function AssessmentWorkflowPage() {
                   <h2 className="text-lg font-semibold">Risk Register</h2>
                   <p className="mt-1 text-xs text-audity-muted">Risks are drafted automatically from guided answers with score 0-2. You can edit, re-score, close, or delete every entry.</p>
                 </div>
+                {canEditRisk ? (
+                <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-3">
+                  <div className="flex flex-wrap gap-2">
+                    <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" type="button" onClick={() => void exportRiskRegister()}>Export CSV</button>
+                    <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" type="button" onClick={downloadRiskCsvTemplate}>CSV Template</button>
+                    <form className="flex flex-wrap gap-2" onSubmit={(event) => void importRiskRegister(event)}>
+                      <input name="riskCsv" type="file" accept=".csv,text/csv" className="text-sm text-audity-secondary" />
+                      <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Import CSV</button>
+                    </form>
+                  </div>
+                </div>
+                ) : null}
+                <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase text-audity-muted">5x5 Matrix</p>
+                    {matrixFilter ? <button className="text-xs text-audity-primary hover:text-audity-primaryHover" onClick={() => setMatrixFilter(null)}>Clear filter</button> : null}
+                  </div>
+                  <div className="grid grid-cols-[28px_repeat(5,minmax(0,1fr))] gap-1 text-center text-[11px]">
+                    <div />
+                    {[1, 2, 3, 4, 5].map((impact) => <div key={impact} className="text-audity-muted">I{impact}</div>)}
+                    {scoreAxis.map((likelihood) => (
+                      <>
+                        <div key={`l-${likelihood}`} className="py-2 text-audity-muted">L{likelihood}</div>
+                        {[1, 2, 3, 4, 5].map((impact) => {
+                          const count = risks.filter((risk) => risk.likelihood === likelihood && risk.impact === impact).length;
+                          const { rating } = { rating: likelihood * impact >= 20 ? "Critical" : likelihood * impact >= 12 ? "High" : likelihood * impact >= 5 ? "Medium" : "Low" };
+                          const active = matrixFilter?.likelihood === likelihood && matrixFilter?.impact === impact;
+                          return (
+                            <button
+                              key={`${likelihood}-${impact}`}
+                              className={`h-9 rounded-audity border text-xs font-semibold ${active ? "border-audity-primary bg-audity-primaryActive text-white" : `${ratingClass(rating)} bg-audity-panel`}`}
+                              onClick={() => setMatrixFilter({ likelihood, impact })}
+                              type="button"
+                            >
+                              {count}
+                            </button>
+                          );
+                        })}
+                      </>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {ratings.map((rating) => (
                     <div key={rating} className={`rounded-audity border p-3 ${ratingClass(rating)}`}>
@@ -349,15 +789,51 @@ export function AssessmentWorkflowPage() {
                     </div>
                   ))}
                 </div>
+                {canEditRisk ? (
+                <form className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3" onSubmit={bulkUpdateRisks}>
+                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Bulk Actions</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select className="h-9 rounded-audity border border-audity-border bg-audity-panel px-2 text-sm text-audity-text" value={riskBulkForm.status} onChange={(event) => setRiskBulkForm({ ...riskBulkForm, status: event.target.value })}>
+                      <option value="">Status</option>
+                      {riskStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                    <select className="h-9 rounded-audity border border-audity-border bg-audity-panel px-2 text-sm text-audity-text" value={riskBulkForm.treatmentOption} onChange={(event) => setRiskBulkForm({ ...riskBulkForm, treatmentOption: event.target.value })}>
+                      <option value="">Treatment</option>
+                      {treatmentOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                    <input className="h-9 rounded-audity border border-audity-border bg-audity-panel px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Owner" value={riskBulkForm.owner} onChange={(event) => setRiskBulkForm({ ...riskBulkForm, owner: event.target.value })} />
+                    <input className="h-9 rounded-audity border border-audity-border bg-audity-panel px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="date" value={riskBulkForm.dueDate} onChange={(event) => setRiskBulkForm({ ...riskBulkForm, dueDate: event.target.value })} />
+                    <select className="h-9 rounded-audity border border-audity-border bg-audity-panel px-2 text-sm text-audity-text" value={riskBulkForm.draft} onChange={(event) => setRiskBulkForm({ ...riskBulkForm, draft: event.target.value })}>
+                      <option value="">Draft</option>
+                      <option value="true">Set draft</option>
+                      <option value="false">Clear draft</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <button className="h-9 flex-1 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60" disabled={!selectedRiskIds.length}>Update</button>
+                      <button type="button" className="h-9 rounded-audity border border-audity-error bg-audity-panelAlt px-3 text-sm text-audity-error hover:bg-[#2A1C17] disabled:cursor-not-allowed disabled:opacity-60" disabled={!selectedRiskIds.length} onClick={() => void bulkDeleteRisks()}>Delete</button>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-audity-muted">{selectedRiskIds.length} selected</p>
+                </form>
+                ) : null}
                 <div className="mt-4 space-y-2">
-                  {risks.map((risk) => (
-                    <button key={risk.id} className={`block w-full rounded-audity border px-3 py-2 text-left ${risk.id === selectedRisk?.id ? "border-audity-primary bg-audity-primaryActive/25" : "border-audity-border bg-audity-page"}`} onClick={() => setSelectedRiskId(risk.id)}>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold">{risk.title}</p>
-                        <span className={`rounded-audity border px-2 py-1 text-[11px] ${ratingClass(risk.rating)}`}>{risk.rating}</span>
-                      </div>
-                      <p className="mt-1 text-xs text-audity-muted">L{risk.likelihood} x I{risk.impact} = {risk.riskScore} · {risk.status}</p>
-                    </button>
+                  {filteredRisks.map((risk) => (
+                    <div key={risk.id} className={`flex gap-2 rounded-audity border px-3 py-2 ${risk.id === selectedRisk?.id ? "border-audity-primary bg-audity-primaryActive/25" : "border-audity-border bg-audity-page"}`}>
+                      {canEditRisk ? <input className="mt-1" type="checkbox" checked={selectedRiskIds.includes(risk.id)} onChange={() => toggleRiskSelection(risk.id)} /> : null}
+                      <button className="min-w-0 flex-1 text-left" onClick={() => setSelectedRiskId(risk.id)}>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold">{risk.title}</p>
+                          <span className={`rounded-audity border px-2 py-1 text-[11px] ${ratingClass(risk.rating)}`}>{risk.rating}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-audity-muted">L{risk.likelihood} x I{risk.impact} = {risk.riskScore} · {statusLabel(risk.status)}</p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {risk.draft ? <span className="rounded-audity border border-audity-primary px-2 py-0.5 text-[11px] text-audity-primary">Draft</span> : null}
+                          <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] text-audity-secondary">{risk.sourceType === "guided_question" ? "Guided answer" : "Manual"}</span>
+                          {risk.sourceScore !== null ? <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] text-audity-secondary">Score {risk.sourceScore}</span> : null}
+                          {dueState(risk.dueDate) ? <span className={`rounded-audity border px-2 py-0.5 text-[11px] ${dueState(risk.dueDate)?.tone}`}>{dueState(risk.dueDate)?.label}</span> : null}
+                        </div>
+                      </button>
+                    </div>
                   ))}
                   {!risks.length ? <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-8 text-center text-sm text-audity-muted">No risks yet</div> : null}
                 </div>
@@ -365,8 +841,23 @@ export function AssessmentWorkflowPage() {
               {canEditRisk ? (
               <form onSubmit={updateRisk} className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">Edit Selected Risk</h2>
+                {selectedRisk ? (
+                <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {riskEditForm.draft ? <span className="rounded-audity border border-audity-primary px-2 py-1 text-[11px] text-audity-primary">Draft</span> : null}
+                    <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{selectedRisk.sourceType === "guided_question" ? "Created from guided answer" : "Manual risk"}</span>
+                    {selectedRisk.sourceScore !== null ? <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">Question score {selectedRisk.sourceScore}</span> : null}
+                  </div>
+                  {selectedRisk.sourceExplanation ? <p className="mt-2 text-xs text-audity-muted">{selectedRisk.sourceExplanation}</p> : null}
+                  {selectedRisk.sourceGeneratedAt ? <p className="mt-1 text-xs text-audity-muted">Generated {formatDateTime(selectedRisk.sourceGeneratedAt)}</p> : null}
+                </div>
+                ) : null}
                 <label className="block text-xs font-semibold uppercase text-audity-secondary">Title
                   <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.title} onChange={(event) => setRiskEditForm({ ...riskEditForm, title: event.target.value })} disabled={!selectedRisk} />
+                </label>
+                <label className="mt-3 flex items-center gap-2 text-xs font-semibold uppercase text-audity-secondary">
+                  <input type="checkbox" checked={riskEditForm.draft} onChange={(event) => setRiskEditForm({ ...riskEditForm, draft: event.target.checked })} disabled={!selectedRisk} />
+                  Draft
                 </label>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">Likelihood
@@ -397,9 +888,34 @@ export function AssessmentWorkflowPage() {
                 <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Treatment Plan
                   <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.treatmentPlan} onChange={(event) => setRiskEditForm({ ...riskEditForm, treatmentPlan: event.target.value })} disabled={!selectedRisk} />
                 </label>
+                {(riskEditForm.treatmentOption === "accept" || riskEditForm.status === "accepted") ? (
+                <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
+                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Acceptance Reason
+                    <textarea className="mt-2 min-h-20 w-full rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.acceptanceReason} onChange={(event) => setRiskEditForm({ ...riskEditForm, acceptanceReason: event.target.value })} disabled={!selectedRisk} />
+                  </label>
+                  <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Acceptance Expires
+                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-panel px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="date" value={riskEditForm.acceptanceExpiresAt} onChange={(event) => setRiskEditForm({ ...riskEditForm, acceptanceExpiresAt: event.target.value })} disabled={!selectedRisk} />
+                  </label>
+                </div>
+                ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60" disabled={!selectedRisk}>Save risk</button>
                   <button type="button" className="h-9 rounded-audity border border-audity-error bg-audity-panelAlt px-3 text-sm text-audity-error hover:bg-[#2A1C17] disabled:cursor-not-allowed disabled:opacity-60" onClick={() => void deleteRisk()} disabled={!selectedRisk}>Delete</button>
+                </div>
+                <div className="mt-5">
+                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Change History</p>
+                  <HistoryList events={riskHistory} />
+                </div>
+                <div className="mt-5">
+                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Review Comments</p>
+                  <CommentList comments={riskComments} />
+                  <form className="mt-3 flex gap-2" onSubmit={(event) => {
+                    event.preventDefault();
+                    if (selectedRisk) void addComment("risk", selectedRisk.id, riskComment);
+                  }}>
+                    <input className="h-9 min-w-0 flex-1 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={riskComment} onChange={(event) => setRiskComment(event.target.value)} placeholder="Add review note" disabled={!selectedRisk} />
+                    <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary disabled:cursor-not-allowed disabled:opacity-60" disabled={!selectedRisk}>Add</button>
+                  </form>
                 </div>
               </form>
               ) : null}
@@ -436,6 +952,9 @@ export function AssessmentWorkflowPage() {
               </div>
               {canEditRoadmap ? (
               <form className="flex flex-wrap gap-2" onSubmit={createRoadmapItem}>
+                <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary hover:border-audity-primary" type="button" onClick={() => void generateRoadmapFromRisks()}>
+                  Auto-generate High/Critical
+                </button>
                 <select className="h-9 rounded-audity border border-audity-border bg-audity-page px-2 text-sm text-audity-text" value={roadmapForm.phase} onChange={(event) => setRoadmapForm({ ...roadmapForm, phase: event.target.value })}>
                   {phases.map((phase) => <option key={phase}>{phase}</option>)}
                 </select>

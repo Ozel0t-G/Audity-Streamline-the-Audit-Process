@@ -72,11 +72,17 @@ export async function ensureAutomaticRiskRegister(assessmentId: string): Promise
   await ensureSuggestedFindings(assessmentId);
   const candidates = await pool.query<{
     finding_id: string;
+    assessment_question_id: string | null;
+    framework_control_id: string | null;
     title: string;
     priority: string | null;
+    source_explanation: string | null;
+    score: number | null;
   }>(
-    `select f.id as finding_id, f.title, f.priority
+    `select f.id as finding_id, f.assessment_question_id, f.framework_control_id,
+       f.title, f.priority, f.source_explanation, ca.score
      from findings f
+     left join control_answers ca on ca.assessment_question_id = f.assessment_question_id
      left join risks r on r.finding_id = f.id
      where f.assessment_id = $1
        and f.status <> 'dismissed'
@@ -91,8 +97,11 @@ export async function ensureAutomaticRiskRegister(assessmentId: string): Promise
     await pool.query(
       `insert into risks
         (id, assessment_id, finding_id, title, likelihood, impact, risk_score, rating,
-         treatment_option, owner, treatment_plan, due_date, status)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, 'mitigate', '', $9, null, 'open')`,
+         treatment_option, owner, treatment_plan, due_date, status, draft, source_type,
+         source_assessment_question_id, source_framework_control_id, source_score,
+         source_generated_at, source_explanation)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, 'mitigate', '', $9, null, 'open',
+         true, 'guided_question', $10, $11, $12, now(), $13)`,
       [
         randomUUID(),
         assessmentId,
@@ -102,7 +111,11 @@ export async function ensureAutomaticRiskRegister(assessmentId: string): Promise
         impact,
         riskScore,
         rating,
-        "Auto-created from guided question answers. Adjust owner, treatment and scoring as needed."
+        "Auto-created from guided question answers. Adjust owner, treatment and scoring as needed.",
+        candidate.assessment_question_id,
+        candidate.framework_control_id,
+        candidate.score,
+        candidate.source_explanation
       ]
     );
   }

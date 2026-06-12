@@ -355,6 +355,17 @@ create table if not exists user_activity_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists review_comments (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  entity_type text not null,
+  entity_id text not null,
+  user_id uuid references users(id),
+  comment text not null,
+  resolved_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists settings (
   key text primary key,
   value jsonb not null,
@@ -496,6 +507,17 @@ alter table findings add column if not exists framework_control_id uuid referenc
 alter table findings add column if not exists source_explanation text;
 alter table findings add column if not exists accepted_risk boolean not null default false;
 alter table findings add column if not exists updated_by uuid references users(id);
+alter table risks add column if not exists draft boolean not null default false;
+alter table risks add column if not exists source_type text not null default 'manual';
+alter table risks add column if not exists source_assessment_question_id uuid references assessment_questions(id);
+alter table risks add column if not exists source_framework_control_id uuid references framework_controls(id);
+alter table risks add column if not exists source_score integer;
+alter table risks add column if not exists source_generated_at timestamptz;
+alter table risks add column if not exists source_explanation text;
+alter table risks add column if not exists acceptance_reason text;
+alter table risks add column if not exists accepted_by uuid references users(id);
+alter table risks add column if not exists accepted_at timestamptz;
+alter table risks add column if not exists acceptance_expires_at date;
 alter table roadmap_items add column if not exists source_risk_rating text;
 alter table evidence_items add column if not exists deleted_at timestamptz;
 alter table reports add column if not exists author_info jsonb not null default '{}'::jsonb;

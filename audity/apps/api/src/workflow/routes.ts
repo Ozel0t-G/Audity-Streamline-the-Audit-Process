@@ -12,6 +12,7 @@ type FindingBody = {
   action?: "accept" | "edit" | "dismiss" | "mark-as-accepted-risk";
   title?: string;
   priority?: string;
+  status?: string;
   observation?: string;
   recommendation?: string;
 };
@@ -26,6 +27,9 @@ type RiskBody = {
   treatmentPlan?: string;
   dueDate?: string | null;
   status?: string;
+  draft?: boolean;
+  acceptanceReason?: string;
+  acceptanceExpiresAt?: string | null;
 };
 
 type RoadmapBody = {
@@ -38,12 +42,39 @@ type RoadmapBody = {
   status?: string;
 };
 
+type BulkFindingBody = {
+  findingIds: string[];
+  status?: string;
+  priority?: string;
+};
+
+type BulkRiskBody = {
+  riskIds: string[];
+  status?: string;
+  owner?: string;
+  dueDate?: string | null;
+  treatmentOption?: string;
+  draft?: boolean;
+  delete?: boolean;
+};
+
+type CommentBody = {
+  entityType?: string;
+  entityId?: string;
+  comment?: string;
+};
+
+type RiskImportBody = {
+  csv?: string;
+};
+
 const roadmapPhases = ["0-30d", "31-90d", "3-6M", "6-12M"];
 
 const findingSchema = z.object({
   action: z.enum(["accept", "edit", "dismiss", "mark-as-accepted-risk"]).optional(),
   title: z.string().optional(),
   priority: z.string().optional(),
+  status: z.string().optional(),
   observation: z.string().optional(),
   recommendation: z.string().optional()
 });
@@ -57,7 +88,10 @@ const riskSchema = z.object({
   owner: z.string().optional(),
   treatmentPlan: z.string().optional(),
   dueDate: z.string().nullable().optional(),
-  status: z.string().optional()
+  status: z.string().optional(),
+  draft: z.boolean().optional(),
+  acceptanceReason: z.string().optional(),
+  acceptanceExpiresAt: z.string().nullable().optional()
 });
 
 const roadmapSchema = z.object({
@@ -68,6 +102,32 @@ const roadmapSchema = z.object({
   dueDate: z.string().nullable().optional(),
   effortEstimate: z.string().optional(),
   status: z.string().optional()
+});
+
+const bulkFindingSchema = z.object({
+  findingIds: z.array(z.string().uuid()).min(1),
+  status: z.string().optional(),
+  priority: z.string().optional()
+});
+
+const bulkRiskSchema = z.object({
+  riskIds: z.array(z.string().uuid()).min(1),
+  status: z.string().optional(),
+  owner: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
+  treatmentOption: z.string().optional(),
+  draft: z.boolean().optional(),
+  delete: z.boolean().optional()
+});
+
+const commentSchema = z.object({
+  entityType: z.enum(["question", "finding", "risk", "roadmap_item"]),
+  entityId: z.string().min(1),
+  comment: z.string().min(1)
+});
+
+const riskImportSchema = z.object({
+  csv: z.string().min(1)
 });
 
 function mapFinding(row: Record<string, unknown>) {
@@ -108,6 +168,17 @@ function mapRisk(row: Record<string, unknown>) {
     treatmentPlan: row.treatment_plan,
     dueDate: row.due_date,
     status: row.status,
+    draft: row.draft,
+    sourceType: row.source_type,
+    sourceAssessmentQuestionId: row.source_assessment_question_id,
+    sourceFrameworkControlId: row.source_framework_control_id,
+    sourceScore: row.source_score,
+    sourceGeneratedAt: row.source_generated_at,
+    sourceExplanation: row.source_explanation,
+    acceptanceReason: row.acceptance_reason,
+    acceptedBy: row.accepted_by,
+    acceptedAt: row.accepted_at,
+    acceptanceExpiresAt: row.acceptance_expires_at,
     findingTitle: row.finding_title,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -132,11 +203,85 @@ function mapRoadmapItem(row: Record<string, unknown>) {
   };
 }
 
+function mapHistoryEvent(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    action: row.action,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    userEmail: row.user_email,
+    before: row.before_value,
+    after: row.after_value,
+    createdAt: row.created_at
+  };
+}
+
+function mapComment(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    assessmentId: row.assessment_id,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    userEmail: row.user_email,
+    comment: row.comment,
+    resolvedAt: row.resolved_at,
+    createdAt: row.created_at
+  };
+}
+
+function csvCell(value: unknown): string {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function parseCsv(input: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    const next = input[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(cell);
+      if (row.some((value) => value.trim() !== "")) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some((value) => value.trim() !== "")) rows.push(row);
+  return rows;
+}
+
 function riskActivityAction(before: Record<string, unknown> | null, after: Record<string, unknown>) {
   if (!before) return "risk.created";
   if (before.status !== after.status && after.status === "accepted") return "risk.accepted";
   if (before.rating !== after.rating) return "risk.rating_changed";
   return "risk.treatment_changed";
+}
+
+function treatmentValidationError(body: RiskBody): string | null {
+  const isAccepted = body.treatmentOption === "accept" || body.status === "accepted";
+  if (!isAccepted) return null;
+  if (!body.owner?.trim()) return "Accepted risks require an owner";
+  if (!body.acceptanceReason?.trim() && !body.treatmentPlan?.trim()) {
+    return "Accepted risks require an acceptance reason";
+  }
+  if (!body.acceptanceExpiresAt && !body.dueDate) {
+    return "Accepted risks require an expiration date";
+  }
+  return null;
 }
 
 async function ensureAssessmentExists(assessmentId: string): Promise<boolean> {
@@ -260,7 +405,11 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       }
       const action = body.action ?? "edit";
       const nextStatus =
-        action === "accept" ? "confirmed" : action === "dismiss" ? "dismissed" : before.status;
+        action === "accept"
+          ? "confirmed"
+          : action === "dismiss"
+            ? "dismissed"
+            : body.status ?? (before.status as string);
       const acceptedRisk = action === "mark-as-accepted-risk" ? true : before.acceptedRisk;
       const result = await pool.query(
         `update findings
@@ -303,6 +452,135 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         after
       });
       return { finding: after };
+    }
+  );
+
+  app.patch<{ Params: { id: string }; Body: BulkFindingBody }>(
+    "/api/assessments/:id/findings/bulk",
+    { preHandler: requireCsrfPermission("finding.approve") },
+    async (request, reply) => {
+      const body = validateBody(bulkFindingSchema, request.body, reply);
+      if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      if (!body.status && !body.priority) {
+        return reply.code(400).send({ code: "INVALID_INPUT", message: "Status or priority is required" });
+      }
+      const before = await pool.query(
+        "select * from findings where assessment_id = $1 and id = any($2::uuid[])",
+        [request.params.id, body.findingIds]
+      );
+      const result = await pool.query(
+        `update findings
+         set status = coalesce($3, status),
+             priority = coalesce($4, priority),
+             updated_by = $5,
+             updated_at = now()
+         where assessment_id = $1 and id = any($2::uuid[])
+         returning *`,
+        [request.params.id, body.findingIds, body.status, body.priority, request.user!.sub]
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "finding.bulk_updated",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: before.rows,
+        after: result.rows
+      });
+      return { updated: result.rowCount };
+    }
+  );
+
+  app.get<{ Params: { id: string }; Querystring: { entityType?: string; entityId?: string } }>(
+    "/api/assessments/:id/history",
+    { preHandler: requirePermission("assessment.view") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const values: unknown[] = [];
+      const clauses: string[] = [];
+      if (!request.query.entityId) {
+        values.push(request.params.id);
+        clauses.push(`ual.entity_id = $${values.length}`);
+      }
+      if (request.query.entityType) {
+        values.push(request.query.entityType);
+        clauses.push(`ual.entity_type = $${values.length}`);
+      }
+      if (request.query.entityId) {
+        values.push(request.query.entityId);
+        clauses.push(`ual.entity_id = $${values.length}`);
+      }
+      const result = await pool.query(
+        `select ual.*, u.email as user_email
+         from user_activity_logs ual
+         left join users u on u.id = ual.user_id
+         ${clauses.length ? `where ${clauses.join(" and ")}` : ""}
+         order by ual.created_at desc
+         limit 25`,
+        values
+      );
+      return { history: result.rows.map(mapHistoryEvent) };
+    }
+  );
+
+  app.get<{ Params: { id: string }; Querystring: { entityType?: string; entityId?: string } }>(
+    "/api/assessments/:id/comments",
+    { preHandler: requirePermission("assessment.view") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const values: unknown[] = [request.params.id];
+      const clauses = ["rc.assessment_id = $1"];
+      if (request.query.entityType) {
+        values.push(request.query.entityType);
+        clauses.push(`rc.entity_type = $${values.length}`);
+      }
+      if (request.query.entityId) {
+        values.push(request.query.entityId);
+        clauses.push(`rc.entity_id = $${values.length}`);
+      }
+      const result = await pool.query(
+        `select rc.*, u.email as user_email
+         from review_comments rc
+         left join users u on u.id = rc.user_id
+         where ${clauses.join(" and ")}
+         order by rc.created_at desc
+         limit 50`,
+        values
+      );
+      return { comments: result.rows.map(mapComment) };
+    }
+  );
+
+  app.post<{ Params: { id: string }; Body: CommentBody }>(
+    "/api/assessments/:id/comments",
+    { preHandler: requireCsrfPermission("assessment.edit") },
+    async (request, reply) => {
+      const body = validateBody(commentSchema, request.body, reply);
+      if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const result = await pool.query(
+        `insert into review_comments (id, assessment_id, entity_type, entity_id, user_id, comment)
+         values ($1,$2,$3,$4,$5,$6)
+         returning *`,
+        [randomUUID(), request.params.id, body.entityType, body.entityId, request.user!.sub, body.comment]
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "comment.added",
+        entityType: body.entityType,
+        entityId: body.entityId,
+        before: null,
+        after: result.rows[0]
+      });
+      return reply.code(201).send({ comment: mapComment(result.rows[0]) });
     }
   );
 
@@ -361,6 +639,10 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           .code(400)
           .send({ code: "INVALID_RISK_SCORE", message: "Likelihood and impact must be 1-5" });
       }
+      const validationError = treatmentValidationError(body);
+      if (validationError) {
+        return reply.code(400).send({ code: "INVALID_RISK_TREATMENT", message: validationError });
+      }
       const { riskScore, rating } = ratingFor(likelihood, impact);
       let title = body.title;
       if (!title && body.findingId) {
@@ -373,8 +655,10 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       const result = await pool.query(
         `insert into risks
           (id, assessment_id, finding_id, title, likelihood, impact, risk_score, rating,
-           treatment_option, owner, treatment_plan, due_date, status)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           treatment_option, owner, treatment_plan, due_date, status, draft, source_type,
+           acceptance_reason, accepted_by, accepted_at, acceptance_expires_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'manual',
+           $15, $16, $17, $18)
          returning *`,
         [
           randomUUID(),
@@ -389,7 +673,12 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           body.owner ?? "",
           body.treatmentPlan ?? "",
           body.dueDate || null,
-          body.status ?? "open"
+          body.status ?? "open",
+          body.draft ?? false,
+          body.acceptanceReason ?? (body.treatmentOption === "accept" || body.status === "accepted" ? body.treatmentPlan ?? null : null),
+          body.status === "accepted" || body.treatmentOption === "accept" ? request.user!.sub : null,
+          body.status === "accepted" || body.treatmentOption === "accept" ? new Date().toISOString() : null,
+          body.acceptanceExpiresAt ?? body.dueDate ?? null
         ]
       );
       const risk = await loadRisk(result.rows[0].id);
@@ -402,6 +691,146 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         after: risk
       });
       return reply.code(201).send({ risk });
+    }
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/assessments/:id/risks/export",
+    { preHandler: requirePermission("assessment.view") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const result = await pool.query(
+        `select title, likelihood, impact, risk_score, rating, treatment_option, owner,
+          treatment_plan, due_date, status, draft, acceptance_reason, acceptance_expires_at
+         from risks
+         where assessment_id = $1 and status <> 'deleted'
+         order by risk_score desc nulls last, created_at desc`,
+        [request.params.id]
+      );
+      const columns = [
+        "title",
+        "likelihood",
+        "impact",
+        "risk_score",
+        "rating",
+        "treatment_option",
+        "owner",
+        "treatment_plan",
+        "due_date",
+        "status",
+        "draft",
+        "acceptance_reason",
+        "acceptance_expires_at"
+      ];
+      reply.header("Content-Type", "text/csv; charset=utf-8");
+      reply.header("Content-Disposition", `attachment; filename=audity-risk-register-${request.params.id}.csv`);
+      return [
+        columns.map(csvCell).join(","),
+        ...result.rows.map((row) => columns.map((column) => csvCell(row[column])).join(","))
+      ].join("\n");
+    }
+  );
+
+  app.post<{ Params: { id: string }; Body: RiskImportBody }>(
+    "/api/assessments/:id/risks/import",
+    { preHandler: requireCsrfPermission("risk.edit") },
+    async (request, reply) => {
+      const body = validateBody(riskImportSchema, request.body, reply);
+      if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const rows = parseCsv(body.csv);
+      const [header, ...records] = rows;
+      if (!header?.length) {
+        return reply.code(400).send({ code: "CSV_INVALID", message: "CSV header is required" });
+      }
+      const keys = header.map((value) => value.trim().toLowerCase());
+      let imported = 0;
+      for (const record of records) {
+        const row = Object.fromEntries(keys.map((key, index) => [key, record[index] ?? ""]));
+        const title = String(row.title ?? "").trim();
+        if (!title) continue;
+        const likelihood = Math.min(5, Math.max(1, Number(row.likelihood || 3)));
+        const impact = Math.min(5, Math.max(1, Number(row.impact || 3)));
+        const { riskScore, rating } = ratingFor(likelihood, impact);
+        const existing = await pool.query(
+          "select id from risks where assessment_id = $1 and lower(title) = lower($2) and status <> 'deleted' limit 1",
+          [request.params.id, title]
+        );
+        if (existing.rows[0]) {
+          await pool.query(
+            `update risks
+             set likelihood = $3,
+                 impact = $4,
+                 risk_score = $5,
+                 rating = $6,
+                 treatment_option = $7,
+                 owner = $8,
+                 treatment_plan = $9,
+                 due_date = nullif($10, '')::date,
+                 status = $11,
+                 draft = $12,
+                 source_type = 'csv_import',
+                 acceptance_reason = $13,
+                 acceptance_expires_at = nullif($14, '')::date,
+                 updated_at = now()
+             where id = $1 and assessment_id = $2`,
+            [
+              existing.rows[0].id,
+              request.params.id,
+              likelihood,
+              impact,
+              riskScore,
+              rating,
+              row.treatment_option || "mitigate",
+              row.owner || "",
+              row.treatment_plan || "",
+              row.due_date || "",
+              row.status || "open",
+              String(row.draft ?? "").toLowerCase() === "true",
+              row.acceptance_reason || null,
+              row.acceptance_expires_at || ""
+            ]
+          );
+        } else {
+          await pool.query(
+            `insert into risks
+              (id, assessment_id, title, likelihood, impact, risk_score, rating, treatment_option,
+               owner, treatment_plan, due_date, status, draft, source_type, acceptance_reason, acceptance_expires_at)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,nullif($11, '')::date,$12,$13,'csv_import',$14,nullif($15, '')::date)`,
+            [
+              randomUUID(),
+              request.params.id,
+              title,
+              likelihood,
+              impact,
+              riskScore,
+              rating,
+              row.treatment_option || "mitigate",
+              row.owner || "",
+              row.treatment_plan || "",
+              row.due_date || "",
+              row.status || "open",
+              String(row.draft ?? "").toLowerCase() === "true",
+              row.acceptance_reason || null,
+              row.acceptance_expires_at || ""
+            ]
+          );
+        }
+        imported += 1;
+      }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "risk_register.imported",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { imported }
+      });
+      return reply.code(201).send({ imported });
     }
   );
 
@@ -418,9 +847,25 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       if (!before || before.assessmentId !== request.params.id) {
         return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
       }
+      const mergedBody = {
+        ...body,
+        owner: body.owner ?? (before.owner as string | undefined),
+        treatmentPlan: body.treatmentPlan ?? (before.treatmentPlan as string | undefined),
+        acceptanceReason: body.acceptanceReason ?? (before.acceptanceReason as string | undefined),
+        dueDate: body.dueDate ?? (before.dueDate as string | null | undefined),
+        acceptanceExpiresAt:
+          body.acceptanceExpiresAt ?? (before.acceptanceExpiresAt as string | null | undefined),
+        treatmentOption: body.treatmentOption ?? (before.treatmentOption as string | undefined),
+        status: body.status ?? (before.status as string | undefined)
+      };
+      const validationError = treatmentValidationError(mergedBody);
+      if (validationError) {
+        return reply.code(400).send({ code: "INVALID_RISK_TREATMENT", message: validationError });
+      }
       const likelihood = body.likelihood ?? (before.likelihood as number) ?? 3;
       const impact = body.impact ?? (before.impact as number) ?? 3;
       const { riskScore, rating } = ratingFor(likelihood, impact);
+      const becomesAccepted = mergedBody.treatmentOption === "accept" || mergedBody.status === "accepted";
       const result = await pool.query(
         `update risks
          set title = coalesce($2, title),
@@ -433,6 +878,11 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
              treatment_plan = coalesce($9, treatment_plan),
              due_date = case when $10::text is null then due_date else nullif($10, '')::date end,
              status = coalesce($11, status),
+             draft = coalesce($12, draft),
+             acceptance_reason = coalesce($13, acceptance_reason),
+             accepted_by = case when $14::boolean then coalesce(accepted_by, $15) else accepted_by end,
+             accepted_at = case when $14::boolean then coalesce(accepted_at, now()) else accepted_at end,
+             acceptance_expires_at = case when $16::text is null then acceptance_expires_at else nullif($16, '')::date end,
              updated_at = now()
          where id = $1
          returning *`,
@@ -447,7 +897,12 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           body.owner,
           body.treatmentPlan,
           body.dueDate,
-          body.status
+          body.status,
+          body.draft,
+          body.acceptanceReason ?? (becomesAccepted ? body.treatmentPlan : undefined),
+          becomesAccepted,
+          request.user!.sub,
+          body.acceptanceExpiresAt ?? body.dueDate
         ]
       );
       const after = await loadRisk(result.rows[0].id);
@@ -491,6 +946,63 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         after: result.rows[0]
       });
       return reply.code(204).send();
+    }
+  );
+
+  app.patch<{ Params: { id: string }; Body: BulkRiskBody }>(
+    "/api/assessments/:id/risks/bulk",
+    { preHandler: requireCsrfPermission("risk.edit") },
+    async (request, reply) => {
+      const body = validateBody(bulkRiskSchema, request.body, reply);
+      if (!body) return;
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      if (!body.delete && !body.status && !body.owner && body.dueDate === undefined && !body.treatmentOption && body.draft === undefined) {
+        return reply.code(400).send({ code: "INVALID_INPUT", message: "At least one bulk change is required" });
+      }
+      const before = await pool.query(
+        "select * from risks where assessment_id = $1 and id = any($2::uuid[])",
+        [request.params.id, body.riskIds]
+      );
+      const result = body.delete
+        ? await pool.query(
+            `update risks
+             set status = 'deleted',
+                 updated_at = now()
+             where assessment_id = $1 and id = any($2::uuid[])
+             returning *`,
+            [request.params.id, body.riskIds]
+          )
+        : await pool.query(
+            `update risks
+             set status = coalesce($3, status),
+                 owner = coalesce($4, owner),
+                 due_date = case when $5::text is null then due_date else nullif($5, '')::date end,
+                 treatment_option = coalesce($6, treatment_option),
+                 draft = coalesce($7, draft),
+                 updated_at = now()
+             where assessment_id = $1 and id = any($2::uuid[])
+             returning *`,
+            [
+              request.params.id,
+              body.riskIds,
+              body.status,
+              body.owner,
+              body.dueDate,
+              body.treatmentOption,
+              body.draft
+            ]
+          );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: body.delete ? "risk.bulk_deleted" : "risk.bulk_updated",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: before.rows,
+        after: result.rows
+      });
+      return { updated: result.rowCount };
     }
   );
 
@@ -574,6 +1086,57 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         after: item
       });
       return reply.code(201).send({ roadmapItem: item });
+    }
+  );
+
+  app.post<{ Params: { id: string } }>(
+    "/api/assessments/:id/roadmap/generate",
+    { preHandler: requireCsrfPermission("roadmap.edit") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const risks = await pool.query(
+        `select r.*
+         from risks r
+         left join roadmap_items ri on ri.risk_id = r.id
+         where r.assessment_id = $1
+           and r.status not in ('closed','deleted')
+           and r.rating in ('High','Critical')
+           and ri.id is null
+         order by r.risk_score desc nulls last`,
+        [request.params.id]
+      );
+      const created = [];
+      for (const risk of risks.rows) {
+        const phase = risk.rating === "Critical" ? "0-30d" : "31-90d";
+        const result = await pool.query(
+          `insert into roadmap_items
+            (id, assessment_id, risk_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating)
+           values ($1,$2,$3,$4,$5,$6,null,$7,'open',$8)
+           returning *`,
+          [
+            randomUUID(),
+            request.params.id,
+            risk.id,
+            phase,
+            `Treat ${risk.rating} risk: ${risk.title}`,
+            risk.owner ?? "",
+            risk.rating === "Critical" ? "High" : "Medium",
+            risk.rating
+          ]
+        );
+        created.push(result.rows[0]);
+      }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "roadmap.generated_from_risks",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { created: created.length }
+      });
+      return reply.code(201).send({ created: created.length, roadmapItems: created.map(mapRoadmapItem) });
     }
   );
 

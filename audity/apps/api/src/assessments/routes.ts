@@ -8,6 +8,7 @@ import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
 
 type AssessmentBody = {
+  templateKey?: string;
   type?: string;
   audience?: string;
   framework?: string;
@@ -30,6 +31,7 @@ type ScopeBody = {
 const postgresUuidSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
 const assessmentSchema = z.object({
+  templateKey: z.string().optional(),
   type: z.string().trim().min(1).optional(),
   audience: z.string().optional(),
   framework: z.string().optional(),
@@ -41,6 +43,60 @@ const assessmentSchema = z.object({
   targetDate: z.string().optional(),
   status: z.string().optional()
 });
+
+const assessmentTemplates = [
+  {
+    key: "iso27001_readiness",
+    name: "ISO 27001 Readiness",
+    type: "ISO 27001 Readiness Assessment",
+    audience: "Management + ISMS Owners",
+    language: "en",
+    status: "draft",
+    scope: {
+      inScopeSystems: ["ISMS scope", "Core business systems", "Security governance processes"],
+      outOfScope: ["Unlicensed official ISO standard text"],
+      businessProcesses: ["Risk management", "Access control", "Incident management", "Supplier security"],
+      regulatoryContext: "ISO/IEC 27001 readiness",
+      assumptions: "Assessment uses readiness questions and customer-provided evidence.",
+      limitations: "Not a certification audit.",
+      criticality: "High"
+    }
+  },
+  {
+    key: "supplier_security",
+    name: "Supplier Security Assessment",
+    type: "Supplier Security Assessment",
+    audience: "Procurement + Security",
+    language: "en",
+    status: "draft",
+    scope: {
+      inScopeSystems: ["Supplier services", "Data processing activities", "Remote access paths"],
+      outOfScope: ["Supplier internal systems without contractual access"],
+      businessProcesses: ["Vendor onboarding", "Contract review", "Security monitoring"],
+      regulatoryContext: "Third-party risk management",
+      assumptions: "Supplier evidence is available for review.",
+      limitations: "Testing is limited to agreed supplier scope.",
+      criticality: "Medium"
+    }
+  },
+  {
+    key: "ot_security_readiness",
+    name: "OT Security Readiness",
+    type: "OT Security Readiness Assessment",
+    audience: "Operations + Engineering + Security",
+    language: "en",
+    status: "draft",
+    scope: {
+      inScopeSystems: ["OT networks", "Engineering workstations", "Remote access", "Backup and recovery"],
+      outOfScope: ["Unsafe active testing on production OT assets"],
+      businessProcesses: ["Change management", "Incident response", "Asset management", "Patch governance"],
+      regulatoryContext: "Industrial security readiness",
+      assumptions: "Operational safety and uptime constraints take priority.",
+      limitations: "Passive review unless explicitly approved.",
+      criticality: "High"
+    }
+  }
+];
 
 const scopeSchema = z.object({
   inScopeSystems: z.array(z.string()).optional(),
@@ -75,6 +131,12 @@ async function loadAssessment(id: string) {
 }
 
 export async function registerAssessmentRoutes(app: FastifyInstance): Promise<void> {
+  app.get(
+    "/api/assessment-templates",
+    { preHandler: requirePermission("assessment.view") },
+    async () => ({ templates: assessmentTemplates })
+  );
+
   app.get<{ Params: { id: string } }>(
     "/api/customers/:id/assessments",
     { preHandler: requirePermission("assessment.view") },
@@ -94,9 +156,10 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
     "/api/customers/:id/assessments",
     { preHandler: requireCsrfPermission("assessment.create") },
     async (request, reply) => {
-      const body = validateBody(assessmentSchema.required({ type: true }), request.body, reply);
+      const body = validateBody(assessmentSchema, request.body, reply);
       if (!body) return;
-      if (!body.type) {
+      const template = assessmentTemplates.find((item) => item.key === body.templateKey);
+      if (!body.type && !template) {
         return reply
           .code(400)
           .send({ code: "INVALID_INPUT", message: "Assessment type is required" });
@@ -139,15 +202,18 @@ export async function registerAssessmentRoutes(app: FastifyInstance): Promise<vo
         [
           id,
           request.params.id,
-          body.type,
-          body.audience ?? null,
+          body.type ?? template?.type,
+          body.audience ?? template?.audience ?? null,
           framework?.rows[0]?.label ?? body.framework ?? null,
           framework?.rows[0]?.id ?? null,
-          body.language ?? "en",
+          body.language ?? template?.language ?? "en",
           body.targetDate || null,
-          body.status ?? "draft"
+          body.status ?? template?.status ?? "draft"
         ]
       );
+      if (template) {
+        await pool.query("update assessments set scope = $2 where id = $1", [id, JSON.stringify(template.scope)]);
+      }
       const assessment = mapAssessment(result.rows[0]);
       await appendActivityEvent({
         userId: request.user!.sub,

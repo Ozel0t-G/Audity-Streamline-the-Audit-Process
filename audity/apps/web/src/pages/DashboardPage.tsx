@@ -16,6 +16,12 @@ type AssessmentSummary = {
   status: string;
   targetDate?: string | null;
   progressPercent?: number;
+  openHighRisks?: number;
+  criticalRisks?: number;
+  openFindings?: number;
+  evidenceGaps?: number;
+  overdueRoadmapItems?: number;
+  reports?: number;
 };
 
 type OwnedCustomer = {
@@ -46,6 +52,20 @@ function ProgressBar({ value }: { value: number }) {
     <div className="h-2 overflow-hidden rounded-full bg-audity-page">
       <div className="h-full bg-audity-primary" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
     </div>
+  );
+}
+
+function SignalPill({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "warning" | "error" }) {
+  const toneClass =
+    tone === "error"
+      ? "border-audity-error text-audity-error"
+      : tone === "warning"
+        ? "border-audity-warning text-audity-warning"
+        : "border-audity-borderStrong text-audity-secondary";
+  return (
+    <span className={`rounded-audity border px-2 py-1 text-[11px] ${toneClass}`}>
+      {label}: {value}
+    </span>
   );
 }
 
@@ -140,9 +160,17 @@ export function DashboardPage() {
                         <span className="shrink-0 text-xs text-audity-secondary">{assessment.progressPercent ?? 0}%</span>
                       </div>
                       <ProgressBar value={assessment.progressPercent ?? 0} />
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        <SignalPill label="Critical" value={assessment.criticalRisks ?? 0} tone={(assessment.criticalRisks ?? 0) > 0 ? "error" : "neutral"} />
+                        <SignalPill label="High/Critical" value={assessment.openHighRisks ?? 0} tone={(assessment.openHighRisks ?? 0) > 0 ? "warning" : "neutral"} />
+                        <SignalPill label="Findings" value={assessment.openFindings ?? 0} />
+                        <SignalPill label="Evidence gaps" value={assessment.evidenceGaps ?? 0} tone={(assessment.evidenceGaps ?? 0) > 0 ? "warning" : "neutral"} />
+                        <SignalPill label="Overdue" value={assessment.overdueRoadmapItems ?? 0} tone={(assessment.overdueRoadmapItems ?? 0) > 0 ? "error" : "neutral"} />
+                      </div>
                       <p className="mt-2 text-xs text-audity-muted">
                         {assessment.framework ?? "No framework"} · {assessment.status}
                         {assessment.targetDate ? ` · Target ${assessment.targetDate}` : ""}
+                        {assessment.reports ? ` · ${assessment.reports} reports` : ""}
                       </p>
                     </Link>
                   ))}
