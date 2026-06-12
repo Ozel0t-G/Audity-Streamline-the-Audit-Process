@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
+import argon2 from "argon2";
 import { z } from "zod";
 import { appendAuditEvent } from "../audit/service.js";
 import { loadConfig } from "../config.js";
@@ -51,6 +52,11 @@ type MfaVerifyBody = {
   challengeToken?: string;
 };
 
+type ChangePasswordBody = {
+  currentPassword?: string;
+  newPassword?: string;
+};
+
 function publicUser(user: AuthUser) {
   return {
     id: user.id,
@@ -77,6 +83,10 @@ const mfaVerifySchema = z.object({
 });
 const disableMfaSchema = z.object({
   userId: z.string().uuid().optional()
+});
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(256),
+  newPassword: z.string().min(8).max(256)
 });
 
 function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): T {
@@ -337,6 +347,39 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         action: "auth.mfa.disabled",
         entity: "mfa_settings",
         entityId: targetUserId,
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? null
+      });
+      return { status: "ok" };
+    }
+  );
+
+  app.post(
+    "/api/auth/change-password",
+    { preHandler: requireCsrf },
+    async (request, reply) => {
+      const body = validateBody(changePasswordSchema, request.body) as Required<ChangePasswordBody>;
+      const user = await pool.query<{ password_hash: string }>(
+        "select password_hash from users where id = $1 and status = 'active'",
+        [request.user!.sub]
+      );
+      if (!user.rows[0] || !(await argon2.verify(user.rows[0].password_hash, body.currentPassword))) {
+        return reply.code(401).send({ code: "PASSWORD_INVALID", message: "Current password is incorrect" });
+      }
+      const passwordHash = await argon2.hash(body.newPassword, { type: argon2.argon2id });
+      await pool.query("update users set password_hash = $2, updated_at = now() where id = $1", [
+        request.user!.sub,
+        passwordHash
+      ]);
+      await pool.query("update sessions set revoked_at = now() where user_id = $1 and id <> $2 and revoked_at is null", [
+        request.user!.sub,
+        request.user!.sid
+      ]);
+      await appendAuditEvent({
+        actor: request.user!.sub,
+        action: "auth.password.changed",
+        entity: "user",
+        entityId: request.user!.sub,
         ip: request.ip,
         userAgent: request.headers["user-agent"] ?? null
       });

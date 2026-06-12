@@ -17,6 +17,8 @@ export function FrameworkLibraryPage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [domains, setDomains] = useState<FrameworkDomain[]>([]);
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [controlSearch, setControlSearch] = useState("");
   const [importForm, setImportForm] = useState({
     name: "",
     version: "",
@@ -32,6 +34,23 @@ export function FrameworkLibraryPage() {
   const selected = useMemo(
     () => frameworks.find((framework) => framework.id === selectedId) ?? frameworks[0],
     [frameworks, selectedId]
+  );
+  const filteredFrameworks = useMemo(
+    () => frameworks.filter((framework) =>
+      `${framework.name} ${framework.shortName ?? ""} ${framework.version ?? ""}`.toLowerCase().includes(catalogSearch.toLowerCase())
+    ),
+    [frameworks, catalogSearch]
+  );
+  const filteredDomains = useMemo(
+    () => domains
+      .map((domain) => ({
+        ...domain,
+        controls: domain.controls.filter((control) =>
+          `${domain.name} ${control.code} ${control.title} ${control.description ?? ""}`.toLowerCase().includes(controlSearch.toLowerCase())
+        )
+      }))
+      .filter((domain) => domain.controls.length || domain.name.toLowerCase().includes(controlSearch.toLowerCase())),
+    [domains, controlSearch]
   );
 
   async function loadFrameworks() {
@@ -98,6 +117,19 @@ export function FrameworkLibraryPage() {
     }));
   }
 
+  function downloadQuestionnaireTemplate() {
+    const csv = [
+      "domain,code,title,description,question",
+      "Governance,GOV-01,Policy ownership,Security policies have assigned owners,How mature is policy ownership?"
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "audity-questionnaire-template.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
           <div className="mb-5 border-b border-audity-border pb-4">
@@ -114,9 +146,10 @@ export function FrameworkLibraryPage() {
             <section className="overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-4 py-3">
                 <h2 className="text-lg font-semibold">Catalog</h2>
+                <input className="mt-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Search frameworks" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
               </div>
               <div className="divide-y divide-audity-border">
-                {frameworks.map((framework) => (
+                {filteredFrameworks.map((framework) => (
                   <button
                     key={framework.id}
                     className={`block w-full px-4 py-3 text-left hover:bg-audity-panelAlt ${framework.id === selected?.id ? "bg-audity-primaryActive/25" : ""}`}
@@ -138,9 +171,10 @@ export function FrameworkLibraryPage() {
               <div className="border-b border-audity-border px-4 py-3">
                 <h2 className="text-lg font-semibold">{selected?.name ?? "Framework"}</h2>
                 <p className="mt-1 text-sm text-audity-secondary">{selected?.sourceType} · {selected?.licenseStatus}</p>
+                <input className="mt-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Search controls" value={controlSearch} onChange={(event) => setControlSearch(event.target.value)} />
               </div>
               <div className="space-y-3 p-4">
-                {domains.map((domain) => (
+                {filteredDomains.map((domain) => (
                   <section key={domain.id} className="rounded-audity border border-audity-border bg-audity-page p-3">
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div>
@@ -165,6 +199,9 @@ export function FrameworkLibraryPage() {
             {canImportFramework ? (
             <form onSubmit={importFramework} className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Publish Framework</h2>
+              <button type="button" className="mb-3 h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={downloadQuestionnaireTemplate}>
+                Questionnaire CSV Template
+              </button>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Name
                 <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={importForm.name} onChange={(event) => setImportForm({ ...importForm, name: event.target.value })} />

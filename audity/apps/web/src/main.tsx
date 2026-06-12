@@ -6,6 +6,7 @@ import { PrivateRoute, RequirePermission } from "./auth/PrivateRoute";
 import { AdminLayout, AppLayout } from "./components/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { UserSettingsPage } from "./pages/UserSettingsPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AlphaDisclaimerPage } from "./pages/AlphaDisclaimerPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/customers/my" element={<CustomerListPage mode="my" />} />
               <Route path="/customers/shared" element={<CustomerListPage mode="shared" />} />
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
+              <Route path="/user-settings" element={<UserSettingsPage />} />
               <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
               <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
               <Route path="/assessments/:id/assets" element={<AssessmentAssetsPage />} />

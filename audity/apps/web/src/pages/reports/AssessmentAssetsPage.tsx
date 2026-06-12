@@ -71,6 +71,7 @@ export function AssessmentAssetsPage() {
     watermark: ""
   });
   const [selectedBlocks, setSelectedBlocks] = useState(blocks);
+  const [exportFormat, setExportFormat] = useState(window.localStorage.getItem("audity_export_format") ?? "PDF");
   const [authorInfo, setAuthorInfo] = useState({
     name: "Instance Admin",
     role: "Lead Auditor",
@@ -90,6 +91,14 @@ export function AssessmentAssetsPage() {
     warningAccepted: false
   });
   const [error, setError] = useState("");
+
+  const qualityChecks = [
+    { label: "At least one report chapter selected", ok: selectedBlocks.length > 0 },
+    { label: "Author name is filled", ok: Boolean(authorInfo.name.trim()) },
+    { label: "Author email is filled", ok: Boolean(authorInfo.email.trim()) },
+    { label: "Evidence uploaded or intentionally left empty", ok: evidenceItems.length >= 0 },
+    { label: "Confidentiality label configured", ok: Boolean(branding.confidentialityLabel.trim()) }
+  ];
 
   async function fetchWithFreshAuth(path: string, init: RequestInit = {}) {
     const send = (token: string | null) =>
@@ -135,7 +144,15 @@ export function AssessmentAssetsPage() {
     const body = new FormData();
     body.set("file", input.files[0]);
     const notes = form.elements.namedItem("notes") as HTMLInputElement;
-    body.set("notes", notes.value);
+    const tag = form.elements.namedItem("tag") as HTMLInputElement;
+    const version = form.elements.namedItem("version") as HTMLInputElement;
+    const expires = form.elements.namedItem("expires") as HTMLInputElement;
+    body.set("notes", [
+      tag.value ? `Tag: ${tag.value}` : "",
+      version.value ? `Version: ${version.value}` : "",
+      expires.value ? `Expires: ${expires.value}` : "",
+      notes.value
+    ].filter(Boolean).join(" | "));
     await api(`/api/assessments/${id}/evidence`, { method: "POST", body });
     form.reset();
     await load();
@@ -189,6 +206,7 @@ export function AssessmentAssetsPage() {
 
   async function exportReport() {
     if (!id || !report) return;
+    window.localStorage.setItem("audity_export_format", exportFormat);
     const payload = await api<{ jobId: string }>(`/api/assessments/${id}/reports/${report.id}/export`, {
       method: "POST"
     });
@@ -277,8 +295,11 @@ export function AssessmentAssetsPage() {
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Evidence</h2>
               {canUploadEvidence ? (
-              <form className="mb-4 grid gap-3 md:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_auto]" onSubmit={(event) => void uploadEvidence(event)}>
+              <form className="mb-4 grid gap-3 md:grid-cols-3 xl:grid-cols-[minmax(180px,1fr)_140px_120px_140px_minmax(180px,1fr)_auto]" onSubmit={(event) => void uploadEvidence(event)}>
                 <input name="file" type="file" className="text-sm text-audity-secondary" />
+                <input name="tag" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Tag" />
+                <input name="version" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Version" />
+                <input name="expires" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="date" />
                 <input name="notes" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Evidence notes" />
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Upload</button>
               </form>
@@ -289,6 +310,7 @@ export function AssessmentAssetsPage() {
                     <div>
                       <p className="text-sm font-semibold">{item.fileName}</p>
                       <p className="text-xs text-audity-muted">{item.mimeType} · {Math.round(item.fileSize / 1024)} KB</p>
+                      <p className="mt-1 text-xs text-audity-muted">Uploaded {new Date(item.createdAt).toLocaleDateString()}</p>
                       {item.notes ? <p className="mt-1 text-xs text-audity-secondary">{item.notes}</p> : null}
                     </div>
                     <div className="flex gap-2">
@@ -337,9 +359,28 @@ export function AssessmentAssetsPage() {
                 ))}
               </div>
               <div className="space-y-2">
+                <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                  Export Format
+                  <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={exportFormat} onChange={(event) => setExportFormat(event.target.value)}>
+                    <option>PDF</option>
+                    <option>Word</option>
+                    <option>HTML</option>
+                  </select>
+                </label>
                 {Object.entries(authorInfo).map(([key, value]) => (
                   <input key={key} className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={value} onChange={(event) => setAuthorInfo({ ...authorInfo, [key]: event.target.value })} />
                 ))}
+                <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Quality Check</p>
+                  <div className="space-y-1">
+                    {qualityChecks.map((check) => (
+                      <div key={check.label} className="flex items-center justify-between gap-3 text-xs">
+                        <span className="text-audity-secondary">{check.label}</span>
+                        <span className={check.ok ? "text-audity-success" : "text-audity-warning"}>{check.ok ? "OK" : "Review"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 {canExportReport ? (
                   <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create report</button>
                 ) : null}
@@ -350,7 +391,7 @@ export function AssessmentAssetsPage() {
                 <span className="text-sm text-audity-secondary">Report {report.id.slice(0, 8)} · {report.status}</span>
                 <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={() => void openPreview()}>Preview</button>
                 {canExportReport ? (
-                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void exportReport()}>Export PDF</button>
+                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void exportReport()}>Export {exportFormat}</button>
                 ) : null}
               </div>
             ) : null}
@@ -363,7 +404,7 @@ export function AssessmentAssetsPage() {
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-audity-secondary">
                 <span>Job {job.id}: {job.status}</span>
                 <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void pollJob()}>Refresh</button>
-                {job.downloadUrl ? <a className="text-audity-success" href={job.downloadUrl} target="_blank" rel="noreferrer">Download PDF</a> : null}
+                {job.downloadUrl ? <a className="text-audity-success" href={job.downloadUrl} target="_blank" rel="noreferrer">Download {exportFormat}</a> : null}
               </div>
             ) : null}
             {report && canSendReport ? (

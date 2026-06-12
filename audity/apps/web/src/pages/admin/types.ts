@@ -38,4 +38,10 @@ export type AdminUser = {
 export type RoleOption = {
   id: string;
   name: string;
+  permissions?: string[];
+};
+
+export type PermissionOption = {
+  id: string;
+  name: string;
 };

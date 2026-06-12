@@ -34,6 +34,24 @@
   --panel-padding: 16px;
 }
 
+.audity-theme-light {
+  --color-bg-app: #f4f7fb;
+  --color-bg-page: #ffffff;
+  --color-bg-panel: #f9fbfd;
+  --color-bg-panel-alt: #eef4fa;
+  --color-bg-table-header: #e8eef5;
+  --color-bg-sidebar: #ffffff;
+  --color-bg-topnav: #0b3a66;
+  --color-border-subtle: #d6dee8;
+  --color-border-strong: #b8c4d2;
+  --color-primary: #006bd6;
+  --color-primary-hover: #005bb8;
+  --color-primary-active: #d9ecff;
+  --color-text-primary: #17202a;
+  --color-text-secondary: #4f5f70;
+  --color-text-muted: #728092;
+}
+
 html {
   background: var(--color-bg-app);
 }
@@ -43,4 +61,26 @@ body {
   min-width: 320px;
   background: var(--color-bg-app);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.audity-tooltip-layer {
+  display: none;
+  position: absolute;
+  z-index: 1000;
+  max-width: 260px;
+  min-width: 160px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #0f1720;
+  color: var(--color-text-primary);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.audity-tooltips-off .audity-tooltip-layer {
+  display: none;
 }

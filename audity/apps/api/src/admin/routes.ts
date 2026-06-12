@@ -31,6 +31,10 @@ type UserUpdateBody = {
   status?: "active" | "disabled";
 };
 
+type RolePermissionsBody = {
+  permissions?: string[];
+};
+
 const backupTriggerSchema = z.object({
   jobType: z.enum(["full", "database", "evidence"]).optional()
 });
@@ -72,6 +76,10 @@ const inviteSchema = z.object({
 const userUpdateSchema = z.object({
   role: z.string().optional(),
   status: z.enum(["active", "disabled"]).optional()
+});
+
+const rolePermissionsSchema = z.object({
+  permissions: z.array(z.string()).min(1)
 });
 
 const systemSettingsSchema = z.object({
@@ -897,9 +905,70 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
        join roles r on r.id = u.role_id
        order by u.created_at desc`
     );
-    const roles = await pool.query("select id, name from roles order by name");
-    return { users: result.rows, roles: roles.rows };
+    const roles = await pool.query(
+      `select r.id, r.name,
+        coalesce(json_agg(p.name order by p.name) filter (where p.id is not null), '[]'::json) as permissions
+       from roles r
+       left join role_permissions rp on rp.role_id = r.id
+       left join permissions p on p.id = rp.permission_id
+       group by r.id
+       order by r.name`
+    );
+    const permissions = await pool.query("select id, name from permissions order by name");
+    return { users: result.rows, roles: roles.rows, permissions: permissions.rows };
   });
+
+  app.patch<{ Params: { id: string }; Body: RolePermissionsBody }>(
+    "/api/admin/roles/:id/permissions",
+    { preHandler: requireCsrfPermission("roles.manage") },
+    async (request, reply) => {
+      const body = validateBody(rolePermissionsSchema, request.body, reply);
+      if (!body) return;
+      const role = await pool.query<{ id: string; name: string }>("select id, name from roles where id = $1", [request.params.id]);
+      if (!role.rows[0]) {
+        return reply.code(404).send({ code: "ROLE_NOT_FOUND", message: "Role not found" });
+      }
+      const currentUserRole = await pool.query<{ role_id: string }>("select role_id from users where id = $1", [request.user!.sub]);
+      if (currentUserRole.rows[0]?.role_id === request.params.id && !body.permissions.includes("roles.manage")) {
+        return reply.code(400).send({
+          code: "CANNOT_REMOVE_OWN_ROLE_MANAGEMENT",
+          message: "You cannot remove role management from your own role."
+        });
+      }
+      const permissionRows = await pool.query<{ id: string; name: string }>(
+        "select id, name from permissions where name = any($1::text[])",
+        [body.permissions]
+      );
+      if (permissionRows.rows.length !== body.permissions.length) {
+        return reply.code(400).send({ code: "PERMISSION_NOT_FOUND", message: "One or more permissions do not exist" });
+      }
+      const before = await pool.query(
+        `select p.name
+         from role_permissions rp
+         join permissions p on p.id = rp.permission_id
+         where rp.role_id = $1
+         order by p.name`,
+        [request.params.id]
+      );
+      await pool.query("delete from role_permissions where role_id = $1", [request.params.id]);
+      for (const permission of permissionRows.rows) {
+        await pool.query(
+          "insert into role_permissions (role_id, permission_id) values ($1, $2) on conflict do nothing",
+          [request.params.id, permission.id]
+        );
+      }
+      const after = permissionRows.rows.map((permission) => permission.name).sort();
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "role.permissions_changed",
+        entityType: "role",
+        entityId: request.params.id,
+        before: { role: role.rows[0].name, permissions: before.rows.map((row) => row.name) },
+        after: { role: role.rows[0].name, permissions: after }
+      });
+      return { role: { ...role.rows[0], permissions: after } };
+    }
+  );
 
   app.post<{ Body: InviteBody }>(
     "/api/admin/users/invite",

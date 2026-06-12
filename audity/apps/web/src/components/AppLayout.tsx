@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { currentLanguage, translate } from "../i18n";
 import { BrandMark } from "./BrandMark";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -65,8 +66,168 @@ function useIdleLogout() {
   }, [accessToken, api, logout, navigate]);
 }
 
+const tooltipDictionary: Array<[RegExp, string]> = [
+  [/change password/i, "Update your password after confirming the current one."],
+  [/current password/i, "Enter the password you use to sign in today."],
+  [/new password/i, "Choose a new password with at least 8 characters."],
+  [/confirm password/i, "Repeat the new password so typos are caught before saving."],
+  [/tooltips/i, "Show or hide small help text when hovering controls."],
+  [/user settings/i, "Open your personal account and interface preferences."],
+  [/notifications/i, "Open recent system messages and review reminders."],
+  [/logout|sign out/i, "End this browser session and return to the login screen."],
+  [/dashboard/i, "Open the overview with current audit metrics."],
+  [/customers/i, "Open the customer and assessment workspace."],
+  [/activity log/i, "Review traceable application events and workflow changes."],
+  [/audit log/i, "Review security relevant events such as login and password activity."],
+  [/user management/i, "Manage users, roles, status, and visible permissions."],
+  [/apply/i, "Apply the selected filters to the current list."],
+  [/export/i, "Download the currently shown data as a file."],
+  [/verify hash/i, "Check whether the activity log hash chain is still intact."],
+  [/invite/i, "Create a new user with the entered role and temporary password."],
+  [/disable/i, "Disable this account so the user can no longer sign in."],
+  [/save/i, "Store the changes shown in this form."],
+  [/confirm finding/i, "Mark this suggested finding as confirmed by the reviewer."],
+  [/mark residual risk accepted/i, "Record that the remaining risk is knowingly accepted."],
+  [/reject finding/i, "Dismiss this finding while keeping an audit trail."],
+  [/risk register/i, "Review, edit, import, export, and track assessment risks."],
+  [/export csv/i, "Download the risk register as a CSV file."],
+  [/csv template/i, "Download a CSV template for importing risks."],
+  [/import csv/i, "Upload a CSV file and add its risks to this assessment."],
+  [/clear filter/i, "Remove the matrix filter and show all risks again."],
+  [/likelihood/i, "Set how probable the risk scenario is on a 1 to 5 scale."],
+  [/impact/i, "Set the expected business impact on a 1 to 5 scale."],
+  [/treatment/i, "Choose whether to mitigate, accept, transfer, or avoid the risk."],
+  [/owner/i, "Name the person or team responsible for this item."],
+  [/due date/i, "Set the target date for completing this action."],
+  [/treatment plan/i, "Describe the concrete steps planned for this risk."],
+  [/add review note/i, "Write a review comment that stays with this item."],
+  [/auto-generate/i, "Create roadmap actions from high and critical risks."],
+  [/generate from risk/i, "Create a roadmap action for the selected risk."],
+  [/backup/i, "Create or manage backup and restore jobs."],
+  [/restore/i, "Check or start a restore process from an existing backup."]
+];
+
+function tooltipFor(element: Element): string {
+  const explicit = element.getAttribute("aria-label") || element.getAttribute("placeholder") || element.getAttribute("name");
+  const text = element.textContent?.replace(/\s+/g, " ").trim();
+  const tag = element.tagName.toLowerCase();
+  const label = explicit || text;
+  if (label) {
+    const match = tooltipDictionary.find(([pattern]) => pattern.test(label));
+    if (match) return match[1];
+    if (tag === "a") return `Open ${label}.`;
+    if (tag === "button") return `Run the ${label} action.`;
+    return `Enter or choose a value for ${label}.`;
+  }
+  if (tag === "select") return "Choose one of the available options.";
+  if (tag === "textarea") return "Enter notes or longer audit text here.";
+  if (tag === "input") return "Enter a value for this field.";
+  return "Open this action.";
+}
+
+function useTooltips() {
+  const [enabled, setEnabled] = useState(() => window.localStorage.getItem("audity_tooltips_enabled") !== "false");
+
+  useEffect(() => {
+    const sync = () => setEnabled(window.localStorage.getItem("audity_tooltips_enabled") !== "false");
+    window.addEventListener("audity-tooltips-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("audity-tooltips-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("audity-tooltips-off", !enabled);
+    let tooltip = document.getElementById("audity-tooltip-layer");
+    if (!tooltip) {
+      tooltip = document.createElement("div");
+      tooltip.id = "audity-tooltip-layer";
+      tooltip.className = "audity-tooltip-layer";
+      document.body.appendChild(tooltip);
+    }
+    const annotate = () => {
+      document.querySelectorAll("button, a, input, select, textarea, label").forEach((element) => {
+        if (element.hasAttribute("data-tooltip")) return;
+        if (element.closest("[data-tooltip-skip]")) return;
+        element.setAttribute("data-tooltip", tooltipFor(element));
+      });
+    };
+    annotate();
+    const show = (event: Event) => {
+      if (!enabled || !tooltip) return;
+      const target = event.target instanceof Element ? event.target.closest("[data-tooltip]") : null;
+      if (!target) return;
+      const text = target.getAttribute("data-tooltip");
+      if (!text) return;
+      const rect = target.getBoundingClientRect();
+      tooltip.textContent = text;
+      tooltip.style.display = "block";
+      const top = Math.max(8, rect.top + window.scrollY - tooltip.offsetHeight - 8);
+      const left = Math.min(window.innerWidth - tooltip.offsetWidth - 12, Math.max(8, rect.left + window.scrollX));
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+    };
+    const hide = () => {
+      if (tooltip) tooltip.style.display = "none";
+    };
+    const observer = new MutationObserver(annotate);
+    observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener("mouseover", show);
+    document.addEventListener("focusin", show);
+    document.addEventListener("mouseout", hide);
+    document.addEventListener("focusout", hide);
+    document.addEventListener("scroll", hide, true);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("mouseover", show);
+      document.removeEventListener("focusin", show);
+      document.removeEventListener("mouseout", hide);
+      document.removeEventListener("focusout", hide);
+      document.removeEventListener("scroll", hide, true);
+    };
+  }, [enabled]);
+}
+
+function useUserTheme() {
+  useEffect(() => {
+    const apply = () => {
+      const preference = window.localStorage.getItem("audity_theme") ?? "System";
+      const systemLight = window.matchMedia?.("(prefers-color-scheme: light)").matches ?? false;
+      const light = preference === "Light" || (preference === "System" && systemLight);
+      document.documentElement.classList.toggle("audity-theme-light", light);
+    };
+    apply();
+    window.addEventListener("audity-theme-changed", apply);
+    window.addEventListener("storage", apply);
+    return () => {
+      window.removeEventListener("audity-theme-changed", apply);
+      window.removeEventListener("storage", apply);
+    };
+  }, []);
+}
+
+function useLanguage() {
+  const [language, setLanguage] = useState(currentLanguage);
+  useEffect(() => {
+    const sync = () => setLanguage(currentLanguage());
+    window.addEventListener("audity-language-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("audity-language-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = language === "Deutsch" ? "de" : "en";
+  }, [language]);
+  return (label: string) => translate(label, language);
+}
+
 function TopBar({ adminMode = false }: { adminMode?: boolean }) {
   const { user, logout } = useAuth();
+  const t = useLanguage();
   const api = useApi();
   const navigate = useNavigate();
   const location = useLocation();
@@ -176,7 +337,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
           <button
             className="relative flex h-8 w-9 items-center justify-center rounded-audity border border-audity-borderStrong bg-audity-panel text-audity-secondary hover:border-audity-primary hover:text-audity-text"
             onClick={() => setNotificationsOpen(!notificationsOpen)}
-            aria-label="Notifications"
+            aria-label={t("Notifications")}
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
@@ -190,9 +351,9 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
           {notificationsOpen ? (
             <div className="absolute right-0 z-20 mt-2 w-96 overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-xl">
               <div className="flex items-center justify-between border-b border-audity-border px-3 py-2">
-                <span className="text-sm font-semibold">Notifications</span>
+                <span className="text-sm font-semibold">{t("Notifications")}</span>
                 <button className="text-xs font-semibold text-audity-primary" onClick={() => void markAllRead()}>
-                  Mark all read
+                  {t("Mark all read")}
                 </button>
               </div>
               <div className="max-h-96 overflow-auto">
@@ -210,7 +371,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
                     <p className="mt-1 text-[11px] text-audity-muted">{new Date(notification.createdAt).toLocaleString()}</p>
                   </button>
                 ))}
-                {!notifications.length ? <div className="px-3 py-8 text-center text-sm text-audity-muted">No notifications</div> : null}
+                {!notifications.length ? <div className="px-3 py-8 text-center text-sm text-audity-muted">{t("No notifications")}</div> : null}
               </div>
             </div>
           ) : null}
@@ -220,14 +381,14 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
             className="h-8 rounded-audity border border-audity-primary bg-audity-primaryActive px-3 py-1.5 text-sm font-semibold text-audity-primary hover:bg-audity-panel"
             to="/admin/activity"
           >
-            Admin Menu
+            {t("Admin Menu")}
           </Link>
         ) : null}
         <button
           className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panel px-3 text-sm text-audity-secondary hover:border-audity-primary hover:text-audity-text"
           onClick={() => void logout()}
         >
-          Logout
+          {t("Logout")}
         </button>
       </div>
     </header>
@@ -236,7 +397,10 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
 
 export function AppLayout() {
   const location = useLocation();
+  const t = useLanguage();
   useIdleLogout();
+  useTooltips();
+  useUserTheme();
   const [assessmentId, setAssessmentId] = useState(() =>
     window.localStorage.getItem("audity_last_assessment_id") ?? ""
   );
@@ -267,15 +431,16 @@ export function AppLayout() {
       <TopBar />
       <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[260px_1fr]">
         <aside className="border-r border-audity-border bg-audity-sidebar p-5">
-          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Workspace</p>
+          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">{t("Workspace")}</p>
           <nav className="space-y-1">
-            <NavLink className={navClass} to="/dashboard">Dashboard</NavLink>
-            <span className="block px-3 pt-3 pb-1 text-xs font-semibold uppercase text-audity-muted">Customer</span>
-            <NavLink className={subNavClass} to="/customers/my">My Customers</NavLink>
-            <NavLink className={subNavClass} to="/customers/shared">Shared Customers</NavLink>
-            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>Questions</NavLink> : <span className={assessmentClass}>Questions</span>}
-            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>Findings & Risk</NavLink> : <span className={assessmentClass}>Findings & Risk</span>}
-            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>Evidence & Reports</NavLink> : <span className={assessmentClass}>Evidence & Reports</span>}
+            <NavLink className={navClass} to="/dashboard">{t("Dashboard")}</NavLink>
+            <span className="block px-3 pt-3 pb-1 text-xs font-semibold uppercase text-audity-muted">{t("Customer")}</span>
+            <NavLink className={subNavClass} to="/customers/my">{t("My Customers")}</NavLink>
+            <NavLink className={subNavClass} to="/customers/shared">{t("Shared Customers")}</NavLink>
+            <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
+            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>{t("Questions")}</NavLink> : <span className={assessmentClass}>{t("Questions")}</span>}
+            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>{t("Findings & Risk")}</NavLink> : <span className={assessmentClass}>{t("Findings & Risk")}</span>}
+            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>{t("Evidence & Reports")}</NavLink> : <span className={assessmentClass}>{t("Evidence & Reports")}</span>}
           </nav>
         </aside>
         <section className="bg-audity-page p-5">
@@ -288,29 +453,33 @@ export function AppLayout() {
 
 export function AdminLayout() {
   const { user } = useAuth();
+  const t = useLanguage();
   useIdleLogout();
+  useTooltips();
+  useUserTheme();
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
       <TopBar adminMode />
       <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[260px_1fr]">
         <aside className="border-r border-audity-border bg-audity-sidebar p-5">
-          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">Admin Panel</p>
+          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">{t("Admin Panel")}</p>
           <nav className="space-y-1">
-            {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">Activity Log</NavLink> : null}
-            {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit">Audit Log</NavLink> : null}
-            {can("roles.manage") ? <NavLink className={navClass} to="/admin/users">User Management</NavLink> : null}
-            {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">Framework Library</NavLink> : null}
-            {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">Branding</NavLink> : null}
-            {can("email.manage") ? <NavLink className={navClass} to="/admin/email">Email Settings</NavLink> : null}
-            {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">System</NavLink> : null}
-            {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">Backup</NavLink> : null}
+            {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">{t("Activity Log")}</NavLink> : null}
+            {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit">{t("Audit Log")}</NavLink> : null}
+            {can("roles.manage") ? <NavLink className={navClass} to="/admin/users">{t("User Management")}</NavLink> : null}
+            {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">{t("Framework Library")}</NavLink> : null}
+            {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">{t("Branding")}</NavLink> : null}
+            {can("email.manage") ? <NavLink className={navClass} to="/admin/email">{t("Email Settings")}</NavLink> : null}
+            {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">{t("System")}</NavLink> : null}
+            {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">{t("Backup")}</NavLink> : null}
+            <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
           </nav>
           <Link
             className="mt-5 block rounded-audity border border-audity-error/60 bg-[#2A1C17] px-3 py-2 text-sm font-semibold text-[#FFB199] hover:border-audity-error hover:bg-[#351F19] hover:text-white"
             to="/dashboard"
           >
-            Leave Admin Panel
+            {t("Leave Admin Panel")}
           </Link>
         </aside>
         <section className="bg-audity-page p-5">

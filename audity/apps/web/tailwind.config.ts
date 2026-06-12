@@ -6,24 +6,24 @@ export default {
     extend: {
       colors: {
         audity: {
-          app: "#111315",
-          page: "#151719",
-          panel: "#202225",
-          panelAlt: "#242628",
-          tableHeader: "#2A2D30",
-          sidebar: "#1E2124",
-          topnav: "#061E3A",
-          border: "#34383D",
-          borderStrong: "#3F444A",
-          primary: "#008CFF",
-          primaryHover: "#00A3FF",
-          primaryActive: "#006BD6",
-          text: "#F4F6F8",
-          secondary: "#A8B0BA",
-          muted: "#7C858F",
-          success: "#2ECC71",
-          warning: "#F5A400",
-          error: "#FF4B00"
+          app: "var(--color-bg-app)",
+          page: "var(--color-bg-page)",
+          panel: "var(--color-bg-panel)",
+          panelAlt: "var(--color-bg-panel-alt)",
+          tableHeader: "var(--color-bg-table-header)",
+          sidebar: "var(--color-bg-sidebar)",
+          topnav: "var(--color-bg-topnav)",
+          border: "var(--color-border-subtle)",
+          borderStrong: "var(--color-border-strong)",
+          primary: "var(--color-primary)",
+          primaryHover: "var(--color-primary-hover)",
+          primaryActive: "var(--color-primary-active)",
+          text: "var(--color-text-primary)",
+          secondary: "var(--color-text-secondary)",
+          muted: "var(--color-text-muted)",
+          success: "var(--color-success)",
+          warning: "var(--color-warning)",
+          error: "var(--color-error)"
         }
       },
       borderRadius: {

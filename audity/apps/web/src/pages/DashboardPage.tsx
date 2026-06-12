@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
@@ -47,6 +47,14 @@ type DashboardPayload = {
   sharedCustomers: SharedCustomer[];
 };
 
+type NotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  readAt?: string | null;
+  createdAt: string;
+};
+
 function ProgressBar({ value }: { value: number }) {
   return (
     <div className="h-2 overflow-hidden rounded-full bg-audity-page">
@@ -73,6 +81,14 @@ export function DashboardPage() {
   const { user, setupMfa, verifyMfaSetup } = useAuth();
   const api = useApi();
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [widgets, setWidgets] = useState(() => ({
+    customers: window.localStorage.getItem("audity_widget_customers") !== "false",
+    shared: window.localStorage.getItem("audity_widget_shared") !== "false",
+    notifications: window.localStorage.getItem("audity_widget_notifications") !== "false",
+    security: window.localStorage.getItem("audity_widget_security") !== "false"
+  }));
+  const [showOnboarding, setShowOnboarding] = useState(() => window.localStorage.getItem("audity_onboarding_done") !== "true");
   const [mfaSetup, setMfaSetup] = useState<{
     secret: string;
     otpauthUrl: string;
@@ -86,7 +102,27 @@ export function DashboardPage() {
     void api<DashboardPayload>("/api/dashboard")
       .then(setDashboard)
       .catch((err) => setError(err instanceof Error ? err.message : "Dashboard load failed"));
+    void api<{ notifications: NotificationItem[] }>("/api/notifications")
+      .then((payload) => setNotifications(payload.notifications))
+      .catch(() => setNotifications([]));
   }, [api]);
+
+  useEffect(() => {
+    window.localStorage.setItem("audity_widget_customers", String(widgets.customers));
+    window.localStorage.setItem("audity_widget_shared", String(widgets.shared));
+    window.localStorage.setItem("audity_widget_notifications", String(widgets.notifications));
+    window.localStorage.setItem("audity_widget_security", String(widgets.security));
+  }, [widgets]);
+
+  const totals = useMemo(() => {
+    const assessments = dashboard?.ownedCustomers.flatMap((customer) => customer.assessments) ?? [];
+    return {
+      assessments: assessments.length,
+      critical: assessments.reduce((sum, assessment) => sum + (assessment.criticalRisks ?? 0), 0),
+      gaps: assessments.reduce((sum, assessment) => sum + (assessment.evidenceGaps ?? 0), 0),
+      overdue: assessments.reduce((sum, assessment) => sum + (assessment.overdueRoadmapItems ?? 0), 0)
+    };
+  }, [dashboard]);
 
   async function startMfaSetup() {
     setError("");
@@ -124,7 +160,60 @@ export function DashboardPage() {
         </div>
       ) : null}
 
+      {showOnboarding ? (
+        <section className="mb-4 rounded-audity border border-audity-primary bg-audity-panel p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase text-audity-primary">First Setup</p>
+              <h2 className="mt-1 text-lg font-semibold">Start a clean audit workspace</h2>
+              <div className="mt-3 grid gap-2 md:grid-cols-4">
+                {["Review User Settings", "Create or open Customer", "Start Assessment", "Answer Questions"].map((step, index) => (
+                  <div key={step} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                    <p className="text-xs font-semibold text-audity-muted">Step {index + 1}</p>
+                    <p className="mt-1 text-sm text-audity-secondary">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary"
+              onClick={() => {
+                window.localStorage.setItem("audity_onboarding_done", "true");
+                setShowOnboarding(false);
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Dashboard Widgets</h2>
+            <p className="mt-1 text-xs text-audity-muted">
+              {totals.assessments} assessments · {totals.critical} critical risks · {totals.gaps} evidence gaps · {totals.overdue} overdue actions
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {([
+              ["customers", "Customers"],
+              ["shared", "Shared"],
+              ["notifications", "Notifications"],
+              ["security", "Security"]
+            ] as const).map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 text-sm text-audity-secondary">
+                <input type="checkbox" checked={widgets[key]} onChange={(event) => setWidgets({ ...widgets, [key]: event.target.checked })} />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        {widgets.customers ? (
         <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
           <div className="mb-4 border-b border-audity-border pb-3">
             <p className="text-xs font-semibold uppercase text-audity-muted">In Progress</p>
@@ -187,8 +276,30 @@ export function DashboardPage() {
             ) : null}
           </div>
         </section>
+        ) : <div />}
 
         <aside className="space-y-4">
+          {widgets.notifications ? (
+          <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+            <div className="mb-4 border-b border-audity-border pb-3">
+              <p className="text-xs font-semibold uppercase text-audity-muted">Notifications</p>
+              <h2 className="mt-1 text-lg font-semibold">Review & Due Updates</h2>
+            </div>
+            <div className="space-y-2">
+              {notifications.slice(0, 5).map((notification) => (
+                <div key={notification.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-audity-primary">{notification.title}</p>
+                    {!notification.readAt ? <span className="rounded-audity border border-audity-warning px-2 py-0.5 text-[11px] text-audity-warning">New</span> : null}
+                  </div>
+                  <p className="mt-1 text-xs text-audity-secondary">{notification.message}</p>
+                </div>
+              ))}
+              {!notifications.length ? <p className="py-6 text-center text-sm text-audity-muted">No notifications</p> : null}
+            </div>
+          </section>
+          ) : null}
+          {widgets.shared ? (
           <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="mb-4 border-b border-audity-border pb-3">
               <p className="text-xs font-semibold uppercase text-audity-muted">Shared</p>
@@ -217,7 +328,9 @@ export function DashboardPage() {
               ) : null}
             </div>
           </section>
+          ) : null}
 
+          {widgets.security ? (
           <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="mb-4 border-b border-audity-border pb-3">
               <p className="text-xs font-semibold uppercase text-audity-muted">Security</p>
@@ -262,6 +375,7 @@ export function DashboardPage() {
               </div>
             ) : null}
           </section>
+          ) : null}
         </aside>
       </div>
 
