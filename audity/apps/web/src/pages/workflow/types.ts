@@ -31,6 +31,17 @@ export type Risk = {
   treatmentPlan: string | null;
   dueDate: string | null;
   status: string;
+  draft: boolean;
+  sourceType: string | null;
+  sourceAssessmentQuestionId: string | null;
+  sourceFrameworkControlId: string | null;
+  sourceScore: number | null;
+  sourceGeneratedAt: string | null;
+  sourceExplanation: string | null;
+  acceptanceReason: string | null;
+  acceptedBy: string | null;
+  acceptedAt: string | null;
+  acceptanceExpiresAt: string | null;
   findingTitle: string | null;
 };
 
@@ -46,4 +57,26 @@ export type RoadmapItem = {
   status: string;
   sourceRiskRating: string | null;
   riskTitle: string | null;
+};
+
+export type HistoryEvent = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  userEmail: string | null;
+  before: unknown;
+  after: unknown;
+  createdAt: string;
+};
+
+export type ReviewComment = {
+  id: string;
+  assessmentId: string;
+  entityType: string;
+  entityId: string;
+  userEmail: string | null;
+  comment: string;
+  resolvedAt: string | null;
+  createdAt: string;
 };

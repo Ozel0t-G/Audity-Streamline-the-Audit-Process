@@ -6,6 +6,15 @@ import type { Assessment, AssessmentScope, Customer } from "./types";
 
 type FrameworkOption = { id: string; name: string; shortName: string | null };
 type ShareTarget = { id: string; name: string | null; email: string; role: string; status: string };
+type AssessmentTemplate = {
+  key: string;
+  name: string;
+  type: string;
+  audience: string;
+  language: string;
+  status: string;
+  scope: AssessmentScope;
+};
 
 function csv(value: string): string[] {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
@@ -24,6 +33,18 @@ const workflow = [
   ["Report", false]
 ] as const;
 
+const statusLabels: Record<string, string> = {
+  draft: "Draft",
+  active: "Active",
+  imported: "Imported",
+  completed: "Completed",
+  archived: "Archived"
+};
+
+function statusLabel(value: string | null | undefined) {
+  return statusLabels[String(value ?? "")] ?? String(value ?? "-");
+}
+
 export function CustomerDetailPage() {
   const { id } = useParams();
   const api = useApi();
@@ -33,6 +54,7 @@ export function CustomerDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [frameworks, setFrameworks] = useState<FrameworkOption[]>([]);
+  const [templates, setTemplates] = useState<AssessmentTemplate[]>([]);
   const [shareTargets, setShareTargets] = useState<ShareTarget[]>([]);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareSearch, setShareSearch] = useState("");
@@ -41,6 +63,7 @@ export function CustomerDetailPage() {
   const [scopeFrameworkIds, setScopeFrameworkIds] = useState<string[]>([]);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState("");
   const [assessmentForm, setAssessmentForm] = useState({
+    templateKey: "iso27001_readiness",
     type: "Full Security Maturity Assessment",
     audience: "Management + Technical Team",
     frameworkId: "",
@@ -65,13 +88,15 @@ export function CustomerDetailPage() {
 
   async function load() {
     if (!id) return;
-    const [customerPayload, assessmentPayload, frameworkPayload] = await Promise.all([
+    const [customerPayload, assessmentPayload, frameworkPayload, templatePayload] = await Promise.all([
       api<{ customer: Customer }>(`/api/customers/${id}`),
       api<{ assessments: Assessment[] }>(`/api/customers/${id}/assessments`),
-      api<{ frameworks: FrameworkOption[] }>("/api/frameworks")
+      api<{ frameworks: FrameworkOption[] }>("/api/frameworks"),
+      api<{ templates: AssessmentTemplate[] }>("/api/assessment-templates")
     ]);
     setCustomer(customerPayload.customer);
     setFrameworks(frameworkPayload.frameworks);
+    setTemplates(templatePayload.templates);
     const selected = customerPayload.customer.selectedFrameworks?.map((framework) => framework.id) ?? [];
     setScopeFrameworkIds(selected);
     if (!assessmentForm.frameworkId && selected[0]) {
@@ -84,6 +109,21 @@ export function CustomerDetailPage() {
     if (current) {
       setSelectedAssessmentId(current.id);
       loadScopeIntoForm(current.scope);
+    }
+  }
+
+  function applyTemplate(templateKey: string) {
+    const template = templates.find((item) => item.key === templateKey);
+    setAssessmentForm((current) => ({
+      ...current,
+      templateKey,
+      type: template?.type ?? current.type,
+      audience: template?.audience ?? current.audience,
+      language: template?.language ?? current.language,
+      status: template?.status ?? current.status
+    }));
+    if (template?.scope) {
+      loadScopeIntoForm(template.scope);
     }
   }
 
@@ -280,7 +320,7 @@ export function CustomerDetailPage() {
                         <td className="px-3 py-3 font-semibold text-audity-primary">{assessment.type}</td>
                         <td className="px-3 py-3 text-audity-secondary">{assessment.audience}</td>
                         <td className="px-3 py-3 text-audity-secondary">{assessment.framework}</td>
-                        <td className="px-3 py-3 text-audity-secondary">{assessment.status}</td>
+                        <td className="px-3 py-3 text-audity-secondary">{statusLabel(assessment.status)}</td>
                         <td className="px-3 py-3">
                           <Link
                             className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs font-semibold text-audity-primary hover:border-audity-primary"
@@ -344,6 +384,12 @@ export function CustomerDetailPage() {
             {canCreateAssessment ? (
             <form onSubmit={createAssessment} className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Create assessment</h2>
+              <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                Template
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={assessmentForm.templateKey} onChange={(event) => applyTemplate(event.target.value)}>
+                  {templates.map((template) => <option key={template.key} value={template.key}>{template.name}</option>)}
+                </select>
+              </label>
               {[
                 ["type", "Type"],
                 ["audience", "Audience"],

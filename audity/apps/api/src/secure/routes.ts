@@ -100,11 +100,12 @@ function decryptZipPackage(payload: { encrypted?: string; checksum?: string }) {
 
 async function riskRegisterCsv(assessmentId: string): Promise<string> {
   const risks = await pool.query(
-    `select title, likelihood, impact, risk_score, rating, treatment_option, owner, treatment_plan, due_date, status
+    `select title, likelihood, impact, risk_score, rating, treatment_option, owner, treatment_plan,
+       due_date, status, draft, source_type, source_score, acceptance_reason, acceptance_expires_at
      from risks where assessment_id = $1 and status <> 'deleted' order by risk_score desc nulls last`,
     [assessmentId]
   );
-  const columns = ["title", "likelihood", "impact", "risk_score", "rating", "treatment_option", "owner", "treatment_plan", "due_date", "status"];
+  const columns = ["title", "likelihood", "impact", "risk_score", "rating", "treatment_option", "owner", "treatment_plan", "due_date", "status", "draft", "source_type", "source_score", "acceptance_reason", "acceptance_expires_at"];
   const cell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
   return [
     columns.map(cell).join(","),

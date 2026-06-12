@@ -75,6 +75,7 @@ export type GuidedQuestion = {
   defaultWeight?: number;
   readinessPassCondition?: string | null;
   gapCondition?: string | null;
+  evidenceGap?: boolean;
   evidenceExamples: string[];
   mappings: QuestionMapping[];
   answer: QuestionAnswer | null;

@@ -131,6 +131,12 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
                     'framework', a.framework,
                     'status', a.status,
                     'targetDate', a.target_date,
+                    'openHighRisks', coalesce(risk_stats.open_high_risks, 0),
+                    'criticalRisks', coalesce(risk_stats.critical_risks, 0),
+                    'openFindings', coalesce(finding_stats.open_findings, 0),
+                    'evidenceGaps', coalesce(answer_stats.evidence_gaps, 0),
+                    'overdueRoadmapItems', coalesce(roadmap_stats.overdue_items, 0),
+                    'reports', coalesce(report_stats.report_count, 0),
                     'progressPercent',
                       case
                         when q.total_questions = 0 then 0
@@ -155,6 +161,37 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
            where aq.assessment_id = a.id
              and (ca.score is not null or ca.answer_state <> 'unknown')
          ) ans on true
+         left join lateral (
+           select count(*) filter (where r.status not in ('closed','deleted') and r.rating in ('High','Critical'))::int as open_high_risks,
+                  count(*) filter (where r.status <> 'deleted' and r.rating = 'Critical')::int as critical_risks
+           from risks r
+           where r.assessment_id = a.id
+         ) risk_stats on true
+         left join lateral (
+           select count(*) filter (where f.status <> 'dismissed')::int as open_findings
+           from findings f
+           where f.assessment_id = a.id
+         ) finding_stats on true
+         left join lateral (
+           select count(*) filter (
+             where ca.score <= 2 and coalesce(ca.evidence_status, 'not_requested') not in ('received','validated')
+           )::int as evidence_gaps
+           from control_answers ca
+           join assessment_questions aq on aq.id = ca.assessment_question_id
+           where aq.assessment_id = a.id
+         ) answer_stats on true
+         left join lateral (
+           select count(*) filter (
+             where ri.status not in ('closed','done') and ri.due_date is not null and ri.due_date < current_date
+           )::int as overdue_items
+           from roadmap_items ri
+           where ri.assessment_id = a.id
+         ) roadmap_stats on true
+         left join lateral (
+           select count(*)::int as report_count
+           from reports rp
+           where rp.assessment_id = a.id
+         ) report_stats on true
          where c.archived_at is null and c.created_by_user_id = $1
          group by c.id
          order by max(coalesce(a.updated_at, c.updated_at)) desc nulls last

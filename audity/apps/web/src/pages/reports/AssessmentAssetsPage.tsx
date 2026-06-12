@@ -79,6 +79,7 @@ export function AssessmentAssetsPage() {
     date: new Date().toISOString().slice(0, 10)
   });
   const [report, setReport] = useState<Report | null>(null);
+  const [previewHtml, setPreviewHtml] = useState("");
   const [job, setJob] = useState<{ id: string; status: string; downloadUrl?: string | null } | null>(null);
   const [emailJob, setEmailJob] = useState<{ id: string; status: string; result?: { smtpResult?: string } | null } | null>(null);
   const [sendForm, setSendForm] = useState({
@@ -183,6 +184,7 @@ export function AssessmentAssetsPage() {
       body: JSON.stringify({ selectedBlocks, authorInfo })
     });
     setReport(payload.report);
+    setPreviewHtml("");
   }
 
   async function exportReport() {
@@ -258,6 +260,7 @@ export function AssessmentAssetsPage() {
       throw new Error(`Preview failed: ${response.status}`);
     }
     const html = await response.text();
+    setPreviewHtml(html);
     const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     window.open(url, "_blank", "noopener,noreferrer");
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -349,6 +352,11 @@ export function AssessmentAssetsPage() {
                 {canExportReport ? (
                   <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void exportReport()}>Export PDF</button>
                 ) : null}
+              </div>
+            ) : null}
+            {previewHtml ? (
+              <div className="mt-4 overflow-hidden rounded-audity border border-audity-border bg-white">
+                <iframe className="h-[620px] w-full bg-white" srcDoc={previewHtml} title="Report preview" />
               </div>
             ) : null}
             {job ? (

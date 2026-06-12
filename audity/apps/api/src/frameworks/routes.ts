@@ -608,6 +608,10 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           readinessPassCondition: row.readiness_pass_condition,
           gapCondition: row.gap_condition,
           evidenceExamples: row.evidence_examples,
+          evidenceGap:
+            row.score !== null &&
+            Number(row.score) <= 2 &&
+            !["received", "validated"].includes(String(row.evidence_status ?? "not_requested")),
           mappings: row.mappings,
           answer: row.answer_id
             ? {

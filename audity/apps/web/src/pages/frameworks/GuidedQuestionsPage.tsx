@@ -4,6 +4,13 @@ import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import type { AssessmentQuestionsPayload, GuidedQuestion, QuestionDomain } from "./types";
 
+type ReviewComment = {
+  id: string;
+  userEmail: string | null;
+  comment: string;
+  createdAt: string;
+};
+
 const answerStates = ["answered", "needs_follow_up", "not_applicable", "unknown"];
 const evidenceStatuses = ["not_requested", "requested", "received", "validated", "missing"];
 const confidenceLevels = ["low", "medium", "high"];
@@ -39,6 +46,8 @@ export function GuidedQuestionsPage() {
   });
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const [comments, setComments] = useState<ReviewComment[]>([]);
+  const [commentText, setCommentText] = useState("");
 
   const activeDomain = useMemo<QuestionDomain | null>(() => {
     if (!payload) return null;
@@ -82,6 +91,16 @@ export function GuidedQuestionsPage() {
     setSaved("");
   }, [activeQuestion?.questionId]);
 
+  useEffect(() => {
+    if (!id || !activeQuestion) {
+      setComments([]);
+      return;
+    }
+    api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=question&entityId=${activeQuestion.questionId}`)
+      .then((payload) => setComments(payload.comments))
+      .catch(() => setComments([]));
+  }, [api, id, activeQuestion?.questionId]);
+
   async function saveAnswer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!id || !activeQuestion) return;
@@ -97,6 +116,18 @@ export function GuidedQuestionsPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save answer failed");
     }
+  }
+
+  async function addComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id || !activeQuestion || !commentText.trim()) return;
+    await api(`/api/assessments/${id}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ entityType: "question", entityId: activeQuestion.questionId, comment: commentText })
+    });
+    setCommentText("");
+    const payload = await api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=question&entityId=${activeQuestion.questionId}`);
+    setComments(payload.comments);
   }
 
   return (
@@ -160,7 +191,10 @@ export function GuidedQuestionsPage() {
                       <p className="text-xs font-semibold text-audity-primary">{question.code}</p>
                       <p className="mt-1 text-sm font-semibold">{question.title}</p>
                       <p className="mt-1 text-xs text-audity-secondary">{question.sourceQuestionId ?? question.questionId.slice(0, 8)}</p>
-                      <p className="mt-1 text-xs text-audity-muted">Score {question.answer?.score ?? "-"}</p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] text-audity-muted">Score {question.answer?.score ?? "-"}</span>
+                        {question.evidenceGap ? <span className="rounded-audity border border-audity-warning px-2 py-0.5 text-[11px] text-audity-warning">Evidence gap</span> : null}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -171,6 +205,11 @@ export function GuidedQuestionsPage() {
                     <p className="text-xs font-semibold uppercase text-audity-primary">{activeQuestion.code}</p>
                     <h2 className="mt-1 text-xl font-semibold">{activeQuestion.title}</h2>
                     <p className="mt-2 text-sm text-audity-secondary">{activeQuestion.question}</p>
+                    {activeQuestion.evidenceGap ? (
+                      <div className="mt-4 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
+                        Low score with missing or unvalidated evidence
+                      </div>
+                    ) : null}
                     <label className="mt-5 block text-xs font-semibold uppercase text-audity-secondary">
                       Score
                       <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.score} onChange={(event) => setForm({ ...form, score: Number(event.target.value) })}>
@@ -236,6 +275,11 @@ export function GuidedQuestionsPage() {
               </section>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-3 text-lg font-semibold">Evidence Signals</h2>
+                {activeQuestion?.evidenceGap ? (
+                  <div className="mb-3 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
+                    Evidence should be requested, received, or validated before this control is considered resolved.
+                  </div>
+                ) : null}
                 <div className="space-y-2">
                   {activeQuestion?.evidenceExamples.map((example) => (
                     <div key={example} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm text-audity-secondary">
@@ -243,6 +287,27 @@ export function GuidedQuestionsPage() {
                     </div>
                   ))}
                 </div>
+              </section>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-3 text-lg font-semibold">Review Notes</h2>
+                <div className="space-y-2">
+                  {comments.slice(0, 5).map((comment) => (
+                    <div key={comment.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold text-audity-primary">{comment.userEmail ?? "System"}</p>
+                        <p className="text-[11px] text-audity-muted">{new Date(comment.createdAt).toLocaleString()}</p>
+                      </div>
+                      <p className="mt-1 text-sm text-audity-secondary">{comment.comment}</p>
+                    </div>
+                  ))}
+                  {!comments.length ? <p className="text-sm text-audity-muted">No review notes yet</p> : null}
+                </div>
+                {canEditAssessment ? (
+                <form className="mt-3 flex gap-2" onSubmit={(event) => void addComment(event)}>
+                  <input className="h-9 min-w-0 flex-1 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Add note" />
+                  <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary">Add</button>
+                </form>
+                ) : null}
               </section>
             </aside>
           </div>
