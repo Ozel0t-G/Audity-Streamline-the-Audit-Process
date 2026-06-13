@@ -74,7 +74,7 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
             <p className="text-xs font-semibold uppercase text-audity-primary">Customer Management</p>
             <h1 className="mt-1 text-2xl font-semibold">{mode === "my" ? "My Customers" : mode === "shared" ? "Shared Customers" : "Customers"}</h1>
           </div>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-audity-tableHeader text-xs uppercase text-audity-muted">

@@ -372,6 +372,36 @@ create table if not exists settings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists connectors (
+  id text primary key,
+  provider text not null,
+  display_name text not null,
+  enabled boolean not null default false,
+  config jsonb not null default '{}'::jsonb,
+  secrets jsonb not null default '{}'::jsonb,
+  status text not null default 'not_configured',
+  last_checked_at timestamptz,
+  last_message text,
+  last_result jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists connector_runs (
+  id uuid primary key,
+  connector_id text not null references connectors(id) on delete cascade,
+  action text not null,
+  status text not null,
+  message text,
+  request_summary jsonb not null default '{}'::jsonb,
+  response_summary jsonb not null default '{}'::jsonb,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists connector_runs_connector_created_idx
+  on connector_runs (connector_id, created_at desc);
+
 create table if not exists system_health_samples (
   id uuid primary key,
   status text not null,

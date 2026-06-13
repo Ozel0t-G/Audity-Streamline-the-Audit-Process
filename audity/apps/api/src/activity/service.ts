@@ -1,5 +1,6 @@
 import crypto, { randomUUID } from "node:crypto";
 import { pool } from "../db/client.js";
+import { connectorQueue } from "../jobs/queue.js";
 
 function stableJson(value: unknown): string {
   return JSON.stringify(value ?? null);
@@ -54,6 +55,22 @@ export async function appendActivityEvent(input: {
       ]
     );
     await client.query("commit");
+    if (
+      ["customer", "assessment"].includes(input.entityType) &&
+      !input.action.endsWith(".opened")
+    ) {
+      await connectorQueue.add(
+        "auto-sync",
+        { trigger: input.action, entityType: input.entityType, entityId: input.entityId },
+        {
+          jobId: "connector-auto-sync",
+          delay: 5000,
+          attempts: 2,
+          removeOnComplete: 50,
+          removeOnFail: 100
+        }
+      );
+    }
   } catch (error) {
     await client.query("rollback");
     throw error;

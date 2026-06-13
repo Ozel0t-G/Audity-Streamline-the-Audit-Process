@@ -26,3 +26,9 @@ export const restoreQueue = new Queue("audity-restore", {
     url: config.redisUrl
   }
 });
+
+export const connectorQueue = new Queue("audity-connector-sync", {
+  connection: {
+    url: config.redisUrl
+  }
+});

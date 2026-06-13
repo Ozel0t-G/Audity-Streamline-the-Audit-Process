@@ -291,11 +291,11 @@ export function AssessmentAssetsPage() {
             <h1 className="mt-1 text-2xl font-semibold">Assessment Assets</h1>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Evidence</h2>
               {canUploadEvidence ? (
-              <form className="mb-4 grid gap-3 md:grid-cols-3 xl:grid-cols-[minmax(180px,1fr)_140px_120px_140px_minmax(180px,1fr)_auto]" onSubmit={(event) => void uploadEvidence(event)}>
+              <form className="mb-4 grid gap-3 md:grid-cols-2 2xl:grid-cols-[minmax(180px,1fr)_140px_120px_140px_minmax(180px,1fr)_auto]" onSubmit={(event) => void uploadEvidence(event)}>
                 <input name="file" type="file" className="text-sm text-audity-secondary" />
                 <input name="tag" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Tag" />
                 <input name="version" className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Version" />
@@ -349,7 +349,7 @@ export function AssessmentAssetsPage() {
           </div>
           <section className="mt-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <h2 className="mb-4 text-lg font-semibold">Report Builder</h2>
-            <form className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]" onSubmit={(event) => void createReport(event)}>
+            <form className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]" onSubmit={(event) => void createReport(event)}>
               <div className="grid gap-2 md:grid-cols-2">
                 {blocks.map((block) => (
                   <label key={block} className="flex items-center gap-2 rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm text-audity-secondary">

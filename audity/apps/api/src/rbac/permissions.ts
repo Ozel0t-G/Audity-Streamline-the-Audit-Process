@@ -31,7 +31,8 @@ export const permissions = [
   "branding.manage",
   "email.manage",
   "frameworks.manage",
-  "backup.manage"
+  "backup.manage",
+  "connectors.manage"
 ] as const;
 
 export type PermissionName = (typeof permissions)[number];

@@ -168,7 +168,7 @@ export function GuidedQuestionsPage() {
             <div className="h-3 overflow-hidden rounded-audity bg-audity-page">
               <div className={`h-full ${progressColor(payload?.coverage.percentage ?? 0)}`} style={{ width: `${payload?.coverage.percentage ?? 0}%` }} />
             </div>
-            <div className="mt-3 grid gap-2 md:grid-cols-4">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
                 <p className="text-xs font-semibold uppercase text-audity-muted">Answered</p>
                 <p className="mt-1 text-xl font-semibold">{progressSummary.answered}</p>
@@ -188,7 +188,7 @@ export function GuidedQuestionsPage() {
             </div>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_300px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-4 py-3">
                 <h2 className="text-lg font-semibold">Domains</h2>
@@ -215,7 +215,7 @@ export function GuidedQuestionsPage() {
                 ))}
               </div>
             </section>
-            <section className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <section className="grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)]">
               <div className="rounded-audity border border-audity-border bg-audity-panel">
                 <div className="border-b border-audity-border px-4 py-3">
                   <h2 className="text-lg font-semibold">Controls</h2>
@@ -238,7 +238,7 @@ export function GuidedQuestionsPage() {
                   ))}
                 </div>
               </div>
-              <form onSubmit={saveAnswer} className="rounded-audity border border-audity-border bg-audity-panel p-4">
+              <form onSubmit={saveAnswer} className="min-w-0 rounded-audity border border-audity-border bg-audity-panel p-4">
                 {activeQuestion ? (
                   <>
                     <p className="text-xs font-semibold uppercase text-audity-primary">{activeQuestion.code}</p>
@@ -257,7 +257,7 @@ export function GuidedQuestionsPage() {
                         ))}
                       </select>
                     </label>
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="mt-4 grid gap-3 2xl:grid-cols-3">
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">
                         Answer State
                         <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.answerState} onChange={(event) => setForm({ ...form, answerState: event.target.value })}>
@@ -295,7 +295,7 @@ export function GuidedQuestionsPage() {
                 )}
               </form>
             </section>
-            <aside className="space-y-4">
+            <aside className="grid min-w-0 gap-4 xl:col-span-2 xl:grid-cols-2 2xl:col-span-1 2xl:block 2xl:space-y-4">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-3 text-lg font-semibold">Smart Suggestions</h2>
                 <div className="space-y-2">
