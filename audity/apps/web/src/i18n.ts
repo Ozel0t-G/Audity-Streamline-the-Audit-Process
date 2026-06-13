@@ -24,6 +24,7 @@ const translations: Record<AudityLanguage, Record<string, string>> = {
     "Framework Library": "Framework-Bibliothek",
     "Branding": "Branding",
     "Email Settings": "E-Mail-Einstellungen",
+    "Connector": "Connector",
     "System": "System",
     "Backup": "Backup",
     "Leave Admin Panel": "Admin-Bereich verlassen",

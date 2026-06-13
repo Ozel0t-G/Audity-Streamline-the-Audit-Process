@@ -641,7 +641,7 @@ export function AssessmentWorkflowPage() {
             </div>
           </section>
           ) : null}
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-4 py-3">
                 <h2 className="text-lg font-semibold">Finding Review</h2>

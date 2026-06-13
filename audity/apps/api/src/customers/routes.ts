@@ -345,7 +345,7 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
           body.name,
           body.industry ?? current.rows[0]?.industry,
           body.regulatoryContext ?? current.rows[0]?.regulatory_context,
-          body.criticalSystems ? JSON.stringify(body.criticalSystems) : current.rows[0]?.critical_systems,
+          body.criticalSystems ? JSON.stringify(body.criticalSystems) : JSON.stringify(current.rows[0]?.critical_systems ?? []),
           body.businessCriticality ?? current.rows[0]?.business_criticality,
           body.status
         ]

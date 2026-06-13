@@ -10,6 +10,7 @@ import { registerAssessmentRoutes } from "./assessments/routes.js";
 import { registerAuthRoutes } from "./auth/routes.js";
 import { loadConfig } from "./config.js";
 import { registerCustomerRoutes } from "./customers/routes.js";
+import { registerConnectorRoutes, startConnectorSyncWorker } from "./connectors/routes.js";
 import { registerDashboardRoutes } from "./dashboard/routes.js";
 import { verifyDatabaseConnection } from "./db/client.js";
 import { applyCoreSchema } from "./db/schema.js";
@@ -43,7 +44,7 @@ await app.register(helmet, {
       fontSrc: ["'self'", "data:"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      imgSrc: ["'self'", "data:", "blob:", "https://cdn.jsdelivr.net", "https://www.google.com"],
       objectSrc: ["'none'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"]
@@ -111,8 +112,10 @@ app.get("/ready", async () => {
 await verifyDatabaseConnection();
 await applyCoreSchema();
 startFrameworkYamlAutoSync(app.log);
+startConnectorSyncWorker(app.log);
 await registerAuthRoutes(app);
 await registerDashboardRoutes(app);
+await registerConnectorRoutes(app);
 await registerCustomerRoutes(app);
 await registerAssessmentRoutes(app);
 await registerFrameworkRoutes(app);

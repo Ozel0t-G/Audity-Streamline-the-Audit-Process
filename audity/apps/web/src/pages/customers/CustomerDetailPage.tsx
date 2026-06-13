@@ -256,7 +256,7 @@ export function CustomerDetailPage() {
             ))}
           </div>
           {error ? <div className="mb-4 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="space-y-4">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="grid gap-4 lg:grid-cols-2">

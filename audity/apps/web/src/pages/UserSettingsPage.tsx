@@ -6,7 +6,7 @@ import { translate, type AudityLanguage } from "../i18n";
 
 export function UserSettingsPage() {
   const api = useApi();
-  const { user } = useAuth();
+  const { user, setupMfa, verifyMfaSetup } = useAuth();
   const [tooltipsEnabled, setTooltipsEnabled] = useState(() => window.localStorage.getItem("audity_tooltips_enabled") !== "false");
   const [preferences, setPreferences] = useState(() => ({
     language: (window.localStorage.getItem("audity_language") === "Deutsch" ? "Deutsch" : "English") as AudityLanguage,
@@ -23,6 +23,13 @@ export function UserSettingsPage() {
   });
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const [mfaSetup, setMfaSetup] = useState<{
+    secret: string;
+    otpauthUrl: string;
+    qrCodeDataUrl: string;
+  } | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const t = (label: string) => translate(label, preferences.language);
 
   useEffect(() => {
@@ -64,6 +71,29 @@ export function UserSettingsPage() {
     }
   }
 
+  async function startMfaSetup() {
+    setError("");
+    setSaved("");
+    setRecoveryCodes([]);
+    try {
+      setMfaSetup(await setupMfa());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "MFA setup failed");
+    }
+  }
+
+  async function verifySetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSaved("");
+    try {
+      setRecoveryCodes(await verifyMfaSetup(mfaCode));
+      setSaved("MFA enabled");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "MFA verification failed");
+    }
+  }
+
   return (
     <>
       <div className="mb-5 border-b border-audity-border pb-4">
@@ -93,6 +123,48 @@ export function UserSettingsPage() {
               {t("Change password")}
             </button>
           </form>
+        </section>
+        <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+          <h2 className="mb-4 text-lg font-semibold">Authenticator MFA</h2>
+          <p className="mb-4 text-sm text-audity-secondary">Set up an authenticator app for stronger account protection. Scan the QR code, then verify the one-time code.</p>
+          <button
+            className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover"
+            onClick={() => void startMfaSetup()}
+          >
+            Set up MFA
+          </button>
+          {mfaSetup ? (
+            <form className="mt-4 space-y-3" onSubmit={(event) => void verifySetup(event)}>
+              <img
+                className="h-40 w-40 rounded-audity border border-audity-border bg-white p-2"
+                src={mfaSetup.qrCodeDataUrl}
+                alt="MFA QR code"
+              />
+              <div className="rounded-audity border border-audity-border bg-audity-page p-2 font-mono text-xs text-audity-secondary">
+                {mfaSetup.secret}
+              </div>
+              <input
+                className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                value={mfaCode}
+                inputMode="numeric"
+                placeholder="Authenticator code"
+                onChange={(event) => setMfaCode(event.target.value)}
+              />
+              <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary">
+                Verify MFA
+              </button>
+            </form>
+          ) : null}
+          {recoveryCodes.length ? (
+            <div className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3">
+              <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Recovery codes</p>
+              <div className="grid gap-1 font-mono text-xs text-audity-secondary">
+                {recoveryCodes.map((code) => (
+                  <span key={code}>{code}</span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
         <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
           <h2 className="mb-4 text-lg font-semibold">{t("Interface")}</h2>

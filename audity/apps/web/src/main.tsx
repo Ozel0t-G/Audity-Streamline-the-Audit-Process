@@ -8,6 +8,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { UserSettingsPage } from "./pages/UserSettingsPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { ConnectorAdminPage } from "./pages/admin/ConnectorAdminPage";
 import { AlphaDisclaimerPage } from "./pages/AlphaDisclaimerPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
@@ -44,6 +45,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/frameworks" element={<RequirePermission permission="assessment.view"><FrameworkLibraryPage /></RequirePermission>} />
               <Route path="/admin/branding" element={<RequirePermission permission="branding.manage"><AdminDashboardPage section="branding" /></RequirePermission>} />
               <Route path="/admin/email" element={<RequirePermission permission="email.manage"><AdminDashboardPage section="email" /></RequirePermission>} />
+              <Route path="/admin/connectors" element={<RequirePermission permission="connectors.manage"><ConnectorAdminPage /></RequirePermission>} />
               <Route path="/admin/system" element={<RequirePermission permission="settings.manage"><AdminDashboardPage section="system" /></RequirePermission>} />
               <Route path="/admin/backup" element={<RequirePermission instanceAdminOnly><AdminDashboardPage section="backup" /></RequirePermission>} />
             </Route>

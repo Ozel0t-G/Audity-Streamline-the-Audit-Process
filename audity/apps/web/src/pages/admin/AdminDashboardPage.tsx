@@ -612,7 +612,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 </span>
               ) : null}
             </div>
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
               <div className="overflow-hidden rounded-audity border border-audity-border">
                 <table className="w-full border-collapse text-sm">
                   <thead className="bg-audity-tableHeader text-xs uppercase text-audity-muted">
@@ -801,7 +801,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </section>
           ) : null}
           {section === "email" ? (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">SMTP Configuration</h2>
                 <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveEmailSettings(event)}>
@@ -890,7 +890,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       detail={`${formatBytes(systemMonitor.snapshot.storageUsedBytes)} / ${formatBytes(systemMonitor.snapshot.storageTotalBytes)}`}
                     />
                   </div>
-                  <div className="mt-4 grid gap-4 xl:grid-cols-[360px_1fr]">
+                  <div className="mt-4 grid min-w-0 gap-4 2xl:grid-cols-[340px_minmax(0,1fr)]">
                     <div className="rounded-audity border border-audity-border bg-audity-page p-3">
                       <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">System Problems</p>
                       {systemMonitor.snapshot.issues.length ? (
@@ -932,7 +932,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </div>
           ) : null}
           {section === "backup" ? (
-            <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
+            <div className="grid min-w-0 gap-4 2xl:grid-cols-[360px_minmax(0,1fr)]">
               <div className="space-y-4">
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                   <h2 className="mb-4 text-lg font-semibold">Manual Backup</h2>

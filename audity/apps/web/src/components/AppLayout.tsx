@@ -429,8 +429,8 @@ export function AppLayout() {
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
       <TopBar />
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-5">
+      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[260px_minmax(0,1fr)]">
+        <aside className="border-r border-audity-border bg-audity-sidebar p-4 2xl:p-5">
           <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">{t("Workspace")}</p>
           <nav className="space-y-1">
             <NavLink className={navClass} to="/dashboard">{t("Dashboard")}</NavLink>
@@ -443,7 +443,7 @@ export function AppLayout() {
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>{t("Evidence & Reports")}</NavLink> : <span className={assessmentClass}>{t("Evidence & Reports")}</span>}
           </nav>
         </aside>
-        <section className="bg-audity-page p-5">
+        <section className="min-w-0 overflow-hidden bg-audity-page p-4 2xl:p-5">
           <Outlet />
         </section>
       </div>
@@ -461,8 +461,8 @@ export function AdminLayout() {
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
       <TopBar adminMode />
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-5">
+      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[260px_minmax(0,1fr)]">
+        <aside className="border-r border-audity-border bg-audity-sidebar p-4 2xl:p-5">
           <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">{t("Admin Panel")}</p>
           <nav className="space-y-1">
             {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">{t("Activity Log")}</NavLink> : null}
@@ -471,6 +471,7 @@ export function AdminLayout() {
             {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">{t("Framework Library")}</NavLink> : null}
             {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">{t("Branding")}</NavLink> : null}
             {can("email.manage") ? <NavLink className={navClass} to="/admin/email">{t("Email Settings")}</NavLink> : null}
+            {can("connectors.manage") ? <NavLink className={navClass} to="/admin/connectors">{t("Connector")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">{t("System")}</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">{t("Backup")}</NavLink> : null}
             <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
@@ -482,7 +483,7 @@ export function AdminLayout() {
             {t("Leave Admin Panel")}
           </Link>
         </aside>
-        <section className="bg-audity-page p-5">
+        <section className="min-w-0 overflow-hidden bg-audity-page p-4 2xl:p-5">
           <Outlet />
         </section>
       </div>

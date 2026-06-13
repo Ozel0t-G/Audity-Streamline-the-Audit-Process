@@ -142,8 +142,8 @@ export function FrameworkLibraryPage() {
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           {success ? <div className="mb-4 rounded-audity border border-audity-success bg-[#14241D] px-3 py-2 text-sm text-audity-success">{success}</div> : null}
-          <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)_360px]">
-            <section className="overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)_340px]">
+            <section className="min-w-0 overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-4 py-3">
                 <h2 className="text-lg font-semibold">Catalog</h2>
                 <input className="mt-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Search frameworks" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
@@ -167,7 +167,7 @@ export function FrameworkLibraryPage() {
                 ))}
               </div>
             </section>
-            <section className="rounded-audity border border-audity-border bg-audity-panel">
+            <section className="min-w-0 rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-4 py-3">
                 <h2 className="text-lg font-semibold">{selected?.name ?? "Framework"}</h2>
                 <p className="mt-1 text-sm text-audity-secondary">{selected?.sourceType} · {selected?.licenseStatus}</p>
@@ -197,7 +197,7 @@ export function FrameworkLibraryPage() {
               </div>
             </section>
             {canImportFramework ? (
-            <form onSubmit={importFramework} className="rounded-audity border border-audity-border bg-audity-panel p-4">
+            <form onSubmit={importFramework} className="min-w-0 rounded-audity border border-audity-border bg-audity-panel p-4 xl:col-span-2 2xl:col-span-1">
               <h2 className="mb-4 text-lg font-semibold">Publish Framework</h2>
               <button type="button" className="mb-3 h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={downloadQuestionnaireTemplate}>
                 Questionnaire CSV Template
