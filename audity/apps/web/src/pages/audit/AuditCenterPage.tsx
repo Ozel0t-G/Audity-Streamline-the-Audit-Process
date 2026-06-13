@@ -1,0 +1,1311 @@
+import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useParams } from "react-router-dom";
+import { useApi } from "../../api/client";
+import { useAuth } from "../../auth/AuthProvider";
+
+type AnyRecord = Record<string, unknown>;
+
+type AuditControl = {
+  assessmentQuestionId: string;
+  questionId?: string | null;
+  question?: string | null;
+  domain?: string | null;
+  controlCode?: string | null;
+  controlTitle?: string | null;
+  score?: number | null;
+  answerState?: string | null;
+  evidenceStatus?: string | null;
+  confidenceLevel?: string | null;
+  applicability?: string | null;
+  applicabilityReason?: string | null;
+  controlOwner?: string | null;
+  reviewer?: string | null;
+  reviewStatus?: string | null;
+  controlCriticality?: string | null;
+  maturityJustification?: string | null;
+  evidenceQualityScore?: number | null;
+  readinessStatus?: string | null;
+  signoffStatus?: string | null;
+  mappedEvidence?: number | null;
+  contradiction?: boolean;
+};
+
+type AuditOverview = {
+  assessment: AnyRecord;
+  plan: AnyRecord;
+  scopeItems: AnyRecord[];
+  controls: AuditControl[];
+  evidenceItems: AnyRecord[];
+  evidenceMappings: AnyRecord[];
+  evidenceRequests: AnyRecord[];
+  findings: AnyRecord[];
+  risks: AnyRecord[];
+  interviews: AnyRecord[];
+  samples: AnyRecord[];
+  reportReviews: AnyRecord[];
+  signoffs: AnyRecord[];
+  history: AnyRecord[];
+  statementOfApplicability: AnyRecord[];
+  gaps: AnyRecord[];
+  contradictions: AuditControl[];
+  readinessScore: number;
+  executiveSummary: string;
+  featureCoverage: string[];
+};
+
+type Template = {
+  id: string;
+  name: string;
+  description?: string;
+  programType?: string;
+};
+
+const tabs = [
+  "Overview",
+  "Scope & Plan",
+  "Controls & Evidence",
+  "Findings & Remediation",
+  "Audit Work",
+  "Report & Sign-off",
+  "Gaps & Pack"
+];
+
+const scopeTypes = ["system", "process", "supplier", "data_type", "location", "regulation", "other"];
+const criticalities = ["low", "medium", "high", "critical"];
+const reviewStatuses = ["draft", "ready_for_review", "changes_requested", "approved"];
+const readinessStatuses = ["not_ready", "in_progress", "ready", "blocked"];
+const lifecycleStatuses = ["draft", "confirmed", "agreed", "remediation_planned", "remediated", "verified", "closed"];
+const responseStatuses = ["pending", "accepted", "remediation_planned", "rejected"];
+const remediationStatuses = ["not_started", "planned", "in_progress", "implemented", "blocked"];
+const retestStatuses = ["not_ready", "ready", "passed", "failed"];
+const requestStatuses = ["open", "requested", "received", "validated", "closed", "cancelled"];
+const reportStatuses = ["draft", "internal_review", "customer_review", "final", "approved"];
+
+const emptyOverview: AuditOverview = {
+  assessment: {},
+  plan: {},
+  scopeItems: [],
+  controls: [],
+  evidenceItems: [],
+  evidenceMappings: [],
+  evidenceRequests: [],
+  findings: [],
+  risks: [],
+  interviews: [],
+  samples: [],
+  reportReviews: [],
+  signoffs: [],
+  history: [],
+  statementOfApplicability: [],
+  gaps: [],
+  contradictions: [],
+  readinessScore: 0,
+  executiveSummary: "",
+  featureCoverage: []
+};
+
+function text(value: unknown, fallback = "") {
+  if (value === null || value === undefined) return fallback;
+  return String(value);
+}
+
+function numberValue(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function dateValue(value: unknown) {
+  return text(value).slice(0, 10);
+}
+
+function label(value: unknown) {
+  return text(value, "-").replace(/_/g, " ");
+}
+
+function toneClass(value: string | null | undefined) {
+  if (["critical", "blocked", "rejected", "failed"].includes(String(value))) return "border-audity-error text-audity-error";
+  if (["high", "changes_requested", "ready", "ready_for_review", "received", "validated"].includes(String(value))) return "border-audity-warning text-audity-warning";
+  if (["approved", "signed", "closed", "passed", "final"].includes(String(value))) return "border-audity-success text-audity-success";
+  return "border-audity-borderStrong text-audity-secondary";
+}
+
+function Field({
+  label,
+  children,
+  wide
+}: {
+  label: string;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <label className={`block ${wide ? "sm:col-span-2" : ""}`}>
+      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-audity-muted">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Pill({ value }: { value: unknown }) {
+  return (
+    <span className={`inline-flex rounded-audity border px-2 py-0.5 text-[11px] font-semibold capitalize ${toneClass(text(value))}`}>
+      {label(value)}
+    </span>
+  );
+}
+
+function Panel({
+  title,
+  subtitle,
+  action,
+  children
+}: {
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-audity border border-audity-border bg-audity-panel">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-audity-border px-4 py-3">
+        <div>
+          <h2 className="text-base font-semibold text-audity-text">{title}</h2>
+          {subtitle ? <p className="mt-1 text-sm text-audity-muted">{subtitle}</p> : null}
+        </div>
+        {action}
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+      <p className="text-[11px] font-semibold uppercase text-audity-muted">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-audity-text">{value}</p>
+    </div>
+  );
+}
+
+export function AuditCenterPage() {
+  const { id } = useParams();
+  const api = useApi();
+  const { user } = useAuth();
+  const canEdit = Boolean(user?.permissions.includes("assessment.edit"));
+  const canApprove = Boolean(user?.permissions.includes("finding.approve"));
+  const canReport = Boolean(user?.permissions.includes("report.export"));
+  const [activeTab, setActiveTab] = useState(tabs[0]);
+  const [overview, setOverview] = useState<AuditOverview>(emptyOverview);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedControlId, setSelectedControlId] = useState("");
+  const [selectedFindingId, setSelectedFindingId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState("");
+
+  const [planForm, setPlanForm] = useState({
+    programTemplateId: "",
+    currentPhase: "Preparation",
+    kickoffAt: "",
+    fieldworkStart: "",
+    fieldworkEnd: "",
+    reportDueDate: "",
+    closureDueDate: "",
+    auditOwner: "",
+    reviewer: "",
+    readinessTarget: 85
+  });
+  const [scopeForm, setScopeForm] = useState({
+    itemType: "system",
+    name: "",
+    description: "",
+    inScope: true,
+    criticality: "medium",
+    rationale: ""
+  });
+  const [controlForm, setControlForm] = useState({
+    applicability: "applicable",
+    applicabilityReason: "",
+    controlOwner: "",
+    reviewer: "",
+    reviewStatus: "draft",
+    controlCriticality: "medium",
+    maturityJustification: "",
+    evidenceQualityScore: 0,
+    readinessStatus: "not_ready"
+  });
+  const [mappingForm, setMappingForm] = useState({
+    evidenceId: "",
+    assessmentQuestionId: "",
+    mappingType: "supports_control",
+    qualityRelevance: 3,
+    qualityCompleteness: 3,
+    qualityFreshness: 3,
+    qualityTrust: 3,
+    notes: ""
+  });
+  const [requestForm, setRequestForm] = useState({
+    assessmentQuestionId: "",
+    title: "",
+    description: "",
+    owner: "",
+    dueDate: "",
+    status: "requested",
+    portalVisibility: "customer"
+  });
+  const [findingForm, setFindingForm] = useState({
+    lifecycleStatus: "draft",
+    severityImpact: 3,
+    severityLikelihood: 3,
+    controlCriticality: "medium",
+    evidenceConfidence: "medium",
+    managementResponseStatus: "pending",
+    managementResponse: "",
+    managementOwner: "",
+    remediationStatus: "not_started",
+    remediationOwner: "",
+    remediationDueDate: "",
+    retestStatus: "not_ready",
+    retestNotes: "",
+    retestEvidenceId: ""
+  });
+  const [interviewForm, setInterviewForm] = useState({
+    title: "",
+    participants: "",
+    interviewAt: "",
+    notes: "",
+    linkedQuestionId: "",
+    followUp: "",
+    status: "planned"
+  });
+  const [sampleForm, setSampleForm] = useState({
+    name: "",
+    populationDescription: "",
+    populationSize: 0,
+    sampleSize: 0,
+    selectionMethod: "judgmental",
+    selectedItems: "",
+    resultSummary: "",
+    status: "planned"
+  });
+  const [reportForm, setReportForm] = useState({
+    status: "draft",
+    reviewer: "",
+    customerReviewer: "",
+    summary: "",
+    dueDate: ""
+  });
+  const [signoffForm, setSignoffForm] = useState({
+    entityType: "assessment",
+    entityId: "",
+    statement: "I reviewed the audit record and approve this sign-off.",
+    signerName: user?.email ?? ""
+  });
+
+  const selectedControl = useMemo(
+    () => overview.controls.find((control) => control.assessmentQuestionId === selectedControlId) ?? overview.controls[0],
+    [overview.controls, selectedControlId]
+  );
+  const selectedFinding = useMemo(
+    () => overview.findings.find((finding) => text(finding.id) === selectedFindingId) ?? overview.findings[0],
+    [overview.findings, selectedFindingId]
+  );
+
+  const mappingsForSelectedControl = useMemo(() => {
+    if (!selectedControl) return [];
+    return overview.evidenceMappings.filter((mapping) => text(mapping.assessmentQuestionId) === selectedControl.assessmentQuestionId);
+  }, [overview.evidenceMappings, selectedControl]);
+
+  const signoffsForSelectedControl = useMemo(() => {
+    if (!selectedControl) return [];
+    return overview.signoffs.filter((signoff) => text(signoff.entityType) === "control" && text(signoff.entityId) === selectedControl.assessmentQuestionId);
+  }, [overview.signoffs, selectedControl]);
+
+  async function load() {
+    if (!id) return;
+    setError("");
+    try {
+      const [overviewPayload, templatePayload] = await Promise.all([
+        api<AuditOverview>(`/api/assessments/${id}/audit-center`),
+        api<{ templates: Template[] }>("/api/audit-program-templates")
+      ]);
+      setOverview(overviewPayload);
+      setTemplates(templatePayload.templates);
+      if (!selectedControlId && overviewPayload.controls[0]) {
+        setSelectedControlId(overviewPayload.controls[0].assessmentQuestionId);
+      }
+      if (!selectedFindingId && overviewPayload.findings[0]) {
+        setSelectedFindingId(text(overviewPayload.findings[0].id));
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Audit Center could not be loaded");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, [id]);
+
+  useEffect(() => {
+    const plan = overview.plan ?? {};
+    setPlanForm({
+      programTemplateId: text(plan.programTemplateId),
+      currentPhase: text(plan.currentPhase, "Preparation"),
+      kickoffAt: dateValue(plan.kickoffAt),
+      fieldworkStart: dateValue(plan.fieldworkStart),
+      fieldworkEnd: dateValue(plan.fieldworkEnd),
+      reportDueDate: dateValue(plan.reportDueDate),
+      closureDueDate: dateValue(plan.closureDueDate),
+      auditOwner: text(plan.auditOwner),
+      reviewer: text(plan.reviewer),
+      readinessTarget: numberValue(plan.readinessTarget, 85)
+    });
+  }, [overview.plan]);
+
+  useEffect(() => {
+    if (!selectedControl) return;
+    setControlForm({
+      applicability: text(selectedControl.applicability, "applicable"),
+      applicabilityReason: text(selectedControl.applicabilityReason),
+      controlOwner: text(selectedControl.controlOwner),
+      reviewer: text(selectedControl.reviewer),
+      reviewStatus: text(selectedControl.reviewStatus, "draft"),
+      controlCriticality: text(selectedControl.controlCriticality, "medium"),
+      maturityJustification: text(selectedControl.maturityJustification),
+      evidenceQualityScore: numberValue(selectedControl.evidenceQualityScore, 0),
+      readinessStatus: text(selectedControl.readinessStatus, "not_ready")
+    });
+    setMappingForm((current) => ({
+      ...current,
+      assessmentQuestionId: selectedControl.assessmentQuestionId
+    }));
+    setRequestForm((current) => ({
+      ...current,
+      assessmentQuestionId: selectedControl.assessmentQuestionId,
+      title: current.title || `Evidence for ${selectedControl.controlCode ?? selectedControl.questionId ?? "control"}`
+    }));
+  }, [selectedControl]);
+
+  useEffect(() => {
+    if (!selectedFinding) return;
+    setFindingForm({
+      lifecycleStatus: text(selectedFinding.lifecycleStatus, "draft"),
+      severityImpact: numberValue(selectedFinding.severityImpact, 3),
+      severityLikelihood: numberValue(selectedFinding.severityLikelihood, 3),
+      controlCriticality: text(selectedFinding.controlCriticality, "medium"),
+      evidenceConfidence: text(selectedFinding.evidenceConfidence, "medium"),
+      managementResponseStatus: text(selectedFinding.managementResponseStatus, "pending"),
+      managementResponse: text(selectedFinding.managementResponse),
+      managementOwner: text(selectedFinding.managementOwner),
+      remediationStatus: text(selectedFinding.remediationStatus, "not_started"),
+      remediationOwner: text(selectedFinding.remediationOwner),
+      remediationDueDate: dateValue(selectedFinding.remediationDueDate),
+      retestStatus: text(selectedFinding.retestStatus, "not_ready"),
+      retestNotes: text(selectedFinding.retestNotes),
+      retestEvidenceId: text(selectedFinding.retestEvidenceId)
+    });
+  }, [selectedFinding]);
+
+  function flash(message: string) {
+    setSaved(message);
+    window.setTimeout(() => setSaved(""), 3000);
+  }
+
+  async function submit(event: FormEvent, action: () => Promise<void>) {
+    event.preventDefault();
+    setError("");
+    try {
+      await action();
+      await load();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Action failed");
+    }
+  }
+
+  async function savePlan() {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/plan`, {
+      method: "PUT",
+      body: JSON.stringify({
+        ...planForm,
+        programTemplateId: planForm.programTemplateId || null,
+        kickoffAt: planForm.kickoffAt || null,
+        fieldworkStart: planForm.fieldworkStart || null,
+        fieldworkEnd: planForm.fieldworkEnd || null,
+        reportDueDate: planForm.reportDueDate || null,
+        closureDueDate: planForm.closureDueDate || null,
+        readinessTarget: Number(planForm.readinessTarget)
+      })
+    });
+    flash("Audit plan saved");
+  }
+
+  async function addScope() {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/scope`, {
+      method: "POST",
+      body: JSON.stringify(scopeForm)
+    });
+    setScopeForm((current) => ({ ...current, name: "", description: "", rationale: "" }));
+    flash("Scope item added");
+  }
+
+  async function toggleScope(item: AnyRecord) {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/scope/${text(item.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ inScope: !Boolean(item.inScope) })
+    });
+    flash("Scope updated");
+    await load();
+  }
+
+  async function deleteScope(item: AnyRecord) {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/scope/${text(item.id)}`, { method: "DELETE" });
+    flash("Scope item deleted");
+    await load();
+  }
+
+  async function saveControl() {
+    if (!id || !selectedControl) return;
+    await api(`/api/assessments/${id}/audit-center/controls/${selectedControl.assessmentQuestionId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        ...controlForm,
+        evidenceQualityScore: Number(controlForm.evidenceQualityScore)
+      })
+    });
+    flash("Control review saved");
+  }
+
+  async function createEvidenceRequest() {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/evidence-requests`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...requestForm,
+        assessmentQuestionId: requestForm.assessmentQuestionId || null,
+        dueDate: requestForm.dueDate || null
+      })
+    });
+    setRequestForm((current) => ({ ...current, title: "", description: "" }));
+    flash("Evidence request created");
+  }
+
+  async function updateEvidenceRequestStatus(item: AnyRecord, status: string) {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/evidence-requests/${text(item.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    });
+    flash("Evidence request updated");
+    await load();
+  }
+
+  async function createEvidenceMapping() {
+    if (!id) return;
+    if (!mappingForm.evidenceId) throw new Error("Select an evidence item first");
+    await api(`/api/assessments/${id}/audit-center/evidence-mappings`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...mappingForm,
+        assessmentQuestionId: mappingForm.assessmentQuestionId || null,
+        qualityRelevance: Number(mappingForm.qualityRelevance),
+        qualityCompleteness: Number(mappingForm.qualityCompleteness),
+        qualityFreshness: Number(mappingForm.qualityFreshness),
+        qualityTrust: Number(mappingForm.qualityTrust)
+      })
+    });
+    flash("Evidence mapped to control");
+  }
+
+  async function deleteEvidenceMapping(mapping: AnyRecord) {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/evidence-mappings/${text(mapping.id)}`, { method: "DELETE" });
+    flash("Evidence mapping removed");
+    await load();
+  }
+
+  async function updateFinding() {
+    if (!id || !selectedFinding) return;
+    await api(`/api/assessments/${id}/audit-center/findings/${text(selectedFinding.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        ...findingForm,
+        severityImpact: Number(findingForm.severityImpact),
+        severityLikelihood: Number(findingForm.severityLikelihood),
+        remediationDueDate: findingForm.remediationDueDate || null,
+        retestEvidenceId: findingForm.retestEvidenceId || null
+      })
+    });
+    flash("Finding audit workflow saved");
+  }
+
+  async function createInterview() {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/interviews`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...interviewForm,
+        interviewAt: interviewForm.interviewAt || null,
+        linkedQuestionId: interviewForm.linkedQuestionId || null
+      })
+    });
+    setInterviewForm((current) => ({ ...current, title: "", notes: "", followUp: "" }));
+    flash("Interview note saved");
+  }
+
+  async function createSample() {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/samples`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...sampleForm,
+        populationSize: Number(sampleForm.populationSize),
+        sampleSize: Number(sampleForm.sampleSize),
+        selectedItems: sampleForm.selectedItems.split("\n").map((item) => item.trim()).filter(Boolean)
+      })
+    });
+    setSampleForm((current) => ({ ...current, name: "", selectedItems: "", resultSummary: "" }));
+    flash("Sample saved");
+  }
+
+  async function createReportReview() {
+    if (!id) return;
+    await api(`/api/assessments/${id}/audit-center/report-reviews`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...reportForm,
+        dueDate: reportForm.dueDate || null
+      })
+    });
+    setReportForm((current) => ({ ...current, summary: "" }));
+    flash("Report review step saved");
+  }
+
+  async function createSignoff() {
+    if (!id) return;
+    const entityId =
+      signoffForm.entityType === "control"
+        ? selectedControl?.assessmentQuestionId
+        : signoffForm.entityType === "finding"
+          ? text(selectedFinding?.id)
+          : id;
+    await api(`/api/assessments/${id}/audit-center/signoffs`, {
+      method: "POST",
+      body: JSON.stringify({
+        ...signoffForm,
+        entityId: signoffForm.entityId || entityId || id
+      })
+    });
+    flash("Sign-off recorded");
+  }
+
+  async function downloadEvidencePack() {
+    if (!id) return;
+    setError("");
+    try {
+      const payload = await api<{ pack: AnyRecord }>(`/api/assessments/${id}/audit-center/evidence-pack`);
+      const blob = new Blob([JSON.stringify(payload.pack, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `audity-evidence-pack-${id}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      flash("Evidence pack generated");
+    } catch (packError) {
+      setError(packError instanceof Error ? packError.message : "Evidence pack failed");
+    }
+  }
+
+  const scoreTone = overview.readinessScore >= 75 ? "bg-audity-success" : overview.readinessScore >= 45 ? "bg-audity-warning" : "bg-audity-error";
+  const selectedTemplate = templates.find((template) => template.id === planForm.programTemplateId);
+
+  if (loading) {
+    return <div className="rounded-audity border border-audity-border bg-audity-panel p-4 text-sm text-audity-muted">Loading Audit Center...</div>;
+  }
+
+  return (
+    <div className="h-[calc(100vh-76px)] min-w-0 overflow-y-auto pr-1">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-audity-primary">Audit Center</p>
+          <h1 className="mt-1 text-2xl font-semibold text-audity-text">{text(overview.assessment.name, "Assessment audit workspace")}</h1>
+          <p className="mt-1 text-sm text-audity-muted">{text(overview.assessment.customerName)} · {text(overview.assessment.framework)}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {saved ? <span className="rounded-audity border border-audity-success px-3 py-1.5 text-sm text-audity-success">{saved}</span> : null}
+          <button className="audity-btn-secondary" type="button" onClick={() => void load()}>Refresh</button>
+        </div>
+      </div>
+
+      {error ? <div className="mb-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
+
+      <div className="mb-4 overflow-x-auto border-b border-audity-border">
+        <div className="flex min-w-max gap-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              className={`rounded-t-audity px-3 py-2 text-sm font-semibold ${activeTab === tab ? "bg-audity-primary text-white" : "text-audity-secondary hover:bg-audity-panel hover:text-audity-text"}`}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab === "Overview" ? (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <MiniStat label="Readiness" value={`${overview.readinessScore}%`} />
+            <MiniStat label="Controls" value={overview.controls.length} />
+            <MiniStat label="Open gaps" value={overview.gaps.length} />
+            <MiniStat label="Open findings" value={overview.findings.filter((finding) => !["closed", "verified"].includes(text(finding.lifecycleStatus, "draft"))).length} />
+          </div>
+          <Panel title="Executive Summary" subtitle="Generated from control reviews, evidence mappings, findings, and report status.">
+            <div className="mb-4 h-2 rounded-full bg-audity-page">
+              <div className={`h-2 rounded-full ${scoreTone}`} style={{ width: `${overview.readinessScore}%` }} />
+            </div>
+            <p className="text-sm leading-6 text-audity-secondary">{overview.executiveSummary}</p>
+          </Panel>
+          <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <Panel title="Audit Feature Coverage" subtitle="Implemented audit building blocks available in this workspace.">
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {overview.featureCoverage.map((feature, index) => (
+                  <div key={feature} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm">
+                    <span className="mr-2 text-xs font-semibold text-audity-primary">{index + 1}</span>
+                    {feature}
+                  </div>
+                ))}
+              </div>
+            </Panel>
+            <Panel title="Contradiction Detection" subtitle="Controls that look mature but still miss mapped or received evidence.">
+              <div className="space-y-2">
+                {overview.contradictions.slice(0, 8).map((control) => (
+                  <button
+                    key={control.assessmentQuestionId}
+                    className="w-full rounded-audity border border-audity-warning/70 bg-audity-page px-3 py-2 text-left text-sm hover:border-audity-warning"
+                    type="button"
+                    onClick={() => {
+                      setSelectedControlId(control.assessmentQuestionId);
+                      setActiveTab("Controls & Evidence");
+                    }}
+                  >
+                    <span className="block font-semibold text-audity-warning">{control.controlCode ?? control.questionId}</span>
+                    <span className="text-audity-secondary">{control.controlTitle ?? control.question}</span>
+                  </button>
+                ))}
+                {!overview.contradictions.length ? <p className="text-sm text-audity-muted">No contradictions detected.</p> : null}
+              </div>
+            </Panel>
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === "Scope & Plan" ? (
+        <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <Panel title="Audit Planning" subtitle="Select a program template and maintain the audit calendar.">
+            <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => void submit(event, savePlan)}>
+              <Field label="Program template" wide>
+                <select className="audity-input" value={planForm.programTemplateId} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, programTemplateId: event.target.value })}>
+                  <option value="">No template selected</option>
+                  {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
+                </select>
+              </Field>
+              {selectedTemplate ? <p className="sm:col-span-2 text-sm text-audity-muted">{selectedTemplate.description}</p> : null}
+              <Field label="Current phase">
+                <input className="audity-input" value={planForm.currentPhase} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, currentPhase: event.target.value })} />
+              </Field>
+              <Field label="Readiness target">
+                <input className="audity-input" type="number" min={1} max={100} value={planForm.readinessTarget} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, readinessTarget: Number(event.target.value) })} />
+              </Field>
+              <Field label="Audit owner">
+                <input className="audity-input" value={planForm.auditOwner} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, auditOwner: event.target.value })} />
+              </Field>
+              <Field label="Reviewer">
+                <input className="audity-input" value={planForm.reviewer} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, reviewer: event.target.value })} />
+              </Field>
+              <Field label="Kickoff">
+                <input className="audity-input" type="date" value={planForm.kickoffAt} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, kickoffAt: event.target.value })} />
+              </Field>
+              <Field label="Fieldwork start">
+                <input className="audity-input" type="date" value={planForm.fieldworkStart} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, fieldworkStart: event.target.value })} />
+              </Field>
+              <Field label="Fieldwork end">
+                <input className="audity-input" type="date" value={planForm.fieldworkEnd} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, fieldworkEnd: event.target.value })} />
+              </Field>
+              <Field label="Report due">
+                <input className="audity-input" type="date" value={planForm.reportDueDate} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, reportDueDate: event.target.value })} />
+              </Field>
+              <Field label="Closure due">
+                <input className="audity-input" type="date" value={planForm.closureDueDate} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, closureDueDate: event.target.value })} />
+              </Field>
+              <div className="sm:col-span-2">
+                <button className="audity-btn-primary" type="submit" disabled={!canEdit}>Save plan</button>
+              </div>
+            </form>
+          </Panel>
+
+          <Panel title="Audit Scope Builder" subtitle="Add in-scope and out-of-scope systems, processes, suppliers, and regulations.">
+            <form className="mb-4 grid gap-3 sm:grid-cols-2" onSubmit={(event) => void submit(event, addScope)}>
+              <Field label="Type">
+                <select className="audity-input" value={scopeForm.itemType} disabled={!canEdit} onChange={(event) => setScopeForm({ ...scopeForm, itemType: event.target.value })}>
+                  {scopeTypes.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+                </select>
+              </Field>
+              <Field label="Criticality">
+                <select className="audity-input" value={scopeForm.criticality} disabled={!canEdit} onChange={(event) => setScopeForm({ ...scopeForm, criticality: event.target.value })}>
+                  {criticalities.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+                </select>
+              </Field>
+              <Field label="Name" wide>
+                <input className="audity-input" value={scopeForm.name} disabled={!canEdit} required onChange={(event) => setScopeForm({ ...scopeForm, name: event.target.value })} />
+              </Field>
+              <Field label="Description" wide>
+                <textarea className="audity-input min-h-20" value={scopeForm.description} disabled={!canEdit} onChange={(event) => setScopeForm({ ...scopeForm, description: event.target.value })} />
+              </Field>
+              <Field label="Rationale" wide>
+                <textarea className="audity-input min-h-20" value={scopeForm.rationale} disabled={!canEdit} onChange={(event) => setScopeForm({ ...scopeForm, rationale: event.target.value })} />
+              </Field>
+              <label className="flex items-center gap-2 text-sm text-audity-secondary">
+                <input type="checkbox" checked={scopeForm.inScope} disabled={!canEdit} onChange={(event) => setScopeForm({ ...scopeForm, inScope: event.target.checked })} />
+                In scope
+              </label>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Add scope item</button>
+            </form>
+            <div className="max-h-[430px] space-y-2 overflow-y-auto pr-1">
+              {overview.scopeItems.map((item) => (
+                <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">{text(item.name)}</p>
+                      <p className="text-xs text-audity-muted">{label(item.itemType)} · {label(item.criticality)}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="audity-btn-secondary px-2 py-1 text-xs" type="button" disabled={!canEdit} onClick={() => void toggleScope(item)}>{item.inScope ? "Move out" : "Move in"}</button>
+                      <button className="audity-btn-secondary px-2 py-1 text-xs" type="button" disabled={!canEdit} onClick={() => void deleteScope(item)}>Delete</button>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm text-audity-secondary">{text(item.description, "No description")}</p>
+                </div>
+              ))}
+              {!overview.scopeItems.length ? <p className="text-sm text-audity-muted">No scope items yet.</p> : null}
+            </div>
+          </Panel>
+        </div>
+      ) : null}
+
+      {activeTab === "Controls & Evidence" ? (
+        <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)]">
+          <Panel title="Controls" subtitle="Select a control and review it.">
+            <div className="max-h-[calc(100vh-230px)] space-y-2 overflow-y-auto pr-1">
+              {overview.controls.map((control) => (
+                <button
+                  key={control.assessmentQuestionId}
+                  className={`w-full rounded-audity border px-3 py-2 text-left hover:border-audity-primary ${selectedControl?.assessmentQuestionId === control.assessmentQuestionId ? "border-audity-primary bg-audity-primaryActive/20" : "border-audity-border bg-audity-page"}`}
+                  type="button"
+                  onClick={() => setSelectedControlId(control.assessmentQuestionId)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs font-semibold text-audity-primary">{control.controlCode ?? control.questionId}</span>
+                    {control.contradiction ? <span className="text-[11px] font-semibold text-audity-warning">Check</span> : null}
+                  </div>
+                  <p className="mt-1 text-sm font-semibold">{control.controlTitle ?? control.question}</p>
+                  <p className="mt-1 text-xs text-audity-muted">{label(control.reviewStatus)} · evidence {control.mappedEvidence ?? 0}</p>
+                </button>
+              ))}
+            </div>
+          </Panel>
+
+          <div className="space-y-4">
+            <Panel title={selectedControl ? text(selectedControl.controlTitle ?? selectedControl.question, "Control review") : "Control review"} subtitle={selectedControl ? `${selectedControl.controlCode ?? selectedControl.questionId ?? "Control"} · ${text(selectedControl.domain, "No domain")}` : undefined}>
+              {selectedControl ? (
+                <form className="grid gap-3 lg:grid-cols-2" onSubmit={(event) => void submit(event, saveControl)}>
+                  <Field label="Applicability">
+                    <select className="audity-input" value={controlForm.applicability} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, applicability: event.target.value })}>
+                      <option value="applicable">Applicable</option>
+                      <option value="partially_applicable">Partially applicable</option>
+                      <option value="not_applicable">Not applicable</option>
+                    </select>
+                  </Field>
+                  <Field label="Review status">
+                    <select className="audity-input" value={controlForm.reviewStatus} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, reviewStatus: event.target.value })}>
+                      {reviewStatuses.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Owner">
+                    <input className="audity-input" value={controlForm.controlOwner} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, controlOwner: event.target.value })} />
+                  </Field>
+                  <Field label="Reviewer">
+                    <input className="audity-input" value={controlForm.reviewer} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, reviewer: event.target.value })} />
+                  </Field>
+                  <Field label="Control criticality">
+                    <select className="audity-input" value={controlForm.controlCriticality} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, controlCriticality: event.target.value })}>
+                      {criticalities.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Readiness status">
+                    <select className="audity-input" value={controlForm.readinessStatus} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, readinessStatus: event.target.value })}>
+                      {readinessStatuses.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Evidence quality score">
+                    <input className="audity-input" type="number" min={0} max={5} value={controlForm.evidenceQualityScore} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, evidenceQualityScore: Number(event.target.value) })} />
+                  </Field>
+                  <Field label="Applicability reason" wide>
+                    <textarea className="audity-input min-h-20" value={controlForm.applicabilityReason} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, applicabilityReason: event.target.value })} />
+                  </Field>
+                  <Field label="Maturity justification" wide>
+                    <textarea className="audity-input min-h-24" value={controlForm.maturityJustification} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, maturityJustification: event.target.value })} />
+                  </Field>
+                  <div className="flex flex-wrap items-center gap-2 lg:col-span-2">
+                    <button className="audity-btn-primary" type="submit" disabled={!canEdit}>Save control review</button>
+                    <Pill value={selectedControl.signoffStatus ?? "not_signed"} />
+                    <span className="text-sm text-audity-muted">{mappingsForSelectedControl.length} mapped evidence item(s)</span>
+                  </div>
+                </form>
+              ) : <p className="text-sm text-audity-muted">No control selected.</p>}
+            </Panel>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <Panel title="Evidence Mapping" subtitle="Link uploaded evidence to the selected control and rate its quality.">
+                <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => void submit(event, createEvidenceMapping)}>
+                  <Field label="Evidence item" wide>
+                    <select className="audity-input" value={mappingForm.evidenceId} disabled={!canEdit || !overview.evidenceItems.length} onChange={(event) => setMappingForm({ ...mappingForm, evidenceId: event.target.value })}>
+                      <option value="">Select evidence</option>
+                      {overview.evidenceItems.map((item) => <option key={text(item.id)} value={text(item.id)}>{text(item.fileName ?? item.title ?? item.id)}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Mapping type">
+                    <input className="audity-input" value={mappingForm.mappingType} disabled={!canEdit} onChange={(event) => setMappingForm({ ...mappingForm, mappingType: event.target.value })} />
+                  </Field>
+                  <Field label="Relevance">
+                    <input className="audity-input" type="number" min={1} max={5} value={mappingForm.qualityRelevance} disabled={!canEdit} onChange={(event) => setMappingForm({ ...mappingForm, qualityRelevance: Number(event.target.value) })} />
+                  </Field>
+                  <Field label="Completeness">
+                    <input className="audity-input" type="number" min={1} max={5} value={mappingForm.qualityCompleteness} disabled={!canEdit} onChange={(event) => setMappingForm({ ...mappingForm, qualityCompleteness: Number(event.target.value) })} />
+                  </Field>
+                  <Field label="Freshness">
+                    <input className="audity-input" type="number" min={1} max={5} value={mappingForm.qualityFreshness} disabled={!canEdit} onChange={(event) => setMappingForm({ ...mappingForm, qualityFreshness: Number(event.target.value) })} />
+                  </Field>
+                  <Field label="Trust">
+                    <input className="audity-input" type="number" min={1} max={5} value={mappingForm.qualityTrust} disabled={!canEdit} onChange={(event) => setMappingForm({ ...mappingForm, qualityTrust: Number(event.target.value) })} />
+                  </Field>
+                  <Field label="Notes" wide>
+                    <textarea className="audity-input min-h-20" value={mappingForm.notes} disabled={!canEdit} onChange={(event) => setMappingForm({ ...mappingForm, notes: event.target.value })} />
+                  </Field>
+                  <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit || !overview.evidenceItems.length}>Map evidence</button>
+                </form>
+                <div className="mt-4 space-y-2">
+                  {mappingsForSelectedControl.map((mapping) => (
+                    <div key={text(mapping.id)} className="flex items-center justify-between gap-2 rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm">
+                      <span>{text(overview.evidenceItems.find((item) => text(item.id) === text(mapping.evidenceId))?.fileName ?? mapping.evidenceId)}</span>
+                      <div className="flex items-center gap-2">
+                        <Pill value={`quality ${text(mapping.qualityScore, "0")}`} />
+                        <button className="audity-btn-secondary px-2 py-1 text-xs" type="button" disabled={!canEdit} onClick={() => void deleteEvidenceMapping(mapping)}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                  {!mappingsForSelectedControl.length ? <p className="text-sm text-audity-muted">No evidence is mapped to this control yet.</p> : null}
+                </div>
+              </Panel>
+
+              <Panel title="Evidence Request Portal" subtitle="Create customer-facing evidence requests and track request status.">
+                <form className="grid gap-3" onSubmit={(event) => void submit(event, createEvidenceRequest)}>
+                  <Field label="Title">
+                    <input className="audity-input" value={requestForm.title} disabled={!canEdit} required onChange={(event) => setRequestForm({ ...requestForm, title: event.target.value })} />
+                  </Field>
+                  <Field label="Owner">
+                    <input className="audity-input" value={requestForm.owner} disabled={!canEdit} onChange={(event) => setRequestForm({ ...requestForm, owner: event.target.value })} />
+                  </Field>
+                  <Field label="Due date">
+                    <input className="audity-input" type="date" value={requestForm.dueDate} disabled={!canEdit} onChange={(event) => setRequestForm({ ...requestForm, dueDate: event.target.value })} />
+                  </Field>
+                  <Field label="Description">
+                    <textarea className="audity-input min-h-20" value={requestForm.description} disabled={!canEdit} onChange={(event) => setRequestForm({ ...requestForm, description: event.target.value })} />
+                  </Field>
+                  <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Create request</button>
+                </form>
+                <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-1">
+                  {overview.evidenceRequests.map((item) => (
+                    <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">{text(item.title)}</p>
+                          <p className="text-xs text-audity-muted">{text(item.owner, "No owner")} · due {dateValue(item.dueDate) || "-"}</p>
+                        </div>
+                        <select className="audity-input w-36 py-1 text-xs" value={text(item.status, "open")} disabled={!canEdit} onChange={(event) => void updateEvidenceRequestStatus(item, event.target.value)}>
+                          {requestStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {!overview.evidenceRequests.length ? <p className="text-sm text-audity-muted">No evidence requests yet.</p> : null}
+                </div>
+              </Panel>
+            </div>
+
+            {selectedControl ? (
+              <Panel title="Selected Control Audit Trail" subtitle="Recent sign-offs and assessment activity for the selected control review.">
+                <div className="grid gap-3 xl:grid-cols-2">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold">Control sign-offs</h3>
+                    {signoffsForSelectedControl.map((item) => (
+                      <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm">
+                        <p className="font-semibold">{text(item.signerName)}</p>
+                        <p className="text-audity-secondary">{text(item.statement)}</p>
+                      </div>
+                    ))}
+                    {!signoffsForSelectedControl.length ? <p className="text-sm text-audity-muted">No control sign-off recorded.</p> : null}
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold">Recent audit activity</h3>
+                    {overview.history.slice(0, 8).map((event) => (
+                      <div key={text(event.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm">
+                        <p className="font-semibold text-audity-primary">{text(event.action)}</p>
+                        <p className="text-xs text-audity-muted">{text(event.createdAt)}</p>
+                      </div>
+                    ))}
+                    {!overview.history.length ? <p className="text-sm text-audity-muted">No audit activity recorded yet.</p> : null}
+                  </div>
+                </div>
+              </Panel>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === "Findings & Remediation" ? (
+        <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+          <Panel title="Finding Lifecycle" subtitle="Choose a finding to manage response, remediation, and re-test.">
+            <div className="max-h-[calc(100vh-230px)] space-y-2 overflow-y-auto pr-1">
+              {overview.findings.map((finding) => (
+                <button
+                  key={text(finding.id)}
+                  className={`w-full rounded-audity border px-3 py-2 text-left hover:border-audity-primary ${text(selectedFinding?.id) === text(finding.id) ? "border-audity-primary bg-audity-primaryActive/20" : "border-audity-border bg-audity-page"}`}
+                  type="button"
+                  onClick={() => setSelectedFindingId(text(finding.id))}
+                >
+                  <p className="text-sm font-semibold">{text(finding.title)}</p>
+                  <p className="mt-1 text-xs text-audity-muted">{label(finding.lifecycleStatus)} · {label(finding.calculatedSeverity ?? finding.priority)}</p>
+                </button>
+              ))}
+              {!overview.findings.length ? <p className="text-sm text-audity-muted">No findings created yet.</p> : null}
+            </div>
+          </Panel>
+
+          <Panel title={selectedFinding ? text(selectedFinding.title, "Finding workflow") : "Finding workflow"} subtitle="Severity matrix, management response, remediation tracking, and re-test workflow.">
+            {selectedFinding ? (
+              <form className="grid gap-3 lg:grid-cols-3" onSubmit={(event) => void submit(event, updateFinding)}>
+                <Field label="Lifecycle">
+                  <select className="audity-input" value={findingForm.lifecycleStatus} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, lifecycleStatus: event.target.value })}>
+                    {lifecycleStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}
+                  </select>
+                </Field>
+                <Field label="Impact">
+                  <input className="audity-input" type="number" min={1} max={5} value={findingForm.severityImpact} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, severityImpact: Number(event.target.value) })} />
+                </Field>
+                <Field label="Likelihood">
+                  <input className="audity-input" type="number" min={1} max={5} value={findingForm.severityLikelihood} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, severityLikelihood: Number(event.target.value) })} />
+                </Field>
+                <Field label="Control criticality">
+                  <select className="audity-input" value={findingForm.controlCriticality} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, controlCriticality: event.target.value })}>
+                    {criticalities.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+                  </select>
+                </Field>
+                <Field label="Evidence confidence">
+                  <select className="audity-input" value={findingForm.evidenceConfidence} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, evidenceConfidence: event.target.value })}>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </Field>
+                <Field label="Management response">
+                  <select className="audity-input" value={findingForm.managementResponseStatus} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, managementResponseStatus: event.target.value })}>
+                    {responseStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}
+                  </select>
+                </Field>
+                <Field label="Management owner">
+                  <input className="audity-input" value={findingForm.managementOwner} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, managementOwner: event.target.value })} />
+                </Field>
+                <Field label="Remediation status">
+                  <select className="audity-input" value={findingForm.remediationStatus} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, remediationStatus: event.target.value })}>
+                    {remediationStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}
+                  </select>
+                </Field>
+                <Field label="Remediation owner">
+                  <input className="audity-input" value={findingForm.remediationOwner} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, remediationOwner: event.target.value })} />
+                </Field>
+                <Field label="Remediation due">
+                  <input className="audity-input" type="date" value={findingForm.remediationDueDate} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, remediationDueDate: event.target.value })} />
+                </Field>
+                <Field label="Re-test status">
+                  <select className="audity-input" value={findingForm.retestStatus} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, retestStatus: event.target.value })}>
+                    {retestStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}
+                  </select>
+                </Field>
+                <Field label="Re-test evidence">
+                  <select className="audity-input" value={findingForm.retestEvidenceId} disabled={!canApprove || !overview.evidenceItems.length} onChange={(event) => setFindingForm({ ...findingForm, retestEvidenceId: event.target.value })}>
+                    <option value="">No evidence linked</option>
+                    {overview.evidenceItems.map((item) => <option key={text(item.id)} value={text(item.id)}>{text(item.fileName ?? item.title ?? item.id)}</option>)}
+                  </select>
+                </Field>
+                <Field label="Management response text" wide>
+                  <textarea className="audity-input min-h-24" value={findingForm.managementResponse} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, managementResponse: event.target.value })} />
+                </Field>
+                <Field label="Re-test notes">
+                  <textarea className="audity-input min-h-24" value={findingForm.retestNotes} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, retestNotes: event.target.value })} />
+                </Field>
+                <div className="flex flex-wrap items-center gap-2 lg:col-span-3">
+                  <button className="audity-btn-primary" type="submit" disabled={!canApprove}>Save finding workflow</button>
+                  <Pill value={selectedFinding.calculatedSeverity ?? selectedFinding.priority ?? "medium"} />
+                </div>
+              </form>
+            ) : <p className="text-sm text-audity-muted">No finding selected.</p>}
+          </Panel>
+        </div>
+      ) : null}
+
+      {activeTab === "Audit Work" ? (
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Panel title="Interview Notes" subtitle="Capture interview evidence, follow-ups, and linked controls.">
+            <form className="grid gap-3" onSubmit={(event) => void submit(event, createInterview)}>
+              <Field label="Title">
+                <input className="audity-input" value={interviewForm.title} disabled={!canEdit} required onChange={(event) => setInterviewForm({ ...interviewForm, title: event.target.value })} />
+              </Field>
+              <Field label="Participants">
+                <input className="audity-input" value={interviewForm.participants} disabled={!canEdit} onChange={(event) => setInterviewForm({ ...interviewForm, participants: event.target.value })} />
+              </Field>
+              <Field label="Interview date">
+                <input className="audity-input" type="datetime-local" value={interviewForm.interviewAt} disabled={!canEdit} onChange={(event) => setInterviewForm({ ...interviewForm, interviewAt: event.target.value })} />
+              </Field>
+              <Field label="Linked control">
+                <select className="audity-input" value={interviewForm.linkedQuestionId} disabled={!canEdit} onChange={(event) => setInterviewForm({ ...interviewForm, linkedQuestionId: event.target.value })}>
+                  <option value="">No linked control</option>
+                  {overview.controls.map((control) => <option key={control.assessmentQuestionId} value={control.assessmentQuestionId}>{control.controlCode ?? control.questionId} · {control.controlTitle ?? control.question}</option>)}
+                </select>
+              </Field>
+              <Field label="Notes">
+                <textarea className="audity-input min-h-28" value={interviewForm.notes} disabled={!canEdit} onChange={(event) => setInterviewForm({ ...interviewForm, notes: event.target.value })} />
+              </Field>
+              <Field label="Follow-up">
+                <textarea className="audity-input min-h-20" value={interviewForm.followUp} disabled={!canEdit} onChange={(event) => setInterviewForm({ ...interviewForm, followUp: event.target.value })} />
+              </Field>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Save interview</button>
+            </form>
+            <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-1">
+              {overview.interviews.map((item) => (
+                <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                  <p className="text-sm font-semibold">{text(item.title)}</p>
+                  <p className="text-xs text-audity-muted">{text(item.participants, "No participants")} · {label(item.status)}</p>
+                  <p className="mt-1 text-sm text-audity-secondary">{text(item.notes, "No notes")}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Audit Sampling" subtitle="Define test populations, selected samples, and result summaries.">
+            <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => void submit(event, createSample)}>
+              <Field label="Name" wide>
+                <input className="audity-input" value={sampleForm.name} disabled={!canEdit} required onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} />
+              </Field>
+              <Field label="Population size">
+                <input className="audity-input" type="number" min={0} value={sampleForm.populationSize} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, populationSize: Number(event.target.value) })} />
+              </Field>
+              <Field label="Sample size">
+                <input className="audity-input" type="number" min={0} value={sampleForm.sampleSize} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, sampleSize: Number(event.target.value) })} />
+              </Field>
+              <Field label="Selection method">
+                <select className="audity-input" value={sampleForm.selectionMethod} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, selectionMethod: event.target.value })}>
+                  <option value="random">Random</option>
+                  <option value="judgmental">Judgmental</option>
+                  <option value="risk_based">Risk based</option>
+                  <option value="systematic">Systematic</option>
+                </select>
+              </Field>
+              <Field label="Status">
+                <select className="audity-input" value={sampleForm.status} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, status: event.target.value })}>
+                  <option value="planned">Planned</option>
+                  <option value="selected">Selected</option>
+                  <option value="tested">Tested</option>
+                  <option value="exception_found">Exception found</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </Field>
+              <Field label="Population description" wide>
+                <textarea className="audity-input min-h-20" value={sampleForm.populationDescription} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, populationDescription: event.target.value })} />
+              </Field>
+              <Field label="Selected items" wide>
+                <textarea className="audity-input min-h-24" value={sampleForm.selectedItems} disabled={!canEdit} placeholder="One sample item per line" onChange={(event) => setSampleForm({ ...sampleForm, selectedItems: event.target.value })} />
+              </Field>
+              <Field label="Result summary" wide>
+                <textarea className="audity-input min-h-20" value={sampleForm.resultSummary} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, resultSummary: event.target.value })} />
+              </Field>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Save sample</button>
+            </form>
+            <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-1">
+              {overview.samples.map((item) => (
+                <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold">{text(item.name)}</p>
+                    <Pill value={item.status} />
+                  </div>
+                  <p className="text-xs text-audity-muted">Population {text(item.populationSize, "0")} · sample {text(item.sampleSize, "0")} · {label(item.selectionMethod)}</p>
+                  <p className="mt-1 text-sm text-audity-secondary">{text(item.resultSummary, "No result summary")}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      ) : null}
+
+      {activeTab === "Report & Sign-off" ? (
+        <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+          <Panel title="Report Review Workflow" subtitle="Track report review status before final sign-off.">
+            <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => void submit(event, createReportReview)}>
+              <Field label="Status">
+                <select className="audity-input" value={reportForm.status} disabled={!canReport} onChange={(event) => setReportForm({ ...reportForm, status: event.target.value })}>
+                  {reportStatuses.map((status) => <option key={status} value={status}>{label(status)}</option>)}
+                </select>
+              </Field>
+              <Field label="Due date">
+                <input className="audity-input" type="date" value={reportForm.dueDate} disabled={!canReport} onChange={(event) => setReportForm({ ...reportForm, dueDate: event.target.value })} />
+              </Field>
+              <Field label="Internal reviewer">
+                <input className="audity-input" value={reportForm.reviewer} disabled={!canReport} onChange={(event) => setReportForm({ ...reportForm, reviewer: event.target.value })} />
+              </Field>
+              <Field label="Customer reviewer">
+                <input className="audity-input" value={reportForm.customerReviewer} disabled={!canReport} onChange={(event) => setReportForm({ ...reportForm, customerReviewer: event.target.value })} />
+              </Field>
+              <Field label="Review summary" wide>
+                <textarea className="audity-input min-h-28" value={reportForm.summary} disabled={!canReport} onChange={(event) => setReportForm({ ...reportForm, summary: event.target.value })} />
+              </Field>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canReport}>Save review step</button>
+            </form>
+            <div className="mt-4 space-y-2">
+              {overview.reportReviews.map((item) => (
+                <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold">{label(item.status)}</p>
+                    <Pill value={item.status} />
+                  </div>
+                  <p className="text-xs text-audity-muted">{text(item.reviewer, "No internal reviewer")} · {text(item.customerReviewer, "No customer reviewer")}</p>
+                  <p className="mt-1 text-sm text-audity-secondary">{text(item.summary, "No summary")}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Auditor Sign-off" subtitle="Create tamper-evident sign-off records for assessments, controls, findings, or reports.">
+            <form className="grid gap-3" onSubmit={(event) => void submit(event, createSignoff)}>
+              <Field label="Entity type">
+                <select className="audity-input" value={signoffForm.entityType} disabled={!canApprove} onChange={(event) => setSignoffForm({ ...signoffForm, entityType: event.target.value })}>
+                  <option value="assessment">Assessment</option>
+                  <option value="control">Selected control</option>
+                  <option value="finding">Selected finding</option>
+                  <option value="report">Report</option>
+                </select>
+              </Field>
+              <Field label="Signer name">
+                <input className="audity-input" value={signoffForm.signerName} disabled={!canApprove} onChange={(event) => setSignoffForm({ ...signoffForm, signerName: event.target.value })} />
+              </Field>
+              <Field label="Statement">
+                <textarea className="audity-input min-h-28" value={signoffForm.statement} disabled={!canApprove} onChange={(event) => setSignoffForm({ ...signoffForm, statement: event.target.value })} />
+              </Field>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canApprove}>Record sign-off</button>
+            </form>
+            <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+              {overview.signoffs.map((item) => (
+                <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold">{label(item.entityType)} sign-off</p>
+                    <span className="text-[11px] text-audity-muted">{text(item.createdAt).slice(0, 10)}</span>
+                  </div>
+                  <p className="text-xs text-audity-muted">{text(item.signerName)}</p>
+                  <p className="mt-1 text-sm text-audity-secondary">{text(item.statement)}</p>
+                  <p className="mt-1 break-all text-[11px] text-audity-muted">Hash {text(item.eventHash)}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      ) : null}
+
+      {activeTab === "Gaps & Pack" ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+            <Panel title="Statement of Applicability" subtitle="Applicability, ownership, evidence, and sign-off status per control.">
+              <div className="max-h-[520px] overflow-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="sticky top-0 bg-audity-panel text-xs uppercase text-audity-muted">
+                    <tr>
+                      <th className="px-2 py-2">Control</th>
+                      <th className="px-2 py-2">Applicability</th>
+                      <th className="px-2 py-2">Review</th>
+                      <th className="px-2 py-2">Evidence</th>
+                      <th className="px-2 py-2">Sign-off</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overview.statementOfApplicability.map((item) => (
+                      <tr key={text(item.assessmentQuestionId)} className="border-t border-audity-border">
+                        <td className="px-2 py-2">
+                          <button className="text-left font-semibold text-audity-primary hover:underline" type="button" onClick={() => {
+                            setSelectedControlId(text(item.assessmentQuestionId));
+                            setActiveTab("Controls & Evidence");
+                          }}>{text(item.controlCode)}</button>
+                          <p className="text-xs text-audity-muted">{text(item.controlTitle)}</p>
+                        </td>
+                        <td className="px-2 py-2"><Pill value={item.applicability} /></td>
+                        <td className="px-2 py-2"><Pill value={item.reviewStatus} /></td>
+                        <td className="px-2 py-2">{text(item.evidenceMapped, "0")}</td>
+                        <td className="px-2 py-2"><Pill value={item.signoffStatus} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+
+            <Panel title="Gap Register" subtitle="Control, evidence, and process gaps generated from audit state.">
+              <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
+                {overview.gaps.map((gap, index) => (
+                  <div key={`${text(gap.type)}-${text(gap.title)}-${index}`} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold">{text(gap.title)}</p>
+                        <p className="text-xs text-audity-muted">{text(gap.type)} · owner {text(gap.owner, "-")}</p>
+                      </div>
+                      <Pill value={gap.status} />
+                    </div>
+                  </div>
+                ))}
+                {!overview.gaps.length ? <p className="text-sm text-audity-muted">No gaps detected.</p> : null}
+              </div>
+            </Panel>
+          </div>
+
+          <Panel
+            title="Audit Evidence Pack"
+            subtitle="Generate a JSON manifest containing summary, SoA, controls, evidence mappings, findings, risks, samples, interviews, and sign-offs."
+            action={<button className="audity-btn-primary" type="button" onClick={() => void downloadEvidencePack()}>Download pack</button>}
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MiniStat label="Evidence items" value={overview.evidenceItems.length} />
+              <MiniStat label="Mappings" value={overview.evidenceMappings.length} />
+              <MiniStat label="Sign-offs" value={overview.signoffs.length} />
+            </div>
+          </Panel>
+        </div>
+      ) : null}
+
+    </div>
+  );
+}

@@ -560,6 +560,7 @@ export function AppLayout() {
             <NavLink className={subNavClass} to="/customers/shared">{t("Shared Customers")}</NavLink>
             <p className={navSectionClass}>{t("Assessment")}</p>
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>{t("Questions")}</NavLink> : <span className={assessmentClass}>{t("Questions")}</span>}
+            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/audit-center`}>{t("Audit Center")}</NavLink> : <span className={assessmentClass}>{t("Audit Center")}</span>}
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>{t("Findings & Risk")}</NavLink> : <span className={assessmentClass}>{t("Findings & Risk")}</span>}
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>{t("Evidence & Reports")}</NavLink> : <span className={assessmentClass}>{t("Evidence & Reports")}</span>}
           </nav>

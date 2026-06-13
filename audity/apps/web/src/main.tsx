@@ -12,6 +12,7 @@ import { WorkbenchPage } from "./pages/WorkbenchPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { ConnectorAdminPage } from "./pages/admin/ConnectorAdminPage";
 import { AlphaDisclaimerPage } from "./pages/AlphaDisclaimerPage";
+import { AuditCenterPage } from "./pages/audit/AuditCenterPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
 import { FrameworkLibraryPage } from "./pages/frameworks/FrameworkLibraryPage";
@@ -37,6 +38,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/user-settings" element={<UserSettingsPage />} />
               <Route path="/assessments/:id/questions" element={<GuidedQuestionsPage />} />
+              <Route path="/assessments/:id/audit-center" element={<AuditCenterPage />} />
               <Route path="/assessments/:id/workflow" element={<AssessmentWorkflowPage />} />
               <Route path="/assessments/:id/assets" element={<AssessmentAssetsPage />} />
             </Route>

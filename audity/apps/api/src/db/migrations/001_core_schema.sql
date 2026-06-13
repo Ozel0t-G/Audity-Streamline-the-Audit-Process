@@ -764,6 +764,201 @@ create table if not exists legal_holds (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists audit_program_templates (
+  id uuid primary key,
+  name text not null,
+  description text not null default '',
+  program_type text not null default 'internal_security_audit',
+  phases jsonb not null default '[]'::jsonb,
+  default_scope jsonb not null default '{}'::jsonb,
+  default_controls jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists audit_plans (
+  assessment_id uuid primary key references assessments(id) on delete cascade,
+  program_template_id uuid references audit_program_templates(id) on delete set null,
+  current_phase text not null default 'Preparation',
+  phases jsonb not null default '[]'::jsonb,
+  kickoff_at timestamptz,
+  fieldwork_start date,
+  fieldwork_end date,
+  report_due_date date,
+  closure_due_date date,
+  audit_owner text,
+  reviewer text,
+  readiness_target integer not null default 85,
+  created_by uuid references users(id),
+  updated_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists audit_scope_items (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  item_type text not null,
+  name text not null,
+  description text not null default '',
+  in_scope boolean not null default true,
+  criticality text not null default 'medium',
+  rationale text,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists audit_scope_items_assessment_idx
+  on audit_scope_items (assessment_id, item_type, in_scope);
+
+create table if not exists audit_control_profiles (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  assessment_question_id uuid references assessment_questions(id) on delete cascade,
+  framework_control_id uuid references framework_controls(id) on delete set null,
+  applicability text not null default 'applicable',
+  applicability_reason text,
+  control_owner text,
+  reviewer text,
+  review_status text not null default 'draft',
+  control_criticality text not null default 'medium',
+  maturity_justification text,
+  evidence_quality_score integer not null default 0,
+  readiness_status text not null default 'not_ready',
+  signoff_status text not null default 'not_signed',
+  signoff_by uuid references users(id),
+  signoff_at timestamptz,
+  updated_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (assessment_id, assessment_question_id)
+);
+
+create index if not exists audit_control_profiles_assessment_idx
+  on audit_control_profiles (assessment_id, review_status, readiness_status);
+
+create table if not exists audit_evidence_mappings (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  evidence_id uuid not null references evidence_items(id) on delete cascade,
+  assessment_question_id uuid references assessment_questions(id) on delete cascade,
+  finding_id uuid references findings(id) on delete cascade,
+  risk_id uuid references risks(id) on delete cascade,
+  mapping_type text not null default 'supports_control',
+  quality_relevance integer not null default 3,
+  quality_completeness integer not null default 3,
+  quality_freshness integer not null default 3,
+  quality_trust integer not null default 3,
+  quality_score integer not null default 3,
+  status text not null default 'mapped',
+  notes text,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists audit_evidence_mappings_assessment_idx
+  on audit_evidence_mappings (assessment_id, assessment_question_id, evidence_id);
+
+create table if not exists audit_evidence_requests (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  assessment_question_id uuid references assessment_questions(id) on delete cascade,
+  title text not null,
+  description text not null default '',
+  owner text,
+  due_date date,
+  status text not null default 'open',
+  portal_visibility text not null default 'customer',
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists audit_evidence_requests_assessment_idx
+  on audit_evidence_requests (assessment_id, status, due_date);
+
+create table if not exists audit_interviews (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  title text not null,
+  participants text not null default '',
+  interview_at timestamptz,
+  notes text not null default '',
+  linked_question_id uuid references assessment_questions(id) on delete set null,
+  follow_up text,
+  status text not null default 'planned',
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists audit_samples (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  name text not null,
+  population_description text not null default '',
+  population_size integer not null default 0,
+  sample_size integer not null default 0,
+  selection_method text not null default 'judgmental',
+  selected_items jsonb not null default '[]'::jsonb,
+  result_summary text,
+  status text not null default 'planned',
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists audit_report_reviews (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  report_id uuid references reports(id) on delete set null,
+  status text not null default 'draft',
+  reviewer text,
+  customer_reviewer text,
+  summary text,
+  due_date date,
+  approved_at timestamptz,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists audit_signoffs (
+  id uuid primary key,
+  assessment_id uuid not null references assessments(id) on delete cascade,
+  entity_type text not null,
+  entity_id text not null,
+  signoff_status text not null default 'signed',
+  signed_by uuid references users(id),
+  signer_name text,
+  statement text not null default '',
+  event_hash text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists audit_signoffs_assessment_entity_idx
+  on audit_signoffs (assessment_id, entity_type, entity_id);
+
+alter table findings add column if not exists lifecycle_status text not null default 'draft';
+alter table findings add column if not exists severity_impact integer;
+alter table findings add column if not exists severity_likelihood integer;
+alter table findings add column if not exists control_criticality text;
+alter table findings add column if not exists evidence_confidence text;
+alter table findings add column if not exists calculated_severity text;
+alter table findings add column if not exists management_response_status text;
+alter table findings add column if not exists management_response text;
+alter table findings add column if not exists management_owner text;
+alter table findings add column if not exists remediation_status text not null default 'not_started';
+alter table findings add column if not exists remediation_owner text;
+alter table findings add column if not exists remediation_due_date date;
+alter table findings add column if not exists retest_status text not null default 'not_ready';
+alter table findings add column if not exists retest_notes text;
+alter table findings add column if not exists retest_evidence_id uuid references evidence_items(id) on delete set null;
+alter table findings add column if not exists verified_at timestamptz;
+alter table findings add column if not exists verified_by uuid references users(id);
+
 insert into settings (key, value)
 values ('session_idle_timeout_minutes', '30'::jsonb)
 on conflict (key) do nothing;

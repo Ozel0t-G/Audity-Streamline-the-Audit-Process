@@ -30,6 +30,18 @@ const manualSections = [
     ]
   },
   {
+    id: "audit-center",
+    title: "Audit Center",
+    screenshot: "Screenshot: Audit Center with readiness score, tabs, control review and evidence mapping",
+    body: [
+      "Open Audit Center from an assessment to manage the audit scope, audit plan, program template, control review, evidence mapping and evidence requests.",
+      "Use Controls & Evidence to review every control, set applicability, assign owners and reviewers, write maturity justification, map evidence and record control sign-off.",
+      "Use Findings & Remediation for finding lifecycle, severity matrix, management response, remediation tracking and re-test status.",
+      "Use Audit Work for interview notes and sampling. Use Report & Sign-off for report review workflow and auditor sign-off.",
+      "Use Gaps & Pack to review the Statement of Applicability, generated Gap Register and download the Audit Evidence Pack manifest."
+    ]
+  },
+  {
     id: "findings-risks",
     title: "Findings, Risks and Roadmap",
     screenshot: "Screenshot: Findings and Risk page with review status, risk register and roadmap",
@@ -155,9 +167,9 @@ const featureManual = [
   "1. Global Search: use the top search field to find customers, assessments, findings, risks, reports and Workbench records.",
   "2. Command Palette: press Cmd/Ctrl+K to open quick actions and navigation.",
   "3. Guided Onboarding: use Dashboard onboarding and Workbench templates to guide first setup.",
-  "4. Assessment Timeline: use Activity Log and Workbench records to review assessment changes over time.",
+  "4. Assessment Timeline: use Activity Log, Audit Center history and Workbench records to review assessment changes over time.",
   "5. Risk Review Workflow: manage risk draft, review, treatment, acceptance and closure in Findings & Risk.",
-  "6. Evidence Request Workflow: create evidence_request records in Workbench with owner and due date.",
+  "6. Evidence Request Workflow: create evidence requests in Audit Center or evidence_request records in Workbench with owner and due date.",
   "7. Customer Health Score: review risk, finding, evidence and connector indicators in Dashboard and Workbench analytics.",
   "8. Better Notifications: use the top notification bell for reminders, review work and system messages.",
   "9. Saved Views / Filters: save Workbench filters as reusable views.",
@@ -165,7 +177,7 @@ const featureManual = [
   "11. Connector Run History: review connector status and last result in Admin > Connector.",
   "12. Connector Field Validation: required connector fields are validated before save/test by backend and provider checks.",
   "13. Audit Trail Drawer: use Activity Log details for before/after change context.",
-  "14. Report Templates: create assessment templates and report workflow gates in Workbench governance settings.",
+  "14. Report Templates: create assessment templates and report workflow gates in Workbench governance settings, then track report review in Audit Center.",
   "15. Role Presets: assign users to predefined roles in User Management.",
   "16. Customer Portal View: configure customer portal tasks and external visibility in Workbench.",
   "17. Framework Comparison: use framework_mapping records for crosswalk and comparison work.",
@@ -175,7 +187,7 @@ const featureManual = [
   "21. Assessment Templates: create reusable assessment templates in Workbench automation.",
   "22. Recurring Assessments: create recurring assessment schedules in Workbench automation.",
   "23. Risk Acceptance Expiry: set risk acceptance expiry dates and track follow-up in Workbench.",
-  "24. Evidence Expiry Tracking: use evidence requests and policy records for expiring certificates or reports.",
+  "24. Evidence Expiry Tracking: use Audit Center evidence requests and policy records for expiring certificates or reports.",
   "25. Approval Gates: configure gates for risk, report, evidence and exception approval.",
   "26. Internal vs Customer Comments: use internal_comment and customer_comment Workbench records to separate visibility.",
   "27. Mentions: record @mentions in comments or Workbench descriptions so the responsible owner is visible.",
