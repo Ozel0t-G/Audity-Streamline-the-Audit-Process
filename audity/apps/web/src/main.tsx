@@ -6,7 +6,9 @@ import { PrivateRoute, RequirePermission } from "./auth/PrivateRoute";
 import { AdminLayout, AppLayout } from "./components/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { ManualPage } from "./pages/ManualPage";
 import { UserSettingsPage } from "./pages/UserSettingsPage";
+import { WorkbenchPage } from "./pages/WorkbenchPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { ConnectorAdminPage } from "./pages/admin/ConnectorAdminPage";
 import { AlphaDisclaimerPage } from "./pages/AlphaDisclaimerPage";
@@ -28,6 +30,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/alpha-disclaimer" element={<AlphaDisclaimerPage />} />
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/workbench" element={<WorkbenchPage />} />
+              <Route path="/manual" element={<ManualPage />} />
               <Route path="/customers" element={<CustomerListPage />} />
               <Route path="/customers/my" element={<CustomerListPage mode="my" />} />
               <Route path="/customers/shared" element={<CustomerListPage mode="shared" />} />

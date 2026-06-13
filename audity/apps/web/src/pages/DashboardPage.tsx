@@ -995,20 +995,20 @@ export function DashboardPage() {
 
   return (
     <>
-      <div className="mb-5 border-b border-audity-border pb-4">
+      <div className="audity-page-header">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase text-audity-primary">Workspace Overview</p>
-            <h1 className="mt-1 text-2xl font-semibold">Dashboard</h1>
-            <p className="mt-2 text-sm text-audity-secondary">{user?.email} · {user?.role}</p>
+            <p className="audity-page-kicker">Workspace Overview</p>
+            <h1 className="audity-page-title">Dashboard</h1>
+            <p className="audity-page-copy">{user?.email} · {user?.role}</p>
           </div>
           <div className="flex gap-2">
             {editMode ? (
-              <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => setWidgetOrder(defaultWidgets)}>
+              <button className="audity-btn-secondary" onClick={() => setWidgetOrder(defaultWidgets)}>
                 Reset
               </button>
             ) : null}
-            <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => setEditMode(!editMode)}>
+            <button className="audity-btn-primary" onClick={() => setEditMode(!editMode)}>
               {editMode ? "Done" : "Edit Dashboard"}
             </button>
           </div>
@@ -1018,9 +1018,9 @@ export function DashboardPage() {
       {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
 
       <DndContext onDragEnd={handleDragEnd}>
-        <div className={editMode ? "grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]" : "grid gap-4"}>
+        <div className={editMode ? "grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid gap-3"}>
           <DroppableArea id="dashboard" className="min-h-72 rounded-audity border border-dashed border-audity-border bg-audity-page p-3">
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {widgetOrder.map((id) => (
                 <WidgetShell key={id} id={id} editMode={editMode} onRemove={removeWidget}>
                   {renderWidget(id)}
@@ -1035,7 +1035,7 @@ export function DashboardPage() {
           </DroppableArea>
 
           {editMode ? (
-            <DroppableArea id="library" className="rounded-audity border border-dashed border-audity-border bg-audity-panel p-4">
+            <DroppableArea id="library" className="rounded-audity border border-dashed border-audity-border bg-audity-panel p-3">
               <div className="mb-4 border-b border-audity-border pb-3">
                 <p className="text-xs font-semibold uppercase text-audity-primary">Element Library</p>
                 <h2 className="mt-1 text-lg font-semibold">Unused & New Elements</h2>

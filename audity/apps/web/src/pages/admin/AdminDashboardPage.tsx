@@ -571,9 +571,9 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
 
   return (
     <>
-          <div className="mb-5 border-b border-audity-border pb-4">
-            <p className="text-xs font-semibold uppercase text-audity-primary">Administration</p>
-            <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
+          <div className="audity-page-header">
+            <p className="audity-page-kicker">Administration</p>
+            <h1 className="audity-page-title">{title}</h1>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           {section === "activity" ? (
@@ -612,7 +612,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 </span>
               ) : null}
             </div>
-            <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
               <div className="overflow-hidden rounded-audity border border-audity-border">
                 <table className="w-full border-collapse text-sm">
                   <thead className="bg-audity-tableHeader text-xs uppercase text-audity-muted">
@@ -659,7 +659,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           </section>
           ) : null}
           {section === "audit" ? (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <h2 className="text-lg font-semibold">Security Audit Log</h2>
@@ -699,7 +699,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           </div>
           ) : null}
           {section === "users" ? (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">User Management</h2>
               <div className="mb-4 grid gap-2 xl:grid-cols-2">
@@ -801,7 +801,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </section>
           ) : null}
           {section === "email" ? (
-            <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">SMTP Configuration</h2>
                 <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveEmailSettings(event)}>
@@ -833,7 +833,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </div>
           ) : null}
           {section === "system" ? (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <form className="max-w-md space-y-3" onSubmit={saveSystemSettings}>
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">
@@ -890,7 +890,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       detail={`${formatBytes(systemMonitor.snapshot.storageUsedBytes)} / ${formatBytes(systemMonitor.snapshot.storageTotalBytes)}`}
                     />
                   </div>
-                  <div className="mt-4 grid min-w-0 gap-4 2xl:grid-cols-[340px_minmax(0,1fr)]">
+                  <div className="mt-3 grid min-w-0 gap-3 2xl:grid-cols-[300px_minmax(0,1fr)]">
                     <div className="rounded-audity border border-audity-border bg-audity-page p-3">
                       <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">System Problems</p>
                       {systemMonitor.snapshot.issues.length ? (
@@ -932,8 +932,8 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </div>
           ) : null}
           {section === "backup" ? (
-            <div className="grid min-w-0 gap-4 2xl:grid-cols-[360px_minmax(0,1fr)]">
-              <div className="space-y-4">
+            <div className="grid min-w-0 gap-3 2xl:grid-cols-[300px_minmax(0,1fr)]">
+              <div className="space-y-3">
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                   <h2 className="mb-4 text-lg font-semibold">Manual Backup</h2>
                   {user?.role === "Instance Admin" ? <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>

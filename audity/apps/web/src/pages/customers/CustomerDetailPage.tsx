@@ -234,12 +234,12 @@ export function CustomerDetailPage() {
 
   return (
     <>
-          <div className="mb-5 border-b border-audity-border pb-4">
-            <p className="text-xs font-semibold uppercase text-audity-primary">Customer Detail</p>
-            <h1 className="mt-1 text-2xl font-semibold">{customer?.name ?? "Customer"}</h1>
-            <p className="mt-2 text-sm text-audity-secondary">{customer?.industry} · {customer?.businessCriticality}</p>
+          <div className="audity-page-header">
+            <p className="audity-page-kicker">Customer Detail</p>
+            <h1 className="audity-page-title">{customer?.name ?? "Customer"}</h1>
+            <p className="audity-page-copy">{customer?.industry} · {customer?.businessCriticality}</p>
           </div>
-          <div className="mb-5 flex flex-wrap gap-2">
+          <div className="mb-4 flex flex-wrap gap-2">
             {workflow.map(([label, locked], index) => (
               <div
                 key={label}
@@ -256,8 +256,8 @@ export function CustomerDetailPage() {
             ))}
           </div>
           {error ? <div className="mb-4 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="space-y-4">
+          <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-3">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div>

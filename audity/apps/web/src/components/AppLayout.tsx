@@ -6,18 +6,28 @@ import { currentLanguage, translate } from "../i18n";
 import { BrandMark } from "./BrandMark";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `block rounded-audity px-3 py-2 text-sm ${
+  `block rounded-audity px-2.5 py-1.5 text-sm transition ${
     isActive
-      ? "bg-audity-primaryActive font-semibold text-audity-text"
-      : "text-audity-secondary hover:bg-audity-panel hover:text-audity-text"
+      ? "bg-audity-primaryActive font-semibold text-audity-text ring-1 ring-audity-primary/30"
+      : "text-audity-secondary hover:bg-audity-panelAlt hover:text-audity-text"
   }`;
 
 const subNavClass = ({ isActive }: { isActive: boolean }) =>
-  `ml-3 block rounded-audity px-3 py-2 text-sm ${
+  `ml-2 block rounded-audity px-2.5 py-1.5 text-sm transition ${
     isActive
-      ? "bg-audity-primaryActive font-semibold text-audity-text"
-      : "text-audity-secondary hover:bg-audity-panel hover:text-audity-text"
+      ? "bg-audity-primaryActive font-semibold text-audity-text ring-1 ring-audity-primary/30"
+      : "text-audity-secondary hover:bg-audity-panelAlt hover:text-audity-text"
   }`;
+
+const navSectionClass = "px-2 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-normal text-audity-muted";
+
+type SearchResult = {
+  type: string;
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  url: string;
+};
 
 function isAdminRole(role?: string) {
   return role === "Instance Admin" || role === "Tenant Admin";
@@ -220,7 +230,7 @@ function useLanguage() {
     };
   }, []);
   useEffect(() => {
-    document.documentElement.lang = language === "Deutsch" ? "de" : "en";
+    document.documentElement.lang = "en";
   }, [language]);
   return (label: string) => translate(label, language);
 }
@@ -242,6 +252,13 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
   }>>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [customerLabel, setCustomerLabel] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState("");
+  const [commandActions, setCommandActions] = useState<SearchResult[]>([]);
+  const [commandResults, setCommandResults] = useState<SearchResult[]>([]);
   const admin = isAdminRole(user?.role);
   const showCustomerContext =
     /^\/customers\/[0-9a-f-]{36}$/i.test(location.pathname) ||
@@ -292,6 +309,54 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     };
   }, [api, location.pathname]);
 
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+      if (event.key === "Escape") {
+        setCommandOpen(false);
+        setSearchOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void api<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(query)}`)
+        .then((payload) => {
+          setSearchResults(payload.results);
+          setSearchOpen(true);
+        })
+        .catch(() => setSearchResults([]));
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [api, searchQuery]);
+
+  useEffect(() => {
+    if (!commandOpen) return;
+    const timer = window.setTimeout(() => {
+      void api<{ actions: SearchResult[]; results: SearchResult[] }>(`/api/command-palette?q=${encodeURIComponent(commandQuery)}`)
+        .then((payload) => {
+          setCommandActions(payload.actions);
+          setCommandResults(payload.results);
+        })
+        .catch(() => {
+          setCommandActions([]);
+          setCommandResults([]);
+        });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [api, commandOpen, commandQuery]);
+
   async function loadNotifications() {
     const payload = await api<{ unreadCount: number; notifications: typeof notifications }>("/api/notifications");
     setNotifications(payload.notifications);
@@ -316,18 +381,47 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     await loadNotifications();
   }
 
+  function openResult(result: SearchResult) {
+    navigate(result.url);
+    setSearchOpen(false);
+    setCommandOpen(false);
+    setSearchQuery("");
+    setCommandQuery("");
+  }
+
   return (
-    <header className="flex h-12 items-center justify-between border-b border-audity-border bg-audity-topnav px-5">
+    <header className="flex h-11 items-center justify-between border-b border-audity-border bg-audity-topnav px-4">
       <div className="flex min-w-0 items-center gap-3">
         <BrandMark />
         <span className="text-sm font-semibold">Audity</span>
+        <div className="relative hidden min-w-[220px] max-w-md flex-1 md:block">
+          <input
+            className="h-8 w-full rounded-audity border border-audity-border bg-audity-panel px-3 text-sm text-audity-text outline-none placeholder:text-audity-muted focus:border-audity-primary"
+            placeholder="Search..."
+            value={searchQuery}
+            onFocus={() => setSearchOpen(true)}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+          {searchOpen && searchQuery.trim().length >= 2 ? (
+            <div className="absolute left-0 z-30 mt-2 w-full min-w-[360px] overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-xl">
+              {searchResults.map((result) => (
+                <button key={`${result.type}-${result.id}`} className="block w-full border-b border-audity-border px-3 py-2 text-left last:border-0 hover:bg-audity-page" onClick={() => openResult(result)}>
+                  <span className="text-xs font-semibold uppercase text-audity-primary">{result.type}</span>
+                  <span className="ml-2 text-sm font-semibold text-audity-text">{result.title}</span>
+                  <span className="ml-2 text-xs text-audity-muted">{result.subtitle}</span>
+                </button>
+              ))}
+              {!searchResults.length ? <div className="px-3 py-4 text-sm text-audity-muted">No results</div> : null}
+            </div>
+          ) : null}
+        </div>
         {showCustomerContext && customerLabel ? (
-          <span className="max-w-[320px] truncate rounded-audity border border-audity-borderStrong bg-audity-panel px-2 py-1 text-xs font-semibold text-audity-secondary">
+          <span className="max-w-[320px] truncate rounded-audity border border-audity-borderStrong bg-audity-panel px-2 py-0.5 text-xs font-semibold text-audity-secondary">
             Customer: {customerLabel}
           </span>
         ) : null}
         {admin ? (
-          <span className="rounded-audity border border-audity-primary/60 bg-audity-primaryActive px-2 py-1 text-xs font-semibold text-audity-primary">
+          <span className="rounded-audity border border-audity-primary/60 bg-audity-primaryActive px-2 py-0.5 text-xs font-semibold text-audity-primary">
             Admin: {user?.role}
           </span>
         ) : null}
@@ -335,7 +429,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
       <div className="flex items-center gap-2">
         <div className="relative">
           <button
-            className="relative flex h-8 w-9 items-center justify-center rounded-audity border border-audity-borderStrong bg-audity-panel text-audity-secondary hover:border-audity-primary hover:text-audity-text"
+            className="relative flex h-8 w-8 items-center justify-center rounded-audity border border-audity-borderStrong bg-audity-panel text-audity-secondary hover:border-audity-primary hover:text-audity-text"
             onClick={() => setNotificationsOpen(!notificationsOpen)}
             aria-label={t("Notifications")}
           >
@@ -378,19 +472,44 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         </div>
         {admin && !adminMode ? (
           <Link
-            className="h-8 rounded-audity border border-audity-primary bg-audity-primaryActive px-3 py-1.5 text-sm font-semibold text-audity-primary hover:bg-audity-panel"
+            className="h-8 rounded-audity border border-audity-primary/70 bg-audity-primaryActive px-2.5 py-1.5 text-sm font-semibold text-audity-primary hover:bg-audity-panel"
             to="/admin/activity"
           >
             {t("Admin Menu")}
           </Link>
         ) : null}
         <button
-          className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panel px-3 text-sm text-audity-secondary hover:border-audity-primary hover:text-audity-text"
+          className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panel px-2.5 text-sm text-audity-secondary hover:border-audity-primary hover:text-audity-text"
           onClick={() => void logout()}
         >
           {t("Logout")}
         </button>
       </div>
+      {commandOpen ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 pt-20" role="dialog" aria-modal="true" aria-label="Command palette">
+          <div className="w-full max-w-2xl overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-2xl">
+            <div className="border-b border-audity-border p-3">
+              <input
+                className="h-10 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                placeholder="Type a command or search..."
+                autoFocus
+                value={commandQuery}
+                onChange={(event) => setCommandQuery(event.target.value)}
+              />
+            </div>
+            <div className="max-h-[60vh] overflow-auto p-2">
+              {[...commandActions, ...commandResults].map((result) => (
+                <button key={`${result.type}-${result.id}`} className="block w-full rounded-audity px-3 py-2 text-left hover:bg-audity-page" onClick={() => openResult(result)}>
+                  <span className="text-xs font-semibold uppercase text-audity-primary">{result.type}</span>
+                  <span className="ml-2 text-sm font-semibold">{result.title}</span>
+                  <span className="ml-2 text-xs text-audity-muted">{result.subtitle}</span>
+                </button>
+              ))}
+              {![...commandActions, ...commandResults].length ? <div className="px-3 py-8 text-center text-sm text-audity-muted">No commands found</div> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -423,27 +542,30 @@ export function AppLayout() {
   }, []);
 
   const assessmentClass = assessmentId
-    ? "block rounded-audity px-3 py-2 text-sm text-audity-secondary hover:bg-audity-panel hover:text-audity-text"
-    : "block cursor-not-allowed rounded-audity px-3 py-2 text-sm text-audity-muted opacity-60";
+    ? "block rounded-audity px-2.5 py-1.5 text-sm text-audity-secondary hover:bg-audity-panel hover:text-audity-text"
+    : "block cursor-not-allowed rounded-audity px-2.5 py-1.5 text-sm text-audity-muted opacity-60";
 
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
       <TopBar />
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-4 2xl:p-5">
-          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">{t("Workspace")}</p>
-          <nav className="space-y-1">
+      <div className="grid min-h-[calc(100vh-44px)] grid-cols-1 lg:grid-cols-[208px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)] 2xl:grid-cols-[232px_minmax(0,1fr)]">
+        <aside className="border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4">
+          <nav className="space-y-0.5">
+            <p className={navSectionClass}>{t("Workspace")}</p>
             <NavLink className={navClass} to="/dashboard">{t("Dashboard")}</NavLink>
-            <span className="block px-3 pt-3 pb-1 text-xs font-semibold uppercase text-audity-muted">{t("Customer")}</span>
+            <NavLink className={navClass} to="/workbench">{t("Workbench")}</NavLink>
+            <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
+            <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
+            <p className={navSectionClass}>{t("Customers")}</p>
             <NavLink className={subNavClass} to="/customers/my">{t("My Customers")}</NavLink>
             <NavLink className={subNavClass} to="/customers/shared">{t("Shared Customers")}</NavLink>
-            <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
+            <p className={navSectionClass}>{t("Assessment")}</p>
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>{t("Questions")}</NavLink> : <span className={assessmentClass}>{t("Questions")}</span>}
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>{t("Findings & Risk")}</NavLink> : <span className={assessmentClass}>{t("Findings & Risk")}</span>}
             {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>{t("Evidence & Reports")}</NavLink> : <span className={assessmentClass}>{t("Evidence & Reports")}</span>}
           </nav>
         </aside>
-        <section className="min-w-0 overflow-hidden bg-audity-page p-4 2xl:p-5">
+        <section className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4">
           <Outlet />
         </section>
       </div>
@@ -461,19 +583,23 @@ export function AdminLayout() {
   return (
     <main className="min-h-screen bg-audity-app text-audity-text">
       <TopBar adminMode />
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-4 2xl:p-5">
-          <p className="mb-3 text-xs font-semibold uppercase text-audity-muted">{t("Admin Panel")}</p>
-          <nav className="space-y-1">
-            {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">{t("Activity Log")}</NavLink> : null}
-            {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit">{t("Audit Log")}</NavLink> : null}
+      <div className="grid min-h-[calc(100vh-44px)] grid-cols-1 lg:grid-cols-[208px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)] 2xl:grid-cols-[232px_minmax(0,1fr)]">
+        <aside className="border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4">
+          <nav className="space-y-0.5">
+            <p className={navSectionClass}>{t("Administration")}</p>
             {can("roles.manage") ? <NavLink className={navClass} to="/admin/users">{t("User Management")}</NavLink> : null}
-            {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">{t("Framework Library")}</NavLink> : null}
             {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">{t("Branding")}</NavLink> : null}
             {can("email.manage") ? <NavLink className={navClass} to="/admin/email">{t("Email Settings")}</NavLink> : null}
             {can("connectors.manage") ? <NavLink className={navClass} to="/admin/connectors">{t("Connector")}</NavLink> : null}
+            {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">{t("Framework Library")}</NavLink> : null}
+            <p className={navSectionClass}>{t("Monitoring")}</p>
+            {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">{t("Activity Log")}</NavLink> : null}
+            {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit">{t("Audit Log")}</NavLink> : null}
+            <p className={navSectionClass}>{t("System")}</p>
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">{t("System")}</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">{t("Backup")}</NavLink> : null}
+            <NavLink className={navClass} to="/workbench">{t("Workbench")}</NavLink>
+            <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
             <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
           </nav>
           <Link
@@ -483,7 +609,7 @@ export function AdminLayout() {
             {t("Leave Admin Panel")}
           </Link>
         </aside>
-        <section className="min-w-0 overflow-hidden bg-audity-page p-4 2xl:p-5">
+        <section className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4">
           <Outlet />
         </section>
       </div>

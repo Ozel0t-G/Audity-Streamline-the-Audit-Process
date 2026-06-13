@@ -131,7 +131,7 @@ export function LoginPage() {
           <span className="text-sm font-semibold">Audity</span>
         </div>
       </header>
-      <section className="mx-auto grid min-h-[calc(100vh-48px)] max-w-6xl grid-cols-1 items-center gap-5 px-5 py-8 lg:grid-cols-[1fr_420px]">
+      <section className="mx-auto grid min-h-[calc(100vh-44px)] max-w-5xl grid-cols-1 items-center gap-4 px-4 py-7 lg:grid-cols-[1fr_380px]">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase text-audity-primary">
             Self-hosted audit workspace
@@ -145,9 +145,9 @@ export function LoginPage() {
         </div>
         <form
           onSubmit={setupRequired ? (setupStep === "account" ? handleSetup : saveOptionalSetup) : challengeToken ? handleMfaSubmit : handleSubmit}
-          className="rounded-audity border border-audity-border bg-audity-panel p-5"
+          className="rounded-audity border border-audity-border bg-audity-panel p-4"
         >
-          <div className="mb-5 border-b border-audity-border pb-4">
+          <div className="mb-4 border-b border-audity-border pb-3">
             <h2 className="text-xl font-semibold">{setupRequired ? "Setup Wizard" : challengeToken ? "MFA Challenge" : "Login"}</h2>
             <p className="mt-1 text-sm text-audity-secondary">
               {setupRequired ? "Create the first admin account, then optionally configure SMTP and branding." : challengeToken ? "Enter the authenticator code for this account." : "Use your Audity account credentials."}
