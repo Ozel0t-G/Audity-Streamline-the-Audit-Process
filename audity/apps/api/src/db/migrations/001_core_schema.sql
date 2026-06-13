@@ -764,6 +764,87 @@ create table if not exists legal_holds (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists demo_control_settings (
+  id text primary key default 'default',
+  demo_mode_enabled boolean not null default false,
+  public_login_enabled boolean not null default true,
+  reset_enabled boolean not null default true,
+  reset_interval_minutes integer not null default 60,
+  next_reset_at timestamptz,
+  telemetry_enabled boolean not null default true,
+  collect_ip_address boolean not null default false,
+  collect_ip_hash boolean not null default true,
+  collect_device_details boolean not null default true,
+  reset_data_deletion_enabled boolean not null default false,
+  demo_login_email text not null default 'demo-admin@audity.local',
+  demo_login_role text not null default 'Instance Admin',
+  last_reset_at timestamptz,
+  updated_by text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint demo_control_settings_interval_check check (reset_interval_minutes between 5 and 1440)
+);
+
+create table if not exists demo_control_sessions (
+  id uuid primary key,
+  token_hash text not null unique,
+  ip_hash text,
+  ip_address text,
+  user_agent text,
+  expires_at timestamptz not null,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
+create index if not exists demo_control_sessions_active_idx
+  on demo_control_sessions (expires_at, revoked_at);
+
+create table if not exists demo_login_events (
+  id uuid primary key,
+  user_id uuid references users(id) on delete set null,
+  email text,
+  login_method text not null,
+  ip_hash text,
+  ip_address text,
+  ip_masked text,
+  device_type text,
+  browser text,
+  operating_system text,
+  user_agent text,
+  accept_language text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists demo_login_events_created_idx
+  on demo_login_events (created_at desc);
+
+create table if not exists demo_control_audit_events (
+  id uuid primary key,
+  action text not null,
+  ip_hash text,
+  ip_address text,
+  user_agent text,
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists demo_control_audit_events_created_idx
+  on demo_control_audit_events (created_at desc);
+
+create table if not exists demo_reset_runs (
+  id uuid primary key,
+  status text not null,
+  trigger_source text not null,
+  message text,
+  deleted_counts jsonb not null default '{}'::jsonb,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+create index if not exists demo_reset_runs_started_idx
+  on demo_reset_runs (started_at desc);
+
 insert into settings (key, value)
 values ('session_idle_timeout_minutes', '30'::jsonb)
 on conflict (key) do nothing;

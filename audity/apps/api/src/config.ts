@@ -1,6 +1,18 @@
 export type AudityConfig = {
   appSecret: string;
   databaseUrl: string;
+  demoControlIpAllowlist: string[];
+  demoControlSecretHash: string;
+  demoControlTotpSecret: string;
+  demoDefaultResetMinutes: number;
+  demoModeEnabled: boolean;
+  demoPublicLoginEmail: string;
+  demoPublicLoginEnabled: boolean;
+  demoPublicLoginName: string;
+  demoPublicLoginPassword: string;
+  demoPublicLoginRole: string;
+  demoResetAllowDataDeletion: boolean;
+  demoResetEnabled: boolean;
   encryptionKey: string;
   env: string;
   frameworkYamlDirectory: string;
@@ -85,6 +97,21 @@ export function loadConfig(): AudityConfig {
     databaseUrl:
       process.env.AUDITY_DATABASE_URL ??
       "postgres://audity:change-me@audity-db:5432/audity",
+    demoControlIpAllowlist: (process.env.AUDITY_DEMO_CONTROL_IP_ALLOWLIST ?? "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    demoControlSecretHash: process.env.AUDITY_DEMO_CONTROL_SECRET_HASH ?? "",
+    demoControlTotpSecret: process.env.AUDITY_DEMO_CONTROL_TOTP_SECRET ?? "",
+    demoDefaultResetMinutes: Number(process.env.AUDITY_DEMO_RESET_MINUTES ?? 60),
+    demoModeEnabled: process.env.AUDITY_DEMO_MODE === "true",
+    demoPublicLoginEmail: process.env.AUDITY_DEMO_PUBLIC_LOGIN_EMAIL ?? "demo-admin@audity.local",
+    demoPublicLoginEnabled: process.env.AUDITY_DEMO_PUBLIC_LOGIN_ENABLED !== "false",
+    demoPublicLoginName: process.env.AUDITY_DEMO_PUBLIC_LOGIN_NAME ?? "Demo Admin",
+    demoPublicLoginPassword: process.env.AUDITY_DEMO_PUBLIC_LOGIN_PASSWORD ?? "demo-access-only",
+    demoPublicLoginRole: process.env.AUDITY_DEMO_PUBLIC_LOGIN_ROLE ?? "Instance Admin",
+    demoResetAllowDataDeletion: process.env.AUDITY_DEMO_RESET_DANGEROUSLY_ALLOW_DATA_DELETION === "true",
+    demoResetEnabled: process.env.AUDITY_DEMO_RESET_ENABLED !== "false",
     env: process.env.AUDITY_ENV ?? "production",
     encryptionKey: process.env.AUDITY_ENCRYPTION_KEY ?? process.env.AUDITY_APP_SECRET ?? "change-me",
     frameworkYamlDirectory: process.env.AUDITY_FRAMEWORK_YAML_DIR ?? "frameworks",

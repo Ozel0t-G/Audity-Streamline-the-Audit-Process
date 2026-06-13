@@ -14,6 +14,7 @@ import { ConnectorAdminPage } from "./pages/admin/ConnectorAdminPage";
 import { AlphaDisclaimerPage } from "./pages/AlphaDisclaimerPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerListPage } from "./pages/customers/CustomerListPage";
+import { DemoControlPage } from "./pages/DemoControlPage";
 import { FrameworkLibraryPage } from "./pages/frameworks/FrameworkLibraryPage";
 import { GuidedQuestionsPage } from "./pages/frameworks/GuidedQuestionsPage";
 import { AssessmentAssetsPage } from "./pages/reports/AssessmentAssetsPage";
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/control/demo" element={<DemoControlPage />} />
           <Route element={<PrivateRoute />}>
             <Route path="/alpha-disclaimer" element={<AlphaDisclaimerPage />} />
             <Route element={<AppLayout />}>

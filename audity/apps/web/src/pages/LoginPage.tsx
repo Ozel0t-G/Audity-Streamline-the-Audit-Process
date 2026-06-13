@@ -7,7 +7,7 @@ const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { accessToken, csrfToken, login, setupInitialAdmin, verifyMfaChallenge } = useAuth();
+  const { accessToken, csrfToken, demoLogin, login, setupInitialAdmin, verifyMfaChallenge } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("Instance Admin");
   const [password, setPassword] = useState("");
@@ -24,6 +24,12 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoStatus, setDemoStatus] = useState<{
+    demoModeEnabled: boolean;
+    publicLoginEnabled: boolean;
+    nextResetAt?: string | null;
+    resetIntervalMinutes?: number;
+  } | null>(null);
 
   useEffect(() => {
     const storedNotice = window.localStorage.getItem("audity_login_notice");
@@ -35,6 +41,10 @@ export function LoginPage() {
       .then((response) => response.json())
       .then((payload: { setupRequired?: boolean }) => setSetupRequired(Boolean(payload.setupRequired)))
       .catch(() => setSetupRequired(false));
+    fetch(`${apiBaseUrl}/api/demo/status`)
+      .then((response) => response.json())
+      .then((payload) => setDemoStatus(payload))
+      .catch(() => setDemoStatus(null));
   }, []);
 
   async function handleSetup(event: FormEvent<HTMLFormElement>) {
@@ -104,6 +114,19 @@ export function LoginPage() {
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDemoLogin() {
+    setError("");
+    setLoading(true);
+    try {
+      await demoLogin();
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo login failed");
     } finally {
       setLoading(false);
     }
@@ -235,6 +258,22 @@ export function LoginPage() {
           >
             {loading ? "Working" : setupRequired && setupStep === "optional" ? "Save and continue" : setupRequired ? "Create admin" : challengeToken ? "Verify" : "Sign in"}
           </button>
+          {demoStatus?.demoModeEnabled && demoStatus.publicLoginEnabled && !setupRequired && !challengeToken ? (
+            <div className="mt-3 rounded-audity border border-audity-warning/70 bg-audity-page p-3">
+              <p className="text-xs font-semibold uppercase text-audity-warning">Public demo tenant</p>
+              <p className="mt-1 text-xs text-audity-secondary">
+                This environment is reset automatically every {demoStatus.resetIntervalMinutes ?? 60} minutes. Do not enter real customer data.
+              </p>
+              <button
+                className="mt-3 h-9 w-full rounded-audity border border-audity-warning px-3 text-sm font-semibold text-audity-warning hover:bg-audity-panelAlt disabled:opacity-60"
+                type="button"
+                disabled={loading}
+                onClick={() => void handleDemoLogin()}
+              >
+                Enter public demo
+              </button>
+            </div>
+          ) : null}
           {setupRequired && setupStep === "optional" ? (
             <button className="mt-2 h-9 w-full rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" type="button" onClick={() => navigate("/alpha-disclaimer", { replace: true })}>
               Skip optional setup

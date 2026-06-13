@@ -4,6 +4,7 @@ import { z } from "zod";
 import { appendAuditEvent } from "../audit/service.js";
 import { loadConfig } from "../config.js";
 import { pool } from "../db/client.js";
+import { recordDemoLoginEvent } from "../demo/service.js";
 import { requireAuth, requireCsrf, requirePermission } from "./hooks.js";
 import {
   signMfaChallengeToken,
@@ -157,6 +158,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         userAgent: request.headers["user-agent"] ?? null,
         payload: { email: body.email }
       });
+      await recordDemoLoginEvent({ request, email: body.email, loginMethod: "password_failed" });
       return reply
         .code(401)
         .send({ code: "LOGIN_FAILED", message: "Invalid email or password" });
@@ -176,6 +178,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       ip: request.ip,
       userAgent: request.headers["user-agent"] ?? null
     });
+    await recordDemoLoginEvent({ request, user, email: user.email, loginMethod: "password" });
     setRefreshCookie(reply, session.refreshToken);
     return {
       accessToken: session.accessToken,
@@ -274,6 +277,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           userAgent: request.headers["user-agent"] ?? null,
           payload: { reason: "mfa_failed" }
         });
+        await recordDemoLoginEvent({ request, email: null, loginMethod: "mfa_failed" });
         return reply
           .code(401)
           .send({ code: "MFA_FAILED", message: "MFA code is invalid" });
@@ -293,6 +297,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         userAgent: request.headers["user-agent"] ?? null,
         payload: { mfa: true }
       });
+      await recordDemoLoginEvent({ request, user, email: user.email, loginMethod: "mfa" });
       return {
         accessToken: session.accessToken,
         csrfToken: session.csrfToken,

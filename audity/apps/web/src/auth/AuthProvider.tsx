@@ -19,6 +19,7 @@ type AuthContextValue = {
   user: User | null;
   setupInitialAdmin: (input: { email: string; name: string; password: string }) => Promise<void>;
   login: (email: string, password: string) => Promise<{ mfaRequired: false } | { mfaRequired: true; challengeToken: string }>;
+  demoLogin: () => Promise<void>;
   acceptAlphaDisclaimer: () => Promise<void>;
   verifyMfaChallenge: (challengeToken: string, code: string) => Promise<void>;
   setupMfa: () => Promise<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }>;
@@ -102,6 +103,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     storeSession(payload);
     return { mfaRequired: false as const };
+  }, []);
+
+  const demoLogin = useCallback(async () => {
+    const response = await fetch(`${apiBaseUrl}/api/demo/public-login`, {
+      method: "POST",
+      credentials: "include"
+    });
+    if (!response.ok) {
+      const error = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(error?.message ?? "Demo login failed");
+    }
+    storeSession((await response.json()) as { accessToken: string; csrfToken: string; user: User });
   }, []);
 
   const setupInitialAdmin = useCallback(async (input: { email: string; name: string; password: string }) => {
@@ -210,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       setupInitialAdmin,
       login,
+      demoLogin,
       acceptAlphaDisclaimer,
       verifyMfaChallenge,
       setupMfa,
@@ -225,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       setupInitialAdmin,
       login,
+      demoLogin,
       acceptAlphaDisclaimer,
       verifyMfaChallenge,
       setupMfa,

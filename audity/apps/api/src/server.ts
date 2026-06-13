@@ -14,6 +14,8 @@ import { registerConnectorRoutes, startConnectorSyncWorker } from "./connectors/
 import { registerDashboardRoutes } from "./dashboard/routes.js";
 import { verifyDatabaseConnection } from "./db/client.js";
 import { applyCoreSchema } from "./db/schema.js";
+import { registerDemoRoutes } from "./demo/routes.js";
+import { startDemoResetWorker } from "./demo/service.js";
 import { registerEvidenceRoutes } from "./evidence/routes.js";
 import { registerFrameworkRoutes } from "./frameworks/routes.js";
 import { startFrameworkYamlAutoSync } from "./frameworks/yamlImporter.js";
@@ -114,7 +116,9 @@ await verifyDatabaseConnection();
 await applyCoreSchema();
 startFrameworkYamlAutoSync(app.log);
 startConnectorSyncWorker(app.log);
+startDemoResetWorker(app.log);
 await registerAuthRoutes(app);
+await registerDemoRoutes(app);
 await registerDashboardRoutes(app);
 await registerConnectorRoutes(app);
 await registerCustomerRoutes(app);
