@@ -132,19 +132,19 @@ export function FrameworkLibraryPage() {
 
   return (
     <>
-          <div className="mb-5 border-b border-audity-border pb-4">
-            <p className="text-xs font-semibold uppercase text-audity-primary">Framework Engine</p>
-            <h1 className="mt-1 text-2xl font-semibold">Framework Library</h1>
+          <div className="audity-page-header">
+            <p className="audity-page-kicker">Framework Engine</p>
+            <h1 className="audity-page-title">Framework Library</h1>
           </div>
-          <div className="mb-5 rounded-audity border border-audity-warning bg-[#282414] p-4 text-sm text-audity-secondary">
+          <div className="mb-4 rounded-audity border border-audity-warning bg-[#282414] p-3 text-sm text-audity-secondary">
             {selected?.disclaimer ??
               "Built-in public-framework summaries and Audity-native readiness workflows are assessment aids. User-imported frameworks require your own license confirmation."}
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           {success ? <div className="mb-4 rounded-audity border border-audity-success bg-[#14241D] px-3 py-2 text-sm text-audity-success">{success}</div> : null}
-          <div className="grid min-w-0 gap-4 xl:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)_340px]">
+          <div className="grid min-w-0 gap-3 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_300px]">
             <section className="min-w-0 overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
-              <div className="border-b border-audity-border px-4 py-3">
+              <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-lg font-semibold">Catalog</h2>
                 <input className="mt-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Search frameworks" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
               </div>
@@ -152,7 +152,7 @@ export function FrameworkLibraryPage() {
                 {filteredFrameworks.map((framework) => (
                   <button
                     key={framework.id}
-                    className={`block w-full px-4 py-3 text-left hover:bg-audity-panelAlt ${framework.id === selected?.id ? "bg-audity-primaryActive/25" : ""}`}
+                    className={`block w-full px-3 py-2.5 text-left hover:bg-audity-panelAlt ${framework.id === selected?.id ? "bg-audity-primaryActive/25" : ""}`}
                     onClick={() => setSelectedId(framework.id)}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -168,12 +168,12 @@ export function FrameworkLibraryPage() {
               </div>
             </section>
             <section className="min-w-0 rounded-audity border border-audity-border bg-audity-panel">
-              <div className="border-b border-audity-border px-4 py-3">
+              <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-lg font-semibold">{selected?.name ?? "Framework"}</h2>
                 <p className="mt-1 text-sm text-audity-secondary">{selected?.sourceType} · {selected?.licenseStatus}</p>
                 <input className="mt-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Search controls" value={controlSearch} onChange={(event) => setControlSearch(event.target.value)} />
               </div>
-              <div className="space-y-3 p-4">
+              <div className="space-y-3 p-3">
                 {filteredDomains.map((domain) => (
                   <section key={domain.id} className="rounded-audity border border-audity-border bg-audity-page p-3">
                     <div className="mb-3 flex items-start justify-between gap-3">

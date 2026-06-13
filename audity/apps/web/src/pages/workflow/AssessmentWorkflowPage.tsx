@@ -598,10 +598,10 @@ export function AssessmentWorkflowPage() {
 
   return (
     <>
-          <div className="mb-5 border-b border-audity-border pb-4">
-            <p className="text-xs font-semibold uppercase text-audity-primary">Guided Workflow</p>
-            <h1 className="mt-1 text-2xl font-semibold">Findings, Risks & Roadmap</h1>
-            <p className="mt-2 text-sm text-audity-secondary">
+          <div className="audity-page-header">
+            <p className="audity-page-kicker">Guided Workflow</p>
+            <h1 className="audity-page-title">Findings, Risks & Roadmap</h1>
+            <p className="audity-page-copy">
               {findings.length} findings · {risks.length} risks · {roadmapItems.length} roadmap items
             </p>
           </div>
@@ -641,13 +641,13 @@ export function AssessmentWorkflowPage() {
             </div>
           </section>
           ) : null}
-          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
-              <div className="border-b border-audity-border px-4 py-3">
+              <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-lg font-semibold">Finding Review</h2>
               </div>
               {canApproveFindings ? (
-              <form className="flex flex-wrap items-end gap-2 border-b border-audity-border px-4 py-3" onSubmit={bulkUpdateFindings}>
+              <form className="flex flex-wrap items-end gap-2 border-b border-audity-border px-3 py-2.5" onSubmit={bulkUpdateFindings}>
                 <label className="block text-xs font-semibold uppercase text-audity-secondary">Status
                   <select className="mt-2 h-9 rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text" value={findingBulkForm.status} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, status: event.target.value })}>
                     <option value="">No change</option>
@@ -663,10 +663,10 @@ export function AssessmentWorkflowPage() {
                 <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60" disabled={!selectedFindingIds.length}>Update {selectedFindingIds.length || ""}</button>
               </form>
               ) : null}
-              <div className="grid lg:grid-cols-[320px_minmax(0,1fr)]">
+              <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]">
                 <div className="divide-y divide-audity-border border-r border-audity-border">
                   {findings.map((finding) => (
-                    <div key={finding.id} className={`flex gap-2 px-4 py-3 hover:bg-audity-panelAlt ${finding.id === selectedFinding?.id ? "bg-audity-primaryActive/25" : ""}`}>
+                    <div key={finding.id} className={`flex gap-2 px-3 py-2.5 hover:bg-audity-panelAlt ${finding.id === selectedFinding?.id ? "bg-audity-primaryActive/25" : ""}`}>
                       {canApproveFindings ? (
                       <input className="mt-1" type="checkbox" checked={selectedFindingIds.includes(finding.id)} onChange={() => toggleFindingSelection(finding.id)} />
                       ) : null}

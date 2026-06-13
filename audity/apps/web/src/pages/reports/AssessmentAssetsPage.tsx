@@ -286,12 +286,12 @@ export function AssessmentAssetsPage() {
 
   return (
     <>
-          <div className="mb-5 border-b border-audity-border pb-4">
-            <p className="text-xs font-semibold uppercase text-audity-primary">Evidence & Report Builder</p>
-            <h1 className="mt-1 text-2xl font-semibold">Assessment Assets</h1>
+          <div className="audity-page-header">
+            <p className="audity-page-kicker">Evidence & Report Builder</p>
+            <h1 className="audity-page-title">Assessment Assets</h1>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Evidence</h2>
               {canUploadEvidence ? (
@@ -347,9 +347,9 @@ export function AssessmentAssetsPage() {
             </section>
             ) : null}
           </div>
-          <section className="mt-4 rounded-audity border border-audity-border bg-audity-panel p-4">
+          <section className="mt-3 rounded-audity border border-audity-border bg-audity-panel p-4">
             <h2 className="mb-4 text-lg font-semibold">Report Builder</h2>
-            <form className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]" onSubmit={(event) => void createReport(event)}>
+            <form className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_300px]" onSubmit={(event) => void createReport(event)}>
               <div className="grid gap-2 md:grid-cols-2">
                 {blocks.map((block) => (
                   <label key={block} className="flex items-center gap-2 rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm text-audity-secondary">

@@ -3,18 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --color-bg-app: #111315;
-  --color-bg-page: #151719;
-  --color-bg-panel: #202225;
-  --color-bg-panel-alt: #242628;
-  --color-bg-table-header: #2a2d30;
-  --color-bg-sidebar: #1e2124;
-  --color-bg-topnav: #061e3a;
-  --color-border-subtle: #34383d;
-  --color-border-strong: #3f444a;
-  --color-primary: #008cff;
-  --color-primary-hover: #00a3ff;
-  --color-primary-active: #006bd6;
+  --color-bg-app: #0d1013;
+  --color-bg-page: #111417;
+  --color-bg-panel: #171b1f;
+  --color-bg-panel-alt: #1c2126;
+  --color-bg-table-header: #20262c;
+  --color-bg-sidebar: #15191e;
+  --color-bg-topnav: #10161d;
+  --color-border-subtle: #2b3239;
+  --color-border-strong: #3a4450;
+  --color-primary: #168cff;
+  --color-primary-hover: #42a3ff;
+  --color-primary-active: rgba(22, 140, 255, 0.16);
   --color-text-primary: #f4f6f8;
   --color-text-secondary: #a8b0ba;
   --color-text-muted: #7c858f;
@@ -27,11 +27,11 @@
   --color-warning: #f5a400;
   --color-error: #ff4b00;
   --radius-sm: 4px;
-  --radius-md: 6px;
-  --topnav-height: 48px;
-  --sidebar-width: 260px;
-  --page-padding: 20px;
-  --panel-padding: 16px;
+  --radius-md: 5px;
+  --topnav-height: 44px;
+  --sidebar-width: 232px;
+  --page-padding: 16px;
+  --panel-padding: 12px;
 }
 
 .audity-theme-light {
@@ -61,6 +61,144 @@ body {
   min-width: 320px;
   background: var(--color-bg-app);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+* {
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+@layer base {
+  h1 {
+    letter-spacing: 0;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .audity-page-header {
+    @apply mb-4 border-b border-audity-border pb-3;
+  }
+
+  .audity-page-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-normal text-audity-primary;
+  }
+
+  .audity-page-title {
+    @apply mt-1 text-xl font-semibold text-audity-text sm:text-2xl;
+  }
+
+  .audity-page-copy {
+    @apply mt-1 max-w-3xl text-sm leading-6 text-audity-secondary;
+  }
+
+  .audity-card {
+    @apply rounded-audity border border-audity-border bg-audity-panel p-3 shadow-sm;
+  }
+
+  .audity-card-muted {
+    @apply rounded-audity border border-audity-border bg-audity-page p-3;
+  }
+
+  .audity-btn-primary {
+    @apply h-8 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .audity-btn-secondary {
+    @apply h-8 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .audity-input {
+    @apply h-8 w-full rounded-audity border border-audity-border bg-audity-page px-2.5 text-sm normal-case text-audity-text outline-none focus:border-audity-primary;
+  }
+
+  .audity-label {
+    @apply block text-[11px] font-semibold uppercase tracking-normal text-audity-secondary;
+  }
+
+  .audity-status-pill {
+    @apply rounded-audity border px-2 py-0.5 text-[11px] font-semibold;
+  }
+}
+
+#root {
+  min-height: 100vh;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  height: 14px;
+  width: 14px;
+  accent-color: var(--color-primary);
+}
+
+.rounded-audity.border.border-audity-border.bg-audity-panel.p-4,
+.rounded-audity.border.border-audity-border.bg-audity-panel.p-5,
+.min-w-0.rounded-audity.border.border-audity-border.bg-audity-panel.p-4,
+.w-full.max-w-lg.rounded-audity.border.border-audity-border.bg-audity-panel.p-5 {
+  padding: 0.75rem;
+}
+
+.rounded-audity.border.border-audity-border.bg-audity-page.p-3,
+.rounded-audity.border.border-audity-border.bg-audity-panel.p-3 {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.mb-5.border-b.border-audity-border.pb-4 {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.mt-1.text-2xl.font-semibold {
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+}
+
+.text-lg.font-semibold {
+  font-size: 1rem;
+  line-height: 1.45rem;
+}
+
+.mt-2.text-2xl.font-semibold {
+  font-size: 1.5rem;
+  line-height: 1.8rem;
+}
+
+.grid.gap-4 {
+  gap: 0.75rem;
+}
+
+.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.75rem * var(--tw-space-y-reverse));
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th,
+td {
+  vertical-align: top;
+}
+
+button {
+  letter-spacing: 0;
 }
 
 .audity-tooltip-layer {

@@ -9,7 +9,7 @@ export function UserSettingsPage() {
   const { user, setupMfa, verifyMfaSetup } = useAuth();
   const [tooltipsEnabled, setTooltipsEnabled] = useState(() => window.localStorage.getItem("audity_tooltips_enabled") !== "false");
   const [preferences, setPreferences] = useState(() => ({
-    language: (window.localStorage.getItem("audity_language") === "Deutsch" ? "Deutsch" : "English") as AudityLanguage,
+    language: "English" as AudityLanguage,
     theme: window.localStorage.getItem("audity_theme") ?? "System",
     notifications: window.localStorage.getItem("audity_notifications") !== "false",
     defaultView: window.localStorage.getItem("audity_default_view") ?? "Dashboard",
@@ -96,14 +96,14 @@ export function UserSettingsPage() {
 
   return (
     <>
-      <div className="mb-5 border-b border-audity-border pb-4">
-        <p className="text-xs font-semibold uppercase text-audity-primary">{t("Account")}</p>
-        <h1 className="mt-1 text-2xl font-semibold">{t("User Settings")}</h1>
-        <p className="mt-2 text-sm text-audity-secondary">{user?.email} · {user?.role}</p>
+      <div className="audity-page-header">
+        <p className="audity-page-kicker">{t("Account")}</p>
+        <h1 className="audity-page-title">{t("User Settings")}</h1>
+        <p className="audity-page-copy">{user?.email} · {user?.role}</p>
       </div>
       {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
       {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-[#17251D] px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
           <h2 className="mb-4 text-lg font-semibold">{t("Password")}</h2>
           <form className="space-y-3" onSubmit={changePassword}>
@@ -179,9 +179,8 @@ export function UserSettingsPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose the language preference saved for your browser.">
                 {t("Language")}
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.language} onChange={(event) => setPreferences({ ...preferences, language: event.target.value as AudityLanguage })}>
+                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.language} onChange={() => setPreferences({ ...preferences, language: "English" })}>
                   <option>English</option>
-                  <option>Deutsch</option>
                 </select>
               </label>
               <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose how the interface should look on this browser.">

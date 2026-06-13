@@ -593,6 +593,170 @@ create unique index if not exists customer_shares_active_unique
 create index if not exists notifications_recipient_created_idx
   on notifications (recipient_user_id, read_at, created_at desc);
 
+create table if not exists workbench_records (
+  id uuid primary key,
+  kind text not null,
+  title text not null,
+  description text not null default '',
+  status text not null default 'open',
+  priority text not null default 'medium',
+  owner text,
+  customer_id uuid references customers(id) on delete set null,
+  assessment_id uuid references assessments(id) on delete set null,
+  due_date date,
+  visibility text not null default 'internal',
+  metadata jsonb not null default '{}'::jsonb,
+  created_by uuid references users(id),
+  updated_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists workbench_records_kind_status_idx
+  on workbench_records (kind, status, updated_at desc);
+
+create index if not exists workbench_records_customer_idx
+  on workbench_records (customer_id, kind, updated_at desc);
+
+create table if not exists saved_views (
+  id uuid primary key,
+  name text not null,
+  scope text not null,
+  filters jsonb not null default '{}'::jsonb,
+  columns jsonb not null default '[]'::jsonb,
+  owner_user_id uuid references users(id) on delete cascade,
+  shared boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public_api_tokens (
+  id uuid primary key,
+  name text not null,
+  token_hash text not null unique,
+  token_prefix text not null,
+  scopes jsonb not null default '[]'::jsonb,
+  created_by uuid references users(id),
+  last_used_at timestamptz,
+  expires_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists webhook_subscriptions (
+  id uuid primary key,
+  name text not null,
+  target_url text not null,
+  events jsonb not null default '[]'::jsonb,
+  enabled boolean not null default true,
+  secret_hash text,
+  last_status text,
+  last_message text,
+  last_called_at timestamptz,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists integration_settings (
+  key text primary key,
+  enabled boolean not null default false,
+  config jsonb not null default '{}'::jsonb,
+  updated_by uuid references users(id),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists assessment_templates (
+  id uuid primary key,
+  name text not null,
+  description text not null default '',
+  framework_id uuid references frameworks(id) on delete set null,
+  default_audience text,
+  default_language text not null default 'en',
+  default_due_days integer not null default 30,
+  settings jsonb not null default '{}'::jsonb,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists recurring_assessments (
+  id uuid primary key,
+  customer_id uuid references customers(id) on delete cascade,
+  template_id uuid references assessment_templates(id) on delete set null,
+  name text not null,
+  cadence text not null default 'quarterly',
+  next_run_date date,
+  enabled boolean not null default true,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists approval_gates (
+  id uuid primary key,
+  name text not null,
+  entity_type text not null,
+  required_role text,
+  required_approvals integer not null default 1,
+  enabled boolean not null default true,
+  rules jsonb not null default '{}'::jsonb,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists custom_fields (
+  id uuid primary key,
+  entity_type text not null,
+  field_key text not null,
+  label text not null,
+  field_type text not null default 'text',
+  required boolean not null default false,
+  options jsonb not null default '[]'::jsonb,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (entity_type, field_key)
+);
+
+create table if not exists custom_status_workflows (
+  id uuid primary key,
+  entity_type text not null,
+  name text not null,
+  statuses jsonb not null default '[]'::jsonb,
+  default_status text,
+  enabled boolean not null default true,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists retention_policies (
+  id uuid primary key,
+  name text not null,
+  entity_type text not null,
+  retention_days integer not null default 365,
+  legal_hold_exempt boolean not null default true,
+  enabled boolean not null default true,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists legal_holds (
+  id uuid primary key,
+  customer_id uuid references customers(id) on delete cascade,
+  assessment_id uuid references assessments(id) on delete cascade,
+  reason text not null,
+  status text not null default 'active',
+  approved_by text,
+  expires_at date,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 insert into settings (key, value)
 values ('session_idle_timeout_minutes', '30'::jsonb)
 on conflict (key) do nothing;
