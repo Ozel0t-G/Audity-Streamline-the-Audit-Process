@@ -553,7 +553,6 @@ export function AppLayout() {
           <nav className="space-y-0.5">
             <p className={navSectionClass}>{t("Workspace")}</p>
             <NavLink className={navClass} to="/dashboard">{t("Dashboard")}</NavLink>
-            <NavLink className={navClass} to="/workbench">{t("Workbench")}</NavLink>
             <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
             <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
             <p className={navSectionClass}>{t("Customers")}</p>
@@ -596,9 +595,9 @@ export function AdminLayout() {
             {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">{t("Activity Log")}</NavLink> : null}
             {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit">{t("Audit Log")}</NavLink> : null}
             <p className={navSectionClass}>{t("System")}</p>
+            {can("settings.manage") ? <NavLink className={navClass} to="/admin/workbench">{t("Workbench")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">{t("System")}</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">{t("Backup")}</NavLink> : null}
-            <NavLink className={navClass} to="/workbench">{t("Workbench")}</NavLink>
             <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
             <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
           </nav>

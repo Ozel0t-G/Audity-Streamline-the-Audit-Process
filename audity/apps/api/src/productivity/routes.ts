@@ -170,6 +170,7 @@ function nullDate(value?: string | null): string | null {
 }
 
 async function ensureProductivityDefaults(userId: string) {
+  await pool.query("update saved_views set shared = true where shared = false");
   await pool.query(
     `insert into assessment_templates (id, name, description, default_audience, default_due_days, settings, created_by)
      values
@@ -267,6 +268,7 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
   app.get<{ Querystring: { q?: string } }>("/api/search", { preHandler: requirePermission("assessment.view") }, async (request) => {
     const term = (request.query.q ?? "").trim();
     if (!term) return { results: [] };
+    const canUseWorkbench = request.user!.permissions.includes("settings.manage");
     const q = `%${term}%`;
     const [customers, assessments, risks, findings, reports, records] = await Promise.all([
       pool.query(
@@ -302,11 +304,11 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
          from reports where status ilike $1 or content::text ilike $1 order by updated_at desc limit 8`,
         [q]
       ),
-      pool.query(
-        `select 'Workbench' as type, id::text, title, kind as subtitle, '/workbench?kind=' || kind as url
+      canUseWorkbench ? pool.query(
+        `select 'Workbench' as type, id::text, title, kind as subtitle, '/admin/workbench?kind=' || kind as url
          from workbench_records where title ilike $1 or description ilike $1 or kind ilike $1 order by updated_at desc limit 8`,
         [q]
-      )
+      ) : Promise.resolve({ rows: [] })
     ]);
     return { results: [...customers.rows, ...assessments.rows, ...risks.rows, ...findings.rows, ...reports.rows, ...records.rows] };
   });
@@ -318,18 +320,22 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
       headers: { authorization: request.headers.authorization ?? "" }
     });
     const results = search.json().results ?? [];
+    const canUseWorkbench = request.user!.permissions.includes("settings.manage");
+    const actions = [
+      { type: "Action", id: "new-customer", title: "Create customer", subtitle: "Open customer management", url: "/customers/my" },
+      { type: "Action", id: "manual", title: "Open manual", subtitle: "Documentation and help", url: "/manual" },
+      { type: "Action", id: "connectors", title: "Open connectors", subtitle: "Admin connector settings", url: "/admin/connectors" }
+    ];
+    if (canUseWorkbench) {
+      actions.splice(1, 0, { type: "Action", id: "workbench", title: "Open workbench", subtitle: "Admin operations, automation and governance", url: "/admin/workbench" });
+    }
     return {
-      actions: [
-        { type: "Action", id: "new-customer", title: "Create customer", subtitle: "Open customer management", url: "/customers/my" },
-        { type: "Action", id: "workbench", title: "Open workbench", subtitle: "Tasks, registers, automation and analytics", url: "/workbench" },
-        { type: "Action", id: "manual", title: "Open manual", subtitle: "Documentation and help", url: "/manual" },
-        { type: "Action", id: "connectors", title: "Open connectors", subtitle: "Admin connector settings", url: "/admin/connectors" }
-      ],
+      actions,
       results
     };
   });
 
-  app.get("/api/workbench/overview", { preHandler: requirePermission("assessment.view") }, async (request) => {
+  app.get("/api/workbench/overview", { preHandler: requirePermission("settings.manage") }, async (request) => {
     await ensureProductivityDefaults(request.user!.sub);
     await ensureWorkbenchSeeds(request.user!.sub);
     const [analytics, recent, savedViews, integrations] = await Promise.all([
@@ -341,7 +347,7 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
          left join assessments a on a.id = wr.assessment_id
          order by wr.updated_at desc limit 20`
       ),
-      pool.query("select * from saved_views where owner_user_id = $1 or shared = true order by updated_at desc limit 12", [request.user!.sub]),
+      pool.query("select * from saved_views order by updated_at desc limit 12"),
       pool.query("select key, enabled, config, updated_at from integration_settings order by key")
     ]);
     return {
@@ -352,7 +358,7 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
     };
   });
 
-  app.get<{ Querystring: { kind?: string; status?: string; q?: string } }>("/api/workbench/records", { preHandler: requirePermission("assessment.view") }, async (request) => {
+  app.get<{ Querystring: { kind?: string; status?: string; q?: string } }>("/api/workbench/records", { preHandler: requirePermission("settings.manage") }, async (request) => {
     const params: unknown[] = [];
     const where: string[] = [];
     if (request.query.kind) {
@@ -380,7 +386,7 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
     return { records: result.rows.map(mapRecord) };
   });
 
-  app.post<{ Body: z.infer<typeof recordSchema> }>("/api/workbench/records", { preHandler: requireCsrfPermission("assessment.edit") }, async (request) => {
+  app.post<{ Body: z.infer<typeof recordSchema> }>("/api/workbench/records", { preHandler: requireCsrfPermission("settings.manage") }, async (request) => {
     const body = parseBody(recordSchema, request.body);
     const id = randomUUID();
     const result = await pool.query(
@@ -408,7 +414,7 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
     return { record: mapRecord(result.rows[0]) };
   });
 
-  app.patch<{ Params: { id: string }; Body: z.infer<typeof recordPatchSchema> }>("/api/workbench/records/:id", { preHandler: requireCsrfPermission("assessment.edit") }, async (request, reply) => {
+  app.patch<{ Params: { id: string }; Body: z.infer<typeof recordPatchSchema> }>("/api/workbench/records/:id", { preHandler: requireCsrfPermission("settings.manage") }, async (request, reply) => {
     const body = parseBody(recordPatchSchema, request.body);
     const before = await pool.query("select * from workbench_records where id = $1", [request.params.id]);
     if (!before.rows[0]) return reply.code(404).send({ code: "NOT_FOUND", message: "Record not found" });
@@ -437,14 +443,14 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
     return { record: mapRecord(result.rows[0]) };
   });
 
-  app.delete<{ Params: { id: string } }>("/api/workbench/records/:id", { preHandler: requireCsrfPermission("assessment.edit") }, async (request, reply) => {
+  app.delete<{ Params: { id: string } }>("/api/workbench/records/:id", { preHandler: requireCsrfPermission("settings.manage") }, async (request, reply) => {
     const result = await pool.query("delete from workbench_records where id = $1 returning *", [request.params.id]);
     if (!result.rows[0]) return reply.code(404).send({ code: "NOT_FOUND", message: "Record not found" });
     await appendActivityEvent({ userId: request.user!.sub, action: "workbench.record.deleted", entityType: "workbench", entityId: request.params.id, before: result.rows[0], after: null });
     return { status: "ok" };
   });
 
-  app.post<{ Body: { ids?: string[]; status?: string; priority?: string; owner?: string } }>("/api/workbench/records/bulk", { preHandler: requireCsrfPermission("assessment.edit") }, async (request) => {
+  app.post<{ Body: { ids?: string[]; status?: string; priority?: string; owner?: string } }>("/api/workbench/records/bulk", { preHandler: requireCsrfPermission("settings.manage") }, async (request) => {
     const body = parseBody(z.object({ ids: z.array(z.string().uuid()).min(1), status: z.string().optional(), priority: z.string().optional(), owner: z.string().optional() }), request.body);
     const result = await pool.query(
       `update workbench_records
@@ -456,28 +462,28 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
     return { records: result.rows.map(mapRecord) };
   });
 
-  app.get("/api/workbench/saved-views", { preHandler: requirePermission("assessment.view") }, async (request) => {
-    const result = await pool.query("select * from saved_views where owner_user_id = $1 or shared = true order by updated_at desc", [request.user!.sub]);
+  app.get("/api/workbench/saved-views", { preHandler: requirePermission("settings.manage") }, async () => {
+    const result = await pool.query("select * from saved_views order by updated_at desc");
     return { views: result.rows };
   });
 
-  app.post<{ Body: z.infer<typeof savedViewSchema> }>("/api/workbench/saved-views", { preHandler: requireCsrfPermission("assessment.view") }, async (request) => {
+  app.post<{ Body: z.infer<typeof savedViewSchema> }>("/api/workbench/saved-views", { preHandler: requireCsrfPermission("settings.manage") }, async (request) => {
     const body = parseBody(savedViewSchema, request.body);
     const result = await pool.query(
       `insert into saved_views (id, name, scope, filters, columns, owner_user_id, shared)
        values ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7) returning *`,
-      [randomUUID(), body.name, body.scope, JSON.stringify(body.filters ?? {}), JSON.stringify(body.columns ?? []), request.user!.sub, body.shared ?? false]
+      [randomUUID(), body.name, body.scope, JSON.stringify(body.filters ?? {}), JSON.stringify(body.columns ?? []), request.user!.sub, true]
     );
     return { view: result.rows[0] };
   });
 
-  app.delete<{ Params: { id: string } }>("/api/workbench/saved-views/:id", { preHandler: requireCsrfPermission("assessment.view") }, async (request, reply) => {
-    const result = await pool.query("delete from saved_views where id = $1 and owner_user_id = $2 returning id", [request.params.id, request.user!.sub]);
+  app.delete<{ Params: { id: string } }>("/api/workbench/saved-views/:id", { preHandler: requireCsrfPermission("settings.manage") }, async (request, reply) => {
+    const result = await pool.query("delete from saved_views where id = $1 returning id", [request.params.id]);
     if (!result.rows[0]) return reply.code(404).send({ code: "NOT_FOUND", message: "Saved view not found" });
     return { status: "ok" };
   });
 
-  app.get("/api/workbench/analytics", { preHandler: requirePermission("assessment.view") }, async () => ({ analytics: await analyticsSummary() }));
+  app.get("/api/workbench/analytics", { preHandler: requirePermission("settings.manage") }, async () => ({ analytics: await analyticsSummary() }));
 
   app.get("/api/admin/productivity/config", { preHandler: requirePermission("settings.manage") }, async () => {
     const [templates, recurring, gates, fields, workflows, retention, holds, webhooks, integrations, tokens] = await Promise.all([

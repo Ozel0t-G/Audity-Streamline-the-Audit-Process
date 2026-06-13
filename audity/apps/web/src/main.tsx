@@ -30,7 +30,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/alpha-disclaimer" element={<AlphaDisclaimerPage />} />
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/workbench" element={<WorkbenchPage />} />
               <Route path="/manual" element={<ManualPage />} />
               <Route path="/customers" element={<CustomerListPage />} />
               <Route path="/customers/my" element={<CustomerListPage mode="my" />} />
@@ -50,6 +49,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/branding" element={<RequirePermission permission="branding.manage"><AdminDashboardPage section="branding" /></RequirePermission>} />
               <Route path="/admin/email" element={<RequirePermission permission="email.manage"><AdminDashboardPage section="email" /></RequirePermission>} />
               <Route path="/admin/connectors" element={<RequirePermission permission="connectors.manage"><ConnectorAdminPage /></RequirePermission>} />
+              <Route path="/admin/workbench" element={<RequirePermission permission="settings.manage"><WorkbenchPage /></RequirePermission>} />
               <Route path="/admin/system" element={<RequirePermission permission="settings.manage"><AdminDashboardPage section="system" /></RequirePermission>} />
               <Route path="/admin/backup" element={<RequirePermission instanceAdminOnly><AdminDashboardPage section="backup" /></RequirePermission>} />
             </Route>

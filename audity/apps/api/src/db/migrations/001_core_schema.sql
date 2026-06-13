@@ -625,10 +625,17 @@ create table if not exists saved_views (
   filters jsonb not null default '{}'::jsonb,
   columns jsonb not null default '[]'::jsonb,
   owner_user_id uuid references users(id) on delete cascade,
-  shared boolean not null default false,
+  shared boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table saved_views
+  alter column shared set default true;
+
+update saved_views
+set shared = true
+where shared = false;
 
 create table if not exists public_api_tokens (
   id uuid primary key,

@@ -64,9 +64,9 @@ const manualSections = [
     title: "Workbench",
     screenshot: "Screenshot: Workbench modules, record list, saved views and admin configuration",
     body: [
-      "Workbench is the central place for evidence requests, vendor register, asset register, policy register, exceptions, dependencies and control owner matrix.",
+      "Workbench is the tenant-wide admin place for evidence requests, vendor register, asset register, policy register, exceptions, dependencies and control owner matrix.",
       "Each workbench item has status, priority, owner, due date, visibility and metadata. Use bulk review and bulk close for multi-item updates.",
-      "Saved Views store filters and columns for repeated work such as My open risks, Critical overdue or Evidence missing."
+      "Saved Views store filters and columns for repeated work such as Open risks, Critical overdue or Evidence missing. Saved Views are global for the tenant and visible to every admin with Workbench access."
     ]
   },
   {
@@ -74,7 +74,7 @@ const manualSections = [
     title: "Automation and Governance",
     screenshot: "Screenshot: Workbench Automation and Governance tab with templates, gates and integrations",
     body: [
-      "Admins can create assessment templates, recurring assessments, approval gates, custom fields, custom status workflows, retention policies, legal holds and webhooks.",
+      "Admins can create tenant-wide assessment templates, recurring assessments, approval gates, custom fields, custom status workflows, retention policies, legal holds and webhooks.",
       "SSO, SCIM, MFA enforcement, delegated admin mode and customer portal settings are configured in the integration settings area.",
       "Public API tokens are generated once. Store the token immediately; afterwards Audity only shows the prefix."
     ]
