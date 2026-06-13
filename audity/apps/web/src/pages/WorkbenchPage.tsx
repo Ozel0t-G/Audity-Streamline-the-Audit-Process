@@ -98,8 +98,8 @@ export function WorkbenchPage() {
   const api = useApi();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const canEdit = Boolean(user?.permissions.includes("assessment.edit"));
   const canAdmin = Boolean(user?.permissions.includes("settings.manage"));
+  const canEdit = canAdmin;
   const [tab, setTab] = useState<"work" | "admin" | "analytics" | "coverage">("work");
   const [overview, setOverview] = useState<WorkbenchOverview | null>(null);
   const [records, setRecords] = useState<WorkbenchRecord[]>([]);
@@ -190,7 +190,7 @@ export function WorkbenchPage() {
     event.preventDefault();
     await api("/api/workbench/saved-views", {
       method: "POST",
-      body: JSON.stringify({ name: savedViewForm.name, scope: savedViewForm.scope, filters: { kind: form.kind }, columns: ["title", "status", "owner", "dueDate"], shared: false })
+      body: JSON.stringify({ name: savedViewForm.name, scope: savedViewForm.scope, filters: { kind: form.kind }, columns: ["title", "status", "owner", "dueDate"], shared: true })
     });
     setSavedViewForm({ ...savedViewForm, name: "" });
     await load();
@@ -247,7 +247,7 @@ export function WorkbenchPage() {
       <div className="audity-page-header">
         <p className="audity-page-kicker">Operations</p>
         <h1 className="audity-page-title">Workbench</h1>
-        <p className="audity-page-copy">Operational center for searches, saved views, evidence requests, registers, approvals, automation, governance and security administration.</p>
+        <p className="audity-page-copy">Tenant-wide admin center for searches, saved views, evidence requests, registers, approvals, automation, governance and security administration. Changes made here apply globally to this tenant.</p>
       </div>
       {error ? <div className="mb-3 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
       {message ? <div className="mb-3 rounded-audity border border-audity-success bg-audity-page px-3 py-2 text-sm text-audity-success">{message}</div> : null}
@@ -322,7 +322,8 @@ export function WorkbenchPage() {
           </section>
           <aside className="space-y-3">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
-              <h2 className="text-sm font-semibold">Saved Views</h2>
+              <h2 className="text-sm font-semibold">Tenant Saved Views</h2>
+              <p className="mt-1 text-xs text-audity-muted">Saved views are global for the whole tenant and visible to all admins with Workbench access.</p>
               <form className="mt-3 flex gap-2" onSubmit={saveView}>
                 <input className="audity-input" placeholder="View name" value={savedViewForm.name} onChange={(event) => setSavedViewForm({ ...savedViewForm, name: event.target.value })} />
                 <button className="audity-btn-secondary">Save</button>
@@ -331,7 +332,7 @@ export function WorkbenchPage() {
                 {overview?.savedViews.map((view) => (
                   <div key={view.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm">
                     <p className="font-semibold">{view.name}</p>
-                    <p className="text-xs text-audity-muted">{view.scope} · {view.shared ? "shared" : "private"}</p>
+                    <p className="text-xs text-audity-muted">{view.scope} · tenant-wide</p>
                   </div>
                 ))}
               </div>
@@ -352,7 +353,8 @@ export function WorkbenchPage() {
       {tab === "admin" ? (
         <div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_340px]">
           <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
-            <h2 className="text-base font-semibold">Automation & Governance Settings</h2>
+            <h2 className="text-base font-semibold">Tenant Automation & Governance Settings</h2>
+            <p className="mt-1 text-xs text-audity-muted">These settings are global for the tenant and affect all users, customers, assessments and admin workflows where applicable.</p>
             {!canAdmin ? <p className="mt-3 text-sm text-audity-muted">Settings permission required.</p> : (
               <>
                 <div className="mt-3 grid gap-2 md:grid-cols-3">
