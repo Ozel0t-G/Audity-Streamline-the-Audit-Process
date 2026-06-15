@@ -415,34 +415,7 @@ async function loadOverview(assessmentId: string, userId: string) {
     gaps,
     contradictions,
     readinessScore,
-    executiveSummary,
-    featureCoverage: [
-      "Audit Scope Builder",
-      "Audit Planning Page",
-      "Control-by-Control Audit View",
-      "Evidence Quality Scoring",
-      "Evidence-to-Control Mapping",
-      "Audit Trail per Control",
-      "Reviewer Workflow",
-      "Finding Lifecycle",
-      "Finding Severity Matrix",
-      "Management Response",
-      "Remediation Tracking",
-      "Re-Test Workflow",
-      "Audit Sampling",
-      "Interview Notes",
-      "Audit Program Templates",
-      "Control Maturity Justification",
-      "Contradiction Detection",
-      "Evidence Request Portal",
-      "Audit Readiness Score",
-      "Report Review Workflow",
-      "Executive Summary Generator",
-      "Statement of Applicability",
-      "Gap Register",
-      "Audit Evidence Pack",
-      "Auditor Sign-off"
-    ]
+    executiveSummary
   };
 }
 

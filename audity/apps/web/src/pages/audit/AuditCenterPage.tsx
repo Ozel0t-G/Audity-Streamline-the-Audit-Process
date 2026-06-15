@@ -50,7 +50,6 @@ type AuditOverview = {
   contradictions: AuditControl[];
   readinessScore: number;
   executiveSummary: string;
-  featureCoverage: string[];
 };
 
 type Template = {
@@ -100,8 +99,7 @@ const emptyOverview: AuditOverview = {
   gaps: [],
   contradictions: [],
   readinessScore: 0,
-  executiveSummary: "",
-  featureCoverage: []
+  executiveSummary: ""
 };
 
 function text(value: unknown, fallback = "") {
@@ -187,6 +185,15 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
     </div>
   );
 }
+
+type AuditWorkflowCard = {
+  title: string;
+  description: string;
+  tab: string;
+  metric: string;
+  actionLabel: string;
+  onOpen?: () => void;
+};
 
 export function AuditCenterPage() {
   const { id } = useParams();
@@ -625,13 +632,221 @@ export function AuditCenterPage() {
 
   const scoreTone = overview.readinessScore >= 75 ? "bg-audity-success" : overview.readinessScore >= 45 ? "bg-audity-warning" : "bg-audity-error";
   const selectedTemplate = templates.find((template) => template.id === planForm.programTemplateId);
+  const controlCount = overview.controls.length;
+  const reviewedControlCount = overview.controls.filter((control) => !["draft", ""].includes(text(control.reviewStatus, ""))).length;
+  const approvedControlCount = overview.controls.filter((control) => ["approved", "signed"].includes(text(control.reviewStatus)) || text(control.signoffStatus) === "signed").length;
+  const controlsWithEvidence = overview.controls.filter((control) => numberValue(control.mappedEvidence) > 0).length;
+  const controlsWithJustification = overview.controls.filter((control) => text(control.maturityJustification).trim()).length;
+  const evidenceQualityScores = overview.controls.map((control) => numberValue(control.evidenceQualityScore)).filter((score) => score > 0);
+  const averageEvidenceQuality = evidenceQualityScores.length
+    ? (evidenceQualityScores.reduce((total, score) => total + score, 0) / evidenceQualityScores.length).toFixed(1)
+    : "0.0";
+  const openFindingCount = overview.findings.filter((finding) => !["closed", "verified"].includes(text(finding.lifecycleStatus, "draft"))).length;
+  const highSeverityFindingCount = overview.findings.filter((finding) => ["high", "critical"].includes(text(finding.calculatedSeverity ?? finding.priority))).length;
+  const activeRemediationCount = overview.findings.filter((finding) => ["planned", "in_progress", "blocked"].includes(text(finding.remediationStatus))).length;
+  const readyRetestCount = overview.findings.filter((finding) => ["ready", "failed"].includes(text(finding.retestStatus))).length;
+  const openRequestCount = overview.evidenceRequests.filter((request) => !["closed", "cancelled"].includes(text(request.status, "open"))).length;
+  const latestReportStatus = text(overview.reportReviews[0]?.status, "No review");
+
+  function openWorkflowTab(tab: string) {
+    setActiveTab(tab);
+    window.requestAnimationFrame(() => {
+      document.getElementById("audit-center-workspace")?.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  const workflowCards: AuditWorkflowCard[] = [
+    {
+      title: "Audit Scope Builder",
+      description: "Define systems, processes, suppliers, locations, and regulations that are in or out of audit scope.",
+      tab: "Scope & Plan",
+      metric: `${overview.scopeItems.length} scope items`,
+      actionLabel: "Open scope"
+    },
+    {
+      title: "Audit Planning Page",
+      description: "Maintain the audit owner, reviewer, calendar, target readiness, and selected audit program template.",
+      tab: "Scope & Plan",
+      metric: text(overview.plan.currentPhase, "Needs plan"),
+      actionLabel: "Open planning"
+    },
+    {
+      title: "Control-by-Control Audit View",
+      description: "Review each control, assign owners, set applicability, and document the audit decision.",
+      tab: "Controls & Evidence",
+      metric: `${reviewedControlCount}/${controlCount} reviewed`,
+      actionLabel: "Open controls"
+    },
+    {
+      title: "Evidence Quality Scoring",
+      description: "Score relevance, completeness, freshness, and trust so weak evidence is visible before reporting.",
+      tab: "Controls & Evidence",
+      metric: `${averageEvidenceQuality}/5 avg`,
+      actionLabel: "Open scoring"
+    },
+    {
+      title: "Evidence-to-Control Mapping",
+      description: "Connect uploaded evidence to controls and remove mappings that no longer support the audit record.",
+      tab: "Controls & Evidence",
+      metric: `${controlsWithEvidence}/${controlCount} controls mapped`,
+      actionLabel: "Open mapping"
+    },
+    {
+      title: "Audit Trail per Control",
+      description: "Review sign-offs and recent activity so every control decision has traceable history.",
+      tab: "Controls & Evidence",
+      metric: `${overview.history.length} events`,
+      actionLabel: "Open trail"
+    },
+    {
+      title: "Reviewer Workflow",
+      description: "Move controls from draft to review and approval with clear ownership.",
+      tab: "Controls & Evidence",
+      metric: `${approvedControlCount}/${controlCount} approved`,
+      actionLabel: "Open reviews"
+    },
+    {
+      title: "Finding Lifecycle",
+      description: "Select a finding and drive it from draft through remediation, verification, and closure.",
+      tab: "Findings & Remediation",
+      metric: `${openFindingCount} open`,
+      actionLabel: "Open findings",
+      onOpen: () => {
+        if (overview.findings[0]) setSelectedFindingId(text(overview.findings[0].id));
+        openWorkflowTab("Findings & Remediation");
+      }
+    },
+    {
+      title: "Finding Severity Matrix",
+      description: "Calculate severity from impact, likelihood, criticality, and evidence confidence.",
+      tab: "Findings & Remediation",
+      metric: `${highSeverityFindingCount} high/critical`,
+      actionLabel: "Open severity"
+    },
+    {
+      title: "Management Response",
+      description: "Capture the owner response, acceptance decision, and response notes for each finding.",
+      tab: "Findings & Remediation",
+      metric: `${overview.findings.filter((finding) => text(finding.managementResponseStatus) !== "pending").length} responded`,
+      actionLabel: "Open response"
+    },
+    {
+      title: "Remediation Tracking",
+      description: "Track remediation owner, due date, status, and blocked work until the finding is ready to verify.",
+      tab: "Findings & Remediation",
+      metric: `${activeRemediationCount} active`,
+      actionLabel: "Open remediation"
+    },
+    {
+      title: "Re-Test Workflow",
+      description: "Link re-test evidence and record whether the remediation passed, failed, or is not ready.",
+      tab: "Findings & Remediation",
+      metric: `${readyRetestCount} ready/failed`,
+      actionLabel: "Open re-test"
+    },
+    {
+      title: "Audit Sampling",
+      description: "Define populations, sample sizes, selected items, selection method, and test results.",
+      tab: "Audit Work",
+      metric: `${overview.samples.length} samples`,
+      actionLabel: "Open samples"
+    },
+    {
+      title: "Interview Notes",
+      description: "Record interview participants, notes, follow-ups, and the linked control context.",
+      tab: "Audit Work",
+      metric: `${overview.interviews.length} notes`,
+      actionLabel: "Open interviews"
+    },
+    {
+      title: "Audit Program Templates",
+      description: "Use reusable audit program templates to start planning without rebuilding the structure every time.",
+      tab: "Scope & Plan",
+      metric: `${templates.length} templates`,
+      actionLabel: "Open templates"
+    },
+    {
+      title: "Control Maturity Justification",
+      description: "Document why a control score or maturity decision is defensible for review and reporting.",
+      tab: "Controls & Evidence",
+      metric: `${controlsWithJustification}/${controlCount} justified`,
+      actionLabel: "Open justification"
+    },
+    {
+      title: "Contradiction Detection",
+      description: "Jump to controls that look mature but still miss mapped or received evidence.",
+      tab: "Controls & Evidence",
+      metric: `${overview.contradictions.length} checks`,
+      actionLabel: "Open checks",
+      onOpen: () => {
+        if (overview.contradictions[0]) setSelectedControlId(overview.contradictions[0].assessmentQuestionId);
+        openWorkflowTab("Controls & Evidence");
+      }
+    },
+    {
+      title: "Evidence Request Portal",
+      description: "Create customer-facing evidence requests and follow their status until they are closed.",
+      tab: "Controls & Evidence",
+      metric: `${openRequestCount} open requests`,
+      actionLabel: "Open requests"
+    },
+    {
+      title: "Audit Readiness Score",
+      description: "Monitor the combined readiness score from reviews, evidence mapping, findings, and report state.",
+      tab: "Overview",
+      metric: `${overview.readinessScore}% ready`,
+      actionLabel: "View score"
+    },
+    {
+      title: "Report Review Workflow",
+      description: "Track internal and customer report review steps before the final sign-off.",
+      tab: "Report & Sign-off",
+      metric: latestReportStatus,
+      actionLabel: "Open report"
+    },
+    {
+      title: "Executive Summary Generator",
+      description: "Use the live audit summary generated from controls, findings, evidence, and report status.",
+      tab: "Overview",
+      metric: "Live summary",
+      actionLabel: "View summary"
+    },
+    {
+      title: "Statement of Applicability",
+      description: "Review applicability, ownership, evidence count, review status, and sign-off per control.",
+      tab: "Gaps & Pack",
+      metric: `${overview.statementOfApplicability.length} rows`,
+      actionLabel: "Open SoA"
+    },
+    {
+      title: "Gap Register",
+      description: "Review automatically detected control, evidence, and process gaps before closing the audit.",
+      tab: "Gaps & Pack",
+      metric: `${overview.gaps.length} gaps`,
+      actionLabel: "Open gaps"
+    },
+    {
+      title: "Audit Evidence Pack",
+      description: "Generate the export package with summary, SoA, controls, evidence mappings, findings, and sign-offs.",
+      tab: "Gaps & Pack",
+      metric: `${overview.evidenceMappings.length} mappings`,
+      actionLabel: "Open pack"
+    },
+    {
+      title: "Auditor Sign-off",
+      description: "Create tamper-evident sign-off records for assessments, controls, findings, or reports.",
+      tab: "Report & Sign-off",
+      metric: `${overview.signoffs.length} sign-offs`,
+      actionLabel: "Open sign-off"
+    }
+  ];
 
   if (loading) {
     return <div className="rounded-audity border border-audity-border bg-audity-panel p-4 text-sm text-audity-muted">Loading Audit Center...</div>;
   }
 
   return (
-    <div className="h-[calc(100vh-76px)] min-w-0 overflow-y-auto pr-1">
+    <div id="audit-center-workspace" className="h-[calc(100vh-76px)] min-w-0 overflow-y-auto pr-1">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-audity-primary">Audit Center</p>
@@ -676,13 +891,24 @@ export function AuditCenterPage() {
             <p className="text-sm leading-6 text-audity-secondary">{overview.executiveSummary}</p>
           </Panel>
           <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Panel title="Audit Feature Coverage" subtitle="Implemented audit building blocks available in this workspace.">
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {overview.featureCoverage.map((feature, index) => (
-                  <div key={feature} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm">
-                    <span className="mr-2 text-xs font-semibold text-audity-primary">{index + 1}</span>
-                    {feature}
-                  </div>
+            <Panel title="Audit Workflow Launcher" subtitle="Click a card to open the matching audit workspace. Each card shows the current audit state, not just a feature name.">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {workflowCards.map((card, index) => (
+                  <button
+                    key={card.title}
+                    className="group flex min-h-[142px] w-full flex-col rounded-audity border border-audity-border bg-audity-page px-3 py-3 text-left transition hover:border-audity-primary hover:bg-audity-primaryActive/10 focus:outline-none focus:ring-2 focus:ring-audity-primary/60"
+                    type="button"
+                    title={`${card.title}: ${card.description}`}
+                    onClick={card.onOpen ?? (() => openWorkflowTab(card.tab))}
+                  >
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="text-xs font-semibold text-audity-primary">{String(index + 1).padStart(2, "0")}</span>
+                      <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] font-semibold text-audity-secondary">{card.metric}</span>
+                    </span>
+                    <span className="mt-2 text-sm font-semibold text-audity-text">{card.title}</span>
+                    <span className="mt-1 line-clamp-3 text-xs leading-5 text-audity-muted">{card.description}</span>
+                    <span className="mt-auto pt-3 text-xs font-semibold text-audity-primary group-hover:underline">{card.actionLabel}</span>
+                  </button>
                 ))}
               </div>
             </Panel>
