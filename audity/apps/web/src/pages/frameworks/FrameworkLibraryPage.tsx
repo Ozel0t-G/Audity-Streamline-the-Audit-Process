@@ -146,7 +146,7 @@ export function FrameworkLibraryPage() {
             <section className="min-w-0 overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-lg font-semibold">Catalog</h2>
-                <input className="mt-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Search frameworks" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
+                <input className="mt-3 audity-input" placeholder="Search frameworks" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
               </div>
               <div className="divide-y divide-audity-border">
                 {filteredFrameworks.map((framework) => (
@@ -171,7 +171,7 @@ export function FrameworkLibraryPage() {
               <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-lg font-semibold">{selected?.name ?? "Framework"}</h2>
                 <p className="mt-1 text-sm text-audity-secondary">{selected?.sourceType} · {selected?.licenseStatus}</p>
-                <input className="mt-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Search controls" value={controlSearch} onChange={(event) => setControlSearch(event.target.value)} />
+                <input className="mt-3 audity-input" placeholder="Search controls" value={controlSearch} onChange={(event) => setControlSearch(event.target.value)} />
               </div>
               <div className="space-y-3 p-3">
                 {filteredDomains.map((domain) => (
@@ -199,16 +199,16 @@ export function FrameworkLibraryPage() {
             {canImportFramework ? (
             <form onSubmit={importFramework} className="min-w-0 rounded-audity border border-audity-border bg-audity-panel p-4 xl:col-span-2 2xl:col-span-1">
               <h2 className="mb-4 text-lg font-semibold">Publish Framework</h2>
-              <button type="button" className="mb-3 h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary" onClick={downloadQuestionnaireTemplate}>
+              <button type="button" className="mb-3 audity-btn-secondary" onClick={downloadQuestionnaireTemplate}>
                 Questionnaire CSV Template
               </button>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Name
-                <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={importForm.name} onChange={(event) => setImportForm({ ...importForm, name: event.target.value })} />
+                <input className="mt-2 audity-input" value={importForm.name} onChange={(event) => setImportForm({ ...importForm, name: event.target.value })} />
               </label>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Version
-                <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={importForm.version} onChange={(event) => setImportForm({ ...importForm, version: event.target.value })} />
+                <input className="mt-2 audity-input" value={importForm.version} onChange={(event) => setImportForm({ ...importForm, version: event.target.value })} />
               </label>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 CSV or YAML file
@@ -226,7 +226,7 @@ export function FrameworkLibraryPage() {
                 <input className="mt-1" type="checkbox" checked={importForm.licenseConfirmed} onChange={(event) => setImportForm({ ...importForm, licenseConfirmed: event.target.checked })} />
                 <span>I confirm that I have the rights or license required to publish and use this framework tenant-wide.</span>
               </label>
-              <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+              <button className="audity-btn-primary">
                 Publish
               </button>
             </form>

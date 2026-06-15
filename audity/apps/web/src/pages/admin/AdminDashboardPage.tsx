@@ -597,13 +597,13 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   />
                 </label>
               ))}
-              <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void loadActivity()}>
+              <button className="audity-btn-primary" onClick={() => void loadActivity()}>
                 Apply
               </button>
-              <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void exportCsv(`/api/admin/activity-logs/export${queryString(filters)}`, "audity-activity-logs.csv")}>
+              <button className="audity-btn-secondary" onClick={() => void exportCsv(`/api/admin/activity-logs/export${queryString(filters)}`, "audity-activity-logs.csv")}>
                 Export
               </button>
-              <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void verifyHashChain()}>
+              <button className="audity-btn-secondary" onClick={() => void verifyHashChain()}>
                 Verify Hash
               </button>
               {verify ? (
@@ -666,20 +666,20 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 <div className="flex flex-wrap items-end gap-2">
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">
                     Action
-                    <input className="mt-2 h-9 w-44 rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={auditFilters.action} onChange={(event) => setAuditFilters({ ...auditFilters, action: event.target.value })} />
+                    <input className="mt-2 w-44 audity-input" value={auditFilters.action} onChange={(event) => setAuditFilters({ ...auditFilters, action: event.target.value })} />
                   </label>
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">
                     From
-                    <input className="mt-2 h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="date" value={auditFilters.dateFrom} onChange={(event) => setAuditFilters({ ...auditFilters, dateFrom: event.target.value })} />
+                    <input className="mt-2 audity-input" type="date" value={auditFilters.dateFrom} onChange={(event) => setAuditFilters({ ...auditFilters, dateFrom: event.target.value })} />
                   </label>
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">
                     To
-                    <input className="mt-2 h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="date" value={auditFilters.dateTo} onChange={(event) => setAuditFilters({ ...auditFilters, dateTo: event.target.value })} />
+                    <input className="mt-2 audity-input" type="date" value={auditFilters.dateTo} onChange={(event) => setAuditFilters({ ...auditFilters, dateTo: event.target.value })} />
                   </label>
-                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void loadAudit()}>
+                  <button className="audity-btn-primary" onClick={() => void loadAudit()}>
                     Apply
                   </button>
-                  {can("auditlog.view") ? <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void exportCsv("/api/admin/audit-logs/export", "audity-audit-logs.csv")}>
+                  {can("auditlog.view") ? <button className="audity-btn-secondary" onClick={() => void exportCsv("/api/admin/audit-logs/export", "audity-audit-logs.csv")}>
                     Export
                   </button> : null}
                 </div>
@@ -724,7 +724,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     {expanded ? (
                     <div className="mt-3 border-t border-audity-border pt-3">
                       <div className="mb-3 flex justify-end">
-                        <button className="h-8 rounded-audity border border-audity-borderStrong px-2 text-xs text-audity-primary" onClick={() => void saveRolePermissions(role)}>
+                        <button className="audity-btn-secondary px-2 py-1 text-xs" onClick={() => void saveRolePermissions(role)}>
                           Save rights
                         </button>
                       </div>
@@ -747,15 +747,15 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 })}
               </div>
               {can("users.invite") ? <form className="mb-4 space-y-3" onSubmit={inviteUser}>
-                <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} />
-                <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Name" value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} />
+                <input className="audity-input" placeholder="Email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} />
+                <input className="audity-input" placeholder="Name" value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} />
                 <div className="grid grid-cols-[1fr_160px] gap-2">
-                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Temporary password" value={inviteForm.password} onChange={(event) => setInviteForm({ ...inviteForm, password: event.target.value })} />
-                  <select className="h-9 rounded-audity border border-audity-border bg-audity-page px-2 text-sm text-audity-text" value={inviteForm.role} onChange={(event) => setInviteForm({ ...inviteForm, role: event.target.value })}>
+                  <input className="audity-input" placeholder="Temporary password" value={inviteForm.password} onChange={(event) => setInviteForm({ ...inviteForm, password: event.target.value })} />
+                  <select className="audity-input" value={inviteForm.role} onChange={(event) => setInviteForm({ ...inviteForm, role: event.target.value })}>
                     {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
                   </select>
                 </div>
-                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Invite</button>
+                <button className="audity-btn-primary">Invite</button>
               </form> : null}
               <div className="space-y-2">
                 {users.map((user) => (
@@ -765,9 +765,9 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                         <p className="text-sm font-semibold">{user.email}</p>
                         <p className="text-xs text-audity-muted">{user.name} · {user.status}</p>
                       </div>
-                      {can("users.disable") ? <button className="h-8 rounded-audity border border-audity-error px-2 text-xs text-audity-error" onClick={() => void updateUser(user, { status: "disabled" })}>Disable</button> : null}
+                      {can("users.disable") ? <button className="audity-btn-secondary border-audity-error px-2 py-1 text-xs text-audity-error" onClick={() => void updateUser(user, { status: "disabled" })}>Disable</button> : null}
                     </div>
-                    {can("roles.manage") ? <select className="h-9 w-full rounded-audity border border-audity-border bg-audity-panel px-2 text-sm text-audity-text" value={user.role} onChange={(event) => void updateUser(user, { role: event.target.value })}>
+                    {can("roles.manage") ? <select className="audity-input bg-audity-panel" value={user.role} onChange={(event) => void updateUser(user, { role: event.target.value })}>
                       {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
                     </select> : null}
                   </div>
@@ -780,7 +780,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             <section className="max-w-3xl rounded-audity border border-audity-border bg-audity-panel p-4">
               <form className="mb-4 flex flex-wrap items-center gap-3" onSubmit={(event) => void uploadLogo(event)}>
                 <input name="logo" type="file" accept="image/png,image/jpeg" className="text-sm text-audity-secondary" />
-                <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary">Upload logo</button>
+                <button className="audity-btn-secondary">Upload logo</button>
                 {branding.logoFileName ? <span className="text-sm text-audity-secondary">{branding.logoFileName}</span> : null}
               </form>
               <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveBranding(event)}>
@@ -793,10 +793,10 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 {(["headerText", "footerText", "confidentialityLabel", "watermark"] as const).map((key) => (
                   <label key={key} className="text-xs font-semibold uppercase text-audity-secondary">
                     {key}
-                    <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
+                    <input className="mt-2 audity-input" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
                   </label>
                 ))}
-                <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Save branding</button>
+                <button className="audity-btn-primary">Save branding</button>
               </form>
             </section>
           ) : null}
@@ -805,16 +805,16 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">SMTP Configuration</h2>
                 <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveEmailSettings(event)}>
-                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="SMTP host" value={emailSettings.smtpHost} onChange={(event) => setEmailSettings({ ...emailSettings, smtpHost: event.target.value })} />
-                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="number" placeholder="Port" value={emailSettings.smtpPort} onChange={(event) => setEmailSettings({ ...emailSettings, smtpPort: Number(event.target.value) })} />
-                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="SMTP user" value={emailSettings.smtpUser} onChange={(event) => setEmailSettings({ ...emailSettings, smtpUser: event.target.value })} />
-                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="password" placeholder={emailSettings.hasPassword ? "Password saved" : "SMTP password"} value={emailSettings.smtpPassword ?? ""} onChange={(event) => setEmailSettings({ ...emailSettings, smtpPassword: event.target.value })} />
-                  <input className="h-9 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" placeholder="Sender" value={emailSettings.sender} onChange={(event) => setEmailSettings({ ...emailSettings, sender: event.target.value })} />
+                  <input className="audity-input" placeholder="SMTP host" value={emailSettings.smtpHost} onChange={(event) => setEmailSettings({ ...emailSettings, smtpHost: event.target.value })} />
+                  <input className="audity-input" type="number" placeholder="Port" value={emailSettings.smtpPort} onChange={(event) => setEmailSettings({ ...emailSettings, smtpPort: Number(event.target.value) })} />
+                  <input className="audity-input" placeholder="SMTP user" value={emailSettings.smtpUser} onChange={(event) => setEmailSettings({ ...emailSettings, smtpUser: event.target.value })} />
+                  <input className="audity-input" type="password" placeholder={emailSettings.hasPassword ? "Password saved" : "SMTP password"} value={emailSettings.smtpPassword ?? ""} onChange={(event) => setEmailSettings({ ...emailSettings, smtpPassword: event.target.value })} />
+                  <input className="audity-input" placeholder="Sender" value={emailSettings.sender} onChange={(event) => setEmailSettings({ ...emailSettings, sender: event.target.value })} />
                   <label className="flex h-9 items-center gap-2 text-sm text-audity-secondary">
                     <input type="checkbox" checked={emailSettings.smtpTls} onChange={(event) => setEmailSettings({ ...emailSettings, smtpTls: event.target.checked })} />
                     TLS
                   </label>
-                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Save email settings</button>
+                  <button className="audity-btn-primary">Save email settings</button>
                 </form>
               </section>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
@@ -839,7 +839,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">
                     Session idle timeout
                     <select
-                      className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
+                      className="mt-2 audity-input"
                       value={systemSettings.sessionIdleTimeoutMinutes}
                       onChange={(event) => setSystemSettings({ sessionIdleTimeoutMinutes: Number(event.target.value) })}
                     >
@@ -848,7 +848,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       ))}
                     </select>
                   </label>
-                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                  <button className="audity-btn-primary">
                     Save system settings
                   </button>
                 </form>
@@ -939,17 +939,17 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   {user?.role === "Instance Admin" ? <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>
                     <label className="block text-xs font-semibold uppercase text-audity-secondary">
                       Backup Type
-                      <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={backupType} onChange={(event) => setBackupType(event.target.value as typeof backupType)}>
+                      <select className="mt-2 audity-input" value={backupType} onChange={(event) => setBackupType(event.target.value as typeof backupType)}>
                         <option value="full">Full</option>
                         <option value="database">Database</option>
                         <option value="evidence">Evidence</option>
                       </select>
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                      <button className="audity-btn-primary">
                         Trigger backup
                       </button>
-                      <button type="button" className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void triggerDownloadBackup()}>
+                      <button type="button" className="audity-btn-secondary" onClick={() => void triggerDownloadBackup()}>
                         Create download package
                       </button>
                     </div>
@@ -969,13 +969,13 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     </label>
                     <label className="block text-xs font-semibold uppercase text-audity-secondary">
                       Schedule
-                      <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={backupSettings.scheduleCron} onChange={(event) => setBackupSettings({ ...backupSettings, scheduleCron: event.target.value })} />
+                      <input className="mt-2 audity-input" value={backupSettings.scheduleCron} onChange={(event) => setBackupSettings({ ...backupSettings, scheduleCron: event.target.value })} />
                     </label>
                     <label className="block text-xs font-semibold uppercase text-audity-secondary">
                       Retention days
-                      <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="number" min={1} max={3650} value={backupSettings.retentionDays} onChange={(event) => setBackupSettings({ ...backupSettings, retentionDays: Number(event.target.value) })} />
+                      <input className="mt-2 audity-input" type="number" min={1} max={3650} value={backupSettings.retentionDays} onChange={(event) => setBackupSettings({ ...backupSettings, retentionDays: Number(event.target.value) })} />
                     </label>
-                    <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                    <button className="audity-btn-primary">
                       Save schedule
                     </button>
                   </form>
@@ -985,13 +985,13 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   <form className="space-y-3" onSubmit={(event) => void runRestorePrecheck(event)}>
                     <label className="block text-xs font-semibold uppercase text-audity-secondary">
                       Backup
-                      <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={restoreBackupId} onChange={(event) => setRestoreBackupId(event.target.value)}>
+                      <select className="mt-2 audity-input" value={restoreBackupId} onChange={(event) => setRestoreBackupId(event.target.value)}>
                         {backupJobs.map((job) => (
                           <option key={job.id} value={job.id}>{job.jobType} - {job.status}</option>
                         ))}
                       </select>
                     </label>
-                    <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary">
+                    <button className="audity-btn-secondary">
                       Run precheck
                     </button>
                     {restorePrecheck ? <pre className="max-h-48 overflow-auto rounded-audity bg-audity-page p-3 text-xs text-audity-secondary">{jsonBlock(restorePrecheck)}</pre> : null}
@@ -1000,14 +1000,14 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     <label className="block text-xs font-semibold uppercase text-audity-secondary">
                       Confirm Full Restore
                       <input
-                        className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
+                        className="mt-2 audity-input"
                         placeholder="RESTORE AUDITY"
                         value={restoreConfirmation}
                         onChange={(event) => setRestoreConfirmation(event.target.value)}
                       />
                     </label>
                     <button
-                      className="mt-3 h-9 rounded-audity border border-audity-error bg-[#2A1C17] px-3 text-sm font-semibold text-[#FFB199] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mt-3 audity-btn-secondary border-audity-error bg-[#2A1C17] font-semibold text-[#FFB199]"
                       disabled={!restoreBackupId || restoreConfirmation !== "RESTORE AUDITY"}
                       onClick={() => void startFullRestore()}
                     >
@@ -1019,7 +1019,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold">Backup History</h2>
-                  <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void loadBackup()}>
+                  <button className="audity-btn-secondary" onClick={() => void loadBackup()}>
                     Refresh
                   </button>
                 </div>
@@ -1038,7 +1038,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       </p>
                       {job.failureReason ? <p className="mt-1 text-xs text-audity-error">{job.failureReason}</p> : null}
                       {job.isDownloadableZip ? (
-                        <button className="mt-2 h-8 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-xs text-audity-text hover:border-audity-primary" onClick={() => void downloadBackup(job)} disabled={job.status !== "completed"}>
+                        <button className="mt-2 audity-btn-secondary px-3 py-1 text-xs" onClick={() => void downloadBackup(job)} disabled={job.status !== "completed"}>
                           Download package
                         </button>
                       ) : null}

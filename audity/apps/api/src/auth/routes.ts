@@ -35,6 +35,7 @@ import {
 
 const refreshCookieName = "audity_refresh";
 const authRateLimit = { max: 5, timeWindow: "1 minute" };
+const refreshRateLimit = { max: 120, timeWindow: "1 minute" };
 
 type SetupBody = {
   email?: string;
@@ -210,7 +211,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return { status: "ok" };
   });
 
-  app.post("/api/auth/refresh", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
+  app.post("/api/auth/refresh", { config: { rateLimit: refreshRateLimit } }, async (request, reply) => {
     const refreshToken = request.cookies[refreshCookieName];
     if (!refreshToken) {
       return reply

@@ -109,17 +109,17 @@ export function UserSettingsPage() {
           <form className="space-y-3" onSubmit={changePassword}>
             <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Enter your current password to confirm this change.">
               {t("Current Password")}
-              <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} />
+              <input className="mt-2 audity-input" type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} />
             </label>
             <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Use at least 8 characters. Prefer a unique password stored in a password manager.">
               {t("New Password")}
-              <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} />
+              <input className="mt-2 audity-input" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} />
             </label>
             <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Repeat the new password to avoid typos.">
               {t("Confirm Password")}
-              <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" type="password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })} />
+              <input className="mt-2 audity-input" type="password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })} />
             </label>
-            <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" data-tooltip="Save your new password and keep this session active.">
+            <button className="audity-btn-primary" data-tooltip="Save your new password and keep this session active.">
               {t("Change password")}
             </button>
           </form>
@@ -128,7 +128,7 @@ export function UserSettingsPage() {
           <h2 className="mb-4 text-lg font-semibold">Authenticator MFA</h2>
           <p className="mb-4 text-sm text-audity-secondary">Set up an authenticator app for stronger account protection. Scan the QR code, then verify the one-time code.</p>
           <button
-            className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover"
+            className="audity-btn-primary"
             onClick={() => void startMfaSetup()}
           >
             Set up MFA
@@ -144,13 +144,13 @@ export function UserSettingsPage() {
                 {mfaSetup.secret}
               </div>
               <input
-                className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                className="audity-input"
                 value={mfaCode}
                 inputMode="numeric"
                 placeholder="Authenticator code"
                 onChange={(event) => setMfaCode(event.target.value)}
               />
-              <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary">
+              <button className="audity-btn-secondary">
                 Verify MFA
               </button>
             </form>
@@ -179,13 +179,13 @@ export function UserSettingsPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose the language preference saved for your browser.">
                 {t("Language")}
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.language} onChange={() => setPreferences({ ...preferences, language: "English" })}>
+                <select className="mt-2 audity-input" value={preferences.language} onChange={() => setPreferences({ ...preferences, language: "English" })}>
                   <option>English</option>
                 </select>
               </label>
               <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose how the interface should look on this browser.">
                 {t("Theme")}
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.theme} onChange={(event) => setPreferences({ ...preferences, theme: event.target.value })}>
+                <select className="mt-2 audity-input" value={preferences.theme} onChange={(event) => setPreferences({ ...preferences, theme: event.target.value })}>
                   <option>System</option>
                   <option>Dark</option>
                   <option>Light</option>
@@ -193,7 +193,7 @@ export function UserSettingsPage() {
               </label>
               <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose the first workspace view you normally want to open.">
                 {t("Default View")}
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.defaultView} onChange={(event) => setPreferences({ ...preferences, defaultView: event.target.value })}>
+                <select className="mt-2 audity-input" value={preferences.defaultView} onChange={(event) => setPreferences({ ...preferences, defaultView: event.target.value })}>
                   <option>Dashboard</option>
                   <option>Customers</option>
                   <option>My Customers</option>
@@ -202,14 +202,14 @@ export function UserSettingsPage() {
               </label>
               <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose how compact tables and lists should appear.">
                 {t("Table Density")}
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.tableDensity} onChange={(event) => setPreferences({ ...preferences, tableDensity: event.target.value })}>
+                <select className="mt-2 audity-input" value={preferences.tableDensity} onChange={(event) => setPreferences({ ...preferences, tableDensity: event.target.value })}>
                   <option>Comfortable</option>
                   <option>Compact</option>
                 </select>
               </label>
               <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Set your preferred default file type for exports.">
                 {t("Export Format")}
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={preferences.exportFormat} onChange={(event) => setPreferences({ ...preferences, exportFormat: event.target.value })}>
+                <select className="mt-2 audity-input" value={preferences.exportFormat} onChange={(event) => setPreferences({ ...preferences, exportFormat: event.target.value })}>
                   <option>CSV</option>
                   <option>PDF</option>
                   <option>Word</option>
@@ -232,7 +232,7 @@ export function UserSettingsPage() {
               <h2 className="text-lg font-semibold">{t("Backup & Restore")}</h2>
               <p className="mt-1 text-sm text-audity-secondary">Create backups, download encrypted packages, run restore prechecks, and manage retention.</p>
             </div>
-            <Link className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 py-2 text-sm text-audity-primary hover:border-audity-primary" to="/admin/backup">
+            <Link className="inline-flex items-center audity-btn-secondary text-audity-primary" to="/admin/backup">
               {t("Open Backup")}
             </Link>
           </div>

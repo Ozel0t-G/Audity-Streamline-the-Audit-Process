@@ -34,10 +34,10 @@ export function AlphaDisclaimerPage() {
         </label>
         {error ? <div className="mt-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
         <div className="mt-5 flex gap-2">
-          <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:bg-audity-borderStrong disabled:text-audity-muted" disabled={!accepted} onClick={() => void continueToApp()}>
+          <button className="audity-btn-primary" disabled={!accepted} onClick={() => void continueToApp()}>
             Accept and continue
           </button>
-          <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" onClick={() => void logout()}>
+          <button className="audity-btn-secondary" onClick={() => void logout()}>
             Logout
           </button>
         </div>

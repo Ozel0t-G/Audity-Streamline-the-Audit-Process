@@ -257,7 +257,7 @@ export function CustomerDetailPage() {
           </div>
           {error ? <div className="mb-4 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-3">
+            <div className="min-w-0 space-y-3">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div>
@@ -271,7 +271,7 @@ export function CustomerDetailPage() {
                   </div>
                   {canManageAccess ? (
                     <div className="flex justify-end">
-                      <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => setShareOpen(true)}>
+                      <button className="audity-btn-primary" onClick={() => setShareOpen(true)}>
                         Share Customer
                       </button>
                     </div>
@@ -286,7 +286,7 @@ export function CustomerDetailPage() {
                       {customer?.selectedFrameworks?.map((framework) => framework.shortName ?? framework.name).join(", ") || "No framework selected. Please select at least one framework to generate the question catalog."}
                     </p>
                   </div>
-                  {canManageAccess ? <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" onClick={() => void saveFrameworkScope()}>Save scope</button> : null}
+                  {canManageAccess ? <button className="audity-btn-primary" onClick={() => void saveFrameworkScope()}>Save scope</button> : null}
                 </div>
                 {canManageAccess ? (
                   <select multiple className="mt-3 min-h-36 w-full rounded-audity border border-audity-border bg-audity-page px-2 py-2 text-sm text-audity-text outline-none focus:border-audity-primary" value={scopeFrameworkIds} onChange={(event) => setScopeFrameworkIds(Array.from(event.target.selectedOptions).map((option) => option.value))}>
@@ -294,7 +294,7 @@ export function CustomerDetailPage() {
                   </select>
                 ) : null}
               </section>
-              <section className="overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
+              <section className="min-w-0 overflow-x-auto rounded-audity border border-audity-border bg-audity-panel">
                 <div className="border-b border-audity-border px-4 py-3">
                   <h2 className="text-lg font-semibold">Assessments</h2>
                 </div>
@@ -377,7 +377,7 @@ export function CustomerDetailPage() {
                   </label>
                 ))}
                 {canEditAssessment ? (
-                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!selectedAssessmentId}>Save scope</button>
+                  <button className="audity-btn-primary" disabled={!selectedAssessmentId}>Save scope</button>
                 ) : null}
               </form>
             </div>
@@ -386,7 +386,7 @@ export function CustomerDetailPage() {
               <h2 className="mb-4 text-lg font-semibold">Create assessment</h2>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Template
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={assessmentForm.templateKey} onChange={(event) => applyTemplate(event.target.value)}>
+                <select className="mt-2 audity-input" value={assessmentForm.templateKey} onChange={(event) => applyTemplate(event.target.value)}>
                   {templates.map((template) => <option key={template.key} value={template.key}>{template.name}</option>)}
                 </select>
               </label>
@@ -400,7 +400,7 @@ export function CustomerDetailPage() {
                 <label key={key} className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                   {label}
                   <input
-                    className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
+                    className="mt-2 audity-input"
                     type={key === "targetDate" ? "date" : "text"}
                     value={assessmentForm[key as keyof typeof assessmentForm]}
                     onChange={(event) => setAssessmentForm({ ...assessmentForm, [key]: event.target.value })}
@@ -409,12 +409,12 @@ export function CustomerDetailPage() {
               ))}
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Framework
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={assessmentForm.frameworkId} onChange={(event) => setAssessmentForm({ ...assessmentForm, frameworkId: event.target.value })}>
+                <select className="mt-2 audity-input" value={assessmentForm.frameworkId} onChange={(event) => setAssessmentForm({ ...assessmentForm, frameworkId: event.target.value })}>
                   {(customer?.selectedFrameworks ?? []).map((framework) => <option key={framework.id} value={framework.id}>{framework.shortName ?? framework.name}</option>)}
                 </select>
               </label>
               {!customer?.selectedFrameworks?.length ? <p className="mb-3 text-sm text-audity-muted">No framework selected. Add a framework scope before creating assessments.</p> : null}
-              <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create assessment</button>
+              <button className="audity-btn-primary">Create assessment</button>
             </form>
             ) : null}
           </div>
@@ -426,11 +426,11 @@ export function CustomerDetailPage() {
                 </div>
                 <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                   Search active users
-                  <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={shareSearch} onChange={(event) => setShareSearch(event.target.value)} />
+                  <input className="mt-2 audity-input" value={shareSearch} onChange={(event) => setShareSearch(event.target.value)} />
                 </label>
                 <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                   User
-                  <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={shareUserId} onChange={(event) => setShareUserId(event.target.value)}>
+                  <select className="mt-2 audity-input" value={shareUserId} onChange={(event) => setShareUserId(event.target.value)}>
                     {shareTargets.map((target) => <option key={target.id} value={target.id}>{target.name ?? target.email} · {target.email}</option>)}
                   </select>
                 </label>
@@ -439,10 +439,10 @@ export function CustomerDetailPage() {
                   <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" placeholder="Optional message, for example: Please review the evidence section and check the open findings." value={shareMessage} onChange={(event) => setShareMessage(event.target.value)} />
                 </label>
                 <div className="flex justify-end gap-2">
-                  <button className="h-9 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" type="button" onClick={() => setShareOpen(false)}>
+                  <button className="audity-btn-secondary" type="button" onClick={() => setShareOpen(false)}>
                     Cancel
                   </button>
-                  <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover" disabled={!shareUserId}>
+                  <button className="audity-btn-primary" disabled={!shareUserId}>
                     Share
                   </button>
                 </div>

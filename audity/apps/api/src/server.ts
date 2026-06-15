@@ -46,7 +46,7 @@ await app.register(helmet, {
       fontSrc: ["'self'", "data:"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
-      imgSrc: ["'self'", "data:", "blob:", "https://cdn.jsdelivr.net", "https://www.google.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://cdn.jsdelivr.net", "https://www.google.com", "https://t0.gstatic.com", "https://t1.gstatic.com", "https://t2.gstatic.com", "https://t3.gstatic.com"],
       objectSrc: ["'none'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"]

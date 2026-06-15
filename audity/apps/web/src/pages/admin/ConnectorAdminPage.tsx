@@ -406,14 +406,14 @@ export function ConnectorAdminPage() {
                 <p className="text-xs text-audity-muted">Settings apply to the full Audity instance.</p>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    className="h-8 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60"
+                    className="audity-btn-primary"
                     disabled={busy === `${activeConnector.id}:save`}
                   >
                     {busy === `${activeConnector.id}:save` ? "Saving" : "Save"}
                   </button>
                   <button
                     type="button"
-                    className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary disabled:cursor-not-allowed disabled:opacity-60"
+                    className="audity-btn-secondary"
                     disabled={busy === `${activeConnector.id}:test`}
                     onClick={() => void testConnector(activeConnector)}
                   >
@@ -421,7 +421,7 @@ export function ConnectorAdminPage() {
                   </button>
                   <button
                     type="button"
-                    className="h-8 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary disabled:cursor-not-allowed disabled:opacity-60"
+                    className="audity-btn-secondary"
                     disabled={busy === `${activeConnector.id}:sync`}
                     onClick={() => void syncConnector(activeConnector)}
                   >

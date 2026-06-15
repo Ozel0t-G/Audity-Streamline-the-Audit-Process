@@ -251,7 +251,7 @@ export function GuidedQuestionsPage() {
                     ) : null}
                     <label className="mt-5 block text-xs font-semibold uppercase text-audity-secondary">
                       Score
-                      <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.score} onChange={(event) => setForm({ ...form, score: Number(event.target.value) })}>
+                      <select className="mt-2 audity-input" value={form.score} onChange={(event) => setForm({ ...form, score: Number(event.target.value) })}>
                         {scoreOptions.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
@@ -260,19 +260,19 @@ export function GuidedQuestionsPage() {
                     <div className="mt-4 grid gap-3 2xl:grid-cols-3">
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">
                         Answer State
-                        <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.answerState} onChange={(event) => setForm({ ...form, answerState: event.target.value })}>
+                        <select className="mt-2 audity-input" value={form.answerState} onChange={(event) => setForm({ ...form, answerState: event.target.value })}>
                           {answerStates.map((state) => <option key={state} value={state}>{state}</option>)}
                         </select>
                       </label>
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">
                         Evidence Status
-                        <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.evidenceStatus} onChange={(event) => setForm({ ...form, evidenceStatus: event.target.value })}>
+                        <select className="mt-2 audity-input" value={form.evidenceStatus} onChange={(event) => setForm({ ...form, evidenceStatus: event.target.value })}>
                           {evidenceStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
                         </select>
                       </label>
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">
                         Confidence
-                        <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.confidenceLevel} onChange={(event) => setForm({ ...form, confidenceLevel: event.target.value })}>
+                        <select className="mt-2 audity-input" value={form.confidenceLevel} onChange={(event) => setForm({ ...form, confidenceLevel: event.target.value })}>
                           {confidenceLevels.map((level) => <option key={level} value={level}>{level}</option>)}
                         </select>
                       </label>
@@ -283,7 +283,7 @@ export function GuidedQuestionsPage() {
                     </label>
                     {canEditAssessment ? (
                     <div className="mt-4 flex items-center gap-3">
-                      <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">
+                      <button className="audity-btn-primary">
                         Save answer
                       </button>
                       {saved ? <span className="text-sm text-audity-success">{saved}</span> : null}
@@ -355,7 +355,7 @@ export function GuidedQuestionsPage() {
                 {canEditAssessment ? (
                 <form className="mt-3 flex gap-2" onSubmit={(event) => void addComment(event)}>
                   <input className="h-9 min-w-0 flex-1 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Add note" />
-                  <button className="h-9 rounded-audity border border-audity-borderStrong px-3 text-sm text-audity-primary">Add</button>
+                  <button className="audity-btn-secondary">Add</button>
                 </form>
                 ) : null}
               </section>

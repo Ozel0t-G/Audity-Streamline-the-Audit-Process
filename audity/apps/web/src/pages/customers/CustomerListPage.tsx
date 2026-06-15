@@ -115,17 +115,17 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
               <h2 className="mb-4 text-lg font-semibold">Create customer</h2>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Customer Name
-                <input className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+                <input className="mt-2 audity-input" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
               </label>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Industry
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.industry} onChange={(event) => setForm({ ...form, industry: event.target.value })}>
+                <select className="mt-2 audity-input" value={form.industry} onChange={(event) => setForm({ ...form, industry: event.target.value })}>
                   {industries.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
               </label>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Regulatory context
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.regulatoryContext} onChange={(event) => setForm({ ...form, regulatoryContext: event.target.value })}>
+                <select className="mt-2 audity-input" value={form.regulatoryContext} onChange={(event) => setForm({ ...form, regulatoryContext: event.target.value })}>
                   {regulatoryContexts.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
               </label>
@@ -137,7 +137,7 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
               </label>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Business criticality
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.businessCriticality} onChange={(event) => setForm({ ...form, businessCriticality: event.target.value })}>
+                <select className="mt-2 audity-input" value={form.businessCriticality} onChange={(event) => setForm({ ...form, businessCriticality: event.target.value })}>
                   {criticalities.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
               </label>
@@ -149,13 +149,13 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
               </label>
               <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
                 Status
-                <select className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
+                <select className="mt-2 audity-input" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
                   <option value="active">active</option>
                   <option value="paused">paused</option>
                 </select>
               </label>
               {error ? <div className="mb-3 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-              <button className="h-9 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover">Create</button>
+              <button className="audity-btn-primary">Create</button>
             </form>
             ) : null}
           </div>

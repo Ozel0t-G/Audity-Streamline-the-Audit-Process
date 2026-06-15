@@ -314,7 +314,7 @@ export function WorkbenchPage() {
                   <select className="audity-input" value={record.priority} onChange={(event) => void updateRecord(record.id, { priority: event.target.value } as Partial<WorkbenchRecord>)}>
                     {["low", "medium", "high", "critical"].map((priority) => <option key={priority}>{priority}</option>)}
                   </select>
-                  <button className="h-8 rounded-audity border border-audity-error px-2 text-xs text-audity-error" onClick={() => void deleteRecord(record.id)}>Delete</button>
+                  <button className="audity-btn-secondary border-audity-error px-2 py-1 text-xs text-audity-error" onClick={() => void deleteRecord(record.id)}>Delete</button>
                 </div>
               ))}
               {!records.length ? <p className="px-3 py-10 text-center text-sm text-audity-muted">No records in this module yet.</p> : null}

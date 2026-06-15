@@ -156,17 +156,17 @@ export function LoginPage() {
           {setupRequired && setupStep === "optional" ? (
             <>
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP Host</label>
-              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={smtpHost} onChange={(event) => setSmtpHost(event.target.value)} />
+              <input className="mb-3 audity-input" value={smtpHost} onChange={(event) => setSmtpHost(event.target.value)} />
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP User</label>
-              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={smtpUser} onChange={(event) => setSmtpUser(event.target.value)} />
+              <input className="mb-3 audity-input" value={smtpUser} onChange={(event) => setSmtpUser(event.target.value)} />
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP Password</label>
-              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" type="password" value={smtpPassword} onChange={(event) => setSmtpPassword(event.target.value)} />
+              <input className="mb-3 audity-input" type="password" value={smtpPassword} onChange={(event) => setSmtpPassword(event.target.value)} />
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Sender</label>
-              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={sender} onChange={(event) => setSender(event.target.value)} />
+              <input className="mb-3 audity-input" value={sender} onChange={(event) => setSender(event.target.value)} />
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Report Header</label>
-              <input className="mb-3 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={headerText} onChange={(event) => setHeaderText(event.target.value)} />
+              <input className="mb-3 audity-input" value={headerText} onChange={(event) => setHeaderText(event.target.value)} />
               <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Report Footer</label>
-              <input className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={footerText} onChange={(event) => setFooterText(event.target.value)} />
+              <input className="audity-input" value={footerText} onChange={(event) => setFooterText(event.target.value)} />
             </>
           ) : challengeToken ? (
             <>
@@ -174,7 +174,7 @@ export function LoginPage() {
                 Authenticator code
               </label>
               <input
-                className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                className="audity-input"
                 value={mfaCode}
                 inputMode="numeric"
                 autoComplete="one-time-code"
@@ -187,7 +187,7 @@ export function LoginPage() {
                 Email
               </label>
               <input
-                className="mb-4 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                className="mb-4 audity-input"
                 type="email"
                 value={email}
                 autoComplete="email"
@@ -199,7 +199,7 @@ export function LoginPage() {
                     Name
                   </label>
                   <input
-                    className="mb-4 h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                    className="mb-4 audity-input"
                     value={name}
                     autoComplete="name"
                     onChange={(event) => setName(event.target.value)}
@@ -210,7 +210,7 @@ export function LoginPage() {
                 Password
               </label>
               <input
-                className="h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
+                className="audity-input"
                 type="password"
                 value={password}
                 autoComplete="current-password"
@@ -229,14 +229,14 @@ export function LoginPage() {
             </div>
           ) : null}
           <button
-            className="mt-5 h-9 w-full rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:bg-audity-borderStrong disabled:text-audity-muted"
+            className="mt-5 w-full audity-btn-primary"
             type="submit"
             disabled={loading}
           >
             {loading ? "Working" : setupRequired && setupStep === "optional" ? "Save and continue" : setupRequired ? "Create admin" : challengeToken ? "Verify" : "Sign in"}
           </button>
           {setupRequired && setupStep === "optional" ? (
-            <button className="mt-2 h-9 w-full rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary" type="button" onClick={() => navigate("/alpha-disclaimer", { replace: true })}>
+            <button className="mt-2 w-full audity-btn-secondary" type="button" onClick={() => navigate("/alpha-disclaimer", { replace: true })}>
               Skip optional setup
             </button>
           ) : null}

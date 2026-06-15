@@ -472,7 +472,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         </div>
         {admin && !adminMode ? (
           <Link
-            className="h-8 rounded-audity border border-audity-primary/70 bg-audity-primaryActive px-2.5 py-1.5 text-sm font-semibold text-audity-primary hover:bg-audity-panel"
+            className="inline-flex h-8 items-center rounded-audity border border-audity-primary/70 bg-audity-primaryActive px-2.5 text-sm font-semibold leading-none text-audity-primary hover:bg-audity-panel"
             to="/admin/activity"
           >
             {t("Admin Menu")}
