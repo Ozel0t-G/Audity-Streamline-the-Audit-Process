@@ -85,10 +85,10 @@ services:
   audity-updater:
     image: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}/audity-updater:${AUDITY_VERSION:-latest}
     container_name: audity-updater
-    working_dir: ${AUDITY_HOST_PROJECT_DIR:-/audity}
+    working_dir: /app
     environment:
       AUDITY_UPDATER_TOKEN: ${AUDITY_UPDATER_TOKEN:-replace-with-secure-updater-token}
-      AUDITY_UPDATE_WORKDIR: ${AUDITY_HOST_PROJECT_DIR:-/audity}
+      AUDITY_UPDATE_WORKDIR: /audity
       AUDITY_UPDATE_SCRIPT: ./scripts/update.sh
       AUDITY_COMPOSE_FILE: docker-compose.prod.yml
       AUDITY_IMAGE_REGISTRY: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}
@@ -98,7 +98,7 @@ services:
       AUDITY_HEALTHCHECK_URL: http://audity-api:3000/health
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${AUDITY_HOST_PROJECT_DIR:-.}:${AUDITY_HOST_PROJECT_DIR:-/audity}
+      - ${AUDITY_HOST_PROJECT_DIR:-.}:/audity
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3099/health >/dev/null 2>&1"]
       interval: 10s
