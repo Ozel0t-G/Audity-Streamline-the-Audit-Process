@@ -23,6 +23,10 @@ const controlSchema = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(1),
   description: z.string().default(""),
+  categoryId: z.string().trim().min(1).optional(),
+  categoryTitle: z.string().trim().min(1).optional(),
+  categoryDescription: z.string().trim().min(1).optional(),
+  source: z.string().trim().min(1).optional(),
   question: z.string().optional(),
   objective: z.string().optional(),
   defaultWeight: z.number().default(1),
@@ -38,6 +42,7 @@ const controlSchema = z.object({
 
 const domainSchema = z.object({
   id: z.string().trim().min(1).optional(),
+  key: z.string().trim().min(1).optional(),
   name: z.string().trim().min(1),
   description: z.string().default(""),
   controls: z.array(controlSchema).default([])
@@ -122,6 +127,24 @@ function mappingSlotValue(slot: Record<string, unknown>, camelKey: string, snake
   return slot[camelKey] ?? slot[snakeKey];
 }
 
+function compactRecord(values: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined && value !== null && value !== "")
+  );
+}
+
+function controlReportMapping(control: z.infer<typeof controlSchema>): Record<string, unknown> {
+  return {
+    ...control.reportMapping,
+    ...compactRecord({
+      categoryId: control.categoryId,
+      categoryTitle: control.categoryTitle,
+      categoryDescription: control.categoryDescription,
+      source: control.source
+    })
+  };
+}
+
 async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
   const framework = yaml.framework;
   const frameworkId = stableUuid(`framework:${framework.key}`);
@@ -173,10 +196,14 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
   const syncedDomainIds: string[] = [];
   const syncedControlIds: string[] = [];
   for (const [domainIndex, domain] of yaml.domains.entries()) {
-    const domainKey = domain.id ?? domain.name;
+    const domainKey = domain.id ?? domain.key ?? domain.name;
     const existingDomain = await pool.query<{ id: string }>(
-      "select id from framework_domains where framework_id = $1 and name = $2 limit 1",
-      [frameworkId, domain.name]
+      `select id
+       from framework_domains
+       where framework_id = $1
+         and (name = $2 or domain_id = $3)
+       limit 1`,
+      [frameworkId, domain.name, domainKey]
     );
     const domainId = existingDomain.rows[0]?.id ?? stableUuid(`domain:${framework.key}:${domainKey}`);
     syncedDomainIds.push(domainId);
@@ -189,7 +216,7 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
          name = excluded.name,
          description = excluded.description,
          sort_order = excluded.sort_order`,
-      [domainId, frameworkId, domain.id ?? null, domain.name, domain.description, domainIndex + 1]
+      [domainId, frameworkId, domain.id ?? domain.key ?? null, domain.name, domain.description, domainIndex + 1]
     );
 
     for (const [controlIndex, control] of domain.controls.entries()) {
@@ -235,8 +262,8 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
           control.defaultWeight,
           control.readinessPassCondition ?? "average_question_score >= 3 and at least one relevant evidence item approved",
           control.gapCondition ?? "average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable",
-          control.criticalityHint ?? null,
-          JSON.stringify(control.reportMapping)
+         control.criticalityHint ?? null,
+          JSON.stringify(controlReportMapping(control))
         ]
       );
       controlCount += 1;

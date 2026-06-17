@@ -62,6 +62,10 @@ export function GuidedQuestionsPage() {
       null
     );
   }, [activeDomain, activeQuestionId]);
+  const activeCategoryLabel = useMemo(() => {
+    if (!activeQuestion) return "";
+    return [activeQuestion.categoryId, activeQuestion.categoryTitle].filter(Boolean).join(" · ");
+  }, [activeQuestion]);
 
   const progressSummary = useMemo(() => {
     const questions = payload?.domains.flatMap((domain) => domain.questions) ?? [];
@@ -224,11 +228,13 @@ export function GuidedQuestionsPage() {
                   {activeDomain?.questions.map((question) => (
                     <button
                       key={question.questionId}
+                      title={question.categoryDescription ?? question.description ?? question.title}
                       className={`block w-full px-3 py-2.5 text-left hover:bg-audity-panelAlt ${question.questionId === activeQuestion?.questionId ? "bg-audity-primaryActive/25" : ""}`}
                       onClick={() => setActiveQuestionId(question.questionId)}
                     >
                       <p className="text-xs font-semibold text-audity-primary">{question.code}</p>
                       <p className="mt-1 text-sm font-semibold">{question.title}</p>
+                      {question.categoryTitle ? <p className="mt-1 text-xs text-audity-muted">{question.categoryId} · {question.categoryTitle}</p> : null}
                       <p className="mt-1 text-xs text-audity-secondary">{question.sourceQuestionId ?? question.questionId.slice(0, 8)}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
                         <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-xs text-audity-muted">Score {question.answer?.score ?? "-"}</span>
@@ -242,7 +248,14 @@ export function GuidedQuestionsPage() {
                 {activeQuestion ? (
                   <>
                     <p className="text-xs font-semibold uppercase text-audity-primary">{activeQuestion.code}</p>
-                    <h2 className="mt-1 text-xl font-semibold">{activeQuestion.title}</h2>
+                    <h2 className="mt-1 text-xl font-semibold" title={activeQuestion.categoryDescription ?? activeQuestion.description ?? activeQuestion.title}>{activeQuestion.title}</h2>
+                    {activeCategoryLabel ? (
+                      <div className="mt-3 rounded-audity border border-audity-border bg-audity-page px-3 py-2" title={activeQuestion.categoryDescription ?? undefined}>
+                        <p className="text-xs font-semibold uppercase text-audity-muted">Category</p>
+                        <p className="mt-1 text-sm font-semibold text-audity-primary">{activeCategoryLabel}</p>
+                        {activeQuestion.categoryDescription ? <p className="mt-1 text-sm text-audity-secondary">{activeQuestion.categoryDescription}</p> : null}
+                      </div>
+                    ) : null}
                     <p className="mt-2 text-sm text-audity-secondary">{activeQuestion.question}</p>
                     {activeQuestion.evidenceGap ? (
                       <div className="mt-4 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
@@ -296,6 +309,18 @@ export function GuidedQuestionsPage() {
               </form>
             </section>
             <aside className="grid min-w-0 gap-3 xl:col-span-2 xl:grid-cols-2 2xl:col-span-1 2xl:block 2xl:space-y-3">
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <h2 className="mb-3 text-lg font-semibold">Category Context</h2>
+                {activeQuestion?.categoryDescription || activeCategoryLabel ? (
+                  <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                    {activeCategoryLabel ? <p className="text-sm font-semibold text-audity-primary">{activeCategoryLabel}</p> : null}
+                    {activeQuestion?.categoryDescription ? <p className="mt-2 text-sm text-audity-secondary">{activeQuestion.categoryDescription}</p> : null}
+                    {activeQuestion?.source ? <p className="mt-2 text-xs text-audity-muted">{activeQuestion.source}</p> : null}
+                  </div>
+                ) : (
+                  <p className="text-sm text-audity-muted">No category description is available for this question.</p>
+                )}
+              </section>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-3 text-lg font-semibold">Smart Suggestions</h2>
                 <div className="space-y-2">

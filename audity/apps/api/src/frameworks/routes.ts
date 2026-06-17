@@ -83,6 +83,14 @@ function stableUuid(input: string): string {
   )}-${hash.slice(20, 32)}`;
 }
 
+function optionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function jsonRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
 function mapFramework(row: Record<string, unknown>) {
   return {
     id: row.id,
@@ -551,7 +559,7 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
         `select fd.id as domain_id, fd.name as domain_name, fd.description as domain_description,
           fd.sort_order as domain_sort_order, fc.id as control_id, fc.control_code, fc.title,
           fc.description, fc.question_text, fc.evidence_examples, fc.default_weight,
-          fc.readiness_pass_condition, fc.gap_condition,
+          fc.readiness_pass_condition, fc.gap_condition, fc.report_mapping,
           aq.id as assessment_question_id, aq.question_id, aq.answer_scale,
           aq.minimum_evidence_expected, aq.preferred_evidence_types, aq.gap_trigger,
           aq.question, ca.id as answer_id, ca.score, ca.answer_state, ca.evidence_status,
@@ -587,6 +595,7 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
       let totalControls = 0;
       let answeredControls = 0;
       for (const row of rows.rows) {
+        const reportMapping = jsonRecord(row.report_mapping);
         totalControls += 1;
         const answered = row.answer_id !== null && (row.score !== null || row.answer_state !== "unknown");
         if (answered) {
@@ -618,6 +627,11 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           minimumEvidenceExpected: row.minimum_evidence_expected,
           preferredEvidenceTypes: row.preferred_evidence_types,
           gapTrigger: row.gap_trigger,
+          categoryId: optionalString(reportMapping.categoryId),
+          categoryTitle: optionalString(reportMapping.categoryTitle),
+          categoryDescription: optionalString(reportMapping.categoryDescription),
+          source: optionalString(reportMapping.source),
+          reportMapping,
           defaultWeight: Number(row.default_weight ?? 1),
           readinessPassCondition: row.readiness_pass_condition,
           gapCondition: row.gap_condition,

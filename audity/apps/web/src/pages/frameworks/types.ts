@@ -72,6 +72,11 @@ export type GuidedQuestion = {
   minimumEvidenceExpected?: number;
   preferredEvidenceTypes?: string[];
   gapTrigger?: string | null;
+  categoryId?: string | null;
+  categoryTitle?: string | null;
+  categoryDescription?: string | null;
+  source?: string | null;
+  reportMapping?: Record<string, unknown> | null;
   defaultWeight?: number;
   readinessPassCondition?: string | null;
   gapCondition?: string | null;
