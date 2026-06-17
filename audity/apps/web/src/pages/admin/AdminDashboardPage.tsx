@@ -906,6 +906,86 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           {section === "system" ? (
             <div className="grid gap-3">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-audity-border pb-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-audity-muted">System Updates</p>
+                    <h2 className="mt-1 text-lg font-semibold">Audity Update Panel</h2>
+                    <p className="mt-1 text-sm text-audity-secondary">
+                      Updates are checked only against the production branch and installed by the server-side updater.
+                    </p>
+                  </div>
+                  <span className={`rounded-audity border px-3 py-1 text-xs font-semibold ${
+                    updateStatus?.updateAvailable
+                      ? "border-audity-warning bg-[#2A2514] text-audity-warning"
+                      : "border-audity-border bg-audity-page text-audity-secondary"
+                  }`}>
+                    {updateStatus?.updateAvailable ? "Update available" : "Up to date"}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      ["Installed", updateStatus?.currentVersion ?? "Unknown", `Image tag ${updateStatus?.configuredImageTag ?? "unknown"}`],
+                      ["Latest", updateStatus?.latestVersion ?? "Not checked", `${updateStatus?.updateBranch ?? "production"} branch`],
+                      ["Channel", updateStatus?.updateChannel ?? "production", updateStatus?.imageRegistry ?? "Unknown"],
+                      ["Updater", updateStatus?.updaterConfigured ? "Configured" : "Not configured", updateJob?.status ? `Job ${updateJob.status}` : "No active job"]
+                    ].map(([label, value, detail]) => (
+                      <div key={label} className="rounded-audity border border-audity-border bg-audity-page p-3">
+                        <p className="text-xs font-semibold uppercase text-audity-muted">{label}</p>
+                        <p className="mt-2 truncate text-sm font-semibold text-audity-text">{value}</p>
+                        <p className="mt-1 truncate text-xs text-audity-secondary">{detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-3 rounded-audity border border-audity-border bg-audity-page p-3 sm:flex-row sm:items-end xl:flex-col xl:items-stretch">
+                    <label className="block min-w-0 flex-1 text-xs font-semibold uppercase text-audity-secondary">
+                      Target version
+                      <input
+                        className="mt-2 audity-input"
+                        value={updateVersion}
+                        placeholder={updateStatus?.latestVersion ?? "1.4.0"}
+                        onChange={(event) => setUpdateVersion(event.target.value)}
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" className="audity-btn-secondary" onClick={() => void checkUpdates()}>
+                        Check
+                      </button>
+                      <button
+                        type="button"
+                        className="audity-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={!updateStatus?.updaterConfigured || updateJob?.status === "running"}
+                        onClick={() => void startAudityUpdate()}
+                      >
+                        Start update
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {updateStatus?.checkedAt ? (
+                  <p className="mt-3 text-xs text-audity-muted">Last checked {new Date(updateStatus.checkedAt).toLocaleString()}</p>
+                ) : null}
+                {updateStatus?.checkError ? (
+                  <p className="mt-2 rounded-audity border border-audity-error/40 bg-[#2A1C17] px-3 py-2 text-xs text-[#FFB199]">
+                    {updateStatus.checkError}
+                  </p>
+                ) : null}
+                {updateJob ? (
+                  <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase text-audity-muted">Update Job Log</p>
+                      <span className="text-xs text-audity-secondary">
+                        {updateJob.startedAt ? new Date(updateJob.startedAt).toLocaleString() : "Not started"}
+                        {updateJob.exitCode !== null ? ` · exit ${updateJob.exitCode}` : ""}
+                      </span>
+                    </div>
+                    <pre className="max-h-56 overflow-auto rounded-audity border border-audity-border bg-[#080C10] p-3 text-xs leading-relaxed text-audity-secondary">
+                      {updateJob.log.length ? updateJob.log.join("\n") : "No update log yet."}
+                    </pre>
+                  </div>
+                ) : null}
+              </section>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <form className="max-w-md space-y-3" onSubmit={saveSystemSettings}>
                   <label className="block text-xs font-semibold uppercase text-audity-secondary">
                     Session idle timeout
@@ -923,96 +1003,6 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     Save system settings
                   </button>
                 </form>
-              </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-audity-border pb-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-audity-muted">System Updates</p>
-                    <h2 className="mt-1 text-lg font-semibold">Audity Update Panel</h2>
-                    <p className="mt-1 text-sm text-audity-secondary">
-                      Check published Audity releases and start the server-side updater when a new version is ready.
-                    </p>
-                  </div>
-                  <span className={`rounded-audity border px-3 py-1 text-xs font-semibold ${
-                    updateStatus?.updateAvailable
-                      ? "border-audity-warning bg-[#2A2514] text-audity-warning"
-                      : "border-audity-border bg-audity-page text-audity-secondary"
-                  }`}>
-                    {updateStatus?.updateAvailable ? "Update available" : "Up to date"}
-                  </span>
-                </div>
-                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                      <p className="text-xs font-semibold uppercase text-audity-muted">Installed</p>
-                      <p className="mt-2 text-lg font-semibold text-audity-text">{updateStatus?.currentVersion ?? "Unknown"}</p>
-                      <p className="mt-1 text-xs text-audity-secondary">Image tag {updateStatus?.configuredImageTag ?? "unknown"}</p>
-                    </div>
-                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                      <p className="text-xs font-semibold uppercase text-audity-muted">Latest</p>
-                      <p className="mt-2 text-lg font-semibold text-audity-text">{updateStatus?.latestVersion ?? "Not checked"}</p>
-                      <p className="mt-1 text-xs text-audity-secondary">
-                        {updateStatus?.updateBranch ?? "production"} branch · {updateStatus?.repository ?? "GitHub repository"}
-                      </p>
-                    </div>
-                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                      <p className="text-xs font-semibold uppercase text-audity-muted">Channel</p>
-                      <p className="mt-2 text-sm font-semibold text-audity-text">{updateStatus?.updateChannel ?? "production"}</p>
-                      <p className="mt-1 truncate text-xs text-audity-secondary">{updateStatus?.imageRegistry ?? "Unknown"}</p>
-                    </div>
-                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                      <p className="text-xs font-semibold uppercase text-audity-muted">Updater</p>
-                      <p className="mt-2 text-sm font-semibold text-audity-text">{updateStatus?.updaterConfigured ? "Configured" : "Not configured"}</p>
-                      <p className="mt-1 text-xs text-audity-secondary">{updateJob?.status ? `Job ${updateJob.status}` : "No active job"}</p>
-                    </div>
-                  </div>
-                  <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
-                      Target version
-                      <input
-                        className="mt-2 audity-input"
-                        value={updateVersion}
-                        placeholder={updateStatus?.latestVersion ?? "1.4.0"}
-                        onChange={(event) => setUpdateVersion(event.target.value)}
-                      />
-                    </label>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button type="button" className="audity-btn-secondary" onClick={() => void checkUpdates()}>
-                        Check for updates
-                      </button>
-                      <button
-                        type="button"
-                        className="audity-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={!updateStatus?.updaterConfigured || updateJob?.status === "running"}
-                        onClick={() => void startAudityUpdate()}
-                      >
-                        Start update
-                      </button>
-                    </div>
-                    {updateStatus?.checkedAt ? (
-                      <p className="mt-3 text-xs text-audity-muted">Last checked {new Date(updateStatus.checkedAt).toLocaleString()}</p>
-                    ) : null}
-                    {updateStatus?.checkError ? (
-                      <p className="mt-2 rounded-audity border border-audity-error/40 bg-[#2A1C17] px-3 py-2 text-xs text-[#FFB199]">
-                        {updateStatus.checkError}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-                {updateJob ? (
-                  <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase text-audity-muted">Update Job Log</p>
-                      <span className="text-xs text-audity-secondary">
-                        {updateJob.startedAt ? new Date(updateJob.startedAt).toLocaleString() : "Not started"}
-                        {updateJob.exitCode !== null ? ` · exit ${updateJob.exitCode}` : ""}
-                      </span>
-                    </div>
-                    <pre className="max-h-56 overflow-auto rounded-audity border border-audity-border bg-[#080C10] p-3 text-xs leading-relaxed text-audity-secondary">
-                      {updateJob.log.length ? updateJob.log.join("\n") : "No update log yet."}
-                    </pre>
-                  </div>
-                ) : null}
               </section>
               {systemMonitor ? (
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
