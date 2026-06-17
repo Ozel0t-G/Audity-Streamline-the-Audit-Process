@@ -47,6 +47,9 @@ Important variables:
 - `AUDITY_PUBLIC_URL`: browser-facing URL, for example `https://audity.example.com`.
 - `AUDITY_IMAGE_REGISTRY`: container registry used by production updates, default `ghcr.io/ozel0t-g`.
 - `AUDITY_VERSION`: image tag used by production updates, for example `latest` or `1.4.0`.
+- `AUDITY_UPDATE_BRANCH`: production release branch used for update checks, default `production`.
+- `AUDITY_UPDATE_CHANNEL`: expected update channel in the release manifest, default `production`.
+- `AUDITY_UPDATE_MANIFEST_PATH`: release manifest path, default `audity/update-channel.json`.
 - `AUDITY_WEB_PORT`: host port for the web app, default `80`.
 - `AUDITY_DATABASE_URL`: PostgreSQL connection string.
 - `AUDITY_REDIS_URL`: Redis connection string for queues and rate limits.
@@ -112,6 +115,8 @@ Local development source-build fallback:
 ```bash
 AUDITY_UPDATE_MODE=build ./scripts/update.sh
 ```
+
+Production update discovery is branch-gated. Audity checks `audity/update-channel.json` on the `production` branch and ignores `main`. Bump the SemVer `version` in that manifest on the `production` branch to publish a new update notification.
 
 ## Beta Smoke Checklist
 

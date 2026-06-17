@@ -146,9 +146,13 @@ rollback() {
 }
 
 echo "Pulling target images..."
-if ! compose pull audity-api audity-worker audity-web; then
-  echo "Image pull failed. Existing containers were not changed." >&2
-  exit 1
+if [ "${AUDITY_SKIP_IMAGE_PULL:-false}" = "true" ]; then
+  echo "Skipping image pull because AUDITY_SKIP_IMAGE_PULL=true."
+else
+  if ! compose pull audity-api audity-worker audity-web audity-updater; then
+    echo "Image pull failed. Existing containers were not changed." >&2
+    exit 1
+  fi
 fi
 
 echo "Running migration and seed with target API image..."

@@ -4,7 +4,13 @@ import { pool } from "../db/client.js";
 
 export type NotificationInput = {
   recipientUserId: string;
-  type: "customer_shared" | "customer_scope_changed" | "new_questions_available";
+  type:
+    | "customer_shared"
+    | "customer_scope_changed"
+    | "new_questions_available"
+    | "system_update_available"
+    | "system_update_started"
+    | "system_update_finished";
   title: string;
   message: string;
   entityType?: string | null;

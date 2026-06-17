@@ -1,0 +1,16 @@
+{
+  "channel": "production",
+  "branch": "production",
+  "version": "0.1.0",
+  "imageTag": "0.1.0",
+  "releasedAt": "2026-06-17T00:00:00Z",
+  "modules": {
+    "web": "ghcr.io/ozel0t-g/audity-web:0.1.0",
+    "api": "ghcr.io/ozel0t-g/audity-api:0.1.0",
+    "worker": "ghcr.io/ozel0t-g/audity-worker:0.1.0",
+    "updater": "ghcr.io/ozel0t-g/audity-updater:0.1.0"
+  },
+  "notes": [
+    "Production release channel manifest. Update checks must use this file from the production branch."
+  ]
+}

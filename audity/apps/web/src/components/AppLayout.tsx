@@ -251,6 +251,8 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     id: string;
     title: string;
     message: string;
+    entityType?: string | null;
+    entityId?: string | null;
     customerId?: string | null;
     readAt?: string | null;
     createdAt: string;
@@ -380,6 +382,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     await loadNotifications();
     setNotificationsOpen(false);
     if (notification.customerId) navigate(`/customers/${notification.customerId}`);
+    if (notification.entityType === "system_update") navigate("/admin/system");
   }
 
   async function markAllRead() {

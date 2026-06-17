@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { appendActivityEvent } from "../activity/service.js";
+import { ensureUpdateNotificationForAdmin } from "../admin/updateService.js";
 import { requireAuth, requireCsrf } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { mapNotification } from "./service.js";
@@ -13,6 +14,9 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
   });
 
   app.get("/api/notifications", { preHandler: requireAuth }, async (request) => {
+    if (request.user?.permissions.includes("settings.manage")) {
+      await ensureUpdateNotificationForAdmin().catch(() => undefined);
+    }
     const result = await pool.query(
       `select n.*, c.name as customer_name
        from notifications n

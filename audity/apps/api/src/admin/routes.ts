@@ -9,6 +9,7 @@ import { syncFrameworkYamlFiles } from "../frameworks/yamlImporter.js";
 import { backupQueue, restoreQueue } from "../jobs/queue.js";
 import { signedBackupGetUrl } from "../storage/service.js";
 import { validateBody } from "../utils/validation.js";
+import { checkForUpdates, getUpdaterJob, startUpdate } from "./updateService.js";
 
 type LogFilters = {
   userId?: string;
@@ -97,6 +98,10 @@ const systemSettingsSchema = z.object({
     z.literal(55),
     z.literal(60)
   ])
+});
+
+const updateRunSchema = z.object({
+  version: z.string().trim().min(1).max(80).optional()
 });
 
 function mapBackup(row: Record<string, unknown>) {
@@ -353,6 +358,39 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     { preHandler: requireInstanceAdminCsrf },
     async () => {
       return { sync: await syncFrameworkYamlFiles({ force: true }) };
+    }
+  );
+
+  app.get(
+    "/api/admin/updates/status",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async () => {
+      const [status, job] = await Promise.all([
+        checkForUpdates(false),
+        getUpdaterJob().catch(() => null)
+      ]);
+      return { update: status, job };
+    }
+  );
+
+  app.post(
+    "/api/admin/updates/check",
+    { preHandler: requireCsrfPermission("settings.manage") },
+    async () => {
+      const status = await checkForUpdates(true);
+      const job = await getUpdaterJob().catch(() => null);
+      return { update: status, job };
+    }
+  );
+
+  app.post<{ Body: { version?: string } }>(
+    "/api/admin/updates/run",
+    { preHandler: requireInstanceAdminCsrf },
+    async (request, reply) => {
+      const body = validateBody(updateRunSchema, request.body ?? {}, reply);
+      if (!body) return;
+      const job = await startUpdate(body.version, request.user!.sub);
+      return reply.code(202).send({ job });
     }
   );
 

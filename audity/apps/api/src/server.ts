@@ -97,13 +97,18 @@ app.setErrorHandler((error, request, reply) => {
   });
 });
 
+const runtimeVersion = () =>
+  /^\d+\.\d+\.\d+(?:[-+].*)?$/.test(process.env.AUDITY_VERSION ?? "")
+    ? process.env.AUDITY_VERSION!
+    : AUDITY_VERSION;
+
 app.get("/health", async (): Promise<HealthResponse> => ({
   status: "ok",
-  version: AUDITY_VERSION
+  version: runtimeVersion()
 }));
 app.get("/api/health", async (): Promise<HealthResponse> => ({
   status: "ok",
-  version: AUDITY_VERSION
+  version: runtimeVersion()
 }));
 
 app.get("/ready", async () => {

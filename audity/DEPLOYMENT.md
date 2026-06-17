@@ -81,6 +81,12 @@ Configure the image source in `.env`:
 ```bash
 AUDITY_IMAGE_REGISTRY=ghcr.io/ozel0t-g
 AUDITY_VERSION=latest
+AUDITY_UPDATE_BRANCH=production
+AUDITY_UPDATE_CHANNEL=production
+AUDITY_UPDATE_MANIFEST_PATH=audity/update-channel.json
+AUDITY_UPDATER_URL=http://audity-updater:3099
+AUDITY_UPDATER_TOKEN=<generated-secret>
+AUDITY_HOST_PROJECT_DIR=/opt/audity
 ```
 
 Update to the configured version:
@@ -112,6 +118,40 @@ For local development or emergency source builds, use:
 ```bash
 AUDITY_UPDATE_MODE=build ./scripts/update.sh
 ```
+
+## In-App Updates
+
+Instance Admins can open Admin > System Monitor and use the Audity Update Panel.
+
+The panel shows:
+
+- installed application version
+- configured image tag
+- latest available release/tag from GitHub
+- updater service status
+- update job log
+
+Audity also checks for updates when admin notifications are loaded. If the production manifest contains a newer SemVer version, admins receive an in-app notification in the notification bell.
+
+Update discovery is locked to the `production` branch. The API reads:
+
+```text
+https://raw.githubusercontent.com/<repo>/production/audity/update-channel.json
+```
+
+The manifest must declare:
+
+```json
+{
+  "channel": "production",
+  "branch": "production",
+  "version": "1.4.0"
+}
+```
+
+Main branch changes do not create update notifications and do not publish production images. To release a new version, merge the approved code into `production`, bump `audity/update-channel.json`, and let GitHub Actions publish the images from that branch.
+
+The `audity-updater` service is intentionally separate from the normal API. It has no public port and accepts requests only with `AUDITY_UPDATER_TOKEN`. It is the only service that mounts the Docker socket, and it runs `./scripts/update.sh` from `AUDITY_HOST_PROJECT_DIR`.
 
 ## Framework YAML Updates
 

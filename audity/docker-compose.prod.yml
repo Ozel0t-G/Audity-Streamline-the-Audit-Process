@@ -30,6 +30,15 @@ services:
       - ./frameworks:/app/frameworks:ro
     environment:
       AUDITY_ENV: ${AUDITY_ENV:-production}
+      AUDITY_IMAGE_REGISTRY: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}
+      AUDITY_VERSION: ${AUDITY_VERSION:-latest}
+      AUDITY_UPDATE_REPOSITORY: ${AUDITY_UPDATE_REPOSITORY:-Ozel0t-G/Audity-Streamline-the-Audit-Process}
+      AUDITY_UPDATE_BRANCH: ${AUDITY_UPDATE_BRANCH:-production}
+      AUDITY_UPDATE_CHANNEL: ${AUDITY_UPDATE_CHANNEL:-production}
+      AUDITY_UPDATE_MANIFEST_PATH: ${AUDITY_UPDATE_MANIFEST_PATH:-audity/update-channel.json}
+      AUDITY_UPDATE_CHECK_URL: ${AUDITY_UPDATE_CHECK_URL:-}
+      AUDITY_UPDATER_URL: ${AUDITY_UPDATER_URL:-http://audity-updater:3099}
+      AUDITY_UPDATER_TOKEN: ${AUDITY_UPDATER_TOKEN:-replace-with-secure-updater-token}
       AUDITY_PUBLIC_URL: ${AUDITY_PUBLIC_URL:-http://localhost}
       AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
       AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
@@ -69,6 +78,29 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  audity-updater:
+    image: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}/audity-updater:${AUDITY_VERSION:-latest}
+    container_name: audity-updater
+    working_dir: ${AUDITY_HOST_PROJECT_DIR:-/audity}
+    environment:
+      AUDITY_UPDATER_TOKEN: ${AUDITY_UPDATER_TOKEN:-replace-with-secure-updater-token}
+      AUDITY_UPDATE_WORKDIR: ${AUDITY_HOST_PROJECT_DIR:-/audity}
+      AUDITY_UPDATE_SCRIPT: ./scripts/update.sh
+      AUDITY_COMPOSE_FILE: docker-compose.prod.yml
+      AUDITY_IMAGE_REGISTRY: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}
+      AUDITY_VERSION: ${AUDITY_VERSION:-latest}
+      AUDITY_SKIP_IMAGE_PULL: ${AUDITY_SKIP_IMAGE_PULL:-false}
+      AUDITY_SKIP_PREUPDATE_BACKUP: ${AUDITY_SKIP_PREUPDATE_BACKUP:-false}
+      AUDITY_HEALTHCHECK_URL: http://audity-api:3000/health
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${AUDITY_HOST_PROJECT_DIR:-.}:${AUDITY_HOST_PROJECT_DIR:-/audity}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3099/health >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 10

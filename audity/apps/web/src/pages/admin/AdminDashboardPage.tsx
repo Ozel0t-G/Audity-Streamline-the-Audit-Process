@@ -159,6 +159,30 @@ type DashboardSystem = {
   }>;
 };
 
+type UpdateStatus = {
+  currentVersion: string;
+  configuredImageTag: string;
+  imageRegistry: string;
+  repository: string;
+  updateBranch: string;
+  updateChannel: string;
+  latestVersion: string | null;
+  updateAvailable: boolean;
+  checkedAt: string | null;
+  checkError: string | null;
+  updaterConfigured: boolean;
+};
+
+type UpdateJob = {
+  id: string;
+  status: "idle" | "running" | "succeeded" | "failed";
+  requestedVersion: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  exitCode: number | null;
+  log: string[];
+};
+
 const rangeOptions: DashboardRange[] = ["6h", "24h", "1w", "1m"];
 
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
@@ -216,6 +240,9 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [systemSettings, setSystemSettings] = useState({ sessionIdleTimeoutMinutes: 30 });
   const [systemMonitor, setSystemMonitor] = useState<DashboardSystem | null>(null);
   const [systemRange, setSystemRange] = useState<DashboardRange>("24h");
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  const [updateJob, setUpdateJob] = useState<UpdateJob | null>(null);
+  const [updateVersion, setUpdateVersion] = useState("");
   const [backupJobs, setBackupJobs] = useState<BackupJob[]>([]);
   const [backupType, setBackupType] = useState<"full" | "database" | "evidence">("full");
   const [backupSettings, setBackupSettings] = useState<BackupSettings>({
@@ -305,12 +332,16 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   }
 
   async function loadSystemSettings() {
-    const [settingsPayload, dashboardPayload] = await Promise.all([
+    const [settingsPayload, dashboardPayload, updatePayload] = await Promise.all([
       api<{ sessionIdleTimeoutMinutes: number }>("/api/admin/system-settings"),
-      api<{ system: DashboardSystem | null }>(`/api/dashboard?range=${systemRange}`)
+      api<{ system: DashboardSystem | null }>(`/api/dashboard?range=${systemRange}`),
+      api<{ update: UpdateStatus; job: UpdateJob | null }>("/api/admin/updates/status")
     ]);
     setSystemSettings(settingsPayload);
     setSystemMonitor(dashboardPayload.system);
+    setUpdateStatus(updatePayload.update);
+    setUpdateJob(updatePayload.job);
+    if (!updateVersion && updatePayload.update.latestVersion) setUpdateVersion(updatePayload.update.latestVersion);
   }
 
   async function loadBackup() {
@@ -342,6 +373,19 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     if (section !== "system") return;
     void loadSystemSettings().catch((err) => setError(err instanceof Error ? err.message : "System monitor load failed"));
   }, [section, systemRange]);
+
+  useEffect(() => {
+    if (section !== "system" || updateJob?.status !== "running") return;
+    const timer = window.setInterval(() => {
+      void api<{ update: UpdateStatus; job: UpdateJob | null }>("/api/admin/updates/status")
+        .then((payload) => {
+          setUpdateStatus(payload.update);
+          setUpdateJob(payload.job);
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [api, section, updateJob?.status]);
 
   async function verifyHashChain() {
     setError("");
@@ -475,6 +519,33 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
       setSystemSettings(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save system settings failed");
+    }
+  }
+
+  async function checkUpdates() {
+    setError("");
+    try {
+      const payload = await api<{ update: UpdateStatus; job: UpdateJob | null }>("/api/admin/updates/check", {
+        method: "POST"
+      });
+      setUpdateStatus(payload.update);
+      setUpdateJob(payload.job);
+      if (payload.update.latestVersion) setUpdateVersion(payload.update.latestVersion);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Update check failed");
+    }
+  }
+
+  async function startAudityUpdate() {
+    setError("");
+    try {
+      const payload = await api<{ job: UpdateJob }>("/api/admin/updates/run", {
+        method: "POST",
+        body: JSON.stringify({ version: updateVersion || updateStatus?.latestVersion || undefined })
+      });
+      setUpdateJob(payload.job);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Update start failed");
     }
   }
 
@@ -852,6 +923,96 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     Save system settings
                   </button>
                 </form>
+              </section>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-audity-border pb-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-audity-muted">System Updates</p>
+                    <h2 className="mt-1 text-lg font-semibold">Audity Update Panel</h2>
+                    <p className="mt-1 text-sm text-audity-secondary">
+                      Check published Audity releases and start the server-side updater when a new version is ready.
+                    </p>
+                  </div>
+                  <span className={`rounded-audity border px-3 py-1 text-xs font-semibold ${
+                    updateStatus?.updateAvailable
+                      ? "border-audity-warning bg-[#2A2514] text-audity-warning"
+                      : "border-audity-border bg-audity-page text-audity-secondary"
+                  }`}>
+                    {updateStatus?.updateAvailable ? "Update available" : "Up to date"}
+                  </span>
+                </div>
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                      <p className="text-xs font-semibold uppercase text-audity-muted">Installed</p>
+                      <p className="mt-2 text-lg font-semibold text-audity-text">{updateStatus?.currentVersion ?? "Unknown"}</p>
+                      <p className="mt-1 text-xs text-audity-secondary">Image tag {updateStatus?.configuredImageTag ?? "unknown"}</p>
+                    </div>
+                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                      <p className="text-xs font-semibold uppercase text-audity-muted">Latest</p>
+                      <p className="mt-2 text-lg font-semibold text-audity-text">{updateStatus?.latestVersion ?? "Not checked"}</p>
+                      <p className="mt-1 text-xs text-audity-secondary">
+                        {updateStatus?.updateBranch ?? "production"} branch · {updateStatus?.repository ?? "GitHub repository"}
+                      </p>
+                    </div>
+                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                      <p className="text-xs font-semibold uppercase text-audity-muted">Channel</p>
+                      <p className="mt-2 text-sm font-semibold text-audity-text">{updateStatus?.updateChannel ?? "production"}</p>
+                      <p className="mt-1 truncate text-xs text-audity-secondary">{updateStatus?.imageRegistry ?? "Unknown"}</p>
+                    </div>
+                    <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                      <p className="text-xs font-semibold uppercase text-audity-muted">Updater</p>
+                      <p className="mt-2 text-sm font-semibold text-audity-text">{updateStatus?.updaterConfigured ? "Configured" : "Not configured"}</p>
+                      <p className="mt-1 text-xs text-audity-secondary">{updateJob?.status ? `Job ${updateJob.status}` : "No active job"}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-audity border border-audity-border bg-audity-page p-3">
+                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                      Target version
+                      <input
+                        className="mt-2 audity-input"
+                        value={updateVersion}
+                        placeholder={updateStatus?.latestVersion ?? "1.4.0"}
+                        onChange={(event) => setUpdateVersion(event.target.value)}
+                      />
+                    </label>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" className="audity-btn-secondary" onClick={() => void checkUpdates()}>
+                        Check for updates
+                      </button>
+                      <button
+                        type="button"
+                        className="audity-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={!updateStatus?.updaterConfigured || updateJob?.status === "running"}
+                        onClick={() => void startAudityUpdate()}
+                      >
+                        Start update
+                      </button>
+                    </div>
+                    {updateStatus?.checkedAt ? (
+                      <p className="mt-3 text-xs text-audity-muted">Last checked {new Date(updateStatus.checkedAt).toLocaleString()}</p>
+                    ) : null}
+                    {updateStatus?.checkError ? (
+                      <p className="mt-2 rounded-audity border border-audity-error/40 bg-[#2A1C17] px-3 py-2 text-xs text-[#FFB199]">
+                        {updateStatus.checkError}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                {updateJob ? (
+                  <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase text-audity-muted">Update Job Log</p>
+                      <span className="text-xs text-audity-secondary">
+                        {updateJob.startedAt ? new Date(updateJob.startedAt).toLocaleString() : "Not started"}
+                        {updateJob.exitCode !== null ? ` · exit ${updateJob.exitCode}` : ""}
+                      </span>
+                    </div>
+                    <pre className="max-h-56 overflow-auto rounded-audity border border-audity-border bg-[#080C10] p-3 text-xs leading-relaxed text-audity-secondary">
+                      {updateJob.log.length ? updateJob.log.join("\n") : "No update log yet."}
+                    </pre>
+                  </div>
+                ) : null}
               </section>
               {systemMonitor ? (
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">

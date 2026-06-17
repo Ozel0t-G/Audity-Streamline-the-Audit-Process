@@ -34,6 +34,15 @@ services:
       - ./frameworks:/app/frameworks:ro
     environment:
       AUDITY_ENV: ${AUDITY_ENV:-production}
+      AUDITY_IMAGE_REGISTRY: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}
+      AUDITY_VERSION: ${AUDITY_VERSION:-latest}
+      AUDITY_UPDATE_REPOSITORY: ${AUDITY_UPDATE_REPOSITORY:-Ozel0t-G/Audity-Streamline-the-Audit-Process}
+      AUDITY_UPDATE_BRANCH: ${AUDITY_UPDATE_BRANCH:-production}
+      AUDITY_UPDATE_CHANNEL: ${AUDITY_UPDATE_CHANNEL:-production}
+      AUDITY_UPDATE_MANIFEST_PATH: ${AUDITY_UPDATE_MANIFEST_PATH:-audity/update-channel.json}
+      AUDITY_UPDATE_CHECK_URL: ${AUDITY_UPDATE_CHECK_URL:-}
+      AUDITY_UPDATER_URL: ${AUDITY_UPDATER_URL:-}
+      AUDITY_UPDATER_TOKEN: ${AUDITY_UPDATER_TOKEN:-}
       AUDITY_PUBLIC_URL: ${AUDITY_PUBLIC_URL:-http://localhost}
       AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
       AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
