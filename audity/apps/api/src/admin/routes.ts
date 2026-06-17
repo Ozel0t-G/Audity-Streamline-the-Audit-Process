@@ -191,6 +191,21 @@ function requireAdminPermission(permission: string) {
   };
 }
 
+function requireAdminCsrfPermission(permission: string) {
+  const permissionHandler = requireCsrfPermission(permission);
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    await permissionHandler(request, reply);
+    if (reply.sent) {
+      return;
+    }
+    if (!request.user || !adminRoles.has(request.user.role)) {
+      await reply
+        .code(403)
+        .send({ code: "ADMIN_ROLE_REQUIRED", message: "Admin role required" });
+    }
+  };
+}
+
 async function requireInstanceAdminCsrf(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   await requireCsrf(request, reply);
   if (reply.sent) return;
@@ -199,6 +214,24 @@ async function requireInstanceAdminCsrf(request: FastifyRequest, reply: FastifyR
       .code(403)
       .send({ code: "INSTANCE_ADMIN_REQUIRED", message: "Instance Admin role required" });
   }
+}
+
+function canAssignRole(actorRole: string, targetRole: string): boolean {
+  if (actorRole === "Instance Admin") return true;
+  if (actorRole === "Tenant Admin") return !adminRoles.has(targetRole);
+  return false;
+}
+
+async function wouldRemoveLastActiveInstanceAdmin(userId: string, nextRole: string, nextStatus: string): Promise<boolean> {
+  if (nextRole === "Instance Admin" && nextStatus === "active") return false;
+  const result = await pool.query<{ count: string }>(
+    `select count(*)::text
+     from users u
+     join roles r on r.id = u.role_id
+     where u.id <> $1 and u.status = 'active' and r.name = 'Instance Admin'`,
+    [userId]
+  );
+  return Number(result.rows[0]?.count ?? 0) === 0;
 }
 
 function csvCell(value: unknown): string {
@@ -936,7 +969,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.get("/api/admin/users", { preHandler: requirePermission("roles.manage") }, async () => {
+  app.get("/api/admin/users", { preHandler: requireAdminPermission("roles.manage") }, async () => {
     const result = await pool.query(
       `select u.id, u.email, u.name, u.status, r.name as role, u.created_at, u.updated_at
        from users u
@@ -958,7 +991,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.patch<{ Params: { id: string }; Body: RolePermissionsBody }>(
     "/api/admin/roles/:id/permissions",
-    { preHandler: requireCsrfPermission("roles.manage") },
+    { preHandler: requireInstanceAdminCsrf },
     async (request, reply) => {
       const body = validateBody(rolePermissionsSchema, request.body, reply);
       if (!body) return;
@@ -1010,10 +1043,16 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: InviteBody }>(
     "/api/admin/users/invite",
-    { preHandler: requireCsrfPermission("users.invite") },
+    { preHandler: requireAdminCsrfPermission("users.invite") },
     async (request, reply) => {
       const body = validateBody(inviteSchema, request.body, reply);
       if (!body) return;
+      if (!canAssignRole(request.user!.role, body.role)) {
+        return reply.code(403).send({
+          code: "ROLE_ASSIGNMENT_FORBIDDEN",
+          message: "You cannot assign this role."
+        });
+      }
       const role = await pool.query<{ id: string }>("select id from roles where name = $1", [body.role]);
       if (!role.rows[0]) {
         return reply.code(400).send({ code: "ROLE_NOT_FOUND", message: "Role not found" });
@@ -1040,7 +1079,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.put<{ Params: { id: string }; Body: UserUpdateBody }>(
     "/api/admin/users/:id",
-    { preHandler: requireCsrfPermission("roles.manage") },
+    { preHandler: requireAdminCsrfPermission("roles.manage") },
     async (request, reply) => {
       const body = validateBody(userUpdateSchema, request.body, reply);
       if (!body) return;
@@ -1052,6 +1091,35 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       );
       if (!before.rows[0]) {
         return reply.code(404).send({ code: "USER_NOT_FOUND", message: "User not found" });
+      }
+      if (request.user!.role !== "Instance Admin" && adminRoles.has(before.rows[0].role)) {
+        return reply.code(403).send({
+          code: "USER_MANAGEMENT_FORBIDDEN",
+          message: "You cannot modify administrator accounts."
+        });
+      }
+      if (request.params.id === request.user!.sub && body.status === "disabled") {
+        return reply.code(400).send({
+          code: "CANNOT_DISABLE_SELF",
+          message: "You cannot disable your own user."
+        });
+      }
+      if (body.role && !canAssignRole(request.user!.role, body.role)) {
+        return reply.code(403).send({
+          code: "ROLE_ASSIGNMENT_FORBIDDEN",
+          message: "You cannot assign this role."
+        });
+      }
+      const nextRole = body.role ?? before.rows[0].role;
+      const nextStatus = body.status ?? before.rows[0].status;
+      if (
+        before.rows[0].role === "Instance Admin" &&
+        (await wouldRemoveLastActiveInstanceAdmin(request.params.id, nextRole, nextStatus))
+      ) {
+        return reply.code(400).send({
+          code: "LAST_INSTANCE_ADMIN_REQUIRED",
+          message: "At least one active Instance Admin must remain."
+        });
       }
       const role = body.role
         ? await pool.query<{ id: string }>("select id from roles where name = $1", [body.role])
@@ -1074,6 +1142,11 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
          where u.id = $1`,
         [result.rows[0].id]
       );
+      if (after.rows[0].status === "disabled") {
+        await pool.query("update sessions set revoked_at = now() where user_id = $1 and revoked_at is null", [
+          request.params.id
+        ]);
+      }
       const action = before.rows[0].role !== after.rows[0].role ? "role.changed" : "user.disabled";
       await appendActivityEvent({
         userId: request.user!.sub,
