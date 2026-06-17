@@ -151,13 +151,15 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
          left join assessments a on a.customer_id = c.id
          left join lateral (
            select count(*)::int as total_questions
-           from assessment_questions aq
-           where aq.assessment_id = a.id
+           from question_control_mappings qcm
+           where qcm.framework_id = a.framework_id
          ) q on true
          left join lateral (
            select count(distinct ca.assessment_question_id)::int as answered_questions
            from control_answers ca
            join assessment_questions aq on aq.id = ca.assessment_question_id
+           join framework_controls fc on fc.id = aq.framework_control_id
+           join framework_domains fd on fd.id = fc.framework_domain_id and fd.framework_id = a.framework_id
            where aq.assessment_id = a.id
              and (ca.score is not null or ca.answer_state <> 'unknown')
          ) ans on true
@@ -178,6 +180,8 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
            )::int as evidence_gaps
            from control_answers ca
            join assessment_questions aq on aq.id = ca.assessment_question_id
+           join framework_controls fc on fc.id = aq.framework_control_id
+           join framework_domains fd on fd.id = fc.framework_domain_id and fd.framework_id = a.framework_id
            where aq.assessment_id = a.id
          ) answer_stats on true
          left join lateral (

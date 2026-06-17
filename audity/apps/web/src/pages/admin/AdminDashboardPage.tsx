@@ -820,7 +820,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               {can("users.invite") ? <form className="mb-4 space-y-3" onSubmit={inviteUser}>
                 <input className="audity-input" placeholder="Email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} />
                 <input className="audity-input" placeholder="Name" value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} />
-                <div className="grid grid-cols-[1fr_160px] gap-2">
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px]">
                   <input className="audity-input" placeholder="Temporary password" value={inviteForm.password} onChange={(event) => setInviteForm({ ...inviteForm, password: event.target.value })} />
                   <select className="audity-input" value={inviteForm.role} onChange={(event) => setInviteForm({ ...inviteForm, role: event.target.value })}>
                     {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}

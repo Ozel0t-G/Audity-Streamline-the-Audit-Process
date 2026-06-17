@@ -5,6 +5,7 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission, type AuthenticatedUser } from "../auth/hooks.js";
 import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
+import { ensureAssessmentQuestions, getAssessmentFrameworkId } from "../frameworks/assessmentQuestions.js";
 
 const defaultPhases = [
   { name: "Preparation", status: "active", sortOrder: 1 },
@@ -220,6 +221,10 @@ async function assertAssessmentAccess(user: AuthenticatedUser, assessmentId: str
 
 async function ensureAuditDefaults(assessmentId: string, userId: string) {
   await ensureAuditTemplates();
+  const frameworkId = await getAssessmentFrameworkId(assessmentId);
+  if (frameworkId) {
+    await ensureAssessmentQuestions(assessmentId, frameworkId);
+  }
   await pool.query(
     `insert into audit_plans (assessment_id, phases, created_by, updated_by)
      values ($1, $2::jsonb, $3, $3)
@@ -229,6 +234,9 @@ async function ensureAuditDefaults(assessmentId: string, userId: string) {
   const profileQuestions = await pool.query<{ id: string; framework_control_id: string | null }>(
     `select aq.id, aq.framework_control_id
      from assessment_questions aq
+     join assessments a on a.id = aq.assessment_id
+     join framework_controls fc on fc.id = aq.framework_control_id
+     join framework_domains fd on fd.id = fc.framework_domain_id and fd.framework_id = a.framework_id
      left join audit_control_profiles acp
        on acp.assessment_question_id = aq.id and acp.assessment_id = aq.assessment_id
      where aq.assessment_id = $1 and acp.id is null`,
@@ -296,7 +304,9 @@ async function loadOverview(assessmentId: string, userId: string) {
               ca.score, ca.answer_state, ca.evidence_status, ca.confidence_level, ca.notes,
               acp.*
        from assessment_questions aq
-       left join framework_controls fc on fc.id = aq.framework_control_id
+       join assessments a on a.id = aq.assessment_id
+       join framework_controls fc on fc.id = aq.framework_control_id
+       join framework_domains fd on fd.id = fc.framework_domain_id and fd.framework_id = a.framework_id
        left join control_answers ca on ca.assessment_question_id = aq.id
        left join audit_control_profiles acp on acp.assessment_question_id = aq.id
        where aq.assessment_id = $1
@@ -565,7 +575,15 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
     if (!(await assertAssessmentAccess(request.user!, request.params.id))) return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
     const body = parseBody(controlProfileSchema, request.body);
     await ensureAuditDefaults(request.params.id, request.user!.sub);
-    const question = await pool.query("select id, framework_control_id from assessment_questions where id = $1 and assessment_id = $2", [request.params.questionId, request.params.id]);
+    const question = await pool.query(
+      `select aq.id, aq.framework_control_id
+       from assessment_questions aq
+       join assessments a on a.id = aq.assessment_id
+       join framework_controls fc on fc.id = aq.framework_control_id
+       join framework_domains fd on fd.id = fc.framework_domain_id and fd.framework_id = a.framework_id
+       where aq.id = $1 and aq.assessment_id = $2`,
+      [request.params.questionId, request.params.id]
+    );
     if (!question.rows[0]) return reply.code(404).send({ code: "CONTROL_NOT_FOUND", message: "Control not found" });
     const result = await pool.query(
       `insert into audit_control_profiles

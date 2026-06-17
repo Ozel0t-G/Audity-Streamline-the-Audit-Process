@@ -1029,14 +1029,14 @@ export function AssessmentWorkflowPage() {
                 <p className="mt-1 text-xs text-audity-muted">Drag cards between columns to change timeframe.</p>
               </div>
               {canEditRoadmap ? (
-              <form className="flex flex-wrap gap-2" onSubmit={createRoadmapItem}>
+              <form className="flex min-w-0 flex-wrap items-center gap-2" onSubmit={createRoadmapItem}>
                 <button className="audity-btn-secondary" type="button" onClick={() => void generateRoadmapFromRisks()}>
                   Auto-generate High/Critical
                 </button>
                 <select className="w-28 audity-input" value={roadmapForm.phase} onChange={(event) => setRoadmapForm({ ...roadmapForm, phase: event.target.value })}>
                   {phases.map((phase) => <option key={phase}>{phase}</option>)}
                 </select>
-                <input className="w-64 audity-input" placeholder="Roadmap action" value={roadmapForm.action} onChange={(event) => setRoadmapForm({ ...roadmapForm, action: event.target.value })} />
+                <input className="min-w-[180px] max-w-full flex-1 audity-input" placeholder="Roadmap action" value={roadmapForm.action} onChange={(event) => setRoadmapForm({ ...roadmapForm, action: event.target.value })} />
                 <button className="audity-btn-primary" disabled={!selectedRisk}>Generate from risk</button>
               </form>
               ) : null}

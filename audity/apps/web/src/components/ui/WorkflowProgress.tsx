@@ -102,7 +102,7 @@ export function HelpHint({ children }: { children: ReactNode }) {
       >
         ?
       </button>
-      <span className="pointer-events-none absolute left-5 top-1/2 z-30 hidden w-64 -translate-y-1/2 rounded-audity border border-audity-border bg-audity-panel p-2 text-xs text-audity-text shadow-lg group-hover:block group-focus-within:block">
+      <span className="pointer-events-none absolute left-5 top-1/2 z-30 hidden w-[min(16rem,calc(100vw-2rem))] -translate-y-1/2 rounded-audity border border-audity-border bg-audity-panel p-2 text-xs text-audity-text shadow-lg group-hover:block group-focus-within:block">
         {children}
       </span>
     </span>

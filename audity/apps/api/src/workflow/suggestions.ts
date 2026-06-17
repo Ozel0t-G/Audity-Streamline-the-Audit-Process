@@ -28,7 +28,9 @@ export async function ensureSuggestedFindings(assessmentId: string): Promise<voi
     `select aq.id as question_id, aq.framework_control_id, fc.control_code,
       fc.title as control_title, aq.question, ca.score, ca.evidence_status, ca.notes
      from assessment_questions aq
+     join assessments a on a.id = aq.assessment_id
      join framework_controls fc on fc.id = aq.framework_control_id
+     join framework_domains fd on fd.id = fc.framework_domain_id and fd.framework_id = a.framework_id
      join control_answers ca on ca.assessment_question_id = aq.id
      where aq.assessment_id = $1 and ca.score <= 2`,
     [assessmentId]
@@ -82,10 +84,14 @@ export async function ensureAutomaticRiskRegister(assessmentId: string): Promise
     `select f.id as finding_id, f.assessment_question_id, f.framework_control_id,
        f.title, f.priority, f.source_explanation, ca.score
      from findings f
+     left join assessments a on a.id = f.assessment_id
+     left join framework_controls fc on fc.id = f.framework_control_id
+     left join framework_domains fd on fd.id = fc.framework_domain_id
      left join control_answers ca on ca.assessment_question_id = f.assessment_question_id
      left join risks r on r.finding_id = f.id
      where f.assessment_id = $1
        and f.status <> 'dismissed'
+       and (f.framework_control_id is null or fd.framework_id = a.framework_id)
        and r.id is null`,
     [assessmentId]
   );
