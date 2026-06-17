@@ -45,7 +45,7 @@ export function WorkflowProgress<TKey extends string>({
       <ol className="grid auto-rows-max gap-2 md:flex md:items-center md:gap-1">
         {steps.map((step, index) => {
           const Inner = (
-            <span className="flex items-center gap-2">
+            <span className="flex min-w-0 items-center gap-2">
               <span
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${STATUS_DOT[step.status]}`}
                 aria-hidden="true"
@@ -58,7 +58,7 @@ export function WorkflowProgress<TKey extends string>({
                   index + 1
                 )}
               </span>
-              <span className={`truncate text-xs font-medium ${step.status === "current" ? "text-audity-text" : "text-audity-secondary"}`}>
+              <span className={`min-w-0 truncate text-xs font-medium ${step.status === "current" ? "text-audity-text" : "text-audity-secondary"}`}>
                 {step.label}
               </span>
             </span>
@@ -72,12 +72,12 @@ export function WorkflowProgress<TKey extends string>({
                   title={step.hint}
                   aria-label={`Step ${index + 1}: ${typeof step.label === "string" ? step.label : ""} (${STATUS_LABEL[step.status]})`}
                   aria-current={step.status === "current" ? "step" : undefined}
-                  className="flex min-w-0 items-center gap-2 rounded px-1 py-0.5 hover:bg-audity-panelAlt focus-visible:outline focus-visible:outline-2 focus-visible:outline-audity-primary"
+                  className="flex w-full min-w-0 items-center gap-2 rounded px-1 py-0.5 hover:bg-audity-panelAlt focus-visible:outline focus-visible:outline-2 focus-visible:outline-audity-primary"
                 >
                   {Inner}
                 </button>
               ) : (
-                <span title={step.hint} aria-current={step.status === "current" ? "step" : undefined}>
+                <span className="min-w-0" title={step.hint} aria-current={step.status === "current" ? "step" : undefined}>
                   {Inner}
                 </span>
               )}
