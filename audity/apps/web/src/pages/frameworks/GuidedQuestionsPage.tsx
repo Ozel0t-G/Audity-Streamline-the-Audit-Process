@@ -192,7 +192,7 @@ export function GuidedQuestionsPage() {
             </div>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid min-w-0 gap-3 xl:grid-cols-[180px_minmax(0,1fr)] 2xl:grid-cols-[200px_minmax(0,1fr)_300px]">
+          <div className="grid min-w-0 gap-3 xl:grid-cols-[150px_minmax(0,1fr)] 2xl:grid-cols-[170px_minmax(0,1fr)_300px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-sm font-medium">Domains</h2>
@@ -201,14 +201,14 @@ export function GuidedQuestionsPage() {
                 {payload?.domains.map((domain) => (
                   <button
                     key={domain.id}
-                    title={domain.description ?? domain.name}
+                    title={domain.name}
                     className={`block w-full px-3 py-2 text-left hover:bg-audity-panelAlt ${domain.id === activeDomain?.id ? "bg-audity-primaryActive/20" : ""}`}
                     onClick={() => {
                       setActiveDomainId(domain.id);
                       setActiveQuestionId(domain.questions[0]?.questionId ?? "");
                     }}
                   >
-                    <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
                       <p className="min-w-0 truncate text-xs font-medium">{domain.name}</p>
                       <span className="text-xs text-audity-secondary">{domain.coverage}%</span>
                     </div>
@@ -229,7 +229,7 @@ export function GuidedQuestionsPage() {
                   {activeDomain?.questions.map((question) => (
                     <button
                       key={question.questionId}
-                      title={question.categoryDescription ?? question.description ?? question.title}
+                      title={question.question}
                       className={`block w-full px-3 py-2 text-left hover:bg-audity-panelAlt ${question.questionId === activeQuestion?.questionId ? "bg-audity-primaryActive/20" : ""}`}
                       onClick={() => setActiveQuestionId(question.questionId)}
                     >
@@ -247,7 +247,7 @@ export function GuidedQuestionsPage() {
                 {activeQuestion ? (
                   <>
                     <p className="text-xs font-medium uppercase text-audity-primary">{activeQuestion.code}</p>
-                    <h2 className="mt-3 max-w-5xl text-lg font-normal leading-8 text-audity-text" title={activeQuestion.description ?? activeQuestion.title}>
+                    <h2 className="mt-3 max-w-5xl text-lg font-normal leading-7 text-audity-text" title={activeQuestion.question}>
                       {activeQuestion.question}
                     </h2>
                     {activeQuestion.evidenceGap ? (
@@ -257,7 +257,12 @@ export function GuidedQuestionsPage() {
                     ) : null}
                     <label className="mt-5 block text-xs font-semibold uppercase text-audity-secondary">
                       Score
-                      <select className="mt-2 audity-input" value={form.score} onChange={(event) => setForm({ ...form, score: Number(event.target.value) })}>
+                      <select
+                        className="mt-2 audity-input"
+                        value={form.score}
+                        disabled={!canEditAssessment}
+                        onChange={(event) => setForm({ ...form, score: Number(event.target.value) })}
+                      >
                         {scoreOptions.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
@@ -266,26 +271,46 @@ export function GuidedQuestionsPage() {
                     <div className="mt-4 grid gap-3 2xl:grid-cols-3">
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">
                         Answer State
-                        <select className="mt-2 audity-input" value={form.answerState} onChange={(event) => setForm({ ...form, answerState: event.target.value })}>
+                        <select
+                          className="mt-2 audity-input"
+                          value={form.answerState}
+                          disabled={!canEditAssessment}
+                          onChange={(event) => setForm({ ...form, answerState: event.target.value })}
+                        >
                           {answerStates.map((state) => <option key={state} value={state}>{state}</option>)}
                         </select>
                       </label>
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">
                         Evidence Status
-                        <select className="mt-2 audity-input" value={form.evidenceStatus} onChange={(event) => setForm({ ...form, evidenceStatus: event.target.value })}>
+                        <select
+                          className="mt-2 audity-input"
+                          value={form.evidenceStatus}
+                          disabled={!canEditAssessment}
+                          onChange={(event) => setForm({ ...form, evidenceStatus: event.target.value })}
+                        >
                           {evidenceStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
                         </select>
                       </label>
                       <label className="block text-xs font-semibold uppercase text-audity-secondary">
                         Confidence
-                        <select className="mt-2 audity-input" value={form.confidenceLevel} onChange={(event) => setForm({ ...form, confidenceLevel: event.target.value })}>
+                        <select
+                          className="mt-2 audity-input"
+                          value={form.confidenceLevel}
+                          disabled={!canEditAssessment}
+                          onChange={(event) => setForm({ ...form, confidenceLevel: event.target.value })}
+                        >
                           {confidenceLevels.map((level) => <option key={level} value={level}>{level}</option>)}
                         </select>
                       </label>
                     </div>
                     <label className="mt-4 block text-xs font-semibold uppercase text-audity-secondary">
                       Notes
-                      <textarea className="mt-2 min-h-40 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
+                      <textarea
+                        className="mt-2 min-h-40 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary disabled:cursor-not-allowed disabled:opacity-70"
+                        value={form.notes}
+                        disabled={!canEditAssessment}
+                        onChange={(event) => setForm({ ...form, notes: event.target.value })}
+                      />
                     </label>
                     {canEditAssessment ? (
                     <div className="mt-4 flex items-center gap-3">

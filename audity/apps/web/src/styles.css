@@ -116,7 +116,7 @@ body {
   }
 
   .audity-input {
-    @apply h-8 w-full rounded-audity border border-audity-border bg-audity-page px-2.5 text-sm normal-case text-audity-text outline-none focus-visible:border-audity-primary focus-visible:ring-1 focus-visible:ring-audity-primary aria-[invalid=true]:border-audity-error aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-audity-error;
+    @apply h-8 w-full rounded-audity border border-audity-border bg-audity-page px-2.5 text-sm normal-case text-audity-text outline-none focus-visible:border-audity-primary focus-visible:ring-1 focus-visible:ring-audity-primary disabled:cursor-not-allowed disabled:opacity-70 aria-[invalid=true]:border-audity-error aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-audity-error;
   }
 
   .audity-label {
