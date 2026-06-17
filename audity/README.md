@@ -45,6 +45,8 @@ Important variables:
 - `AUDITY_APP_SECRET`: JWT/session signing secret.
 - `AUDITY_ENCRYPTION_KEY`: master key input for AES-256-GCM encryption.
 - `AUDITY_PUBLIC_URL`: browser-facing URL, for example `https://audity.example.com`.
+- `AUDITY_IMAGE_REGISTRY`: container registry used by production updates, default `ghcr.io/ozel0t-g`.
+- `AUDITY_VERSION`: image tag used by production updates, for example `latest` or `1.4.0`.
 - `AUDITY_WEB_PORT`: host port for the web app, default `80`.
 - `AUDITY_DATABASE_URL`: PostgreSQL connection string.
 - `AUDITY_REDIS_URL`: Redis connection string for queues and rate limits.
@@ -87,14 +89,28 @@ Evidence restore is object-storage based: use the manifest to verify expected ob
 
 ## Update Process
 
+Production servers update from prebuilt container images:
+
 ```bash
 ./scripts/update.sh
+```
+
+Update to a specific version:
+
+```bash
+./scripts/update.sh 1.4.0
 ```
 
 Then verify:
 
 ```bash
-./scripts/healthcheck.sh
+AUDITY_COMPOSE_FILE=docker-compose.prod.yml ./scripts/healthcheck.sh
+```
+
+Local development source-build fallback:
+
+```bash
+AUDITY_UPDATE_MODE=build ./scripts/update.sh
 ```
 
 ## Beta Smoke Checklist

@@ -17,7 +17,7 @@ cd Audity-Streamline-the-Audit-Process/audity
 ./scripts/install.sh
 ```
 
-The installer creates `.env`, generates secrets, builds the containers, runs the database migration and seed, then performs a healthcheck.
+The installer creates `.env`, generates secrets, builds the initial containers, runs the database migration and seed, then performs a healthcheck.
 
 Open:
 
@@ -48,34 +48,69 @@ Production startup refuses known placeholder values such as `change-me`, `replac
 
 ## Daily Operations
 
-Start:
+Production start with published images:
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 Stop:
 
 ```bash
-docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
 Logs:
 
 ```bash
-docker compose logs -f
+docker compose -f docker-compose.prod.yml logs -f
 ```
 
 Healthcheck:
 
 ```bash
-./scripts/healthcheck.sh
+AUDITY_COMPOSE_FILE=docker-compose.prod.yml ./scripts/healthcheck.sh
 ```
 
-Update after pulling new code:
+## Admin Update Process
+
+Server admins do not need to build Docker images locally. Production updates use prebuilt images from GHCR.
+
+Configure the image source in `.env`:
+
+```bash
+AUDITY_IMAGE_REGISTRY=ghcr.io/ozel0t-g
+AUDITY_VERSION=latest
+```
+
+Update to the configured version:
 
 ```bash
 ./scripts/update.sh
+```
+
+Update to a specific release tag:
+
+```bash
+./scripts/update.sh 1.4.0
+```
+
+The update script:
+
+- creates a pre-update PostgreSQL dump under `backups/updates/<timestamp>/`
+- tags the currently running web/API/worker images locally for container rollback
+- pulls `audity-web`, `audity-api`, and `audity-worker`
+- runs database migration and seed with the target API image
+- restarts only the application services
+- runs the healthcheck
+- records the successful `AUDITY_VERSION` in `.env`
+
+If the restart or healthcheck fails, the script attempts to roll the containers back to the locally tagged previous images. Database migrations are not automatically reverted; use the pre-update dump if a database restore is required.
+
+For local development or emergency source builds, use:
+
+```bash
+AUDITY_UPDATE_MODE=build ./scripts/update.sh
 ```
 
 ## Framework YAML Updates
