@@ -192,7 +192,7 @@ export function GuidedQuestionsPage() {
             </div>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid min-w-0 gap-3 xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)_280px]">
+          <div className="grid min-w-0 gap-3 xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)_300px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-lg font-semibold">Domains</h2>
@@ -222,41 +222,40 @@ export function GuidedQuestionsPage() {
             <section className="grid min-w-0 gap-3 lg:grid-cols-[200px_minmax(0,1fr)] 2xl:grid-cols-[220px_minmax(0,1fr)]">
               <div className="rounded-audity border border-audity-border bg-audity-panel">
                 <div className="border-b border-audity-border px-3 py-2.5">
-                  <h2 className="text-lg font-semibold">Controls</h2>
+                  <h2 className="text-sm font-medium">Controls</h2>
                 </div>
                 <div className="divide-y divide-audity-border">
                   {activeDomain?.questions.map((question) => (
                     <button
                       key={question.questionId}
                       title={question.categoryDescription ?? question.description ?? question.title}
-                      className={`block w-full px-3 py-2.5 text-left hover:bg-audity-panelAlt ${question.questionId === activeQuestion?.questionId ? "bg-audity-primaryActive/25" : ""}`}
+                      className={`block w-full px-3 py-2 text-left hover:bg-audity-panelAlt ${question.questionId === activeQuestion?.questionId ? "bg-audity-primaryActive/20" : ""}`}
                       onClick={() => setActiveQuestionId(question.questionId)}
                     >
-                      <p className="text-xs font-semibold text-audity-primary">{question.code}</p>
-                      <p className="mt-1 text-sm font-semibold">{question.title}</p>
-                      {question.categoryTitle ? <p className="mt-1 text-xs text-audity-muted">{question.categoryId} · {question.categoryTitle}</p> : null}
-                      <p className="mt-1 text-xs text-audity-secondary">{question.sourceQuestionId ?? question.questionId.slice(0, 8)}</p>
+                      <p className="text-[11px] font-medium text-audity-primary">{question.code}</p>
+                      <p className="mt-1 line-clamp-3 text-xs font-medium leading-5 text-audity-text">{question.title}</p>
+                      {question.categoryTitle ? <p className="mt-1 line-clamp-1 text-[11px] text-audity-muted">{question.categoryId} · {question.categoryTitle}</p> : null}
                       <div className="mt-2 flex flex-wrap gap-1">
-                        <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-xs text-audity-muted">Score {question.answer?.score ?? "-"}</span>
-                        {question.evidenceGap ? <span className="rounded-audity border border-audity-warning px-2 py-0.5 text-xs text-audity-warning">Evidence gap</span> : null}
+                        <span className="rounded-audity border border-audity-border px-1.5 py-0.5 text-[11px] text-audity-muted">Score {question.answer?.score ?? "-"}</span>
+                        {question.evidenceGap ? <span className="rounded-audity border border-audity-warning px-1.5 py-0.5 text-[11px] text-audity-warning">Evidence gap</span> : null}
                       </div>
                     </button>
                   ))}
                 </div>
               </div>
-              <form onSubmit={saveAnswer} className="min-w-0 rounded-audity border border-audity-border bg-audity-panel p-3">
+              <form onSubmit={saveAnswer} className="min-w-0 rounded-audity border border-audity-border bg-audity-panel p-4">
                 {activeQuestion ? (
                   <>
-                    <p className="text-xs font-semibold uppercase text-audity-primary">{activeQuestion.code}</p>
-                    <h2 className="mt-1 text-xl font-semibold" title={activeQuestion.categoryDescription ?? activeQuestion.description ?? activeQuestion.title}>{activeQuestion.title}</h2>
-                    {activeCategoryLabel ? (
-                      <div className="mt-3 rounded-audity border border-audity-border bg-audity-page px-3 py-2" title={activeQuestion.categoryDescription ?? undefined}>
-                        <p className="text-xs font-semibold uppercase text-audity-muted">Category</p>
-                        <p className="mt-1 text-sm font-semibold text-audity-primary">{activeCategoryLabel}</p>
-                        {activeQuestion.categoryDescription ? <p className="mt-1 text-sm text-audity-secondary">{activeQuestion.categoryDescription}</p> : null}
-                      </div>
-                    ) : null}
-                    <p className="mt-2 text-sm text-audity-secondary">{activeQuestion.question}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-xs font-medium uppercase text-audity-primary">{activeQuestion.code}</p>
+                      {activeCategoryLabel ? (
+                        <span className="rounded-audity border border-audity-border px-2 py-0.5 text-xs text-audity-muted" title={activeQuestion.categoryDescription ?? undefined}>
+                          {activeCategoryLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                    <h2 className="mt-2 max-w-4xl text-base font-medium leading-7 text-audity-text" title={activeQuestion.categoryDescription ?? activeQuestion.description ?? activeQuestion.title}>{activeQuestion.title}</h2>
+                    <p className="mt-3 max-w-4xl text-sm leading-6 text-audity-secondary">{activeQuestion.question}</p>
                     {activeQuestion.evidenceGap ? (
                       <div className="mt-4 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
                         Low score with missing or unvalidated evidence
@@ -309,37 +308,37 @@ export function GuidedQuestionsPage() {
               </form>
             </section>
             <aside className="grid min-w-0 gap-3 xl:col-span-2 xl:grid-cols-2 2xl:col-span-1 2xl:block 2xl:space-y-3">
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-3 text-lg font-semibold">Category Context</h2>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
+                <h2 className="mb-2 text-sm font-medium">Category Context</h2>
                 {activeQuestion?.categoryDescription || activeCategoryLabel ? (
-                  <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                    {activeCategoryLabel ? <p className="text-sm font-semibold text-audity-primary">{activeCategoryLabel}</p> : null}
-                    {activeQuestion?.categoryDescription ? <p className="mt-2 text-sm text-audity-secondary">{activeQuestion.categoryDescription}</p> : null}
+                  <div>
+                    {activeCategoryLabel ? <p className="text-xs font-medium text-audity-primary">{activeCategoryLabel}</p> : null}
+                    {activeQuestion?.categoryDescription ? <p className="mt-2 text-sm leading-6 text-audity-secondary">{activeQuestion.categoryDescription}</p> : null}
                     {activeQuestion?.source ? <p className="mt-2 text-xs text-audity-muted">{activeQuestion.source}</p> : null}
                   </div>
                 ) : (
                   <p className="text-sm text-audity-muted">No category description is available for this question.</p>
                 )}
               </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-3 text-lg font-semibold">Smart Suggestions</h2>
-                <div className="space-y-2">
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
+                <h2 className="mb-2 text-sm font-medium">Smart Suggestions</h2>
+                <div className="space-y-1.5">
                   {smartSuggestions.map((suggestion) => (
-                    <div key={suggestion} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm text-audity-secondary">
+                    <div key={suggestion} className="border-l border-audity-border pl-3 text-sm leading-6 text-audity-secondary">
                       {suggestion}
                     </div>
                   ))}
                   {!smartSuggestions.length ? <p className="text-sm text-audity-muted">No suggestions for the current answer.</p> : null}
                 </div>
               </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-3 text-lg font-semibold">Framework Mapping</h2>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
+                <h2 className="mb-2 text-sm font-medium">Framework Mapping</h2>
                 {activeQuestion?.mappings.length ? (
                   <div className="space-y-2">
                     {activeQuestion.mappings.map((mapping) => (
-                      <div key={`${mapping.controlId}-${mapping.code}`} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                        <p className="text-xs font-semibold text-audity-primary">{mapping.framework} · {mapping.code}</p>
-                        <p className="mt-1 text-sm">{mapping.title}</p>
+                      <div key={`${mapping.controlId}-${mapping.code}`} className="border-l border-audity-border pl-3">
+                        <p className="text-xs font-medium text-audity-primary">{mapping.framework} · {mapping.code}</p>
+                        <p className="mt-1 text-sm leading-5 text-audity-secondary">{mapping.title}</p>
                         <p className="mt-1 text-xs text-audity-muted">{mapping.mappingType}</p>
                       </div>
                     ))}
@@ -348,31 +347,32 @@ export function GuidedQuestionsPage() {
                   <p className="text-sm text-audity-muted">No mappings for this control.</p>
                 )}
               </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-3 text-lg font-semibold">Evidence Signals</h2>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
+                <h2 className="mb-2 text-sm font-medium">Evidence Signals</h2>
                 {activeQuestion?.evidenceGap ? (
                   <div className="mb-3 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
                     Evidence should be requested, received, or validated before this control is considered resolved.
                   </div>
                 ) : null}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {activeQuestion?.evidenceExamples.map((example) => (
-                    <div key={example} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm text-audity-secondary">
+                    <div key={example} className="border-l border-audity-border pl-3 text-sm leading-6 text-audity-secondary">
                       {example}
                     </div>
                   ))}
+                  {!activeQuestion?.evidenceExamples.length ? <p className="text-sm text-audity-muted">No evidence examples defined for this control.</p> : null}
                 </div>
               </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-                <h2 className="mb-3 text-lg font-semibold">Review Notes</h2>
+              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
+                <h2 className="mb-2 text-sm font-medium">Review Notes</h2>
                 <div className="space-y-2">
                   {comments.slice(0, 5).map((comment) => (
-                    <div key={comment.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                    <div key={comment.id} className="border-l border-audity-border pl-3">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold text-audity-primary">{comment.userEmail ?? "System"}</p>
+                        <p className="text-xs font-medium text-audity-primary">{comment.userEmail ?? "System"}</p>
                         <p className="text-xs text-audity-muted">{new Date(comment.createdAt).toLocaleString()}</p>
                       </div>
-                      <p className="mt-1 text-sm text-audity-secondary">{comment.comment}</p>
+                      <p className="mt-1 text-sm leading-6 text-audity-secondary">{comment.comment}</p>
                     </div>
                   ))}
                   {!comments.length ? <p className="text-sm text-audity-muted">No review notes yet</p> : null}
