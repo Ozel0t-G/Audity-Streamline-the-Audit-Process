@@ -157,6 +157,10 @@ body {
   min-height: 100vh;
 }
 
+#audity-main {
+  overflow-wrap: anywhere;
+}
+
 input,
 select,
 textarea {

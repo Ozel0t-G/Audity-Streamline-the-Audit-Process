@@ -192,23 +192,24 @@ export function GuidedQuestionsPage() {
             </div>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid min-w-0 gap-3 xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)_300px]">
+          <div className="grid min-w-0 gap-3 xl:grid-cols-[180px_minmax(0,1fr)] 2xl:grid-cols-[200px_minmax(0,1fr)_300px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-3 py-2.5">
-                <h2 className="text-lg font-semibold">Domains</h2>
+                <h2 className="text-sm font-medium">Domains</h2>
               </div>
               <div className="divide-y divide-audity-border">
                 {payload?.domains.map((domain) => (
                   <button
                     key={domain.id}
-                    className={`block w-full px-3 py-2.5 text-left hover:bg-audity-panelAlt ${domain.id === activeDomain?.id ? "bg-audity-primaryActive/25" : ""}`}
+                    title={domain.description ?? domain.name}
+                    className={`block w-full px-3 py-2 text-left hover:bg-audity-panelAlt ${domain.id === activeDomain?.id ? "bg-audity-primaryActive/20" : ""}`}
                     onClick={() => {
                       setActiveDomainId(domain.id);
                       setActiveQuestionId(domain.questions[0]?.questionId ?? "");
                     }}
                   >
                     <div className="mb-2 flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">{domain.name}</p>
+                      <p className="min-w-0 truncate text-xs font-medium">{domain.name}</p>
                       <span className="text-xs text-audity-secondary">{domain.coverage}%</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-audity bg-audity-page">
@@ -233,8 +234,7 @@ export function GuidedQuestionsPage() {
                       onClick={() => setActiveQuestionId(question.questionId)}
                     >
                       <p className="text-[11px] font-medium text-audity-primary">{question.code}</p>
-                      <p className="mt-1 line-clamp-3 text-xs font-medium leading-5 text-audity-text">{question.title}</p>
-                      {question.categoryTitle ? <p className="mt-1 line-clamp-1 text-[11px] text-audity-muted">{question.categoryId} · {question.categoryTitle}</p> : null}
+                      <p className="mt-1 line-clamp-3 text-xs font-normal leading-5 text-audity-text">{question.question}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
                         <span className="rounded-audity border border-audity-border px-1.5 py-0.5 text-[11px] text-audity-muted">Score {question.answer?.score ?? "-"}</span>
                         {question.evidenceGap ? <span className="rounded-audity border border-audity-warning px-1.5 py-0.5 text-[11px] text-audity-warning">Evidence gap</span> : null}
@@ -246,16 +246,10 @@ export function GuidedQuestionsPage() {
               <form onSubmit={saveAnswer} className="min-w-0 rounded-audity border border-audity-border bg-audity-panel p-4">
                 {activeQuestion ? (
                   <>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-xs font-medium uppercase text-audity-primary">{activeQuestion.code}</p>
-                      {activeCategoryLabel ? (
-                        <span className="rounded-audity border border-audity-border px-2 py-0.5 text-xs text-audity-muted" title={activeQuestion.categoryDescription ?? undefined}>
-                          {activeCategoryLabel}
-                        </span>
-                      ) : null}
-                    </div>
-                    <h2 className="mt-2 max-w-4xl text-base font-medium leading-7 text-audity-text" title={activeQuestion.categoryDescription ?? activeQuestion.description ?? activeQuestion.title}>{activeQuestion.title}</h2>
-                    <p className="mt-3 max-w-4xl text-sm leading-6 text-audity-secondary">{activeQuestion.question}</p>
+                    <p className="text-xs font-medium uppercase text-audity-primary">{activeQuestion.code}</p>
+                    <h2 className="mt-3 max-w-5xl text-lg font-normal leading-8 text-audity-text" title={activeQuestion.description ?? activeQuestion.title}>
+                      {activeQuestion.question}
+                    </h2>
                     {activeQuestion.evidenceGap ? (
                       <div className="mt-4 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
                         Low score with missing or unvalidated evidence

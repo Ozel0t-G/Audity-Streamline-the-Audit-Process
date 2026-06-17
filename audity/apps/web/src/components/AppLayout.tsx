@@ -424,12 +424,12 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
             onChange={(event) => setSearchQuery(event.target.value)}
           />
           {searchOpen && searchQuery.trim().length >= 2 ? (
-            <div className="absolute left-0 z-30 mt-2 w-full min-w-[360px] overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-xl">
+            <div className="absolute left-0 z-30 mt-2 w-[min(32rem,calc(100vw-2rem))] overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-xl">
               {searchResults.map((result) => (
-                <button key={`${result.type}-${result.id}`} className="block w-full border-b border-audity-border px-3 py-2 text-left last:border-0 hover:bg-audity-page" onClick={() => openResult(result)}>
+                <button key={`${result.type}-${result.id}`} className="block w-full min-w-0 border-b border-audity-border px-3 py-2 text-left last:border-0 hover:bg-audity-page" onClick={() => openResult(result)}>
                   <span className="text-xs font-semibold uppercase text-audity-primary">{result.type}</span>
-                  <span className="ml-2 text-sm font-semibold text-audity-text">{result.title}</span>
-                  <span className="ml-2 text-xs text-audity-muted">{result.subtitle}</span>
+                  <span className="mt-1 block truncate text-sm font-semibold text-audity-text">{result.title}</span>
+                  <span className="mt-0.5 block truncate text-xs text-audity-muted">{result.subtitle}</span>
                 </button>
               ))}
               {!searchResults.length ? <div className="px-3 py-4 text-sm text-audity-muted">No results</div> : null}
@@ -473,7 +473,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
             ) : null}
           </button>
           {notificationsOpen ? (
-            <div className="absolute right-0 z-20 mt-2 w-96 overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-xl">
+            <div className="absolute right-0 z-20 mt-2 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-xl">
               <div className="flex items-center justify-between border-b border-audity-border px-3 py-2">
                 <span className="text-sm font-semibold">{t("Notifications")}</span>
                 <button className="text-xs font-semibold text-audity-primary" onClick={() => void markAllRead()}>
@@ -659,7 +659,7 @@ export function AppLayout() {
             <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
           </nav>
         </aside>
-        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
+        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-x-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
           <ErrorBoundary key={location.pathname}>
             <Outlet />
           </ErrorBoundary>
@@ -730,7 +730,7 @@ export function AdminLayout() {
             {t("Leave Admin Panel")}
           </Link>
         </aside>
-        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
+        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-x-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
           <ErrorBoundary key={location.pathname}>
             <Outlet />
           </ErrorBoundary>

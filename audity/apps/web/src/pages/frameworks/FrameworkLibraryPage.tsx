@@ -155,13 +155,13 @@ export function FrameworkLibraryPage() {
                     className={`block w-full px-3 py-2.5 text-left hover:bg-audity-panelAlt ${framework.id === selected?.id ? "bg-audity-primaryActive/25" : ""}`}
                     onClick={() => setSelectedId(framework.id)}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-audity-text">{framework.shortName ?? framework.name}</p>
+                    <div className="flex min-w-0 items-center justify-between gap-3">
+                      <p className="min-w-0 truncate text-sm font-semibold text-audity-text">{framework.shortName ?? framework.name}</p>
                       <span className={`shrink-0 rounded-audity border px-2 py-1 text-xs font-semibold ${badgeClass(framework.statusLabel)}`}>
                         {framework.statusLabel ?? "User License Required"}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-audity-secondary">{framework.name} {framework.version}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-audity-secondary">{framework.name} {framework.version}</p>
                     <p className="mt-2 text-xs text-audity-muted">{framework.controlCount} controls</p>
                   </button>
                 ))}
@@ -179,7 +179,7 @@ export function FrameworkLibraryPage() {
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-sm font-semibold">{domain.name}</h3>
-                        <p className="mt-1 text-xs text-audity-secondary">{domain.description}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-audity-secondary">{domain.description}</p>
                       </div>
                       <span className="text-xs text-audity-muted">{domain.controls.length} controls</span>
                     </div>
@@ -187,8 +187,8 @@ export function FrameworkLibraryPage() {
                       {domain.controls.map((control) => (
                         <div key={control.id} className="rounded-audity border border-audity-border bg-audity-panel px-3 py-2">
                           <p className="text-xs font-semibold text-audity-primary">{control.code}</p>
-                          <p className="mt-1 text-sm font-semibold">{control.title}</p>
-                          <p className="mt-1 text-xs text-audity-secondary">{control.description}</p>
+                          <p className="mt-1 text-sm font-semibold leading-5">{control.title}</p>
+                          <p className="mt-1 line-clamp-3 text-xs leading-5 text-audity-secondary">{control.description}</p>
                         </div>
                       ))}
                     </div>
