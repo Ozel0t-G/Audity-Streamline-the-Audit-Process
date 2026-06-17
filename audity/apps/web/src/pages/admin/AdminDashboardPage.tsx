@@ -1028,7 +1028,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     <div key={job.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-audity-primary">{job.jobType} <span className="text-xs font-normal text-audity-muted">{job.source ?? "manual"}</span></p>
-                        <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{job.status}</span>
+                        <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">{job.status}</span>
                       </div>
                       <p className="mt-1 text-xs text-audity-secondary">
                         Started: {job.startedAt ? new Date(job.startedAt).toLocaleString() : "-"} | Completed: {job.completedAt ? new Date(job.completedAt).toLocaleString() : "-"}

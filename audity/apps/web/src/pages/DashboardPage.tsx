@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { OnboardingTips } from "../components/OnboardingTips";
+import { EmptyState } from "../components/ui";
 
 type SharedUser = {
   id: string;
@@ -310,7 +312,7 @@ function SignalPill({ label, value, tone = "neutral" }: { label: string; value: 
         ? "border-audity-warning text-audity-warning"
         : "border-audity-borderStrong text-audity-secondary";
   return (
-    <span className={`rounded-audity border px-2 py-1 text-[11px] ${toneClass}`}>
+    <span className={`rounded-audity border px-2 py-1 text-xs ${toneClass}`}>
       {label}: {value}
     </span>
   );
@@ -396,10 +398,10 @@ function LibraryCard({ id, onAdd }: { id: WidgetId; onAdd: (id: WidgetId) => voi
           <h3 className="mt-1 text-sm font-semibold text-audity-text">{meta.title}</h3>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{meta.preview}</span>
+          <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">{meta.preview}</span>
           <button
             type="button"
-            className="rounded-audity border border-audity-primary px-2 py-1 text-[11px] text-audity-primary hover:border-audity-primaryHover"
+            className="rounded-audity border border-audity-primary px-2 py-1 text-xs text-audity-primary hover:border-audity-primaryHover"
             onClick={() => onAdd(id)}
           >
             Add
@@ -995,6 +997,7 @@ export function DashboardPage() {
 
   return (
     <>
+      <OnboardingTips />
       <div className="audity-page-header">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1016,6 +1019,30 @@ export function DashboardPage() {
       </div>
 
       {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+
+      {dashboard && !dashboard.ownedCustomers.length && !dashboard.sharedCustomers.length ? (
+        <div className="mb-4">
+          <EmptyState
+            title="Welcome to Audity — let's set up your first audit"
+            description="Start by creating a customer workspace. From there you can launch an assessment, work through the audit center, and track findings & evidence."
+            icon={
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-7l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            }
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link to="/customers/my" className="audity-btn-primary inline-flex items-center gap-1.5">
+                  Create your first customer
+                </Link>
+                <Link to="/manual" className="audity-btn-secondary inline-flex items-center gap-1.5">
+                  Read the manual
+                </Link>
+              </div>
+            }
+          />
+        </div>
+      ) : null}
 
       <DndContext onDragEnd={handleDragEnd}>
         <div className={editMode ? "grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid gap-3"}>

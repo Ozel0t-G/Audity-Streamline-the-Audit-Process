@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
+import { SeverityBadge, useConfirm, useToast } from "../../components/ui";
 import type { Finding, HistoryEvent, ReviewComment, Risk, RoadmapItem } from "./types";
 
 const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
@@ -93,7 +94,7 @@ function RoadmapCard({ item, canDrag }: { item: RoadmapItem; canDrag: boolean })
     >
       <p className="text-sm font-semibold">{item.action}</p>
       <p className="mt-1 text-xs text-audity-muted">{item.riskTitle} · {item.effortEstimate} · {statusLabel(item.status)}</p>
-      {due ? <span className={`mt-2 inline-block rounded-audity border px-2 py-0.5 text-[11px] ${due.tone}`}>{due.label}</span> : null}
+      {due ? <span className={`mt-2 inline-block rounded-audity border px-2 py-0.5 text-xs ${due.tone}`}>{due.label}</span> : null}
     </div>
   );
 }
@@ -122,7 +123,7 @@ function HistoryList({ events }: { events: HistoryEvent[] }) {
         <div key={event.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold text-audity-primary">{event.action}</p>
-            <p className="text-[11px] text-audity-muted">{formatDateTime(event.createdAt)}</p>
+            <p className="text-xs text-audity-muted">{formatDateTime(event.createdAt)}</p>
           </div>
           <p className="mt-1 text-xs text-audity-secondary">{event.userEmail ?? "System"}</p>
           {summarizeHistory(event) ? <p className="mt-1 text-xs text-audity-muted">{summarizeHistory(event)}</p> : null}
@@ -140,7 +141,7 @@ function CommentList({ comments }: { comments: ReviewComment[] }) {
         <div key={comment.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold text-audity-primary">{comment.userEmail ?? "System"}</p>
-            <p className="text-[11px] text-audity-muted">{formatDateTime(comment.createdAt)}</p>
+            <p className="text-xs text-audity-muted">{formatDateTime(comment.createdAt)}</p>
           </div>
           <p className="mt-1 text-sm text-audity-secondary">{comment.comment}</p>
         </div>
@@ -218,6 +219,8 @@ export function AssessmentWorkflowPage() {
   });
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const selectedFinding = useMemo(
     () => findings.find((finding) => finding.id === selectedFindingId) ?? findings[0],
@@ -437,6 +440,13 @@ export function AssessmentWorkflowPage() {
 
   async function deleteRisk() {
     if (!id || !selectedRisk) return;
+    const ok = await confirm({
+      title: "Delete risk?",
+      body: `"${selectedRisk.title || "This risk"}" will be permanently removed including all linked treatment notes. This cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true
+    });
+    if (!ok) return;
     setError("");
     setSaved("");
     try {
@@ -446,8 +456,11 @@ export function AssessmentWorkflowPage() {
       setSelectedRiskId("");
       await load();
       setSaved("Risk deleted");
+      toast.success("Risk deleted");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Risk delete failed");
+      const msg = err instanceof Error ? err.message : "Risk delete failed";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -478,6 +491,14 @@ export function AssessmentWorkflowPage() {
 
   async function bulkDeleteRisks() {
     if (!id || !selectedRiskIds.length) return;
+    const count = selectedRiskIds.length;
+    const ok = await confirm({
+      title: `Delete ${count} risk${count === 1 ? "" : "s"}?`,
+      body: "Selected risks will be permanently removed. This cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true
+    });
+    if (!ok) return;
     setError("");
     setSaved("");
     try {
@@ -488,8 +509,11 @@ export function AssessmentWorkflowPage() {
       setSelectedRiskIds([]);
       await load();
       setSaved("Risks deleted");
+      toast.success(`Deleted ${count} risk${count === 1 ? "" : "s"}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bulk risk delete failed");
+      const msg = err instanceof Error ? err.message : "Bulk risk delete failed";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -673,10 +697,13 @@ export function AssessmentWorkflowPage() {
                       <button className="min-w-0 flex-1 text-left" onClick={() => setSelectedFindingId(finding.id)}>
                         <div className="flex items-center justify-between gap-3">
                           <p className="text-xs font-semibold text-audity-primary">{finding.controlCode}</p>
-                          <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{statusLabel(finding.status)}</span>
+                          <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">{statusLabel(finding.status)}</span>
                         </div>
                         <p className="mt-1 text-sm font-semibold">{finding.title}</p>
-                        <p className="mt-1 text-xs text-audity-muted">Score {finding.score} · {finding.priority}</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <SeverityBadge level={finding.priority ?? "info"} />
+                          <span className="text-xs text-audity-muted">Score {finding.score}</span>
+                        </div>
                       </button>
                     </div>
                   ))}
@@ -807,7 +834,7 @@ export function AssessmentWorkflowPage() {
                     <p className="text-xs font-semibold uppercase text-audity-muted">5x5 Matrix</p>
                     {matrixFilter ? <button className="text-xs text-audity-primary hover:text-audity-primaryHover" onClick={() => setMatrixFilter(null)}>Clear filter</button> : null}
                   </div>
-                  <div className="grid grid-cols-[28px_repeat(5,minmax(0,1fr))] gap-1 text-center text-[11px]">
+                  <div className="grid grid-cols-[28px_repeat(5,minmax(0,1fr))] gap-1 text-center text-xs">
                     <div />
                     {[1, 2, 3, 4, 5].map((impact) => <div key={impact} className="text-audity-muted">I{impact}</div>)}
                     {scoreAxis.map((likelihood) => (
@@ -874,14 +901,14 @@ export function AssessmentWorkflowPage() {
                       <button className="min-w-0 flex-1 text-left" onClick={() => setSelectedRiskId(risk.id)}>
                         <div className="flex items-center justify-between gap-3">
                           <p className="text-sm font-semibold">{risk.title}</p>
-                          <span className={`rounded-audity border px-2 py-1 text-[11px] ${ratingClass(risk.rating)}`}>{risk.rating}</span>
+                          <span className={`rounded-audity border px-2 py-1 text-xs ${ratingClass(risk.rating)}`}>{risk.rating}</span>
                         </div>
                         <p className="mt-1 text-xs text-audity-muted">L{risk.likelihood} x I{risk.impact} = {risk.riskScore} · {statusLabel(risk.status)}</p>
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {risk.draft ? <span className="rounded-audity border border-audity-primary px-2 py-0.5 text-[11px] text-audity-primary">Draft</span> : null}
-                          <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] text-audity-secondary">{risk.sourceType === "guided_question" ? "Guided answer" : "Manual"}</span>
-                          {risk.sourceScore !== null ? <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] text-audity-secondary">Score {risk.sourceScore}</span> : null}
-                          {dueState(risk.dueDate) ? <span className={`rounded-audity border px-2 py-0.5 text-[11px] ${dueState(risk.dueDate)?.tone}`}>{dueState(risk.dueDate)?.label}</span> : null}
+                          {risk.draft ? <span className="rounded-audity border border-audity-primary px-2 py-0.5 text-xs text-audity-primary">Draft</span> : null}
+                          <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-xs text-audity-secondary">{risk.sourceType === "guided_question" ? "Guided answer" : "Manual"}</span>
+                          {risk.sourceScore !== null ? <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-xs text-audity-secondary">Score {risk.sourceScore}</span> : null}
+                          {dueState(risk.dueDate) ? <span className={`rounded-audity border px-2 py-0.5 text-xs ${dueState(risk.dueDate)?.tone}`}>{dueState(risk.dueDate)?.label}</span> : null}
                         </div>
                       </button>
                     </div>
@@ -895,9 +922,9 @@ export function AssessmentWorkflowPage() {
                 {selectedRisk ? (
                 <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-3">
                   <div className="flex flex-wrap gap-2">
-                    {riskEditForm.draft ? <span className="rounded-audity border border-audity-primary px-2 py-1 text-[11px] text-audity-primary">Draft</span> : null}
-                    <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">{selectedRisk.sourceType === "guided_question" ? "Created from guided answer" : "Manual risk"}</span>
-                    {selectedRisk.sourceScore !== null ? <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-[11px] text-audity-secondary">Question score {selectedRisk.sourceScore}</span> : null}
+                    {riskEditForm.draft ? <span className="rounded-audity border border-audity-primary px-2 py-1 text-xs text-audity-primary">Draft</span> : null}
+                    <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">{selectedRisk.sourceType === "guided_question" ? "Created from guided answer" : "Manual risk"}</span>
+                    {selectedRisk.sourceScore !== null ? <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">Question score {selectedRisk.sourceScore}</span> : null}
                   </div>
                   {selectedRisk.sourceExplanation ? <p className="mt-2 text-xs text-audity-muted">{selectedRisk.sourceExplanation}</p> : null}
                   {selectedRisk.sourceGeneratedAt ? <p className="mt-1 text-xs text-audity-muted">Generated {formatDateTime(selectedRisk.sourceGeneratedAt)}</p> : null}

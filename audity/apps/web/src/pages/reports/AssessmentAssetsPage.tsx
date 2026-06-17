@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
+import { useConfirm, useToast } from "../../components/ui";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
@@ -91,6 +92,8 @@ export function AssessmentAssetsPage() {
     warningAccepted: false
   });
   const [error, setError] = useState("");
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const qualityChecks = [
     { label: "At least one report chapter selected", ok: selectedBlocks.length > 0 },
@@ -166,8 +169,20 @@ export function AssessmentAssetsPage() {
 
   async function deleteEvidence(item: EvidenceItem) {
     if (!id) return;
-    await api(`/api/assessments/${id}/evidence/${item.id}`, { method: "DELETE" });
-    await load();
+    const ok = await confirm({
+      title: "Delete evidence?",
+      body: `"${item.fileName || "This evidence"}" will be permanently removed and unlinked from all controls.`,
+      confirmLabel: "Delete",
+      destructive: true
+    });
+    if (!ok) return;
+    try {
+      await api(`/api/assessments/${id}/evidence/${item.id}`, { method: "DELETE" });
+      toast.success("Evidence deleted");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
   }
 
   async function uploadLogo(event: FormEvent<HTMLFormElement>) {

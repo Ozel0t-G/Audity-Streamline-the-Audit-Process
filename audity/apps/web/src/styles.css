@@ -88,7 +88,7 @@ body {
   }
 
   .audity-page-kicker {
-    @apply text-[11px] font-semibold uppercase tracking-normal text-audity-primary;
+    @apply text-xs font-semibold uppercase tracking-normal text-audity-primary;
   }
 
   .audity-page-title {
@@ -108,23 +108,48 @@ body {
   }
 
   .audity-btn-primary {
-    @apply h-8 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover disabled:cursor-not-allowed disabled:opacity-60;
+    @apply h-8 rounded-audity bg-audity-primary px-3 text-sm font-semibold text-white hover:bg-audity-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .audity-btn-secondary {
-    @apply h-8 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary disabled:cursor-not-allowed disabled:opacity-60;
+    @apply h-8 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-3 text-sm text-audity-text hover:border-audity-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .audity-input {
-    @apply h-8 w-full rounded-audity border border-audity-border bg-audity-page px-2.5 text-sm normal-case text-audity-text outline-none focus:border-audity-primary;
+    @apply h-8 w-full rounded-audity border border-audity-border bg-audity-page px-2.5 text-sm normal-case text-audity-text outline-none focus-visible:border-audity-primary focus-visible:ring-1 focus-visible:ring-audity-primary aria-[invalid=true]:border-audity-error aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-audity-error;
   }
 
   .audity-label {
-    @apply block text-[11px] font-semibold uppercase tracking-normal text-audity-secondary;
+    @apply block text-xs font-semibold uppercase tracking-normal text-audity-secondary;
+  }
+
+  .audity-label-required::after {
+    content: " *";
+    color: var(--color-error);
   }
 
   .audity-status-pill {
-    @apply rounded-audity border px-2 py-0.5 text-[11px] font-semibold;
+    @apply rounded-audity border px-2 py-0.5 text-xs font-semibold;
+  }
+
+  .audity-skip-link {
+    @apply absolute left-2 top-2 z-[100] -translate-y-16 rounded-audity bg-audity-primary px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-transform focus:translate-y-0;
+  }
+
+  .audity-skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-bg-panel-alt) 0%,
+      var(--color-bg-panel) 50%,
+      var(--color-bg-panel-alt) 100%
+    );
+    background-size: 200% 100%;
+    animation: audity-skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes audity-skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 }
 

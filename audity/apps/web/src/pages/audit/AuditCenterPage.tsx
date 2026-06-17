@@ -2,6 +2,8 @@ import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
+import { PageSkeleton, SeverityBadge, WorkflowProgress, useConfirm, useToast, type WorkflowStep } from "../../components/ui";
+import { disabledTitle } from "../../utils/permissionReasons";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -130,23 +132,32 @@ function toneClass(value: string | null | undefined) {
 function Field({
   label,
   children,
-  wide
+  wide,
+  required,
+  hint
 }: {
   label: string;
   children: ReactNode;
   wide?: boolean;
+  required?: boolean;
+  hint?: ReactNode;
 }) {
   return (
     <label className={`block ${wide ? "sm:col-span-2" : ""}`}>
-      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-audity-muted">{label}</span>
+      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-audity-muted">
+        {label}
+        {required ? <span className="ml-0.5 text-audity-error" aria-hidden="true">*</span> : null}
+        {required ? <span className="sr-only"> (required)</span> : null}
+      </span>
       {children}
+      {hint ? <span className="mt-1 block text-xs text-audity-muted">{hint}</span> : null}
     </label>
   );
 }
 
 function Pill({ value }: { value: unknown }) {
   return (
-    <span className={`inline-flex rounded-audity border px-2 py-0.5 text-[11px] font-semibold capitalize ${toneClass(text(value))}`}>
+    <span className={`inline-flex rounded-audity border px-2 py-0.5 text-xs font-semibold capitalize ${toneClass(text(value))}`}>
       {label(value)}
     </span>
   );
@@ -180,7 +191,7 @@ function Panel({
 function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-      <p className="text-[11px] font-semibold uppercase text-audity-muted">{label}</p>
+      <p className="text-xs font-semibold uppercase text-audity-muted">{label}</p>
       <p className="mt-1 text-xl font-semibold text-audity-text">{value}</p>
     </div>
   );
@@ -210,6 +221,8 @@ export function AuditCenterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [planForm, setPlanForm] = useState({
     programTemplateId: "",
@@ -239,7 +252,7 @@ export function AuditCenterPage() {
     reviewStatus: "draft",
     controlCriticality: "medium",
     maturityJustification: "",
-    evidenceQualityScore: 0,
+    evidenceQualityScore: "" as string,
     readinessStatus: "not_ready"
   });
   const [mappingForm, setMappingForm] = useState({
@@ -382,7 +395,7 @@ export function AuditCenterPage() {
       reviewStatus: text(selectedControl.reviewStatus, "draft"),
       controlCriticality: text(selectedControl.controlCriticality, "medium"),
       maturityJustification: text(selectedControl.maturityJustification),
-      evidenceQualityScore: numberValue(selectedControl.evidenceQualityScore, 0),
+      evidenceQualityScore: selectedControl.evidenceQualityScore === null || selectedControl.evidenceQualityScore === undefined ? "" : String(selectedControl.evidenceQualityScore),
       readinessStatus: text(selectedControl.readinessStatus, "not_ready")
     });
     setMappingForm((current) => ({
@@ -418,6 +431,7 @@ export function AuditCenterPage() {
 
   function flash(message: string) {
     setSaved(message);
+    toast.success(message);
     window.setTimeout(() => setSaved(""), 3000);
   }
 
@@ -428,7 +442,9 @@ export function AuditCenterPage() {
       await action();
       await load();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Action failed");
+      const message = submitError instanceof Error ? submitError.message : "Action failed";
+      setError(message);
+      toast.error(message);
     }
   }
 
@@ -472,6 +488,13 @@ export function AuditCenterPage() {
 
   async function deleteScope(item: AnyRecord) {
     if (!id) return;
+    const ok = await confirm({
+      title: "Delete scope item?",
+      body: `"${text(item.name) || "This scope item"}" will be removed from the audit. This cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true
+    });
+    if (!ok) return;
     await api(`/api/assessments/${id}/audit-center/scope/${text(item.id)}`, { method: "DELETE" });
     flash("Scope item deleted");
     await load();
@@ -483,7 +506,7 @@ export function AuditCenterPage() {
       method: "PATCH",
       body: JSON.stringify({
         ...controlForm,
-        evidenceQualityScore: Number(controlForm.evidenceQualityScore)
+        evidenceQualityScore: controlForm.evidenceQualityScore === "" ? null : Math.max(0, Math.min(5, Number(controlForm.evidenceQualityScore)))
       })
     });
     flash("Control review saved");
@@ -532,6 +555,13 @@ export function AuditCenterPage() {
 
   async function deleteEvidenceMapping(mapping: AnyRecord) {
     if (!id) return;
+    const ok = await confirm({
+      title: "Remove evidence mapping?",
+      body: "The evidence link to this control will be removed. The evidence itself stays available.",
+      confirmLabel: "Remove",
+      destructive: true
+    });
+    if (!ok) return;
     await api(`/api/assessments/${id}/audit-center/evidence-mappings/${text(mapping.id)}`, { method: "DELETE" });
     flash("Evidence mapping removed");
     await load();
@@ -631,6 +661,31 @@ export function AuditCenterPage() {
   }
 
   const scoreTone = overview.readinessScore >= 75 ? "bg-audity-success" : overview.readinessScore >= 45 ? "bg-audity-warning" : "bg-audity-error";
+
+  const workflowSteps = useMemo<WorkflowStep<string>[]>(() => {
+    const planSet = Boolean(overview.plan && Object.values(overview.plan).some((value) => text(value as unknown).trim()));
+    const scopeDone = overview.scopeItems.length > 0 && planSet;
+    const controlsDone = overview.controls.length > 0 && overview.controls.every((control) => !["draft", ""].includes(text(control.reviewStatus, "")));
+    const findingsDone = overview.findings.length > 0 && overview.findings.every((finding) => ["closed", "verified"].includes(text(finding.lifecycleStatus, "")));
+    const auditWorkDone = overview.interviews.length > 0 && overview.samples.length > 0;
+    const reportDone = overview.signoffs.some((signoff) => text(signoff.entityType) === "assessment");
+    const packDone = overview.statementOfApplicability.length > 0;
+    const computed: Array<{ key: string; done: boolean }> = [
+      { key: "Overview", done: scopeDone || controlsDone },
+      { key: "Scope & Plan", done: scopeDone },
+      { key: "Controls & Evidence", done: controlsDone },
+      { key: "Findings & Remediation", done: findingsDone },
+      { key: "Audit Work", done: auditWorkDone },
+      { key: "Report & Sign-off", done: reportDone },
+      { key: "Gaps & Pack", done: packDone }
+    ];
+    return computed.map(({ key, done }) => ({
+      key,
+      label: key,
+      status: key === activeTab ? "current" : done ? "done" : "todo",
+      hint: done ? "Complete" : key === activeTab ? "Currently editing" : "Not started"
+    }));
+  }, [overview, activeTab]);
   const selectedTemplate = templates.find((template) => template.id === planForm.programTemplateId);
   const controlCount = overview.controls.length;
   const reviewedControlCount = overview.controls.filter((control) => !["draft", ""].includes(text(control.reviewStatus, ""))).length;
@@ -842,7 +897,11 @@ export function AuditCenterPage() {
   ];
 
   if (loading) {
-    return <div className="rounded-audity border border-audity-border bg-audity-panel p-4 text-sm text-audity-muted">Loading Audit Center...</div>;
+    return (
+      <div id="audit-center-workspace" className="min-w-0">
+        <PageSkeleton cards={4} showTable />
+      </div>
+    );
   }
 
   return (
@@ -861,6 +920,13 @@ export function AuditCenterPage() {
 
       {error ? <div className="mb-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
 
+      <div className="mb-4 rounded-audity border border-audity-border bg-audity-panel/40 p-3">
+        <WorkflowProgress
+          steps={workflowSteps}
+          onSelect={(key) => setActiveTab(key)}
+        />
+      </div>
+
       <div className="mb-4 overflow-x-auto border-b border-audity-border">
         <div className="flex min-w-max gap-1">
           {tabs.map((tab) => (
@@ -869,6 +935,7 @@ export function AuditCenterPage() {
               className={`rounded-t-audity px-3 py-2 text-sm font-semibold ${activeTab === tab ? "bg-audity-primary text-white" : "text-audity-secondary hover:bg-audity-panel hover:text-audity-text"}`}
               type="button"
               onClick={() => setActiveTab(tab)}
+              aria-current={activeTab === tab ? "page" : undefined}
             >
               {tab}
             </button>
@@ -903,7 +970,7 @@ export function AuditCenterPage() {
                   >
                     <span className="flex items-start justify-between gap-2">
                       <span className="text-xs font-semibold text-audity-primary">{String(index + 1).padStart(2, "0")}</span>
-                      <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] font-semibold text-audity-secondary">{card.metric}</span>
+                      <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-xs font-semibold text-audity-secondary">{card.metric}</span>
                     </span>
                     <span className="mt-2 text-sm font-semibold text-audity-text">{card.title}</span>
                     <span className="mt-1 line-clamp-3 text-xs leading-5 text-audity-muted">{card.description}</span>
@@ -974,7 +1041,7 @@ export function AuditCenterPage() {
                 <input className="audity-input" type="date" value={planForm.closureDueDate} disabled={!canEdit} onChange={(event) => setPlanForm({ ...planForm, closureDueDate: event.target.value })} />
               </Field>
               <div className="sm:col-span-2">
-                <button className="audity-btn-primary" type="submit" disabled={!canEdit}>Save plan</button>
+                <button className="audity-btn-primary" type="submit" disabled={!canEdit} aria-disabled={!canEdit} title={disabledTitle(canEdit, "edit")}>Save plan</button>
               </div>
             </form>
           </Panel>
@@ -991,8 +1058,8 @@ export function AuditCenterPage() {
                   {criticalities.map((item) => <option key={item} value={item}>{label(item)}</option>)}
                 </select>
               </Field>
-              <Field label="Name" wide>
-                <input className="audity-input" value={scopeForm.name} disabled={!canEdit} required onChange={(event) => setScopeForm({ ...scopeForm, name: event.target.value })} />
+              <Field label="Name" wide required>
+                <input className="audity-input" value={scopeForm.name} disabled={!canEdit} required aria-required="true" onChange={(event) => setScopeForm({ ...scopeForm, name: event.target.value })} />
               </Field>
               <Field label="Description" wide>
                 <textarea className="audity-input min-h-20" value={scopeForm.description} disabled={!canEdit} onChange={(event) => setScopeForm({ ...scopeForm, description: event.target.value })} />
@@ -1004,7 +1071,7 @@ export function AuditCenterPage() {
                 <input type="checkbox" checked={scopeForm.inScope} disabled={!canEdit} onChange={(event) => setScopeForm({ ...scopeForm, inScope: event.target.checked })} />
                 In scope
               </label>
-              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Add scope item</button>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit} aria-disabled={!canEdit} title={disabledTitle(canEdit, "edit")}>Add scope item</button>
             </form>
             <div className="max-h-[430px] space-y-2 overflow-y-auto pr-1">
               {overview.scopeItems.map((item) => (
@@ -1012,7 +1079,10 @@ export function AuditCenterPage() {
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="font-semibold">{text(item.name)}</p>
-                      <p className="text-xs text-audity-muted">{label(item.itemType)} · {label(item.criticality)}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-xs text-audity-muted">{label(item.itemType)}</span>
+                        <SeverityBadge level={text(item.criticality, "medium")} />
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <button className="audity-btn-secondary px-2 py-1 text-xs" type="button" disabled={!canEdit} onClick={() => void toggleScope(item)}>{item.inScope ? "Move out" : "Move in"}</button>
@@ -1041,7 +1111,7 @@ export function AuditCenterPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-xs font-semibold text-audity-primary">{control.controlCode ?? control.questionId}</span>
-                    {control.contradiction ? <span className="text-[11px] font-semibold text-audity-warning">Check</span> : null}
+                    {control.contradiction ? <span className="text-xs font-semibold text-audity-warning">Check</span> : null}
                   </div>
                   <p className="mt-1 text-sm font-semibold">{control.controlTitle ?? control.question}</p>
                   <p className="mt-1 text-xs text-audity-muted">{label(control.reviewStatus)} · evidence {control.mappedEvidence ?? 0}</p>
@@ -1082,17 +1152,35 @@ export function AuditCenterPage() {
                       {readinessStatuses.map((item) => <option key={item} value={item}>{label(item)}</option>)}
                     </select>
                   </Field>
-                  <Field label="Evidence quality score">
-                    <input className="audity-input" type="number" min={0} max={5} value={controlForm.evidenceQualityScore} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, evidenceQualityScore: Number(event.target.value) })} />
+                  <Field label="Evidence quality score" hint="Scale 0–5: leave empty until rated. 0 = none, 1 = anecdotal, 3 = documented, 5 = independently verified.">
+                    <input
+                      className="audity-input"
+                      type="number"
+                      min={0}
+                      max={5}
+                      step={1}
+                      placeholder="Not yet rated"
+                      value={controlForm.evidenceQualityScore}
+                      disabled={!canEdit}
+                      onChange={(event) => {
+                        const raw = event.target.value;
+                        if (raw === "") {
+                          setControlForm({ ...controlForm, evidenceQualityScore: "" });
+                          return;
+                        }
+                        const clamped = Math.max(0, Math.min(5, Number(raw)));
+                        setControlForm({ ...controlForm, evidenceQualityScore: String(clamped) });
+                      }}
+                    />
                   </Field>
-                  <Field label="Applicability reason" wide>
+                  <Field label="Applicability reason" wide hint="Explain why this control applies (or doesn't) to the assessment scope. Required by most frameworks for the Statement of Applicability.">
                     <textarea className="audity-input min-h-20" value={controlForm.applicabilityReason} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, applicabilityReason: event.target.value })} />
                   </Field>
-                  <Field label="Maturity justification" wide>
+                  <Field label="Maturity justification" wide hint="Describe evidence and observations that justify the readiness status. Auditor leads will see this during sign-off.">
                     <textarea className="audity-input min-h-24" value={controlForm.maturityJustification} disabled={!canEdit} onChange={(event) => setControlForm({ ...controlForm, maturityJustification: event.target.value })} />
                   </Field>
                   <div className="flex flex-wrap items-center gap-2 lg:col-span-2">
-                    <button className="audity-btn-primary" type="submit" disabled={!canEdit}>Save control review</button>
+                    <button className="audity-btn-primary" type="submit" disabled={!canEdit} aria-disabled={!canEdit} title={disabledTitle(canEdit, "edit")}>Save control review</button>
                     <Pill value={selectedControl.signoffStatus ?? "not_signed"} />
                     <span className="text-sm text-audity-muted">{mappingsForSelectedControl.length} mapped evidence item(s)</span>
                   </div>
@@ -1127,14 +1215,26 @@ export function AuditCenterPage() {
                   <Field label="Notes" wide>
                     <textarea className="audity-input min-h-20" value={mappingForm.notes} disabled={!canEdit} onChange={(event) => setMappingForm({ ...mappingForm, notes: event.target.value })} />
                   </Field>
-                  <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit || !overview.evidenceItems.length}>Map evidence</button>
+                  <button
+                    className="audity-btn-primary justify-self-start"
+                    type="submit"
+                    disabled={!canEdit || !overview.evidenceItems.length}
+                    aria-disabled={!canEdit || !overview.evidenceItems.length}
+                    title={
+                      !canEdit
+                        ? disabledTitle(canEdit, "edit")
+                        : !overview.evidenceItems.length
+                        ? "Upload evidence first under Evidence & Reports."
+                        : undefined
+                    }
+                  >Map evidence</button>
                 </form>
                 <div className="mt-4 space-y-2">
                   {mappingsForSelectedControl.map((mapping) => (
                     <div key={text(mapping.id)} className="flex items-center justify-between gap-2 rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm">
                       <span>{text(overview.evidenceItems.find((item) => text(item.id) === text(mapping.evidenceId))?.fileName ?? mapping.evidenceId)}</span>
                       <div className="flex items-center gap-2">
-                        <Pill value={`quality ${text(mapping.qualityScore, "0")}`} />
+                        <Pill value={mapping.qualityScore === null || mapping.qualityScore === undefined || mapping.qualityScore === "" ? "quality —" : `quality ${text(mapping.qualityScore)}`} />
                         <button className="audity-btn-secondary px-2 py-1 text-xs" type="button" disabled={!canEdit} onClick={() => void deleteEvidenceMapping(mapping)}>Remove</button>
                       </div>
                     </div>
@@ -1145,8 +1245,8 @@ export function AuditCenterPage() {
 
               <Panel title="Evidence Request Portal" subtitle="Create customer-facing evidence requests and track request status.">
                 <form className="grid gap-3" onSubmit={(event) => void submit(event, createEvidenceRequest)}>
-                  <Field label="Title">
-                    <input className="audity-input" value={requestForm.title} disabled={!canEdit} required onChange={(event) => setRequestForm({ ...requestForm, title: event.target.value })} />
+                  <Field label="Title" required>
+                    <input className="audity-input" value={requestForm.title} disabled={!canEdit} required aria-required="true" onChange={(event) => setRequestForm({ ...requestForm, title: event.target.value })} />
                   </Field>
                   <Field label="Owner">
                     <input className="audity-input" value={requestForm.owner} disabled={!canEdit} onChange={(event) => setRequestForm({ ...requestForm, owner: event.target.value })} />
@@ -1157,7 +1257,7 @@ export function AuditCenterPage() {
                   <Field label="Description">
                     <textarea className="audity-input min-h-20" value={requestForm.description} disabled={!canEdit} onChange={(event) => setRequestForm({ ...requestForm, description: event.target.value })} />
                   </Field>
-                  <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Create request</button>
+                  <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit} aria-disabled={!canEdit} title={disabledTitle(canEdit, "edit")}>Create request</button>
                 </form>
                 <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-1">
                   {overview.evidenceRequests.map((item) => (
@@ -1290,7 +1390,7 @@ export function AuditCenterPage() {
                   <textarea className="audity-input min-h-24" value={findingForm.retestNotes} disabled={!canApprove} onChange={(event) => setFindingForm({ ...findingForm, retestNotes: event.target.value })} />
                 </Field>
                 <div className="flex flex-wrap items-center gap-2 lg:col-span-3">
-                  <button className="audity-btn-primary" type="submit" disabled={!canApprove}>Save finding workflow</button>
+                  <button className="audity-btn-primary" type="submit" disabled={!canApprove} aria-disabled={!canApprove} title={disabledTitle(canApprove, "approve")}>Save finding workflow</button>
                   <Pill value={selectedFinding.calculatedSeverity ?? selectedFinding.priority ?? "medium"} />
                 </div>
               </form>
@@ -1303,8 +1403,8 @@ export function AuditCenterPage() {
         <div className="grid gap-4 xl:grid-cols-2">
           <Panel title="Interview Notes" subtitle="Capture interview evidence, follow-ups, and linked controls.">
             <form className="grid gap-3" onSubmit={(event) => void submit(event, createInterview)}>
-              <Field label="Title">
-                <input className="audity-input" value={interviewForm.title} disabled={!canEdit} required onChange={(event) => setInterviewForm({ ...interviewForm, title: event.target.value })} />
+              <Field label="Title" required>
+                <input className="audity-input" value={interviewForm.title} disabled={!canEdit} required aria-required="true" onChange={(event) => setInterviewForm({ ...interviewForm, title: event.target.value })} />
               </Field>
               <Field label="Participants">
                 <input className="audity-input" value={interviewForm.participants} disabled={!canEdit} onChange={(event) => setInterviewForm({ ...interviewForm, participants: event.target.value })} />
@@ -1324,7 +1424,7 @@ export function AuditCenterPage() {
               <Field label="Follow-up">
                 <textarea className="audity-input min-h-20" value={interviewForm.followUp} disabled={!canEdit} onChange={(event) => setInterviewForm({ ...interviewForm, followUp: event.target.value })} />
               </Field>
-              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Save interview</button>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit} aria-disabled={!canEdit} title={disabledTitle(canEdit, "edit")}>Save interview</button>
             </form>
             <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-1">
               {overview.interviews.map((item) => (
@@ -1339,14 +1439,14 @@ export function AuditCenterPage() {
 
           <Panel title="Audit Sampling" subtitle="Define test populations, selected samples, and result summaries.">
             <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => void submit(event, createSample)}>
-              <Field label="Name" wide>
-                <input className="audity-input" value={sampleForm.name} disabled={!canEdit} required onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} />
+              <Field label="Name" wide required>
+                <input className="audity-input" value={sampleForm.name} disabled={!canEdit} required aria-required="true" onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} />
               </Field>
               <Field label="Population size">
                 <input className="audity-input" type="number" min={0} value={sampleForm.populationSize} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, populationSize: Number(event.target.value) })} />
               </Field>
-              <Field label="Sample size">
-                <input className="audity-input" type="number" min={0} value={sampleForm.sampleSize} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, sampleSize: Number(event.target.value) })} />
+              <Field label="Sample size" hint="Whole number ≥ 0; usually 5–25 of the population.">
+                <input className="audity-input" type="number" min={0} step={1} value={sampleForm.sampleSize} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, sampleSize: Number(event.target.value) })} />
               </Field>
               <Field label="Selection method">
                 <select className="audity-input" value={sampleForm.selectionMethod} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, selectionMethod: event.target.value })}>
@@ -1374,7 +1474,7 @@ export function AuditCenterPage() {
               <Field label="Result summary" wide>
                 <textarea className="audity-input min-h-20" value={sampleForm.resultSummary} disabled={!canEdit} onChange={(event) => setSampleForm({ ...sampleForm, resultSummary: event.target.value })} />
               </Field>
-              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit}>Save sample</button>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canEdit} aria-disabled={!canEdit} title={disabledTitle(canEdit, "edit")}>Save sample</button>
             </form>
             <div className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-1">
               {overview.samples.map((item) => (
@@ -1413,7 +1513,7 @@ export function AuditCenterPage() {
               <Field label="Review summary" wide>
                 <textarea className="audity-input min-h-28" value={reportForm.summary} disabled={!canReport} onChange={(event) => setReportForm({ ...reportForm, summary: event.target.value })} />
               </Field>
-              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canReport}>Save review step</button>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canReport} aria-disabled={!canReport} title={disabledTitle(canReport, "report")}>Save review step</button>
             </form>
             <div className="mt-4 space-y-2">
               {overview.reportReviews.map((item) => (
@@ -1445,18 +1545,18 @@ export function AuditCenterPage() {
               <Field label="Statement">
                 <textarea className="audity-input min-h-28" value={signoffForm.statement} disabled={!canApprove} onChange={(event) => setSignoffForm({ ...signoffForm, statement: event.target.value })} />
               </Field>
-              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canApprove}>Record sign-off</button>
+              <button className="audity-btn-primary justify-self-start" type="submit" disabled={!canApprove} aria-disabled={!canApprove} title={disabledTitle(canApprove, "approve")}>Record sign-off</button>
             </form>
             <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
               {overview.signoffs.map((item) => (
                 <div key={text(item.id)} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-semibold">{label(item.entityType)} sign-off</p>
-                    <span className="text-[11px] text-audity-muted">{text(item.createdAt).slice(0, 10)}</span>
+                    <span className="text-xs text-audity-muted">{text(item.createdAt).slice(0, 10)}</span>
                   </div>
                   <p className="text-xs text-audity-muted">{text(item.signerName)}</p>
                   <p className="mt-1 text-sm text-audity-secondary">{text(item.statement)}</p>
-                  <p className="mt-1 break-all text-[11px] text-audity-muted">Hash {text(item.eventHash)}</p>
+                  <p className="mt-1 break-all text-xs text-audity-muted">Hash {text(item.eventHash)}</p>
                 </div>
               ))}
             </div>

@@ -4,6 +4,9 @@ import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { currentLanguage, translate } from "../i18n";
 import { BrandMark } from "./BrandMark";
+import { CommandPalette } from "./CommandPalette";
+import { HelpDrawer } from "./HelpDrawer";
+import { ErrorBoundary } from "./ui/ErrorBoundary";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `block rounded-audity px-2.5 py-1.5 text-sm transition ${
@@ -12,14 +15,15 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
       : "text-audity-secondary hover:bg-audity-panelAlt hover:text-audity-text"
   }`;
 
-const subNavClass = ({ isActive }: { isActive: boolean }) =>
-  `ml-2 block rounded-audity px-2.5 py-1.5 text-sm transition ${
-    isActive
-      ? "bg-audity-primaryActive font-semibold text-audity-text ring-1 ring-audity-primary/30"
-      : "text-audity-secondary hover:bg-audity-panelAlt hover:text-audity-text"
-  }`;
+const navSectionClass = "px-2 pt-4 pb-1 text-xs font-semibold uppercase tracking-normal text-audity-muted";
+const customerSectionClass = "px-2 pt-4 pb-1 text-xs font-semibold tracking-normal text-audity-muted";
+const disabledNavClass = "block cursor-not-allowed rounded-audity px-2.5 py-1.5 text-sm text-audity-muted opacity-60";
 
-const navSectionClass = "px-2 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-normal text-audity-muted";
+function shortCustomerName(value: string, maxLength = 12) {
+  const trimmed = value.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return `${trimmed.slice(0, maxLength)}...`;
+}
 
 type SearchResult = {
   type: string;
@@ -242,6 +246,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<{
     id: string;
     title: string;
@@ -259,6 +264,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
   const [commandQuery, setCommandQuery] = useState("");
   const [commandActions, setCommandActions] = useState<SearchResult[]>([]);
   const [commandResults, setCommandResults] = useState<SearchResult[]>([]);
+  const [commandActiveIndex, setCommandActiveIndex] = useState(0);
   const admin = isAdminRole(user?.role);
   const showCustomerContext =
     /^\/customers\/[0-9a-f-]{36}$/i.test(location.pathname) ||
@@ -392,6 +398,18 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
   return (
     <header className="flex h-11 items-center justify-between border-b border-audity-border bg-audity-topnav px-4">
       <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-audity border border-audity-borderStrong bg-audity-panel text-audity-secondary hover:border-audity-primary hover:text-audity-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-audity-primary lg:hidden"
+          aria-label={t("Open navigation")}
+          onClick={() => window.dispatchEvent(new CustomEvent("audity-mobile-nav-toggle"))}
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
         <BrandMark />
         <span className="text-sm font-semibold">Audity</span>
         <div className="relative hidden min-w-[220px] max-w-md flex-1 md:block">
@@ -427,6 +445,15 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         ) : null}
       </div>
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-audity border border-audity-borderStrong bg-audity-panel text-audity-secondary hover:border-audity-primary hover:text-audity-text"
+          onClick={() => setHelpOpen(true)}
+          aria-label={t("Help")}
+          title={t("Help & Manual")}
+        >
+          <span className="text-sm font-bold" aria-hidden="true">?</span>
+        </button>
         <div className="relative">
           <button
             className="relative flex h-8 w-8 items-center justify-center rounded-audity border border-audity-borderStrong bg-audity-panel text-audity-secondary hover:border-audity-primary hover:text-audity-text"
@@ -462,7 +489,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
                       {!notification.readAt ? <span className="mt-1 h-2 w-2 rounded-full bg-audity-primary" /> : null}
                     </div>
                     <p className="mt-1 line-clamp-2 text-xs text-audity-secondary">{notification.message}</p>
-                    <p className="mt-1 text-[11px] text-audity-muted">{new Date(notification.createdAt).toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-audity-muted">{new Date(notification.createdAt).toLocaleString()}</p>
                   </button>
                 ))}
                 {!notifications.length ? <div className="px-3 py-8 text-center text-sm text-audity-muted">{t("No notifications")}</div> : null}
@@ -486,121 +513,212 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         </button>
       </div>
       {commandOpen ? (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 pt-20" role="dialog" aria-modal="true" aria-label="Command palette">
-          <div className="w-full max-w-2xl overflow-hidden rounded-audity border border-audity-border bg-audity-panel shadow-2xl">
-            <div className="border-b border-audity-border p-3">
-              <input
-                className="h-10 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary"
-                placeholder="Type a command or search..."
-                autoFocus
-                value={commandQuery}
-                onChange={(event) => setCommandQuery(event.target.value)}
-              />
-            </div>
-            <div className="max-h-[60vh] overflow-auto p-2">
-              {[...commandActions, ...commandResults].map((result) => (
-                <button key={`${result.type}-${result.id}`} className="block w-full rounded-audity px-3 py-2 text-left hover:bg-audity-page" onClick={() => openResult(result)}>
-                  <span className="text-xs font-semibold uppercase text-audity-primary">{result.type}</span>
-                  <span className="ml-2 text-sm font-semibold">{result.title}</span>
-                  <span className="ml-2 text-xs text-audity-muted">{result.subtitle}</span>
-                </button>
-              ))}
-              {![...commandActions, ...commandResults].length ? <div className="px-3 py-8 text-center text-sm text-audity-muted">No commands found</div> : null}
-            </div>
-          </div>
-        </div>
+        <CommandPalette
+          query={commandQuery}
+          onQueryChange={setCommandQuery}
+          actions={commandActions}
+          results={commandResults}
+          activeIndex={commandActiveIndex}
+          onActiveIndexChange={setCommandActiveIndex}
+          onSelect={openResult}
+          onClose={() => setCommandOpen(false)}
+        />
       ) : null}
+      <HelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} />
     </header>
   );
 }
 
 export function AppLayout() {
+  const api = useApi();
   const location = useLocation();
   const t = useLanguage();
   useIdleLogout();
   useTooltips();
   useUserTheme();
-  const [assessmentId, setAssessmentId] = useState(() =>
-    window.localStorage.getItem("audity_last_assessment_id") ?? ""
-  );
+  const [customerContext, setCustomerContext] = useState({ label: "", assessmentId: "" });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
-    const match = location.pathname.match(/\/assessments\/([^/]+)/);
-    if (match?.[1]) {
-      window.localStorage.setItem("audity_last_assessment_id", match[1]);
-      setAssessmentId(match[1]);
-    }
+    const open = () => setMobileNavOpen(true);
+    const toggle = () => setMobileNavOpen((current) => !current);
+    window.addEventListener("audity-mobile-nav-open", open);
+    window.addEventListener("audity-mobile-nav-toggle", toggle);
+    return () => {
+      window.removeEventListener("audity-mobile-nav-open", open);
+      window.removeEventListener("audity-mobile-nav-toggle", toggle);
+    };
+  }, []);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
-    const handleContext = (event: Event) => {
-      const nextId = (event as CustomEvent<string>).detail;
-      if (nextId) setAssessmentId(nextId);
+    const handleCustomerContext = (event: Event) => {
+      const label = (event as CustomEvent<string>).detail ?? "";
+      setCustomerContext((current) => ({ ...current, label }));
     };
-    window.addEventListener("audity-assessment-context", handleContext);
-    return () => window.removeEventListener("audity-assessment-context", handleContext);
+    const handleAssessmentContext = (event: Event) => {
+      const assessmentId = (event as CustomEvent<string>).detail ?? "";
+      setCustomerContext((current) => ({ ...current, assessmentId }));
+    };
+    window.addEventListener("audity-customer-context", handleCustomerContext);
+    window.addEventListener("audity-assessment-context", handleAssessmentContext);
+    return () => {
+      window.removeEventListener("audity-customer-context", handleCustomerContext);
+      window.removeEventListener("audity-assessment-context", handleAssessmentContext);
+    };
   }, []);
 
-  const assessmentClass = assessmentId
-    ? "block rounded-audity px-2.5 py-1.5 text-sm text-audity-secondary hover:bg-audity-panel hover:text-audity-text"
-    : "block cursor-not-allowed rounded-audity px-2.5 py-1.5 text-sm text-audity-muted opacity-60";
+  useEffect(() => {
+    let cancelled = false;
+    const customerMatch = location.pathname.match(/^\/customers\/([0-9a-f-]{36})$/i);
+    const assessmentMatch = location.pathname.match(/^\/assessments\/([0-9a-f-]{36})\//i);
+
+    if (customerMatch) {
+      setCustomerContext((current) => ({ ...current, label: "", assessmentId: "" }));
+      void api<{ customer: { name: string } }>(`/api/customers/${customerMatch[1]}`)
+        .then((payload) => {
+          if (!cancelled) setCustomerContext((current) => ({ ...current, label: payload.customer.name }));
+        })
+        .catch(() => {
+          if (!cancelled) setCustomerContext({ label: "", assessmentId: "" });
+        });
+    } else if (assessmentMatch) {
+      const assessmentId = assessmentMatch[1];
+      setCustomerContext((current) => ({ ...current, assessmentId }));
+      void api<{ assessment: { customerId: string } }>(`/api/assessments/${assessmentId}`)
+        .then((assessmentPayload) =>
+          api<{ customer: { name: string } }>(`/api/customers/${assessmentPayload.assessment.customerId}`)
+        )
+        .then((customerPayload) => {
+          if (!cancelled) setCustomerContext((current) => ({ ...current, label: customerPayload.customer.name, assessmentId }));
+        })
+        .catch(() => {
+          if (!cancelled) setCustomerContext({ label: "", assessmentId: "" });
+        });
+    } else {
+      setCustomerContext({ label: "", assessmentId: "" });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [api, location.pathname]);
+
+  const customerMenuLabel = shortCustomerName(customerContext.label);
+  const assessmentNav = customerContext.assessmentId ? (
+    <>
+      <NavLink className={navClass} to={`/assessments/${customerContext.assessmentId}/questions`}>{t("Questions")}</NavLink>
+      <NavLink className={navClass} to={`/assessments/${customerContext.assessmentId}/audit-center`}>{t("Audit Center")}</NavLink>
+      <NavLink className={navClass} to={`/assessments/${customerContext.assessmentId}/workflow`}>{t("Findings & Risk")}</NavLink>
+      <NavLink className={navClass} to={`/assessments/${customerContext.assessmentId}/assets`}>{t("Evidence & Reports")}</NavLink>
+    </>
+  ) : (
+    <>
+      <span className={disabledNavClass} title="Select or create an assessment first.">{t("Questions")}</span>
+      <span className={disabledNavClass} title="Select or create an assessment first.">{t("Audit Center")}</span>
+      <span className={disabledNavClass} title="Select or create an assessment first.">{t("Findings & Risk")}</span>
+      <span className={disabledNavClass} title="Select or create an assessment first.">{t("Evidence & Reports")}</span>
+    </>
+  );
 
   return (
-    <main className="min-h-screen bg-audity-app text-audity-text">
+    <div className="min-h-screen bg-audity-app text-audity-text">
+      <a href="#audity-main" className="audity-skip-link">{t("Skip to main content")}</a>
       <TopBar />
+      {mobileNavOpen ? (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          aria-hidden="true"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      ) : null}
       <div className="grid min-h-[calc(100vh-44px)] grid-cols-1 lg:grid-cols-[208px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)] 2xl:grid-cols-[232px_minmax(0,1fr)]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4">
+        <aside
+          className={`fixed inset-y-[44px] left-0 z-40 w-64 border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4 transition-transform lg:static lg:inset-auto lg:w-auto lg:translate-x-0 ${mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+          aria-label={t("Primary navigation")}
+        >
           <nav className="space-y-0.5">
             <p className={navSectionClass}>{t("Workspace")}</p>
             <NavLink className={navClass} to="/dashboard">{t("Dashboard")}</NavLink>
-            <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
+            <NavLink className={navClass} to="/customers/my">{t("Customers")}</NavLink>
+            <NavLink className={navClass} to="/customers/shared">{t("Shared Customers")}</NavLink>
+            {customerContext.label ? (
+              <>
+                <p className={customerSectionClass} title={customerContext.label}>{customerMenuLabel}</p>
+                {assessmentNav}
+              </>
+            ) : null}
+            <p className={navSectionClass}>{t("Settings")}</p>
             <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
-            <p className={navSectionClass}>{t("Customers")}</p>
-            <NavLink className={subNavClass} to="/customers/my">{t("My Customers")}</NavLink>
-            <NavLink className={subNavClass} to="/customers/shared">{t("Shared Customers")}</NavLink>
-            <p className={navSectionClass}>{t("Assessment")}</p>
-            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/questions`}>{t("Questions")}</NavLink> : <span className={assessmentClass}>{t("Questions")}</span>}
-            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/audit-center`}>{t("Audit Center")}</NavLink> : <span className={assessmentClass}>{t("Audit Center")}</span>}
-            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/workflow`}>{t("Findings & Risk")}</NavLink> : <span className={assessmentClass}>{t("Findings & Risk")}</span>}
-            {assessmentId ? <NavLink className={navClass} to={`/assessments/${assessmentId}/assets`}>{t("Evidence & Reports")}</NavLink> : <span className={assessmentClass}>{t("Evidence & Reports")}</span>}
+            <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
           </nav>
         </aside>
-        <section className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4">
-          <Outlet />
-        </section>
+        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
       </div>
-    </main>
+    </div>
   );
 }
 
 export function AdminLayout() {
   const { user } = useAuth();
+  const location = useLocation();
   const t = useLanguage();
   useIdleLogout();
   useTooltips();
   useUserTheme();
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setMobileNavOpen(true);
+    const toggle = () => setMobileNavOpen((current) => !current);
+    window.addEventListener("audity-mobile-nav-open", open);
+    window.addEventListener("audity-mobile-nav-toggle", toggle);
+    return () => {
+      window.removeEventListener("audity-mobile-nav-open", open);
+      window.removeEventListener("audity-mobile-nav-toggle", toggle);
+    };
+  }, []);
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
   return (
-    <main className="min-h-screen bg-audity-app text-audity-text">
+    <div className="min-h-screen bg-audity-app text-audity-text">
+      <a href="#audity-main" className="audity-skip-link">{t("Skip to main content")}</a>
       <TopBar adminMode />
+      {mobileNavOpen ? (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          aria-hidden="true"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      ) : null}
       <div className="grid min-h-[calc(100vh-44px)] grid-cols-1 lg:grid-cols-[208px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)] 2xl:grid-cols-[232px_minmax(0,1fr)]">
-        <aside className="border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4">
+        <aside
+          className={`fixed inset-y-[44px] left-0 z-40 w-64 border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4 transition-transform lg:static lg:inset-auto lg:w-auto lg:translate-x-0 ${mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+          aria-label={t("Admin navigation")}
+        >
           <nav className="space-y-0.5">
             <p className={navSectionClass}>{t("Administration")}</p>
             {can("roles.manage") ? <NavLink className={navClass} to="/admin/users">{t("User Management")}</NavLink> : null}
-            {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">{t("Branding")}</NavLink> : null}
-            {can("email.manage") ? <NavLink className={navClass} to="/admin/email">{t("Email Settings")}</NavLink> : null}
-            {can("connectors.manage") ? <NavLink className={navClass} to="/admin/connectors">{t("Connector")}</NavLink> : null}
             {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks">{t("Framework Library")}</NavLink> : null}
             <p className={navSectionClass}>{t("Monitoring")}</p>
             {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity">{t("Activity Log")}</NavLink> : null}
             {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit">{t("Audit Log")}</NavLink> : null}
             <p className={navSectionClass}>{t("System")}</p>
+            {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">{t("System Monitor")}</NavLink> : null}
+            {can("connectors.manage") ? <NavLink className={navClass} to="/admin/connectors">{t("Connector")}</NavLink> : null}
+            {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding">{t("Branding")}</NavLink> : null}
+            {can("email.manage") ? <NavLink className={navClass} to="/admin/email">{t("Email Settings")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/workbench">{t("Workbench")}</NavLink> : null}
-            {can("settings.manage") ? <NavLink className={navClass} to="/admin/system">{t("System")}</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup">{t("Backup")}</NavLink> : null}
             <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
-            <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
           </nav>
           <Link
             className="mt-5 block rounded-audity border border-audity-error/60 bg-[#2A1C17] px-3 py-2 text-sm font-semibold text-[#FFB199] hover:border-audity-error hover:bg-[#351F19] hover:text-white"
@@ -609,10 +727,12 @@ export function AdminLayout() {
             {t("Leave Admin Panel")}
           </Link>
         </aside>
-        <section className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4">
-          <Outlet />
-        </section>
+        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
       </div>
-    </main>
+    </div>
   );
 }

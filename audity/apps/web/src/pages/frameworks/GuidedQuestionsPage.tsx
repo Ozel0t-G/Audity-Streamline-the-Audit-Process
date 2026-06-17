@@ -231,8 +231,8 @@ export function GuidedQuestionsPage() {
                       <p className="mt-1 text-sm font-semibold">{question.title}</p>
                       <p className="mt-1 text-xs text-audity-secondary">{question.sourceQuestionId ?? question.questionId.slice(0, 8)}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
-                        <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[11px] text-audity-muted">Score {question.answer?.score ?? "-"}</span>
-                        {question.evidenceGap ? <span className="rounded-audity border border-audity-warning px-2 py-0.5 text-[11px] text-audity-warning">Evidence gap</span> : null}
+                        <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-xs text-audity-muted">Score {question.answer?.score ?? "-"}</span>
+                        {question.evidenceGap ? <span className="rounded-audity border border-audity-warning px-2 py-0.5 text-xs text-audity-warning">Evidence gap</span> : null}
                       </div>
                     </button>
                   ))}
@@ -345,7 +345,7 @@ export function GuidedQuestionsPage() {
                     <div key={comment.id} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold text-audity-primary">{comment.userEmail ?? "System"}</p>
-                        <p className="text-[11px] text-audity-muted">{new Date(comment.createdAt).toLocaleString()}</p>
+                        <p className="text-xs text-audity-muted">{new Date(comment.createdAt).toLocaleString()}</p>
                       </div>
                       <p className="mt-1 text-sm text-audity-secondary">{comment.comment}</p>
                     </div>

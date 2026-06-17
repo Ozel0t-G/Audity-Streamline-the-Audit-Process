@@ -157,7 +157,7 @@ export function FrameworkLibraryPage() {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-audity-text">{framework.shortName ?? framework.name}</p>
-                      <span className={`shrink-0 rounded-audity border px-2 py-1 text-[11px] font-semibold ${badgeClass(framework.statusLabel)}`}>
+                      <span className={`shrink-0 rounded-audity border px-2 py-1 text-xs font-semibold ${badgeClass(framework.statusLabel)}`}>
                         {framework.statusLabel ?? "User License Required"}
                       </span>
                     </div>

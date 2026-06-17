@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { DataTable, SeverityBadge, useConfirm, useToast, type DataTableColumn } from "../components/ui";
 
 type WorkbenchRecord = {
   id: string;
@@ -107,6 +108,8 @@ export function WorkbenchPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const toast = useToast();
+  const confirm = useConfirm();
   const [newToken, setNewToken] = useState("");
   const [form, setForm] = useState({
     kind: searchParams.get("kind") ?? "evidence_request",
@@ -162,6 +165,7 @@ export function WorkbenchPage() {
     });
     setForm({ ...form, title: "", description: "", owner: "", dueDate: "" });
     setMessage("Workbench item created.");
+    toast.success("Workbench item created");
     await load();
   }
 
@@ -171,19 +175,48 @@ export function WorkbenchPage() {
   }
 
   async function deleteRecord(id: string) {
-    await api(`/api/workbench/records/${id}`, { method: "DELETE" });
-    setSelectedIds((current) => current.filter((item) => item !== id));
-    await load();
+    const ok = await confirm({
+      title: "Delete workbench record?",
+      body: "The record will be permanently removed. This cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true
+    });
+    if (!ok) return;
+    try {
+      await api(`/api/workbench/records/${id}`, { method: "DELETE" });
+      setSelectedIds((current) => current.filter((item) => item !== id));
+      toast.success("Workbench record deleted");
+      await load();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Delete failed";
+      setError(msg);
+      toast.error(msg);
+    }
   }
 
-  async function bulkUpdate(status: string) {
-    if (!selectedIds.length) return;
-    await api("/api/workbench/records/bulk", {
-      method: "POST",
-      body: JSON.stringify({ ids: selectedIds, status })
+  async function bulkUpdate(status: string, rows?: WorkbenchRecord[]) {
+    const ids = rows && rows.length ? rows.map((r) => r.id) : selectedIds;
+    if (!ids.length) return;
+    const ok = await confirm({
+      title: `Apply "${status}" to ${ids.length} record${ids.length === 1 ? "" : "s"}?`,
+      body: "The change will be applied to every selected workbench record.",
+      confirmLabel: "Apply",
+      destructive: status.toLowerCase() === "closed" || status.toLowerCase() === "rejected"
     });
-    setSelectedIds([]);
-    await load();
+    if (!ok) return;
+    try {
+      await api("/api/workbench/records/bulk", {
+        method: "POST",
+        body: JSON.stringify({ ids, status })
+      });
+      setSelectedIds([]);
+      toast.success(`Updated ${ids.length} record${ids.length === 1 ? "" : "s"}`);
+      await load();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Bulk update failed";
+      setError(msg);
+      toast.error(msg);
+    }
   }
 
   async function saveView(event: FormEvent<HTMLFormElement>) {
@@ -214,6 +247,7 @@ export function WorkbenchPage() {
     await api(item.path, { method: "POST", body: JSON.stringify(item.body) });
     setAdminForm({ ...adminForm, name: "", description: "", url: "", fieldKey: "", label: "" });
     setMessage("Admin configuration created.");
+    toast.success("Admin configuration created");
     await load();
   }
 
@@ -294,30 +328,66 @@ export function WorkbenchPage() {
                 <textarea className="min-h-16 rounded-audity border border-audity-border bg-audity-page px-2.5 py-2 text-sm text-audity-text outline-none focus:border-audity-primary lg:col-span-5" placeholder="Description, acceptance reason, SLA note, mapping detail or expected evidence..." value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
               </form>
             ) : null}
-            <div className="flex flex-wrap items-center gap-2 border-b border-audity-border px-3 py-2">
-              <button className="audity-btn-secondary" disabled={!selectedIds.length} onClick={() => void bulkUpdate("in_review")}>Bulk review</button>
-              <button className="audity-btn-secondary" disabled={!selectedIds.length} onClick={() => void bulkUpdate("closed")}>Bulk close</button>
-              <span className="text-xs text-audity-muted">{selectedIds.length} selected</span>
-            </div>
-            <div className="divide-y divide-audity-border">
-              {records.map((record) => (
-                <div key={record.id} className="grid gap-3 px-3 py-2 hover:bg-audity-panelAlt lg:grid-cols-[24px_minmax(0,1fr)_130px_110px_90px]">
-                  <input type="checkbox" checked={selectedIds.includes(record.id)} onChange={() => setSelectedIds((current) => current.includes(record.id) ? current.filter((id) => id !== record.id) : [...current, record.id])} />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{record.title}</p>
-                    <p className="mt-1 line-clamp-2 text-xs text-audity-secondary">{record.description || "No description"}</p>
-                    <p className="mt-1 text-[11px] text-audity-muted">{record.customerName ?? "No customer"} · {record.assessmentType ?? "No assessment"} · {record.visibility}</p>
-                  </div>
-                  <select className="audity-input" value={record.status} onChange={(event) => void updateRecord(record.id, { status: event.target.value } as Partial<WorkbenchRecord>)}>
-                    {["open", "in_review", "approved", "in_progress", "blocked", "closed"].map((status) => <option key={status}>{status}</option>)}
-                  </select>
-                  <select className="audity-input" value={record.priority} onChange={(event) => void updateRecord(record.id, { priority: event.target.value } as Partial<WorkbenchRecord>)}>
-                    {["low", "medium", "high", "critical"].map((priority) => <option key={priority}>{priority}</option>)}
-                  </select>
-                  <button className="audity-btn-secondary border-audity-error px-2 py-1 text-xs text-audity-error" onClick={() => void deleteRecord(record.id)}>Delete</button>
-                </div>
-              ))}
-              {!records.length ? <p className="px-3 py-10 text-center text-sm text-audity-muted">No records in this module yet.</p> : null}
+            <div className="p-3">
+              <DataTable<WorkbenchRecord>
+                storageKey={`workbench-${form.kind}`}
+                rows={records}
+                getRowId={(record) => record.id}
+                selectable
+                emptyState="No records in this module yet."
+                bulkActions={[
+                  { label: "Bulk review", onRun: (rows) => void bulkUpdate("in_review", rows) },
+                  { label: "Bulk close", onRun: (rows) => void bulkUpdate("closed", rows) }
+                ]}
+                columns={[
+                  {
+                    key: "title",
+                    header: "Record",
+                    sortValue: (record) => record.title,
+                    cell: (record) => (
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{record.title}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-audity-secondary">{record.description || "No description"}</p>
+                        <p className="mt-1 text-xs text-audity-muted">{record.customerName ?? "No customer"} · {record.assessmentType ?? "No assessment"} · {record.visibility}</p>
+                      </div>
+                    )
+                  },
+                  {
+                    key: "status",
+                    header: "Status",
+                    width: "150px",
+                    sortValue: (record) => record.status,
+                    cell: (record) => (
+                      <select className="audity-input" value={record.status} onChange={(event) => void updateRecord(record.id, { status: event.target.value } as Partial<WorkbenchRecord>)}>
+                        {["open", "in_review", "approved", "in_progress", "blocked", "closed"].map((status) => <option key={status}>{status}</option>)}
+                      </select>
+                    )
+                  },
+                  {
+                    key: "priority",
+                    header: "Priority",
+                    width: "140px",
+                    sortValue: (record) => ["low", "medium", "high", "critical"].indexOf(record.priority),
+                    cell: (record) => (
+                      <div className="flex items-center gap-1">
+                        <SeverityBadge level={record.priority} />
+                        <select className="audity-input ml-1" value={record.priority} onChange={(event) => void updateRecord(record.id, { priority: event.target.value } as Partial<WorkbenchRecord>)} aria-label="Change priority">
+                          {["low", "medium", "high", "critical"].map((priority) => <option key={priority}>{priority}</option>)}
+                        </select>
+                      </div>
+                    )
+                  },
+                  {
+                    key: "actions",
+                    header: "",
+                    width: "100px",
+                    align: "right",
+                    cell: (record) => (
+                      <button className="audity-btn-secondary border-audity-error px-2 py-1 text-xs text-audity-error" onClick={() => void deleteRecord(record.id)}>Delete</button>
+                    )
+                  }
+                ] as DataTableColumn<WorkbenchRecord>[]}
+              />
             </div>
           </section>
           <aside className="space-y-3">

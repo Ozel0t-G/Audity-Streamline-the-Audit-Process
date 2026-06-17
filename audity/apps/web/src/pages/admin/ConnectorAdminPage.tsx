@@ -235,7 +235,7 @@ export function ConnectorAdminPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <ConnectorLogo connector={connector} />
-                <span className={`rounded-audity border px-2 py-1 text-[11px] ${statusClass(connector.status)}`}>
+                <span className={`rounded-audity border px-2 py-1 text-xs ${statusClass(connector.status)}`}>
                   {connector.status}
                 </span>
               </div>
@@ -265,10 +265,10 @@ export function ConnectorAdminPage() {
                 <div className="flex min-w-0 items-center gap-3">
                   <ConnectorLogo connector={activeConnector} />
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase text-audity-primary">Connector Settings</p>
+                    <p className="text-xs font-semibold uppercase text-audity-primary">Connector Settings</p>
                     <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
                       <h2 className="truncate text-lg font-semibold">{activeConnector.displayName}</h2>
-                      <span className={`rounded-audity border px-2 py-0.5 text-[11px] ${statusClass(activeConnector.status)}`}>
+                      <span className={`rounded-audity border px-2 py-0.5 text-xs ${statusClass(activeConnector.status)}`}>
                         {activeConnector.status}
                       </span>
                     </div>
@@ -305,7 +305,7 @@ export function ConnectorAdminPage() {
                       </div>
                       <div className="mt-3 grid gap-3 md:grid-cols-2">
                         {connectorFields[activeConnector.id].map((field) => (
-                          <label key={field.key} className="block text-[11px] font-semibold uppercase text-audity-secondary">
+                          <label key={field.key} className="block text-xs font-semibold uppercase text-audity-secondary">
                             {field.label}
                             <input
                               className={connectorInputClass}
@@ -316,7 +316,7 @@ export function ConnectorAdminPage() {
                           </label>
                         ))}
                         {activeConnector.secretFields.map((field) => (
-                          <label key={field} className="block text-[11px] font-semibold uppercase text-audity-secondary">
+                          <label key={field} className="block text-xs font-semibold uppercase text-audity-secondary">
                             {secretLabels[field] ?? field}
                             <input
                               className={connectorInputClass}
@@ -355,7 +355,7 @@ export function ConnectorAdminPage() {
                     <section className={connectorSectionClass}>
                       <h3 className="text-sm font-semibold">Initial Sync</h3>
                       <div className="mt-3 grid gap-3 md:grid-cols-[200px_minmax(0,1fr)]">
-                        <label className="block text-[11px] font-semibold uppercase text-audity-secondary">
+                        <label className="block text-xs font-semibold uppercase text-audity-secondary">
                           History range
                           <select
                             className={connectorInputClass}
@@ -377,15 +377,15 @@ export function ConnectorAdminPage() {
                   <aside className="border-t border-audity-border bg-audity-page p-4 lg:border-l lg:border-t-0">
                     <div className="space-y-4">
                       <section>
-                        <p className="text-[11px] font-semibold uppercase text-audity-primary">Available now</p>
+                        <p className="text-xs font-semibold uppercase text-audity-primary">Available now</p>
                         <p className="mt-1.5 text-sm leading-6 text-audity-secondary">{activeConnector.whatWorks}</p>
                       </section>
                       <section className="border-t border-audity-border pt-4">
-                        <p className="text-[11px] font-semibold uppercase text-audity-warning">Coming next</p>
+                        <p className="text-xs font-semibold uppercase text-audity-warning">Coming next</p>
                         <p className="mt-1.5 text-sm leading-6 text-audity-secondary">{activeConnector.comingNext}</p>
                       </section>
                       <section className="border-t border-audity-border pt-4">
-                        <p className="text-[11px] font-semibold uppercase text-audity-muted">Last result</p>
+                        <p className="text-xs font-semibold uppercase text-audity-muted">Last result</p>
                         {activeConnector.lastMessage ? (
                           <>
                             <p className="mt-1.5 text-sm text-audity-secondary">{activeConnector.lastMessage}</p>
