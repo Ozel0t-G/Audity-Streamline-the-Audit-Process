@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
+import { DataTable, type DataTableColumn } from "../../components/ui";
 import type { Customer } from "./types";
 
 type FrameworkOption = { id: string; name: string; shortName: string | null };
@@ -75,41 +76,54 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
             <h1 className="audity-page-title">{mode === "my" ? "My Customers" : mode === "shared" ? "Shared Customers" : "Customers"}</h1>
           </div>
           <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
-              <table className="w-full border-collapse text-sm">
-                <thead className="bg-audity-tableHeader text-xs uppercase text-audity-muted">
-                  <tr>
-                    <th className="border-b border-audity-border px-3 py-3 text-left">Name</th>
-                    <th className="border-b border-audity-border px-3 py-3 text-left">Created By</th>
-                    <th className="border-b border-audity-border px-3 py-3 text-left">Shared With</th>
-                    <th className="border-b border-audity-border px-3 py-3 text-left">Created At</th>
-                    <th className="border-b border-audity-border px-3 py-3 text-left">Last Updated</th>
-                    <th className="border-b border-audity-border px-3 py-3 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((customer) => (
-                    <tr key={customer.id} className="border-b border-audity-border last:border-0">
-                      <td className="px-3 py-3">
-                        <Link className="font-semibold text-audity-primary hover:text-audity-primaryHover" to={`/customers/${customer.id}`}>{customer.name}</Link>
-                      </td>
-                      <td className="px-3 py-3 text-audity-secondary">{customer.createdByName ?? customer.createdByEmail ?? "-"}</td>
-                      <td className="px-3 py-3 text-audity-secondary">{customer.sharedWith?.map((share) => share.name ?? share.email).join(", ") || "-"}</td>
-                      <td className="px-3 py-3 text-audity-secondary">{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : "-"}</td>
-                      <td className="px-3 py-3 text-audity-secondary">{customer.updatedAt ? new Date(customer.updatedAt).toLocaleDateString() : "-"}</td>
-                      <td className="px-3 py-3">
-                        <Link className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs font-semibold text-audity-primary hover:border-audity-primary" to={`/customers/${customer.id}`}>Open</Link>
-                      </td>
-                    </tr>
-                  ))}
-                  {!customers.length ? (
-                    <tr>
-                      <td className="px-3 py-8 text-center text-audity-muted" colSpan={6}>No customers to show</td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
+            <DataTable<Customer>
+              storageKey={`customer-list-${mode ?? "all"}`}
+              rows={customers}
+              getRowId={(customer) => customer.id}
+              emptyState="No customers to show"
+              columns={[
+                {
+                  key: "name",
+                  header: "Name",
+                  sortValue: (customer) => customer.name,
+                  cell: (customer) => (
+                    <Link className="font-semibold text-audity-primary hover:text-audity-primaryHover" to={`/customers/${customer.id}`}>{customer.name}</Link>
+                  )
+                },
+                {
+                  key: "createdBy",
+                  header: "Created By",
+                  sortValue: (customer) => customer.createdByName ?? customer.createdByEmail ?? "",
+                  cell: (customer) => <span className="text-audity-secondary">{customer.createdByName ?? customer.createdByEmail ?? "-"}</span>
+                },
+                {
+                  key: "sharedWith",
+                  header: "Shared With",
+                  cell: (customer) => <span className="text-audity-secondary">{customer.sharedWith?.map((share) => share.name ?? share.email).join(", ") || "-"}</span>
+                },
+                {
+                  key: "createdAt",
+                  header: "Created At",
+                  sortValue: (customer) => customer.createdAt ?? "",
+                  cell: (customer) => <span className="text-audity-secondary">{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : "-"}</span>
+                },
+                {
+                  key: "updatedAt",
+                  header: "Last Updated",
+                  sortValue: (customer) => customer.updatedAt ?? "",
+                  cell: (customer) => <span className="text-audity-secondary">{customer.updatedAt ? new Date(customer.updatedAt).toLocaleDateString() : "-"}</span>
+                },
+                {
+                  key: "actions",
+                  header: "",
+                  align: "right",
+                  width: "100px",
+                  cell: (customer) => (
+                    <Link className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs font-semibold text-audity-primary hover:border-audity-primary" to={`/customers/${customer.id}`}>Open</Link>
+                  )
+                }
+              ] as DataTableColumn<Customer>[]}
+            />
             {canCreateCustomer ? (
             <form onSubmit={createCustomer} className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Create customer</h2>
