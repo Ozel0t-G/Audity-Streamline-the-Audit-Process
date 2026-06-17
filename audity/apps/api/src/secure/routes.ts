@@ -320,10 +320,14 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
 
   app.get<{ Params: { id: string } }>(
     "/api/email-jobs/:id/status",
-    { preHandler: requirePermission("report.export") },
-    async (request) => {
+    { preHandler: requirePermission("report.send") },
+    async (request, reply) => {
       const job = await emailQueue.getJob(request.params.id);
       if (!job) return { id: request.params.id, status: "not_found" };
+      const data = job.data as { assessmentId?: string } | null;
+      if (!data?.assessmentId || !(await canAccessAssessment(request.user!, data.assessmentId))) {
+        return reply.code(404).send({ code: "JOB_NOT_FOUND", message: "Job not found" });
+      }
       return {
         id: job.id,
         status: await job.getState(),

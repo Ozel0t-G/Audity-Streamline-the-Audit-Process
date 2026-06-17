@@ -14,6 +14,46 @@ function nextTimestamp(previous?: Date): Date {
   return new Date(previous.getTime() + 1);
 }
 
+async function enqueueConnectorAutoSync(input: {
+  action: string;
+  entityType: string;
+  entityId: string;
+}): Promise<void> {
+  const singletonJobId = "connector-auto-sync";
+  const existing = await connectorQueue.getJob(singletonJobId);
+  if (existing) {
+    const state = await existing.getState();
+    if (["completed", "failed", "delayed", "waiting", "paused"].includes(state)) {
+      await existing.remove().catch(() => undefined);
+    } else {
+      await connectorQueue.add(
+        "auto-sync",
+        { trigger: input.action, entityType: input.entityType, entityId: input.entityId },
+        {
+          jobId: `${singletonJobId}-${Date.now()}-${randomUUID()}`,
+          delay: 5000,
+          attempts: 2,
+          removeOnComplete: true,
+          removeOnFail: 100
+        }
+      );
+      return;
+    }
+  }
+
+  await connectorQueue.add(
+    "auto-sync",
+    { trigger: input.action, entityType: input.entityType, entityId: input.entityId },
+    {
+      jobId: singletonJobId,
+      delay: 5000,
+      attempts: 2,
+      removeOnComplete: true,
+      removeOnFail: 100
+    }
+  );
+}
+
 export async function appendActivityEvent(input: {
   userId: string;
   action: string;
@@ -23,6 +63,7 @@ export async function appendActivityEvent(input: {
   after: unknown;
 }): Promise<void> {
   const client = await pool.connect();
+  let committed = false;
   try {
     await client.query("begin");
     await client.query("select pg_advisory_xact_lock(hashtext('audity_user_activity_logs'))");
@@ -55,24 +96,17 @@ export async function appendActivityEvent(input: {
       ]
     );
     await client.query("commit");
+    committed = true;
     if (
       ["customer", "assessment"].includes(input.entityType) &&
       !input.action.endsWith(".opened")
     ) {
-      await connectorQueue.add(
-        "auto-sync",
-        { trigger: input.action, entityType: input.entityType, entityId: input.entityId },
-        {
-          jobId: "connector-auto-sync",
-          delay: 5000,
-          attempts: 2,
-          removeOnComplete: 50,
-          removeOnFail: 100
-        }
-      );
+      await enqueueConnectorAutoSync(input).catch(() => undefined);
     }
   } catch (error) {
-    await client.query("rollback");
+    if (!committed) {
+      await client.query("rollback");
+    }
     throw error;
   } finally {
     client.release();

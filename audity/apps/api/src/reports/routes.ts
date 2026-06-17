@@ -356,22 +356,26 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
 
   app.get<{ Params: { id: string } }>(
     "/api/jobs/:id/status",
-    { preHandler: requirePermission("assessment.view") },
-    async (request) => {
+    { preHandler: requirePermission("report.export") },
+    async (request, reply) => {
       const job = await reportQueue.getJob(request.params.id);
       if (!job) {
         return { id: request.params.id, status: "not_found" };
       }
-      const state = await job.getState();
-      const returnValue = job.returnvalue as { objectKey?: string } | null;
-      const data = job.data as { reportId?: string } | null;
-      const report = data?.reportId
-        ? await pool.query<{ pdf_object_key: string | null }>(
-            "select pdf_object_key from reports where id = $1",
+      const data = job.data as { assessmentId?: string; reportId?: string } | null;
+      const reportContext = data?.reportId
+        ? await pool.query<{ assessment_id: string; pdf_object_key: string | null }>(
+            "select assessment_id, pdf_object_key from reports where id = $1",
             [data.reportId]
           )
         : null;
-      const objectKey = returnValue?.objectKey ?? report?.rows[0]?.pdf_object_key;
+      const assessmentId = data?.assessmentId ?? reportContext?.rows[0]?.assessment_id;
+      if (!assessmentId || !(await canAccessAssessment(request.user!, assessmentId))) {
+        return reply.code(404).send({ code: "JOB_NOT_FOUND", message: "Job not found" });
+      }
+      const state = await job.getState();
+      const returnValue = job.returnvalue as { objectKey?: string } | null;
+      const objectKey = returnValue?.objectKey ?? reportContext?.rows[0]?.pdf_object_key;
       return {
         id: job.id,
         status: state,
