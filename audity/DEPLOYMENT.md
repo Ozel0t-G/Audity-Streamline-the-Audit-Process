@@ -158,16 +158,14 @@ The `audity-updater` service is intentionally separate from the normal API. It h
 Framework YAML files live in:
 
 ```bash
-frameworks/*.yaml
+frameworks/catalog/**/*.yaml
 ```
 
-The API container mounts this directory read-only and syncs changes automatically. Default interval:
+The API container mounts `frameworks/` read-only and scans it recursively, so framework catalogs can be grouped in subfolders such as `catalog/public`, `catalog/audity-readiness`, or `catalog/yaml-managed`. The YAML files are the source of truth for shipped framework catalogs; no container restart is required for normal YAML content changes. Default interval:
 
 ```bash
 AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS=10
 ```
-
-No container restart is required for normal YAML content changes.
 
 ## Backup
 

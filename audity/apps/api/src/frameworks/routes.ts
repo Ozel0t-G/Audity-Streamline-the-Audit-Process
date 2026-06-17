@@ -187,13 +187,27 @@ async function publishFrameworkToActiveCustomers(frameworkId: string, userId: st
   return result.rowCount ?? 0;
 }
 
-async function getDefaultFrameworkId(): Promise<string | null> {
-  const result = await pool.query<{ id: string }>(
-    `select id from frameworks
-     where name = 'NIST Cybersecurity Framework' and version = '2.0'
-     limit 1`
+async function getDefaultFramework(): Promise<{ id: string; label: string } | null> {
+  const configuredKey = process.env.AUDITY_DEFAULT_FRAMEWORK_KEY ?? "nist-csf-2";
+  const configuredId = process.env.AUDITY_DEFAULT_FRAMEWORK_ID ?? stableUuid(`framework:${configuredKey}`);
+  const preferred = await pool.query<{ id: string; name: string; short_name: string | null; version: string | null }>(
+    "select id, name, short_name, version from frameworks where id = $1 limit 1",
+    [configuredId]
   );
-  return result.rows[0]?.id ?? null;
+  const fallback = preferred.rows[0]
+    ? preferred
+    : await pool.query<{ id: string; name: string; short_name: string | null; version: string | null }>(
+        `select id, name, short_name, version
+         from frameworks
+         order by distributed_by_audity desc, name asc, version asc
+         limit 1`
+      );
+  const row = fallback.rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    label: `${row.short_name ?? row.name} ${row.version ?? ""}`.trim()
+  };
 }
 
 async function getAssessmentFrameworkId(assessmentId: string): Promise<string | null> {
@@ -207,18 +221,18 @@ async function getAssessmentFrameworkId(assessmentId: string): Promise<string | 
   if (assessment.rows[0].framework_id) {
     return assessment.rows[0].framework_id;
   }
-  const defaultFrameworkId = await getDefaultFrameworkId();
-  if (defaultFrameworkId) {
+  const defaultFramework = await getDefaultFramework();
+  if (defaultFramework) {
     await pool.query(
       `update assessments
        set framework_id = $2,
-           framework = coalesce(nullif(framework, 'Framework placeholder'), 'NIST CSF 2.0'),
+           framework = coalesce(nullif(framework, 'Framework placeholder'), $3),
            updated_at = now()
        where id = $1`,
-      [assessmentId, defaultFrameworkId]
+      [assessmentId, defaultFramework.id, defaultFramework.label]
     );
   }
-  return defaultFrameworkId;
+  return defaultFramework?.id ?? null;
 }
 
 async function ensureAssessmentQuestions(

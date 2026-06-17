@@ -138,7 +138,7 @@ export function FrameworkLibraryPage() {
           </div>
           <div className="mb-4 rounded-audity border border-audity-warning bg-[#282414] p-3 text-sm text-audity-secondary">
             {selected?.disclaimer ??
-              "Built-in public-framework summaries and Audity-native readiness workflows are assessment aids. User-imported frameworks require your own license confirmation."}
+              "Framework catalogs are loaded from YAML files and synced automatically. User-imported or license-restricted frameworks require your own license confirmation."}
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
           {success ? <div className="mb-4 rounded-audity border border-audity-success bg-[#14241D] px-3 py-2 text-sm text-audity-success">{success}</div> : null}

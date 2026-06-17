@@ -32,6 +32,7 @@ const controlSchema = z.object({
   reportMapping: z.record(z.string(), z.unknown()).default({}),
   evidenceExamples: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
+  licensedMappingSlots: z.array(z.record(z.string(), z.unknown())).default([]),
   questions: z.array(questionSchema).optional()
 });
 
@@ -62,7 +63,12 @@ const frameworkYamlSchema = z.object({
     redistributionNote: z.string().optional(),
     disclaimer: z.string().optional()
   }),
-  domains: z.array(domainSchema).default([])
+  domains: z.array(domainSchema).default([]),
+  controlMappings: z.array(z.object({
+    source: z.string().trim().min(1),
+    target: z.string().trim().min(1),
+    type: z.string().trim().min(1).default("related")
+  })).default([])
 });
 
 type FrameworkYaml = z.infer<typeof frameworkYamlSchema>;
@@ -96,17 +102,24 @@ function sha256(text: string): string {
 
 async function yamlFiles(directory: string): Promise<string[]> {
   try {
-    const entries = await readdir(directory);
-    return entries
-      .filter((entry) => entry.endsWith(".yaml") || entry.endsWith(".yml"))
-      .map((entry) => join(directory, entry))
-      .sort();
+    const entries = await readdir(directory, { withFileTypes: true });
+    const files = await Promise.all(entries.map(async (entry) => {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) return yamlFiles(path);
+      if (entry.isFile() && (entry.name.endsWith(".yaml") || entry.name.endsWith(".yml"))) return [path];
+      return [];
+    }));
+    return files.flat().sort();
   } catch (error) {
     if ((error as { code?: string }).code === "ENOENT") {
       return [];
     }
     throw error;
   }
+}
+
+function mappingSlotValue(slot: Record<string, unknown>, camelKey: string, snakeKey: string): unknown {
+  return slot[camelKey] ?? slot[snakeKey];
 }
 
 async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
@@ -157,9 +170,16 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
 
   let controlCount = 0;
   let questionCount = 0;
+  const syncedDomainIds: string[] = [];
+  const syncedControlIds: string[] = [];
   for (const [domainIndex, domain] of yaml.domains.entries()) {
     const domainKey = domain.id ?? domain.name;
-    const domainId = stableUuid(`domain:${framework.key}:${domainKey}`);
+    const existingDomain = await pool.query<{ id: string }>(
+      "select id from framework_domains where framework_id = $1 and name = $2 limit 1",
+      [frameworkId, domain.name]
+    );
+    const domainId = existingDomain.rows[0]?.id ?? stableUuid(`domain:${framework.key}:${domainKey}`);
+    syncedDomainIds.push(domainId);
     await pool.query(
       `insert into framework_domains (id, framework_id, domain_id, name, description, sort_order)
        values ($1,$2,$3,$4,$5,$6)
@@ -173,7 +193,12 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
     );
 
     for (const [controlIndex, control] of domain.controls.entries()) {
-      const controlId = stableUuid(`control:${framework.key}:${control.id}`);
+      const existingControl = await pool.query<{ id: string }>(
+        "select id from framework_controls where framework_domain_id = $1 and control_code = $2 limit 1",
+        [domainId, control.id]
+      );
+      const controlId = existingControl.rows[0]?.id ?? stableUuid(`control:${framework.key}:${control.id}`);
+      syncedControlIds.push(controlId);
       const defaultQuestion = control.question ?? `Assess readiness for ${control.title}`;
       await pool.query(
         `insert into framework_controls
@@ -221,7 +246,7 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
           `insert into framework_evidence_requirements
             (id, control_id, evidence_type, required_by_default, freshness_days, sort_order)
            values ($1,$2,$3,true,null,$4)
-           on conflict (id) do update set
+           on conflict (control_id, evidence_type) do update set
              control_id = excluded.control_id,
              evidence_type = excluded.evidence_type,
              required_by_default = excluded.required_by_default,
@@ -232,6 +257,30 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
             controlId,
             evidenceType,
             evidenceIndex + 1
+          ]
+        );
+      }
+
+      for (const slot of control.licensedMappingSlots) {
+        const frameworkFamily = String(mappingSlotValue(slot, "frameworkFamily", "framework_family") ?? "generic");
+        const tenantReferenceId = mappingSlotValue(slot, "tenantReferenceId", "tenant_reference_id");
+        const tenantReferenceTitle = mappingSlotValue(slot, "tenantReferenceTitle", "tenant_control_title");
+        const mappingStatus = mappingSlotValue(slot, "mappingStatus", "mapping_status");
+        await pool.query(
+          `insert into licensed_framework_mappings
+            (id, audity_control_id, tenant_reference_id, tenant_reference_title, mapping_status)
+           values ($1,$2,$3,$4,$5)
+           on conflict (id) do update set
+             tenant_reference_id = excluded.tenant_reference_id,
+             tenant_reference_title = excluded.tenant_reference_title,
+             mapping_status = excluded.mapping_status,
+             updated_at = now()`,
+          [
+            stableUuid(`licensed-mapping-slot:${framework.key}:${control.id}:${frameworkFamily}`),
+            controlId,
+            tenantReferenceId ? String(tenantReferenceId) : null,
+            tenantReferenceTitle ? String(tenantReferenceTitle) : null,
+            String(mappingStatus ?? "empty_until_tenant_imports_licensed_content")
           ]
         );
       }
@@ -277,6 +326,65 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
     }
   }
 
+  await pool.query(
+    `update assessment_questions
+     set framework_control_id = null
+     where framework_control_id in (
+       select fc.id
+       from framework_controls fc
+       join framework_domains fd on fd.id = fc.framework_domain_id
+       where fd.framework_id = $1
+         and not (fc.id = any($2::uuid[]))
+     )`,
+    [frameworkId, syncedControlIds]
+  );
+
+  await pool.query(
+    `update findings
+     set framework_control_id = null
+     where framework_control_id in (
+       select fc.id
+       from framework_controls fc
+       join framework_domains fd on fd.id = fc.framework_domain_id
+       where fd.framework_id = $1
+         and not (fc.id = any($2::uuid[]))
+     )`,
+    [frameworkId, syncedControlIds]
+  );
+
+  await pool.query(
+    `update risks
+     set source_framework_control_id = null
+     where source_framework_control_id in (
+       select fc.id
+       from framework_controls fc
+       join framework_domains fd on fd.id = fc.framework_domain_id
+       where fd.framework_id = $1
+         and not (fc.id = any($2::uuid[]))
+     )`,
+    [frameworkId, syncedControlIds]
+  );
+
+  await pool.query(
+    `delete from framework_controls fc
+     using framework_domains fd
+     where fc.framework_domain_id = fd.id
+       and fd.framework_id = $1
+       and not (fc.id = any($2::uuid[]))`,
+    [frameworkId, syncedControlIds]
+  );
+
+  await pool.query(
+    `delete from framework_domains fd
+     where fd.framework_id = $1
+       and not (fd.id = any($2::uuid[]))
+       and not exists (
+         select 1 from framework_controls fc
+         where fc.framework_domain_id = fd.id
+       )`,
+    [frameworkId, syncedDomainIds]
+  );
+
   return {
     file,
     id: frameworkId,
@@ -285,6 +393,20 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
     controls: controlCount,
     questions: questionCount
   };
+}
+
+async function upsertControlMapping(sourceCode: string, targetCode: string, mappingType: string) {
+  const [source, target] = await Promise.all([
+    pool.query<{ id: string }>("select id from framework_controls where control_code = $1 order by id limit 1", [sourceCode]),
+    pool.query<{ id: string }>("select id from framework_controls where control_code = $1 order by id limit 1", [targetCode])
+  ]);
+  if (!source.rows[0] || !target.rows[0]) return;
+  await pool.query(
+    `insert into control_mappings (id, source_control_id, target_control_id, mapping_type)
+     values ($1,$2,$3,$4)
+     on conflict (id) do update set mapping_type = excluded.mapping_type`,
+    [stableUuid(`mapping:${sourceCode}:${targetCode}`), source.rows[0].id, target.rows[0].id, mappingType]
+  );
 }
 
 export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}): Promise<FrameworkYamlSyncResult> {
@@ -308,6 +430,7 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
     errors: [],
     frameworks: []
   };
+  const controlMappings: Array<{ source: string; target: string; type: string }> = [];
   try {
     for (const file of await yamlFiles(directory)) {
       result.scannedFiles += 1;
@@ -322,6 +445,7 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
         }
         const parsed = frameworkYamlSchema.parse(parse(raw));
         const framework = await upsertFrameworkFromYaml(file, parsed);
+        controlMappings.push(...parsed.controlMappings);
         syncedHashes.set(file, hash);
         result.syncedFiles += 1;
         result.frameworks.push(framework);
@@ -331,6 +455,9 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
           message: error instanceof Error ? error.message : "Unknown YAML sync error"
         });
       }
+    }
+    for (const mapping of controlMappings) {
+      await upsertControlMapping(mapping.source, mapping.target, mapping.type);
     }
     return result;
   } finally {

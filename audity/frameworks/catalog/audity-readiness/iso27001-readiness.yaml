@@ -1,0 +1,1540 @@
+framework:
+  key: audity.iso27001.readiness.2022
+  name: ISO/IEC 27001:2022 Readiness Workflow
+  shortName: ISO 27001 Readiness
+  version: "2022"
+  sourceType: audity_native_readiness
+  licenseStatus: readiness_workflow_only
+  statusLabel: Readiness Workflow Only
+  distributedByAudity: true
+  deliveryMode: Audity-native readiness workflow plus tenant-provided licensed content import
+  contentClass: audity_native_assessment_content
+  contentStatus: Supported through Audity readiness workflow. Official ISO/IEC 27001 standard text is not included.
+  officialStandardTextIncluded: false
+  officialControlCatalogueIncluded: false
+  licensedContentImportSupported: true
+  redistributionNote: This pack uses original Audity wording only. It is not a copy, extract, paraphrase, translation, or
+    reconstructed catalogue of proprietary standards content.
+domains:
+  - id: SCOPE-AND-CONTEXT
+    name: Scope and Context
+    description: Audity readiness domain for scope and context activities.
+    controls:
+      - id: ISO-RDY-001
+        title: ISMS scope and boundaries
+        description: Confirm that the assessment has a clear organizational, technical, and process boundary.
+        question: Is the business scope of the security management system documented in plain language?
+        objective: Confirm that the assessment has a clear organizational, technical, and process boundary.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Scope and Context
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Scope statement
+          - System/service inventory extract
+          - Boundary diagram
+          - Exclusion rationale
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-001-01
+            text: Is the business scope of the security management system documented in plain language?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Scope statement
+              - System/service inventory extract
+              - Boundary diagram
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-001-02
+            text: Are excluded sites, teams, systems, and services explicitly listed with a reason?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Scope statement
+              - System/service inventory extract
+              - Boundary diagram
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-002
+        title: External and internal requirement register
+        description: Maintain a living view of obligations that affect security decisions.
+        question: Are legal, contractual, customer, regulatory, and internal security obligations tracked?
+        objective: Maintain a living view of obligations that affect security decisions.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Scope and Context
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Requirement register
+          - Contract security clauses
+          - Regulatory applicability note
+          - Review log
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-002-01
+            text: Are legal, contractual, customer, regulatory, and internal security obligations tracked?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Requirement register
+              - Contract security clauses
+              - Regulatory applicability note
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-002-02
+            text: Is there an owner and review cadence for each obligation category?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Requirement register
+              - Contract security clauses
+              - Regulatory applicability note
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: GOVERNANCE-AND-LEADERSHIP
+    name: Governance and Leadership
+    description: Audity readiness domain for governance and leadership activities.
+    controls:
+      - id: ISO-RDY-003
+        title: Security accountability
+        description: Make security ownership visible enough that decisions do not depend on informal assumptions.
+        question: Is a senior owner accountable for security outcomes?
+        objective: Make security ownership visible enough that decisions do not depend on informal assumptions.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Governance and Leadership
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Role matrix
+          - Decision log
+          - Management meeting minutes
+          - Security charter
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-003-01
+            text: Is a senior owner accountable for security outcomes?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Role matrix
+              - Decision log
+              - Management meeting minutes
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-003-02
+            text: Are key security decisions recorded with responsible roles and approval evidence?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Role matrix
+              - Decision log
+              - Management meeting minutes
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-004
+        title: Roles and responsibilities
+        description: Define who owns policies, risks, assets, exceptions, audits, and corrective actions.
+        question: Are security responsibilities assigned for business, IT, operations, and third parties?
+        objective: Define who owns policies, risks, assets, exceptions, audits, and corrective actions.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Governance and Leadership
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - RACI matrix
+          - Control owner list
+          - Asset owner list
+          - Job descriptions or role descriptions
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-004-01
+            text: Are security responsibilities assigned for business, IT, operations, and third parties?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - RACI matrix
+              - Control owner list
+              - Asset owner list
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-004-02
+            text: Can asset owners and control owners be identified without manual investigation?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - RACI matrix
+              - Control owner list
+              - Asset owner list
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: POLICY-AND-PROCEDURE-MANAGEMENT
+    name: Policy and Procedure Management
+    description: Audity readiness domain for policy and procedure management activities.
+    controls:
+      - id: ISO-RDY-005
+        title: Policy lifecycle
+        description: Keep security policies controlled, current, approved, and accessible.
+        question: Are security policies versioned, approved, and reviewed on a planned cadence?
+        objective: Keep security policies controlled, current, approved, and accessible.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Policy and Procedure Management
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Policy register
+          - Approval records
+          - Procedure documents
+          - Review schedule
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-005-01
+            text: Are security policies versioned, approved, and reviewed on a planned cadence?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Policy register
+              - Approval records
+              - Procedure documents
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-005-02
+            text: Do procedures translate policy expectations into operational steps?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Policy register
+              - Approval records
+              - Procedure documents
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: RISK-MANAGEMENT
+    name: Risk Management
+    description: Audity readiness domain for risk management activities.
+    controls:
+      - id: ISO-RDY-006
+        title: Risk assessment method
+        description: Use a repeatable method for identifying and rating information security risk.
+        question: Is the risk assessment method documented and understandable to non-specialists?
+        objective: Use a repeatable method for identifying and rating information security risk.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Risk Management
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Risk methodology
+          - Risk register sample
+          - Risk scoring guide
+          - Review records
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-006-01
+            text: Is the risk assessment method documented and understandable to non-specialists?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Risk methodology
+              - Risk register sample
+              - Risk scoring guide
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-006-02
+            text: Are likelihood, impact, risk owner, treatment choice, and review date captured consistently?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Risk methodology
+              - Risk register sample
+              - Risk scoring guide
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-007
+        title: Risk register operation
+        description: Keep security risks traceable from discovery through treatment or acceptance.
+        question: Are active information security risks recorded in one controlled location?
+        objective: Keep security risks traceable from discovery through treatment or acceptance.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Risk Management
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Risk register
+          - Risk acceptance records
+          - Review dashboard
+          - Escalation evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-007-01
+            text: Are active information security risks recorded in one controlled location?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Risk register
+              - Risk acceptance records
+              - Review dashboard
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-007-02
+            text: Are overdue risk reviews, expired acceptances, and untreated high risks visible?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Risk register
+              - Risk acceptance records
+              - Review dashboard
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-008
+        title: Risk treatment plan
+        description: Convert risk decisions into funded, owned, and tracked actions.
+        question: Does each material risk have a treatment decision and target date?
+        objective: Convert risk decisions into funded, owned, and tracked actions.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Risk Management
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Treatment plan
+          - Action tracker
+          - Budget or resource approval
+          - Closure evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-008-01
+            text: Does each material risk have a treatment decision and target date?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Treatment plan
+              - Action tracker
+              - Budget or resource approval
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-008-02
+            text: Are treatment actions tracked until verified as complete or formally accepted?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Treatment plan
+              - Action tracker
+              - Budget or resource approval
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-009
+        title: Statement of Applicability readiness
+        description: Support an auditable explanation of which control areas are relevant, implemented, excluded, or planned.
+        question: Is there a control applicability view based on business context and risk?
+        objective: Support an auditable explanation of which control areas are relevant, implemented, excluded, or planned.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Risk Management
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Applicability register
+          - Control mapping export
+          - Exclusion justifications
+          - Management approval
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-009-01
+            text: Is there a control applicability view based on business context and risk?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Applicability register
+              - Control mapping export
+              - Exclusion justifications
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-009-02
+            text: Are exclusions justified by risk, scope, or lack of applicability rather than convenience?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Applicability register
+              - Control mapping export
+              - Exclusion justifications
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: ASSET-AND-INFORMATION-HANDLING
+    name: Asset and Information Handling
+    description: Audity readiness domain for asset and information handling activities.
+    controls:
+      - id: ISO-RDY-010
+        title: Asset inventory and ownership
+        description: Maintain enough inventory detail to assign responsibility and assess risk.
+        question: Are important information assets, applications, infrastructure components, and services inventoried?
+        objective: Maintain enough inventory detail to assign responsibility and assess risk.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Asset and Information Handling
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Asset inventory
+          - CMDB export
+          - Application register
+          - Ownership records
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-010-01
+            text: Are important information assets, applications, infrastructure components, and services inventoried?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Asset inventory
+              - CMDB export
+              - Application register
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-010-02
+            text: Does each critical asset have a business owner and technical owner?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Asset inventory
+              - CMDB export
+              - Application register
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-011
+        title: Information classification
+        description: Classify information so handling, sharing, retention, and protection decisions are consistent.
+        question: Are information classes or sensitivity levels defined for the organization?
+        objective: Classify information so handling, sharing, retention, and protection decisions are consistent.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Asset and Information Handling
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Classification policy
+          - Data handling guide
+          - Sample labels
+          - Training record
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-011-01
+            text: Are information classes or sensitivity levels defined for the organization?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Classification policy
+              - Data handling guide
+              - Sample labels
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-011-02
+            text: Do users know how to handle sensitive information in storage, transmission, and disposal?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Classification policy
+              - Data handling guide
+              - Sample labels
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-012
+        title: Acceptable use and endpoint expectations
+        description: Set practical rules for user devices, software, storage, and remote work.
+        question: Are acceptable-use expectations documented for employees and contractors?
+        objective: Set practical rules for user devices, software, storage, and remote work.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Asset and Information Handling
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Acceptable use policy
+          - Endpoint baseline
+          - MDM/EDR configuration evidence
+          - User acknowledgement
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-012-01
+            text: Are acceptable-use expectations documented for employees and contractors?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Acceptable use policy
+              - Endpoint baseline
+              - MDM/EDR configuration evidence
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-012-02
+            text: Are endpoint security expectations communicated and technically enforced where possible?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Acceptable use policy
+              - Endpoint baseline
+              - MDM/EDR configuration evidence
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: IDENTITY-AND-ACCESS
+    name: Identity and Access
+    description: Audity readiness domain for identity and access activities.
+    controls:
+      - id: ISO-RDY-013
+        title: Identity lifecycle
+        description: Ensure access starts, changes, and ends in line with employment or contract status.
+        question: Is joiner, mover, and leaver access handled through a defined workflow?
+        objective: Ensure access starts, changes, and ends in line with employment or contract status.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Identity and Access
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - IAM workflow
+          - HR-to-IT ticket samples
+          - Deprovisioning logs
+          - Exception records
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-013-01
+            text: Is joiner, mover, and leaver access handled through a defined workflow?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - IAM workflow
+              - HR-to-IT ticket samples
+              - Deprovisioning logs
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-013-02
+            text: Are terminations and role changes completed within documented time expectations?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - IAM workflow
+              - HR-to-IT ticket samples
+              - Deprovisioning logs
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-014
+        title: Privileged access management
+        description: Limit and monitor accounts that can change security, infrastructure, or sensitive data.
+        question: Are privileged accounts separated from normal user accounts?
+        objective: Limit and monitor accounts that can change security, infrastructure, or sensitive data.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Identity and Access
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Privileged account list
+          - PAM records
+          - Admin log samples
+          - Access review evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-014-01
+            text: Are privileged accounts separated from normal user accounts?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Privileged account list
+              - PAM records
+              - Admin log samples
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-014-02
+            text: Are administrative actions traceable to an individual and reviewed when needed?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Privileged account list
+              - PAM records
+              - Admin log samples
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-015
+        title: Authentication baseline
+        description: Reduce account takeover risk through stronger authentication and password controls.
+        question: Is MFA required for remote access, cloud administration, and privileged activities?
+        objective: Reduce account takeover risk through stronger authentication and password controls.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Identity and Access
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - MFA policy
+          - Identity provider settings
+          - Dormant account report
+          - Default account remediation evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-015-01
+            text: Is MFA required for remote access, cloud administration, and privileged activities?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - MFA policy
+              - Identity provider settings
+              - Dormant account report
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-015-02
+            text: Are weak, shared, dormant, and default accounts detected and removed?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - MFA policy
+              - Identity provider settings
+              - Dormant account report
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-016
+        title: Access review
+        description: Check periodically that users still need the access they hold.
+        question: Are access reviews performed for sensitive systems and privileged roles?
+        objective: Check periodically that users still need the access they hold.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Identity and Access
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Access review campaign
+          - Reviewer sign-off
+          - Removal tickets
+          - Exception approvals
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-016-01
+            text: Are access reviews performed for sensitive systems and privileged roles?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Access review campaign
+              - Reviewer sign-off
+              - Removal tickets
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-016-02
+            text: Are review findings converted into completed removals or approved exceptions?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Access review campaign
+              - Reviewer sign-off
+              - Removal tickets
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: SECURE-OPERATIONS
+    name: Secure Operations
+    description: Audity readiness domain for secure operations activities.
+    controls:
+      - id: ISO-RDY-017
+        title: Change management
+        description: Control production changes enough to prevent avoidable security and availability incidents.
+        question: Are security-relevant changes assessed before implementation?
+        objective: Control production changes enough to prevent avoidable security and availability incidents.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Secure Operations
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Change tickets
+          - Security impact checklist
+          - Emergency change log
+          - Rollback evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-017-01
+            text: Are security-relevant changes assessed before implementation?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Change tickets
+              - Security impact checklist
+              - Emergency change log
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-017-02
+            text: Can emergency changes be reviewed after the fact with accountable approval?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Change tickets
+              - Security impact checklist
+              - Emergency change log
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-018
+        title: Vulnerability and patch management
+        description: Find, prioritize, remediate, or formally accept technical weaknesses.
+        question: Are vulnerabilities prioritized using business criticality and exploitability, not only raw severity?
+        objective: Find, prioritize, remediate, or formally accept technical weaknesses.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Secure Operations
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Scanner reports
+          - Patch dashboard
+          - Risk-based prioritization criteria
+          - Exception register
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-018-01
+            text: Are vulnerabilities prioritized using business criticality and exploitability, not only raw severity?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Scanner reports
+              - Patch dashboard
+              - Risk-based prioritization criteria
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-018-02
+            text: Are overdue remediation items visible to asset owners and management?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Scanner reports
+              - Patch dashboard
+              - Risk-based prioritization criteria
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-019
+        title: Endpoint and malware protection
+        description: Protect endpoints and servers against common malicious activity and misuse.
+        question: Are managed endpoints covered by protection, hardening, and monitoring controls?
+        objective: Protect endpoints and servers against common malicious activity and misuse.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Secure Operations
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - EDR/AV coverage report
+          - Hardening baseline
+          - Exclusion register
+          - Alert handling evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-019-01
+            text: Are managed endpoints covered by protection, hardening, and monitoring controls?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - EDR/AV coverage report
+              - Hardening baseline
+              - Exclusion register
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-019-02
+            text: Are protection exclusions approved, time-limited, and reviewed?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - EDR/AV coverage report
+              - Hardening baseline
+              - Exclusion register
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: RESILIENCE-AND-CONTINUITY
+    name: Resilience and Continuity
+    description: Audity readiness domain for resilience and continuity activities.
+    controls:
+      - id: ISO-RDY-020
+        title: Backup and recovery
+        description: Ensure critical information and systems can be restored when needed.
+        question: Are critical systems and data included in a backup schedule based on business need?
+        objective: Ensure critical information and systems can be restored when needed.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Resilience and Continuity
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Backup policy
+          - Backup job status
+          - Restore test report
+          - Recovery objective records
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-020-01
+            text: Are critical systems and data included in a backup schedule based on business need?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Backup policy
+              - Backup job status
+              - Restore test report
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-020-02
+            text: Are restore tests performed and recorded for important systems?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Backup policy
+              - Backup job status
+              - Restore test report
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: MONITORING-AND-DETECTION
+    name: Monitoring and Detection
+    description: Audity readiness domain for monitoring and detection activities.
+    controls:
+      - id: ISO-RDY-021
+        title: Logging and monitoring coverage
+        description: Collect and review security-relevant events from important systems.
+        question: Are critical systems, identity platforms, and security tools sending usable logs to a monitored location?
+        objective: Collect and review security-relevant events from important systems.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Monitoring and Detection
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Log source inventory
+          - SIEM coverage report
+          - Use case list
+          - Gap tracker
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-021-01
+            text: Are critical systems, identity platforms, and security tools sending usable logs to a monitored location?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Log source inventory
+              - SIEM coverage report
+              - Use case list
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-021-02
+            text: Are monitoring gaps documented and prioritized?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Log source inventory
+              - SIEM coverage report
+              - Use case list
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: INCIDENT-MANAGEMENT
+    name: Incident Management
+    description: Audity readiness domain for incident management activities.
+    controls:
+      - id: ISO-RDY-022
+        title: Incident intake and triage
+        description: Make sure security events can be reported, classified, escalated, and tracked.
+        question: Is there a clear channel for reporting suspected security incidents?
+        objective: Make sure security events can be reported, classified, escalated, and tracked.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Incident Management
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Incident procedure
+          - Ticket samples
+          - Severity matrix
+          - Escalation log
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-022-01
+            text: Is there a clear channel for reporting suspected security incidents?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Incident procedure
+              - Ticket samples
+              - Severity matrix
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-022-02
+            text: Are incidents triaged using severity, business impact, and containment urgency?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Incident procedure
+              - Ticket samples
+              - Severity matrix
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-023
+        title: Response playbooks
+        description: Prepare repeatable response steps for common security incident types.
+        question: Are playbooks available for likely incidents such as phishing, malware, account compromise, and data exposure?
+        objective: Prepare repeatable response steps for common security incident types.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Incident Management
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Playbook library
+          - Exercise notes
+          - Post-incident review
+          - Improvement actions
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-023-01
+            text: Are playbooks available for likely incidents such as phishing, malware, account compromise, and data exposure?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Playbook library
+              - Exercise notes
+              - Post-incident review
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-023-02
+            text: Are lessons learned converted into control improvements?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Playbook library
+              - Exercise notes
+              - Post-incident review
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: SUPPLIER-AND-THIRD-PARTY-SECURITY
+    name: Supplier and Third-Party Security
+    description: Audity readiness domain for supplier and third-party security activities.
+    controls:
+      - id: ISO-RDY-024
+        title: Supplier security review
+        description: Assess supplier risk before and during the relationship.
+        question: Are suppliers with access to sensitive information or critical services security-reviewed?
+        objective: Assess supplier risk before and during the relationship.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Supplier and Third-Party Security
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Supplier register
+          - Due diligence questionnaire
+          - Risk rating
+          - Review evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-024-01
+            text: Are suppliers with access to sensitive information or critical services security-reviewed?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Supplier register
+              - Due diligence questionnaire
+              - Risk rating
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-024-02
+            text: Are high-risk suppliers reviewed more deeply than low-risk suppliers?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Supplier register
+              - Due diligence questionnaire
+              - Risk rating
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-025
+        title: Contract and external access controls
+        description: Ensure external parties are bound by security expectations and access constraints.
+        question: Do contracts define security, confidentiality, incident notification, and access expectations?
+        objective: Ensure external parties are bound by security expectations and access constraints.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: true
+          domain_heatmap: Supplier and Third-Party Security
+          evidence_appendix: true
+          priority_gap_candidate: true
+        evidenceExamples:
+          - Contract clauses
+          - NDA records
+          - External account list
+          - Offboarding evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-025-01
+            text: Do contracts define security, confidentiality, incident notification, and access expectations?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Contract clauses
+              - NDA records
+              - External account list
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-025-02
+            text: Is external access removed when supplier engagement ends?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Contract clauses
+              - NDA records
+              - External account list
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: PEOPLE-AND-AWARENESS
+    name: People and Awareness
+    description: Audity readiness domain for people and awareness activities.
+    controls:
+      - id: ISO-RDY-026
+        title: Security awareness and role training
+        description: Build practical security behavior for general users and higher-risk roles.
+        question: Do users receive security awareness suitable for their actual work?
+        objective: Build practical security behavior for general users and higher-risk roles.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: People and Awareness
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Training plan
+          - Completion report
+          - Role-based material
+          - Phishing or exercise report
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-026-01
+            text: Do users receive security awareness suitable for their actual work?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Training plan
+              - Completion report
+              - Role-based material
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-026-02
+            text: Do privileged users, developers, administrators, and incident handlers receive role-specific guidance?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Training plan
+              - Completion report
+              - Role-based material
+            gapTrigger: score <= 2 or missing approved evidence
+  - id: ASSURANCE-AND-IMPROVEMENT
+    name: Assurance and Improvement
+    description: Audity readiness domain for assurance and improvement activities.
+    controls:
+      - id: ISO-RDY-027
+        title: Internal audit readiness
+        description: Check whether the security management approach is implemented and producing evidence.
+        question: Is an internal audit plan defined for the assessed scope?
+        objective: Check whether the security management approach is implemented and producing evidence.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Assurance and Improvement
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Audit plan
+          - Audit checklist
+          - Finding register
+          - Corrective action evidence
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-027-01
+            text: Is an internal audit plan defined for the assessed scope?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Audit plan
+              - Audit checklist
+              - Finding register
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-027-02
+            text: Are findings tracked to corrective actions and closure evidence?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Audit plan
+              - Audit checklist
+              - Finding register
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-028
+        title: Management review package
+        description: Give leadership a recurring view of risk, performance, incidents, nonconformities, and improvement needs.
+        question: Does management regularly review security performance and risk status?
+        objective: Give leadership a recurring view of risk, performance, incidents, nonconformities, and improvement needs.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Assurance and Improvement
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Management review agenda
+          - Metrics pack
+          - Meeting minutes
+          - Action log
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-028-01
+            text: Does management regularly review security performance and risk status?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Management review agenda
+              - Metrics pack
+              - Meeting minutes
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-028-02
+            text: Are decisions, resource needs, and actions recorded?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Management review agenda
+              - Metrics pack
+              - Meeting minutes
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-029
+        title: Corrective action tracking
+        description: Fix root causes instead of repeatedly treating symptoms.
+        question: Are nonconformities, audit findings, incidents, and recurring issues tracked as corrective actions?
+        objective: Fix root causes instead of repeatedly treating symptoms.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Assurance and Improvement
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - Corrective action register
+          - Root cause notes
+          - Closure evidence
+          - Effectiveness review
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-029-01
+            text: Are nonconformities, audit findings, incidents, and recurring issues tracked as corrective actions?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Corrective action register
+              - Root cause notes
+              - Closure evidence
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-029-02
+            text: Is effectiveness checked after closure?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - Corrective action register
+              - Root cause notes
+              - Closure evidence
+            gapTrigger: score <= 2 or missing approved evidence
+      - id: ISO-RDY-030
+        title: Metrics and continual improvement
+        description: Use security data to prioritize improvement, not just to produce reports.
+        question: Are measurable security indicators defined for the assessed scope?
+        objective: Use security data to prioritize improvement, not just to produce reports.
+        defaultWeight: 1
+        readinessPassCondition: average_question_score >= 3 and at least one relevant evidence item approved
+        gapCondition: average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable
+        criticalityHint: raise weight for crown-jewel, regulated, customer-facing, privileged, safety-relevant, or
+          production-critical scope
+        reportMapping:
+          executive_summary: false
+          domain_heatmap: Assurance and Improvement
+          evidence_appendix: true
+          priority_gap_candidate: false
+        evidenceExamples:
+          - KPI/KRI dashboard
+          - Trend analysis
+          - Improvement roadmap
+          - Budget or planning records
+        tags:
+          - audity-native-readiness
+          - audity.iso27001.readiness.2022
+        licensedMappingSlots:
+          - framework_family: ISO/IEC 27001:2022
+            official_text_included: false
+            tenant_reference_id: null
+            tenant_control_title: null
+            tenant_import_source: tenant_provided_licensed_content_only
+            mapping_status: empty_until_tenant_imports_licensed_content
+        questions:
+          - id: Q-ISO-RDY-030-01
+            text: Are measurable security indicators defined for the assessed scope?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - KPI/KRI dashboard
+              - Trend analysis
+              - Improvement roadmap
+            gapTrigger: score <= 2 or missing approved evidence
+          - id: Q-ISO-RDY-030-02
+            text: Are trends used to adjust priorities and investments?
+            answerScale: 0,1,2,3,4,NA
+            minimumEvidenceExpected: 1
+            preferredEvidenceTypes:
+              - KPI/KRI dashboard
+              - Trend analysis
+              - Improvement roadmap
+            gapTrigger: score <= 2 or missing approved evidence

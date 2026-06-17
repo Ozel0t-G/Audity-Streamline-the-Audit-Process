@@ -57,6 +57,7 @@ Important variables:
 - `AUDITY_STORAGE_PUBLIC_ENDPOINT`: browser-facing MinIO/S3 endpoint used for signed downloads.
 - `AUDITY_BACKUP_BUCKET`: MinIO/S3 bucket for database dumps and evidence manifests.
 - `AUDITY_FRAMEWORK_YAML_*`: directory and polling interval for YAML-managed frameworks.
+- `AUDITY_DEFAULT_FRAMEWORK_KEY` / `AUDITY_DEFAULT_FRAMEWORK_ID`: optional default framework selection for assessments without an assigned framework.
 - `AUDITY_SMTP_*`: optional SMTP defaults; runtime SMTP settings are managed in Admin > Email Settings.
 
 ## Backup And Restore
