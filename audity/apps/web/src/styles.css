@@ -174,7 +174,7 @@ body {
   }
 
   .audity-input {
-    @apply h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none transition-colors focus-visible:border-audity-primary focus-visible:ring-2 focus-visible:ring-audity-primary/30 disabled:cursor-not-allowed disabled:opacity-70 aria-[invalid=true]:border-audity-error aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-audity-error/30;
+    @apply h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none transition-colors focus-visible:border-audity-primary focus-visible:ring-2 focus-visible:ring-audity-primary disabled:cursor-not-allowed disabled:opacity-70 aria-[invalid=true]:border-audity-error aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-audity-error;
   }
 
   textarea.audity-input,
