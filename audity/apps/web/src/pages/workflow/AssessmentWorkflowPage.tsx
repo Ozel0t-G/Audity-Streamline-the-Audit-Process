@@ -1,9 +1,18 @@
-import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from "@dnd-kit/core";
+import { Fragment, FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
-import { SeverityBadge, useConfirm, useToast } from "../../components/ui";
+import { PageSkeleton, SeverityBadge, useConfirm, useToast } from "../../components/ui";
 import type { Finding, HistoryEvent, ReviewComment, Risk, RoadmapItem } from "./types";
 
 const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
@@ -160,6 +169,10 @@ export function AssessmentWorkflowPage() {
   const canAcceptRisk = can("risk.accept");
   const canEditRisk = can("risk.edit");
   const canEditRoadmap = can("roadmap.edit");
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor)
+  );
   const [findings, setFindings] = useState<Finding[]>([]);
   const [risks, setRisks] = useState<Risk[]>([]);
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
@@ -245,6 +258,8 @@ export function AssessmentWorkflowPage() {
     approved: findings.filter((finding) => finding.status === "approved" || finding.status === "confirmed").length
   }), [findings]);
 
+  const [loaded, setLoaded] = useState(false);
+
   async function load() {
     if (!id) return;
     const [findingPayload, riskPayload, roadmapPayload] = await Promise.all([
@@ -260,7 +275,10 @@ export function AssessmentWorkflowPage() {
   }
 
   useEffect(() => {
-    void load().catch((err) => setError(err instanceof Error ? err.message : "Workflow load failed"));
+    setLoaded(false);
+    void load()
+      .catch((err) => setError(err instanceof Error ? err.message : "Workflow load failed"))
+      .finally(() => setLoaded(true));
   }, [id]);
 
   useEffect(() => {
@@ -303,7 +321,7 @@ export function AssessmentWorkflowPage() {
     api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=finding&entityId=${selectedFinding.id}`)
       .then((payload) => setFindingComments(payload.comments))
       .catch(() => setFindingComments([]));
-  }, [api, id, selectedFinding]);
+  }, [api, id, selectedFinding?.id]);
 
   useEffect(() => {
     if (!id || !selectedRisk) {
@@ -317,7 +335,7 @@ export function AssessmentWorkflowPage() {
     api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=risk&entityId=${selectedRisk.id}`)
       .then((payload) => setRiskComments(payload.comments))
       .catch(() => setRiskComments([]));
-  }, [api, id, selectedRisk]);
+  }, [api, id, selectedRisk?.id]);
 
   async function updateFinding(action: "accept" | "dismiss" | "mark-as-accepted-risk" | "edit", fields = {}) {
     if (!id || !selectedFinding) return;
@@ -547,7 +565,10 @@ export function AssessmentWorkflowPage() {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = `audity-risk-register-${id}.csv`;
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
     anchor.click();
+    document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
   }
 
@@ -582,7 +603,10 @@ export function AssessmentWorkflowPage() {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "audity-risk-register-template.csv";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
     anchor.click();
+    document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
   }
 
@@ -620,6 +644,18 @@ export function AssessmentWorkflowPage() {
     await load();
   }
 
+  if (!loaded) {
+    return (
+      <>
+        <div className="audity-page-header">
+          <p className="audity-page-kicker">Guided Workflow</p>
+          <h1 className="audity-page-title">Findings, Risks & Roadmap</h1>
+        </div>
+        <PageSkeleton cards={3} showTable />
+      </>
+    );
+  }
+
   return (
     <>
           <div className="audity-page-header">
@@ -629,8 +665,8 @@ export function AssessmentWorkflowPage() {
               {findings.length} findings · {risks.length} risks · {roadmapItems.length} roadmap items
             </p>
           </div>
-          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-[#17251D] px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
+          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
+          {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-audity-success/10 px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
           <section className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="grid gap-2 md:grid-cols-4">
               <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
@@ -774,7 +810,7 @@ export function AssessmentWorkflowPage() {
                         <button className="audity-btn-secondary" onClick={() => void updateFinding("mark-as-accepted-risk")}>Mark residual risk accepted</button>
                         ) : null}
                         {canApproveFindings ? (
-                        <button className="audity-btn-secondary border-audity-error text-audity-error hover:bg-[#2A1C17]" onClick={() => void updateFinding("dismiss")}>Reject finding</button>
+                        <button className="audity-btn-secondary border-audity-error text-audity-error hover:bg-audity-error/10" onClick={() => void updateFinding("dismiss")}>Reject finding</button>
                         ) : null}
                       </div>
                       ) : null}
@@ -838,8 +874,8 @@ export function AssessmentWorkflowPage() {
                     <div />
                     {[1, 2, 3, 4, 5].map((impact) => <div key={impact} className="text-audity-muted">I{impact}</div>)}
                     {scoreAxis.map((likelihood) => (
-                      <>
-                        <div key={`l-${likelihood}`} className="py-2 text-audity-muted">L{likelihood}</div>
+                      <Fragment key={`row-${likelihood}`}>
+                        <div className="py-2 text-audity-muted">L{likelihood}</div>
                         {[1, 2, 3, 4, 5].map((impact) => {
                           const count = risks.filter((risk) => risk.likelihood === likelihood && risk.impact === impact).length;
                           const { rating } = { rating: likelihood * impact >= 20 ? "Critical" : likelihood * impact >= 12 ? "High" : likelihood * impact >= 5 ? "Medium" : "Low" };
@@ -848,14 +884,15 @@ export function AssessmentWorkflowPage() {
                             <button
                               key={`${likelihood}-${impact}`}
                               className={`h-9 rounded-audity border text-xs font-semibold ${active ? "border-audity-primary bg-audity-primaryActive text-white" : `${ratingClass(rating)} bg-audity-panel`}`}
-                              onClick={() => setMatrixFilter({ likelihood, impact })}
+                              onClick={() => setMatrixFilter(active ? null : { likelihood, impact })}
+                              aria-pressed={active}
                               type="button"
                             >
                               {count}
                             </button>
                           );
                         })}
-                      </>
+                      </Fragment>
                     ))}
                   </div>
                 </div>
@@ -888,7 +925,7 @@ export function AssessmentWorkflowPage() {
                     </select>
                     <div className="flex gap-2">
                       <button className="flex-1 audity-btn-primary" disabled={!selectedRiskIds.length}>Update</button>
-                      <button type="button" className="audity-btn-secondary border-audity-error text-audity-error hover:bg-[#2A1C17]" disabled={!selectedRiskIds.length} onClick={() => void bulkDeleteRisks()}>Delete</button>
+                      <button type="button" className="audity-btn-secondary border-audity-error text-audity-error hover:bg-audity-error/10" disabled={!selectedRiskIds.length} onClick={() => void bulkDeleteRisks()}>Delete</button>
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-audity-muted">{selectedRiskIds.length} selected</p>
@@ -978,7 +1015,7 @@ export function AssessmentWorkflowPage() {
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button className="audity-btn-primary" disabled={!selectedRisk}>Save risk</button>
-                  <button type="button" className="audity-btn-secondary border-audity-error text-audity-error hover:bg-[#2A1C17]" onClick={() => void deleteRisk()} disabled={!selectedRisk}>Delete</button>
+                  <button type="button" className="audity-btn-secondary border-audity-error text-audity-error hover:bg-audity-error/10" onClick={() => void deleteRisk()} disabled={!selectedRisk}>Delete</button>
                 </div>
                 <div className="mt-5">
                   <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Change History</p>
@@ -1041,7 +1078,7 @@ export function AssessmentWorkflowPage() {
               </form>
               ) : null}
             </div>
-            <DndContext onDragEnd={(event) => void moveRoadmapItem(event)}>
+            <DndContext sensors={dndSensors} onDragEnd={(event) => void moveRoadmapItem(event)}>
               <div className="grid gap-3 xl:grid-cols-4">
                 {phases.map((phase) => (
                   <RoadmapPhaseColumn

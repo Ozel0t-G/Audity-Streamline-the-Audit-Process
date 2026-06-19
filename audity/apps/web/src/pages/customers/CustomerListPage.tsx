@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
-import { DataTable, type DataTableColumn } from "../../components/ui";
+import { DataTable, EmptyState, type DataTableColumn } from "../../components/ui";
 import type { Customer } from "./types";
 
 type FrameworkOption = { id: string; name: string; shortName: string | null };
@@ -44,6 +44,69 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
     void Promise.all([loadCustomers(), loadFrameworks()]).catch((err) => setError(err instanceof Error ? err.message : "Load failed"));
   }, [mode]);
 
+  function parseCsv(text: string) {
+    const lines = text.split(/\r?\n/).filter((line) => line.trim());
+    if (!lines.length) return [];
+    const header = lines[0].split(",").map((cell) => cell.replace(/^"|"$/g, "").trim().toLowerCase());
+    return lines.slice(1).map((line) => {
+      const cells: string[] = [];
+      let current = "";
+      let inQuote = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === "\"") {
+          inQuote = !inQuote;
+        } else if (ch === "," && !inQuote) {
+          cells.push(current);
+          current = "";
+        } else {
+          current += ch;
+        }
+      }
+      cells.push(current);
+      const row: Record<string, string> = {};
+      header.forEach((key, index) => {
+        row[key] = (cells[index] ?? "").trim();
+      });
+      return row;
+    });
+  }
+
+  async function importCustomersFromCsv(file: File) {
+    setError("");
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      const customersPayload = rows
+        .filter((row) => row.name)
+        .map((row) => ({
+          name: row.name,
+          industry: row.industry || undefined,
+          regulatoryContext: row.regulatorycontext || row["regulatory_context"] || undefined,
+          businessCriticality: row.businesscriticality || row["business_criticality"] || undefined,
+          status: row.status || undefined,
+          criticalSystems: (row.criticalsystems || row["critical_systems"] || "")
+            .split(/[;|]/)
+            .map((entry) => entry.trim())
+            .filter(Boolean)
+        }));
+      if (!customersPayload.length) {
+        setError("CSV must contain a 'name' column with at least one row.");
+        return;
+      }
+      const payload = await api<{ created: unknown[]; failures: Array<{ name: string; reason: string }> }>(
+        "/api/customers/bulk-import",
+        { method: "POST", body: JSON.stringify({ customers: customersPayload }) }
+      );
+      await loadCustomers();
+      if (payload.failures.length) {
+        setError(`Imported ${payload.created.length}, failed ${payload.failures.length}: ${payload.failures.map((f) => f.name).join(", ")}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk import failed");
+    }
+  }
+
   async function createCustomer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -71,16 +134,39 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
 
   return (
     <>
-          <div className="audity-page-header">
-            <p className="audity-page-kicker">Customer Management</p>
-            <h1 className="audity-page-title">{mode === "my" ? "My Customers" : mode === "shared" ? "Shared Customers" : "Customers"}</h1>
+          <div className="audity-page-header flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="audity-page-kicker">Customer Management</p>
+              <h1 className="audity-page-title">{mode === "my" ? "My Customers" : mode === "shared" ? "Shared Customers" : "Customers"}</h1>
+            </div>
+            {canCreateCustomer ? (
+              <label className="audity-btn-secondary cursor-pointer">
+                <span>Import CSV</span>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void importCustomersFromCsv(file);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            ) : null}
           </div>
           <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
             <DataTable<Customer>
               storageKey={`customer-list-${mode ?? "all"}`}
               rows={customers}
               getRowId={(customer) => customer.id}
-              emptyState="No customers to show"
+              emptyState={
+                <EmptyState
+                  icon={<span className="text-2xl">🏢</span>}
+                  title="No customers yet"
+                  description={canCreateCustomer ? "Create your first customer or import a list via CSV." : "No customers have been shared with you."}
+                />
+              }
               columns={[
                 {
                   key: "name",
@@ -168,7 +254,7 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
                   <option value="paused">paused</option>
                 </select>
               </label>
-              {error ? <div className="mb-3 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+              {error ? <div className="mb-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
               <button className="audity-btn-primary">Create</button>
             </form>
             ) : null}

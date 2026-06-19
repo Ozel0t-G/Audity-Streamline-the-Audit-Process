@@ -4,13 +4,6 @@ import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import type { AssessmentQuestionsPayload, GuidedQuestion, QuestionDomain } from "./types";
 
-type ReviewComment = {
-  id: string;
-  userEmail: string | null;
-  comment: string;
-  createdAt: string;
-};
-
 const answerStates = ["answered", "needs_follow_up", "not_applicable", "unknown"];
 const evidenceStatuses = ["not_requested", "requested", "received", "validated", "missing"];
 const confidenceLevels = ["low", "medium", "high"];
@@ -29,6 +22,10 @@ function progressColor(value: number) {
   return "bg-audity-error";
 }
 
+function readableLabel(value: string) {
+  return value.replace(/_/g, " ");
+}
+
 export function GuidedQuestionsPage() {
   const { id } = useParams();
   const api = useApi();
@@ -37,6 +34,9 @@ export function GuidedQuestionsPage() {
   const [payload, setPayload] = useState<AssessmentQuestionsPayload | null>(null);
   const [activeDomainId, setActiveDomainId] = useState("");
   const [activeQuestionId, setActiveQuestionId] = useState("");
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  const [navOpen, setNavOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({
     score: 0,
     answerState: "answered",
@@ -46,8 +46,6 @@ export function GuidedQuestionsPage() {
   });
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
-  const [comments, setComments] = useState<ReviewComment[]>([]);
-  const [commentText, setCommentText] = useState("");
 
   const activeDomain = useMemo<QuestionDomain | null>(() => {
     if (!payload) return null;
@@ -62,14 +60,31 @@ export function GuidedQuestionsPage() {
       null
     );
   }, [activeDomain, activeQuestionId]);
+
   const activeCategoryLabel = useMemo(() => {
     if (!activeQuestion) return "";
     return [activeQuestion.categoryId, activeQuestion.categoryTitle].filter(Boolean).join(" · ");
   }, [activeQuestion]);
 
+  const flatQuestionList = useMemo(() => {
+    if (!payload) return [] as Array<{ domain: QuestionDomain; question: GuidedQuestion }>;
+    return payload.domains.flatMap((domain) =>
+      domain.questions.map((question) => ({ domain, question }))
+    );
+  }, [payload]);
+
+  const activeIndex = useMemo(() => {
+    if (!activeQuestion) return -1;
+    return flatQuestionList.findIndex((entry) => entry.question.questionId === activeQuestion.questionId);
+  }, [flatQuestionList, activeQuestion]);
+
+  const previousEntry = activeIndex > 0 ? flatQuestionList[activeIndex - 1] : null;
+  const nextEntry = activeIndex >= 0 && activeIndex < flatQuestionList.length - 1 ? flatQuestionList[activeIndex + 1] : null;
+
   const progressSummary = useMemo(() => {
     const questions = payload?.domains.flatMap((domain) => domain.questions) ?? [];
     return {
+      total: questions.length,
       answered: questions.filter((question) => question.answer?.answerState === "answered").length,
       followUp: questions.filter((question) => question.answer?.answerState === "needs_follow_up").length,
       evidenceGaps: questions.filter((question) => question.evidenceGap).length,
@@ -77,16 +92,26 @@ export function GuidedQuestionsPage() {
     };
   }, [payload]);
 
-  const smartSuggestions = useMemo(() => {
-    if (!activeQuestion) return [];
-    const suggestions: string[] = [];
-    if ((form.score ?? 0) <= 2) suggestions.push("Create or review the related risk because this control has a low maturity score.");
-    if (form.evidenceStatus === "missing" || activeQuestion.evidenceGap) suggestions.push("Request evidence and attach it before the finding is closed.");
-    if (form.confidenceLevel === "low") suggestions.push("Add a review note or assign follow-up because confidence is low.");
-    if (form.answerState === "needs_follow_up") suggestions.push("Keep this question in review until the missing information is clarified.");
-    if (!form.notes.trim()) suggestions.push("Add concise notes explaining the score decision.");
-    return suggestions.slice(0, 4);
-  }, [activeQuestion, form]);
+  const suggestions = useMemo<string[]>(
+    () => activeQuestion?.suggestions ?? [],
+    [activeQuestion?.questionId, activeQuestion?.suggestions]
+  );
+
+  const filteredDomains = useMemo(() => {
+    if (!payload) return [] as QuestionDomain[];
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return payload.domains;
+    return payload.domains
+      .map((domain) => ({
+        ...domain,
+        questions: domain.questions.filter((question) =>
+          [question.code, question.question, question.categoryTitle ?? ""].some((text) =>
+            text.toLowerCase().includes(query)
+          )
+        )
+      }))
+      .filter((domain) => domain.questions.length || domain.name.toLowerCase().includes(query));
+  }, [payload, searchQuery]);
 
   async function load() {
     if (!id) return;
@@ -96,7 +121,15 @@ export function GuidedQuestionsPage() {
     const nextQuestion =
       nextDomain?.questions.find((question) => question.questionId === activeQuestionId) ??
       nextDomain?.questions[0];
-    if (nextDomain) setActiveDomainId(nextDomain.id);
+    if (nextDomain) {
+      setActiveDomainId(nextDomain.id);
+      setExpandedDomains((current) => {
+        if (current.has(nextDomain.id)) return current;
+        const next = new Set(current);
+        next.add(nextDomain.id);
+        return next;
+      });
+    }
     if (nextQuestion) setActiveQuestionId(nextQuestion.questionId);
   }
 
@@ -116,19 +149,28 @@ export function GuidedQuestionsPage() {
     setSaved("");
   }, [activeQuestion?.questionId]);
 
-  useEffect(() => {
-    if (!id || !activeQuestion) {
-      setComments([]);
-      return;
-    }
-    api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=question&entityId=${activeQuestion.questionId}`)
-      .then((payload) => setComments(payload.comments))
-      .catch(() => setComments([]));
-  }, [api, id, activeQuestion?.questionId]);
+  function toggleDomainExpansion(domainId: string) {
+    setExpandedDomains((current) => {
+      const next = new Set(current);
+      if (next.has(domainId)) next.delete(domainId);
+      else next.add(domainId);
+      return next;
+    });
+  }
 
-  async function saveAnswer(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!id || !activeQuestion) return;
+  function selectQuestion(domainId: string, questionId: string) {
+    setActiveDomainId(domainId);
+    setActiveQuestionId(questionId);
+    setExpandedDomains((current) => {
+      if (current.has(domainId)) return current;
+      const next = new Set(current);
+      next.add(domainId);
+      return next;
+    });
+  }
+
+  async function persistAnswer() {
+    if (!id || !activeQuestion) return false;
     setError("");
     setSaved("");
     try {
@@ -138,273 +180,355 @@ export function GuidedQuestionsPage() {
       });
       await load();
       setSaved("Saved");
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save answer failed");
+      return false;
     }
   }
 
-  async function addComment(event: FormEvent<HTMLFormElement>) {
+  async function saveAnswer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!id || !activeQuestion || !commentText.trim()) return;
-    await api(`/api/assessments/${id}/comments`, {
-      method: "POST",
-      body: JSON.stringify({ entityType: "question", entityId: activeQuestion.questionId, comment: commentText })
-    });
-    setCommentText("");
-    const payload = await api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=question&entityId=${activeQuestion.questionId}`);
-    setComments(payload.comments);
+    await persistAnswer();
   }
 
+  async function saveAndAdvance() {
+    const ok = await persistAnswer();
+    if (ok && nextEntry) selectQuestion(nextEntry.domain.id, nextEntry.question.questionId);
+  }
+
+  const coveragePercent = payload?.coverage.percentage ?? 0;
+  const navWidthClass = navOpen ? "w-72 xl:w-80" : "w-12";
+
   return (
-    <>
-          <div className="audity-page-header">
-            <p className="audity-page-kicker">Guided Workflow</p>
-            <h1 className="audity-page-title">Questions</h1>
-            <p className="audity-page-copy">
-              {payload?.framework.name ?? "Framework"} · {payload?.coverage.answeredControls ?? 0}/{payload?.coverage.totalControls ?? 0} answered
-            </p>
-          </div>
-          <div className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-3">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="font-semibold">Overall coverage</span>
-              <span className="text-audity-secondary">{payload?.coverage.percentage ?? 0}%</span>
+    <div className="flex min-h-[calc(100vh-44px-2rem)] min-w-0 flex-col gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3 rounded-audity border border-audity-border bg-audity-panel px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-audity-primary">Guided Workflow</p>
+          <h1 className="mt-0.5 text-lg font-semibold text-audity-text">
+            {payload?.framework.name ?? "Framework"} · Questions
+          </h1>
+        </div>
+        <div className="flex items-center gap-4 text-sm">
+          <Stat label="Answered" value={`${progressSummary.answered}/${progressSummary.total}`} />
+          <Stat label="Follow-up" value={progressSummary.followUp} tone="warning" />
+          <Stat label="Gaps" value={progressSummary.evidenceGaps} tone="warning" />
+          <Stat label="Low conf." value={progressSummary.lowConfidence} tone="error" />
+          <div className="hidden min-w-[160px] xl:block">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase text-audity-muted">
+              <span>Coverage</span>
+              <span>{coveragePercent}%</span>
             </div>
-            <div className="h-3 overflow-hidden rounded-audity bg-audity-page">
-              <div className={`h-full ${progressColor(payload?.coverage.percentage ?? 0)}`} style={{ width: `${payload?.coverage.percentage ?? 0}%` }} />
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Answered</p>
-                <p className="mt-1 text-xl font-semibold">{progressSummary.answered}</p>
-              </div>
-              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Follow-up</p>
-                <p className="mt-1 text-xl font-semibold">{progressSummary.followUp}</p>
-              </div>
-              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Evidence Gaps</p>
-                <p className="mt-1 text-xl font-semibold">{progressSummary.evidenceGaps}</p>
-              </div>
-              <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Low Confidence</p>
-                <p className="mt-1 text-xl font-semibold">{progressSummary.lowConfidence}</p>
-              </div>
+            <div className="h-2 overflow-hidden rounded-full bg-audity-page">
+              <div className={`h-full ${progressColor(coveragePercent)}`} style={{ width: `${coveragePercent}%` }} />
             </div>
           </div>
-          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          <div className="grid min-w-0 gap-3 xl:grid-cols-[150px_minmax(0,1fr)] 2xl:grid-cols-[170px_minmax(0,1fr)_300px]">
-            <section className="rounded-audity border border-audity-border bg-audity-panel">
-              <div className="border-b border-audity-border px-3 py-2.5">
-                <h2 className="text-sm font-medium">Domains</h2>
-              </div>
-              <div className="divide-y divide-audity-border">
-                {payload?.domains.map((domain) => (
-                  <button
-                    key={domain.id}
-                    title={domain.name}
-                    className={`block w-full px-3 py-2 text-left hover:bg-audity-panelAlt ${domain.id === activeDomain?.id ? "bg-audity-primaryActive/20" : ""}`}
-                    onClick={() => {
-                      setActiveDomainId(domain.id);
-                      setActiveQuestionId(domain.questions[0]?.questionId ?? "");
-                    }}
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="min-w-0 truncate text-xs font-medium">{domain.name}</p>
-                      <span className="text-xs text-audity-secondary">{domain.coverage}%</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-audity bg-audity-page">
-                      <div className={`h-full ${progressColor(domain.coverage)}`} style={{ width: `${domain.coverage}%` }} />
-                    </div>
-                    <p className="mt-2 text-xs text-audity-muted">{domain.answeredControls}/{domain.totalControls} answered</p>
-                  </button>
-                ))}
-              </div>
-            </section>
-            <section className="grid min-w-0 gap-3 lg:grid-cols-[200px_minmax(0,1fr)] 2xl:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="rounded-audity border border-audity-border bg-audity-panel">
-                <div className="border-b border-audity-border px-3 py-2.5">
-                  <h2 className="text-sm font-medium">Controls</h2>
-                </div>
-                <div className="divide-y divide-audity-border">
-                  {activeDomain?.questions.map((question) => (
+        </div>
+      </header>
+
+      {error ? (
+        <div className="rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div>
+      ) : null}
+
+      <div className="flex min-h-0 min-w-0 flex-1 gap-3">
+        <aside
+          className={`flex shrink-0 flex-col rounded-audity border border-audity-border bg-audity-panel transition-[width] duration-200 ${navWidthClass}`}
+          aria-label="Question navigation"
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-audity-border px-3 py-2">
+            {navOpen ? (
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-8 min-w-0 flex-1 rounded-audity border border-audity-border bg-audity-page px-2 text-xs text-audity-text outline-none focus:border-audity-primary"
+                placeholder="Search controls"
+                aria-label="Search controls"
+              />
+            ) : null}
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-audity border border-audity-borderStrong text-audity-secondary hover:border-audity-primary hover:text-audity-primary"
+              onClick={() => setNavOpen((current) => !current)}
+              aria-label={navOpen ? "Collapse navigation" : "Expand navigation"}
+              aria-expanded={navOpen}
+            >
+              {navOpen ? "‹" : "›"}
+            </button>
+          </div>
+          {navOpen ? (
+            <nav className="min-h-0 flex-1 overflow-y-auto" aria-label="Domains and controls">
+              {filteredDomains.map((domain) => {
+                const expanded = expandedDomains.has(domain.id) || Boolean(searchQuery);
+                const isActiveDomain = domain.id === activeDomain?.id;
+                return (
+                  <div key={domain.id} className="border-b border-audity-border last:border-b-0">
                     <button
-                      key={question.questionId}
-                      title={question.question}
-                      className={`block w-full px-3 py-2 text-left hover:bg-audity-panelAlt ${question.questionId === activeQuestion?.questionId ? "bg-audity-primaryActive/20" : ""}`}
-                      onClick={() => setActiveQuestionId(question.questionId)}
+                      type="button"
+                      className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-audity-panelAlt ${isActiveDomain ? "bg-audity-primaryActive/15" : ""}`}
+                      onClick={() => toggleDomainExpansion(domain.id)}
+                      aria-expanded={expanded}
                     >
-                      <p className="text-[11px] font-medium text-audity-primary">{question.code}</p>
-                      <p className="mt-1 line-clamp-3 text-xs font-normal leading-5 text-audity-text">{question.question}</p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        <span className="rounded-audity border border-audity-border px-1.5 py-0.5 text-[11px] text-audity-muted">Score {question.answer?.score ?? "-"}</span>
-                        {question.evidenceGap ? <span className="rounded-audity border border-audity-warning px-1.5 py-0.5 text-[11px] text-audity-warning">Evidence gap</span> : null}
-                      </div>
+                      <span className="text-xs text-audity-muted" aria-hidden="true">{expanded ? "▾" : "▸"}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-audity-text" title={domain.name}>{domain.name}</span>
+                        <span className="mt-1 flex items-center gap-2">
+                          <span className="h-1 flex-1 overflow-hidden rounded-full bg-audity-page">
+                            <span className={`block h-full ${progressColor(domain.coverage)}`} style={{ width: `${domain.coverage}%` }} />
+                          </span>
+                          <span className="text-[11px] text-audity-muted whitespace-nowrap">{domain.answeredControls}/{domain.totalControls}</span>
+                        </span>
+                      </span>
                     </button>
-                  ))}
-                </div>
-              </div>
-              <form onSubmit={saveAnswer} className="min-w-0 rounded-audity border border-audity-border bg-audity-panel p-4">
-                {activeQuestion ? (
-                  <>
-                    <p className="text-xs font-medium uppercase text-audity-primary">{activeQuestion.code}</p>
-                    <h2 className="mt-3 max-w-5xl text-lg font-normal leading-7 text-audity-text" title={activeQuestion.question}>
-                      {activeQuestion.question}
-                    </h2>
-                    {activeQuestion.evidenceGap ? (
-                      <div className="mt-4 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
-                        Low score with missing or unvalidated evidence
-                      </div>
+                    {expanded ? (
+                      <ol className="border-t border-audity-border/70 bg-audity-page/30">
+                        {domain.questions.map((question) => {
+                          const isActiveQuestion = question.questionId === activeQuestion?.questionId;
+                          const answered = question.answer?.answerState === "answered";
+                          return (
+                            <li key={question.questionId}>
+                              <button
+                                type="button"
+                                className={`flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-audity-panelAlt ${isActiveQuestion ? "bg-audity-primaryActive/30" : ""}`}
+                                onClick={() => selectQuestion(domain.id, question.questionId)}
+                                title={question.question}
+                              >
+                                <span
+                                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${answered ? "border-audity-success bg-audity-success text-white" : question.evidenceGap ? "border-audity-warning text-audity-warning" : "border-audity-borderStrong text-audity-muted"}`}
+                                  aria-hidden="true"
+                                >
+                                  <span className="text-[9px] font-bold">{answered ? "✓" : question.evidenceGap ? "!" : ""}</span>
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-[11px] font-semibold uppercase text-audity-primary">{question.code}</span>
+                                  <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-audity-secondary">{question.question}</span>
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ol>
                     ) : null}
-                    <label className="mt-5 block text-xs font-semibold uppercase text-audity-secondary">
-                      Score
+                  </div>
+                );
+              })}
+              {!filteredDomains.length ? (
+                <p className="px-4 py-6 text-center text-xs text-audity-muted">No matches</p>
+              ) : null}
+            </nav>
+          ) : null}
+        </aside>
+
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+          {activeQuestion ? (
+            <>
+              <header className="rounded-audity border border-audity-border bg-audity-panel px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-audity-primary">
+                    {activeDomain?.name}
+                    {activeCategoryLabel ? <span className="ml-2 text-audity-muted">· {activeCategoryLabel}</span> : null}
+                  </p>
+                  <div className="flex shrink-0 items-center gap-1 text-xs text-audity-muted">
+                    <span>{activeIndex >= 0 ? activeIndex + 1 : 0} / {flatQuestionList.length}</span>
+                    <button
+                      type="button"
+                      className="ml-2 inline-flex h-7 w-7 items-center justify-center rounded-audity border border-audity-borderStrong text-audity-secondary disabled:opacity-40 hover:enabled:border-audity-primary hover:enabled:text-audity-primary"
+                      onClick={() => previousEntry && selectQuestion(previousEntry.domain.id, previousEntry.question.questionId)}
+                      disabled={!previousEntry}
+                      aria-label="Previous control"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-audity border border-audity-borderStrong text-audity-secondary disabled:opacity-40 hover:enabled:border-audity-primary hover:enabled:text-audity-primary"
+                      onClick={() => nextEntry && selectQuestion(nextEntry.domain.id, nextEntry.question.questionId)}
+                      disabled={!nextEntry}
+                      aria-label="Next control"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+                <p className="mt-2 text-[11px] font-mono text-audity-muted">{activeQuestion.code}</p>
+                <h2 className="mt-1 max-w-3xl text-xl font-medium leading-8 text-audity-text">
+                  {activeQuestion.question}
+                </h2>
+                {activeQuestion.title && activeQuestion.title !== activeQuestion.question ? (
+                  <p className="mt-3 max-w-3xl text-sm font-medium leading-6 text-audity-secondary">
+                    {activeQuestion.title}
+                  </p>
+                ) : null}
+                {activeQuestion.description && activeQuestion.description !== activeQuestion.title && activeQuestion.description !== activeQuestion.question ? (
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-audity-secondary">
+                    {activeQuestion.description}
+                  </p>
+                ) : null}
+                {activeQuestion.categoryDescription ? (
+                  <div className="mt-4 max-w-3xl rounded-audity border-l-2 border-audity-primary bg-audity-panelAlt/40 px-4 py-3 text-sm leading-6 text-audity-secondary">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-audity-primary">
+                      Category context
+                      {activeQuestion.categoryTitle ? <span className="ml-1 text-audity-muted">· {activeQuestion.categoryTitle}</span> : null}
+                    </p>
+                    <p>{activeQuestion.categoryDescription}</p>
+                  </div>
+                ) : null}
+                {activeQuestion.evidenceExamples.length ? (
+                  <div className="mt-4 max-w-3xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-audity-muted">Evidence examples</p>
+                    <ul className="mt-1 flex flex-wrap gap-1.5">
+                      {activeQuestion.evidenceExamples.map((example) => (
+                        <li key={example} className="rounded-audity border border-audity-borderStrong bg-audity-page px-2 py-0.5 text-xs text-audity-secondary">{example}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {activeQuestion.mappings.length ? (
+                  <div className="mt-3 max-w-3xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-audity-muted">Framework mappings</p>
+                    <ul className="mt-1 flex flex-wrap gap-1.5">
+                      {activeQuestion.mappings.map((mapping) => (
+                        <li key={`${mapping.controlId}-${mapping.code}`} className="rounded-audity border border-audity-borderStrong bg-audity-page px-2 py-0.5 text-xs text-audity-secondary" title={mapping.title}>
+                          <span className="font-semibold text-audity-primary">{mapping.framework}</span> {mapping.code}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {activeQuestion.source ? (
+                  <p className="mt-3 text-[11px] text-audity-muted">Source: {activeQuestion.source}</p>
+                ) : null}
+                {activeQuestion.evidenceGap ? (
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-audity border border-audity-warning bg-audity-warning/10 px-2.5 py-1 text-xs font-semibold text-audity-warning">
+                    Evidence gap · low score without validated evidence
+                  </div>
+                ) : null}
+              </header>
+
+              <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-3 2xl:grid-cols-[minmax(0,1fr)_360px]">
+                <form
+                  onSubmit={saveAnswer}
+                  className="flex flex-col gap-4 rounded-audity border border-audity-border bg-audity-panel p-5"
+                >
+                  <fieldset className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" disabled={!canEditAssessment}>
+                    <FormField label="Score">
                       <select
-                        className="mt-2 audity-input"
+                        className="audity-input"
                         value={form.score}
-                        disabled={!canEditAssessment}
                         onChange={(event) => setForm({ ...form, score: Number(event.target.value) })}
                       >
                         {scoreOptions.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                       </select>
-                    </label>
-                    <div className="mt-4 grid gap-3 2xl:grid-cols-3">
-                      <label className="block text-xs font-semibold uppercase text-audity-secondary">
-                        Answer State
-                        <select
-                          className="mt-2 audity-input"
-                          value={form.answerState}
-                          disabled={!canEditAssessment}
-                          onChange={(event) => setForm({ ...form, answerState: event.target.value })}
-                        >
-                          {answerStates.map((state) => <option key={state} value={state}>{state}</option>)}
-                        </select>
-                      </label>
-                      <label className="block text-xs font-semibold uppercase text-audity-secondary">
-                        Evidence Status
-                        <select
-                          className="mt-2 audity-input"
-                          value={form.evidenceStatus}
-                          disabled={!canEditAssessment}
-                          onChange={(event) => setForm({ ...form, evidenceStatus: event.target.value })}
-                        >
-                          {evidenceStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                        </select>
-                      </label>
-                      <label className="block text-xs font-semibold uppercase text-audity-secondary">
-                        Confidence
-                        <select
-                          className="mt-2 audity-input"
-                          value={form.confidenceLevel}
-                          disabled={!canEditAssessment}
-                          onChange={(event) => setForm({ ...form, confidenceLevel: event.target.value })}
-                        >
-                          {confidenceLevels.map((level) => <option key={level} value={level}>{level}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                    <label className="mt-4 block text-xs font-semibold uppercase text-audity-secondary">
-                      Notes
-                      <textarea
-                        className="mt-2 min-h-40 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary disabled:cursor-not-allowed disabled:opacity-70"
-                        value={form.notes}
-                        disabled={!canEditAssessment}
-                        onChange={(event) => setForm({ ...form, notes: event.target.value })}
-                      />
-                    </label>
-                    {canEditAssessment ? (
-                    <div className="mt-4 flex items-center gap-3">
-                      <button className="audity-btn-primary">
-                        Save answer
+                    </FormField>
+                    <FormField label="Answer State">
+                      <select
+                        className="audity-input"
+                        value={form.answerState}
+                        onChange={(event) => setForm({ ...form, answerState: event.target.value })}
+                      >
+                        {answerStates.map((state) => <option key={state} value={state}>{readableLabel(state)}</option>)}
+                      </select>
+                    </FormField>
+                    <FormField label="Evidence Status">
+                      <select
+                        className="audity-input"
+                        value={form.evidenceStatus}
+                        onChange={(event) => setForm({ ...form, evidenceStatus: event.target.value })}
+                      >
+                        {evidenceStatuses.map((status) => <option key={status} value={status}>{readableLabel(status)}</option>)}
+                      </select>
+                    </FormField>
+                    <FormField label="Confidence">
+                      <select
+                        className="audity-input"
+                        value={form.confidenceLevel}
+                        onChange={(event) => setForm({ ...form, confidenceLevel: event.target.value })}
+                      >
+                        {confidenceLevels.map((level) => <option key={level} value={level}>{level}</option>)}
+                      </select>
+                    </FormField>
+                  </fieldset>
+
+                  <FormField label="Notes" hint="Explain the score, list the evidence reviewed, and link follow-up tasks.">
+                    <textarea
+                      className="min-h-[200px] w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm leading-6 text-audity-text outline-none focus:border-audity-primary disabled:cursor-not-allowed disabled:opacity-60"
+                      value={form.notes}
+                      disabled={!canEditAssessment}
+                      onChange={(event) => setForm({ ...form, notes: event.target.value })}
+                    />
+                  </FormField>
+
+                  {canEditAssessment ? (
+                    <div className="flex flex-wrap items-center gap-3 border-t border-audity-border pt-3">
+                      <button className="audity-btn-primary" type="submit">Save answer</button>
+                      <button
+                        type="button"
+                        className="audity-btn-secondary"
+                        disabled={!nextEntry}
+                        onClick={() => void saveAndAdvance()}
+                      >
+                        Save &amp; next →
                       </button>
                       {saved ? <span className="text-sm text-audity-success">{saved}</span> : null}
                     </div>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="py-20 text-center text-audity-muted">No questions available</div>
-                )}
-              </form>
-            </section>
-            <aside className="grid min-w-0 gap-3 xl:col-span-2 xl:grid-cols-2 2xl:col-span-1 2xl:block 2xl:space-y-3">
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
-                <h2 className="mb-2 text-sm font-medium">Category Context</h2>
-                {activeQuestion?.categoryDescription || activeCategoryLabel ? (
-                  <div>
-                    {activeCategoryLabel ? <p className="text-xs font-medium text-audity-primary">{activeCategoryLabel}</p> : null}
-                    {activeQuestion?.categoryDescription ? <p className="mt-2 text-sm leading-6 text-audity-secondary">{activeQuestion.categoryDescription}</p> : null}
-                    {activeQuestion?.source ? <p className="mt-2 text-xs text-audity-muted">{activeQuestion.source}</p> : null}
-                  </div>
-                ) : (
-                  <p className="text-sm text-audity-muted">No category description is available for this question.</p>
-                )}
-              </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
-                <h2 className="mb-2 text-sm font-medium">Smart Suggestions</h2>
-                <div className="space-y-1.5">
-                  {smartSuggestions.map((suggestion) => (
-                    <div key={suggestion} className="border-l border-audity-border pl-3 text-sm leading-6 text-audity-secondary">
-                      {suggestion}
-                    </div>
-                  ))}
-                  {!smartSuggestions.length ? <p className="text-sm text-audity-muted">No suggestions for the current answer.</p> : null}
-                </div>
-              </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
-                <h2 className="mb-2 text-sm font-medium">Framework Mapping</h2>
-                {activeQuestion?.mappings.length ? (
-                  <div className="space-y-2">
-                    {activeQuestion.mappings.map((mapping) => (
-                      <div key={`${mapping.controlId}-${mapping.code}`} className="border-l border-audity-border pl-3">
-                        <p className="text-xs font-medium text-audity-primary">{mapping.framework} · {mapping.code}</p>
-                        <p className="mt-1 text-sm leading-5 text-audity-secondary">{mapping.title}</p>
-                        <p className="mt-1 text-xs text-audity-muted">{mapping.mappingType}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-audity-muted">No mappings for this control.</p>
-                )}
-              </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
-                <h2 className="mb-2 text-sm font-medium">Evidence Signals</h2>
-                {activeQuestion?.evidenceGap ? (
-                  <div className="mb-3 rounded-audity border border-audity-warning bg-audity-page px-3 py-2 text-sm text-audity-warning">
-                    Evidence should be requested, received, or validated before this control is considered resolved.
-                  </div>
-                ) : null}
-                <div className="space-y-1.5">
-                  {activeQuestion?.evidenceExamples.map((example) => (
-                    <div key={example} className="border-l border-audity-border pl-3 text-sm leading-6 text-audity-secondary">
-                      {example}
-                    </div>
-                  ))}
-                  {!activeQuestion?.evidenceExamples.length ? <p className="text-sm text-audity-muted">No evidence examples defined for this control.</p> : null}
-                </div>
-              </section>
-              <section className="rounded-audity border border-audity-border bg-audity-panel p-3">
-                <h2 className="mb-2 text-sm font-medium">Review Notes</h2>
-                <div className="space-y-2">
-                  {comments.slice(0, 5).map((comment) => (
-                    <div key={comment.id} className="border-l border-audity-border pl-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs font-medium text-audity-primary">{comment.userEmail ?? "System"}</p>
-                        <p className="text-xs text-audity-muted">{new Date(comment.createdAt).toLocaleString()}</p>
-                      </div>
-                      <p className="mt-1 text-sm leading-6 text-audity-secondary">{comment.comment}</p>
-                    </div>
-                  ))}
-                  {!comments.length ? <p className="text-sm text-audity-muted">No review notes yet</p> : null}
-                </div>
-                {canEditAssessment ? (
-                <form className="mt-3 flex gap-2" onSubmit={(event) => void addComment(event)}>
-                  <input className="h-9 min-w-0 flex-1 rounded-audity border border-audity-border bg-audity-page px-3 text-sm text-audity-text outline-none focus:border-audity-primary" value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Add note" />
-                  <button className="audity-btn-secondary">Add</button>
+                  ) : null}
                 </form>
-                ) : null}
-              </section>
-            </aside>
-          </div>
-    </>
+
+                <SuggestionsPanel suggestions={suggestions} />
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-1 items-center justify-center rounded-audity border border-dashed border-audity-border bg-audity-panel py-20 text-center text-audity-muted">
+              Select a control to start answering
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: number | string; tone?: "warning" | "error" }) {
+  const toneClass = tone === "error" ? "text-audity-error" : tone === "warning" ? "text-audity-warning" : "text-audity-text";
+  return (
+    <div className="flex flex-col leading-tight">
+      <span className="text-[11px] font-semibold uppercase text-audity-muted">{label}</span>
+      <span className={`text-base font-semibold ${toneClass}`}>{value}</span>
+    </div>
+  );
+}
+
+function FormField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="block min-w-0 text-xs font-semibold uppercase tracking-wide text-audity-secondary">
+      {label}
+      <div className="mt-1.5 normal-case">{children}</div>
+      {hint ? <span className="mt-1 block text-[11px] normal-case font-normal text-audity-muted">{hint}</span> : null}
+    </label>
+  );
+}
+
+function SuggestionsPanel({ suggestions }: { suggestions: string[] }) {
+  return (
+    <aside className="flex min-h-0 flex-col rounded-audity border border-audity-border bg-audity-panel">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-audity-border px-4 py-3">
+        <h3 className="text-sm font-semibold text-audity-text">Suggestions</h3>
+        {suggestions.length ? (
+          <span className="rounded-full bg-audity-page px-2 py-0.5 text-[10px] font-bold text-audity-secondary">{suggestions.length}</span>
+        ) : null}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 text-sm leading-6 text-audity-secondary">
+        {suggestions.length ? (
+          <ul className="space-y-2">
+            {suggestions.map((suggestion) => (
+              <li key={suggestion} className="border-l-2 border-audity-primary pl-3">{suggestion}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-audity-muted">No suggestions defined for this control.</p>
+        )}
+      </div>
+    </aside>
   );
 }

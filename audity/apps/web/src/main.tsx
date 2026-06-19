@@ -6,6 +6,7 @@ import { PrivateRoute, RequirePermission } from "./auth/PrivateRoute";
 import { AdminLayout, AppLayout } from "./components/AppLayout";
 import { ConfirmProvider, PageSkeleton, ToastProvider } from "./components/ui";
 import { LoginPage } from "./pages/LoginPage";
+import { SetupPage } from "./pages/SetupPage";
 import "./styles.css";
 
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <ConfirmProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/setup" element={<SetupPage />} />
           <Route element={<PrivateRoute />}>
             <Route path="/alpha-disclaimer" element={<LazyRoute><AlphaDisclaimerPage /></LazyRoute>} />
             <Route element={<AppLayout />}>

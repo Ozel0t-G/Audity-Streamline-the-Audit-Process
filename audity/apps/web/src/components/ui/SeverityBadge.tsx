@@ -11,9 +11,9 @@ const SEV_LABEL: Record<Severity, string> = {
 };
 
 const SEV_CLASSES: Record<Severity, string> = {
-  critical: "border-audity-error bg-audity-error/15 text-audity-error",
-  high: "border-audity-warning bg-audity-warning/20 text-audity-warning",
-  medium: "border-audity-warning bg-audity-warning/10 text-audity-warning",
+  critical: "border-audity-error bg-audity-error text-white shadow-sm",
+  high: "border-audity-error bg-audity-error/15 text-audity-error",
+  medium: "border-audity-warning bg-audity-warning/15 text-audity-warning",
   low: "border-audity-borderStrong bg-audity-panelAlt text-audity-secondary",
   info: "border-audity-primary bg-audity-primary/10 text-audity-primary"
 };

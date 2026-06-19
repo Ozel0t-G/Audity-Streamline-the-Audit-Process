@@ -105,7 +105,9 @@ export async function appendActivityEvent(input: {
     }
   } catch (error) {
     if (!committed) {
-      await client.query("rollback");
+      // Roll back, but don't let a rollback failure (broken connection, etc.)
+      // mask the underlying error the caller cares about.
+      await client.query("rollback").catch(() => undefined);
     }
     throw error;
   } finally {

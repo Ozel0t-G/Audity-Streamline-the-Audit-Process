@@ -10,17 +10,21 @@ function stableUuid(input: string): string {
 }
 
 async function getDefaultFramework(): Promise<{ id: string; label: string } | null> {
-  const configuredKey = process.env.AUDITY_DEFAULT_FRAMEWORK_KEY ?? "nist-csf-2";
-  const configuredId = process.env.AUDITY_DEFAULT_FRAMEWORK_ID ?? stableUuid(`framework:${configuredKey}`);
-  const preferred = await pool.query<{ id: string; name: string; short_name: string | null; version: string | null }>(
-    "select id, name, short_name, version from frameworks where id = $1 limit 1",
-    [configuredId]
-  );
+  const configuredKey = process.env.AUDITY_DEFAULT_FRAMEWORK_KEY;
+  const configuredId = process.env.AUDITY_DEFAULT_FRAMEWORK_ID
+    ?? (configuredKey ? stableUuid(`framework:${configuredKey}`) : null);
+  const preferred = configuredId
+    ? await pool.query<{ id: string; name: string; short_name: string | null; version: string | null }>(
+        "select id, name, short_name, version from frameworks where id = $1 and archived_at is null limit 1",
+        [configuredId]
+      )
+    : { rows: [] as Array<{ id: string; name: string; short_name: string | null; version: string | null }> };
   const fallback = preferred.rows[0]
     ? preferred
     : await pool.query<{ id: string; name: string; short_name: string | null; version: string | null }>(
         `select id, name, short_name, version
          from frameworks
+         where archived_at is null
          order by distributed_by_audity desc, name asc, version asc
          limit 1`
       );

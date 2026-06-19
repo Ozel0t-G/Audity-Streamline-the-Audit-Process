@@ -1,10 +1,18 @@
-import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from "@dnd-kit/core";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
-import { OnboardingTips } from "../components/OnboardingTips";
 import { EmptyState } from "../components/ui";
 
 type SharedUser = {
@@ -367,7 +375,7 @@ function WidgetShell({
             <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">Drag</span>
             <button
               type="button"
-              className="rounded-audity border border-audity-error px-2 py-1 text-xs text-audity-error hover:bg-[#2A1C17]"
+              className="rounded-audity border border-audity-error px-2 py-1 text-xs text-audity-error hover:bg-audity-error/10"
               onClick={() => onRemove(id)}
             >
               Remove
@@ -425,6 +433,10 @@ export function DashboardPage() {
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(loadWidgetOrder);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState("");
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor)
+  );
 
   useEffect(() => {
     void api<DashboardPayload>("/api/dashboard")
@@ -977,19 +989,34 @@ export function DashboardPage() {
         </>
       );
     }
+    if (id === "onboarding") {
+      return (
+        <>
+          <div className="mb-4 border-b border-audity-border pb-3">
+            <p className="text-xs font-semibold uppercase text-audity-muted">Setup</p>
+            <h2 className="mt-1 text-lg font-semibold">Start a clean audit workspace</h2>
+          </div>
+          <div className="grid gap-2 md:grid-cols-4">
+            {["Review User Settings", "Create or open Customer", "Start Assessment", "Answer Questions"].map((step, index) => (
+              <div key={step} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+                <p className="text-xs font-semibold text-audity-muted">Step {index + 1}</p>
+                <p className="mt-1 text-sm text-audity-secondary">{step}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      );
+    }
+    const meta = (widgetLibrary as Record<string, { title: string; eyebrow: string; description: string; preview: string } | undefined>)[id];
     return (
       <>
         <div className="mb-4 border-b border-audity-border pb-3">
-          <p className="text-xs font-semibold uppercase text-audity-muted">Setup</p>
-          <h2 className="mt-1 text-lg font-semibold">Start a clean audit workspace</h2>
+          <p className="text-xs font-semibold uppercase text-audity-muted">{meta?.eyebrow ?? "Coming soon"}</p>
+          <h2 className="mt-1 text-lg font-semibold">{meta?.title ?? id}</h2>
         </div>
-        <div className="grid gap-2 md:grid-cols-4">
-          {["Review User Settings", "Create or open Customer", "Start Assessment", "Answer Questions"].map((step, index) => (
-            <div key={step} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-              <p className="text-xs font-semibold text-audity-muted">Step {index + 1}</p>
-              <p className="mt-1 text-sm text-audity-secondary">{step}</p>
-            </div>
-          ))}
+        <div className="rounded-audity border border-dashed border-audity-border bg-audity-panelAlt/40 px-4 py-6 text-center">
+          <p className="text-xs font-semibold uppercase text-audity-muted">Coming soon</p>
+          <p className="mt-1 text-sm text-audity-secondary">{meta?.description ?? "This widget is not implemented yet."}</p>
         </div>
       </>
     );
@@ -997,7 +1024,6 @@ export function DashboardPage() {
 
   return (
     <>
-      <OnboardingTips />
       <div className="audity-page-header">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1018,7 +1044,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+      {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
 
       {dashboard && !dashboard.ownedCustomers.length && !dashboard.sharedCustomers.length ? (
         <div className="mb-4">
@@ -1044,7 +1070,7 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
         <div className={editMode ? "grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid gap-3"}>
           <DroppableArea id="dashboard" className="min-h-72 rounded-audity border border-dashed border-audity-border bg-audity-page p-3">
             <div className="grid gap-3">
@@ -1068,7 +1094,7 @@ export function DashboardPage() {
                 <h2 className="mt-1 text-lg font-semibold">Unused & New Elements</h2>
                 <p className="mt-1 text-xs text-audity-muted">Drag cards into the dashboard. Drop dashboard elements anywhere in this sidebar to remove them.</p>
               </div>
-              <DroppableArea id="remove-zone" className="mb-3 rounded-audity border border-dashed border-audity-error bg-[#2A1C17] px-3 py-3 text-sm text-[#FFB199]">
+              <DroppableArea id="remove-zone" className="mb-3 rounded-audity border border-dashed border-audity-error bg-audity-error/10 px-3 py-3 text-sm text-audity-error">
                 Drop here to remove an element from the dashboard.
               </DroppableArea>
               <div className="space-y-3">

@@ -34,10 +34,18 @@ type DataTableProps<TRow> = {
   loading?: boolean;
 };
 
+const alignClass: Record<NonNullable<DataTableColumn<unknown>["align"]>, string> = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right"
+};
+
 function compare(a: unknown, b: unknown) {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
+  const aEmpty = a == null || a === "";
+  const bEmpty = b == null || b === "";
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return -1;
+  if (bEmpty) return 1;
   if (typeof a === "number" && typeof b === "number") return a - b;
   return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
 }
@@ -178,7 +186,7 @@ export function DataTable<TRow>({
                     key={col.key}
                     scope="col"
                     aria-sort={sortable ? ariaSort : undefined}
-                    className={`px-3 py-2 text-${col.align ?? "left"} text-xs font-semibold uppercase tracking-wide text-audity-muted ${col.className ?? ""}`}
+                    className={`px-3 py-2 ${alignClass[col.align ?? "left"]} text-xs font-semibold uppercase tracking-wide text-audity-muted ${col.className ?? ""}`}
                     style={col.width ? { width: col.width } : undefined}
                   >
                     {sortable ? (
@@ -232,7 +240,7 @@ export function DataTable<TRow>({
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={`px-3 py-2 text-${col.align ?? "left"} ${col.className ?? ""}`}
+                        className={`px-3 py-2 ${alignClass[col.align ?? "left"]} ${col.className ?? ""}`}
                       >
                         {col.cell(row)}
                       </td>

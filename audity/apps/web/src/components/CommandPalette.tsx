@@ -60,6 +60,7 @@ export function CommandPalette({
 
   const listRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
+  const lastInteractionRef = useRef<"keyboard" | "mouse">("keyboard");
 
   useEffect(() => {
     activeRef.current?.scrollIntoView({ block: "nearest" });
@@ -72,9 +73,11 @@ export function CommandPalette({
         onClose();
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
+        lastInteractionRef.current = "keyboard";
         onActiveIndexChange(Math.min(flat.length - 1, activeIndex + 1));
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
+        lastInteractionRef.current = "keyboard";
         onActiveIndexChange(Math.max(0, activeIndex - 1));
       } else if (event.key === "Enter") {
         const selected = flat[activeIndex];
@@ -134,7 +137,12 @@ export function CommandPalette({
                     ref={isActive ? activeRef : undefined}
                     className={`flex w-full items-center gap-2 rounded-audity px-3 py-2 text-left ${isActive ? "bg-audity-page ring-1 ring-audity-primary" : "hover:bg-audity-page"}`}
                     onClick={() => onSelect(result)}
-                    onMouseEnter={() => onActiveIndexChange(myIndex)}
+                    onMouseMove={() => {
+                      if (lastInteractionRef.current !== "mouse" || activeIndex !== myIndex) {
+                        lastInteractionRef.current = "mouse";
+                        if (activeIndex !== myIndex) onActiveIndexChange(myIndex);
+                      }
+                    }}
                     aria-current={isActive ? "true" : undefined}
                   >
                     <span className="min-w-0 flex-1">

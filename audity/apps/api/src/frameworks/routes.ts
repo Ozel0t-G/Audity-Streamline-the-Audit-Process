@@ -203,6 +203,7 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
          from frameworks f
          left join framework_domains fd on fd.framework_id = f.id
          left join framework_controls fc on fc.framework_domain_id = fd.id
+         where f.archived_at is null
          group by f.id
          order by f.distributed_by_audity desc, f.name`
       );
@@ -513,6 +514,9 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           categoryTitle: optionalString(reportMapping.categoryTitle),
           categoryDescription: optionalString(reportMapping.categoryDescription),
           source: optionalString(reportMapping.source),
+          suggestions: Array.isArray(reportMapping.suggestions)
+            ? reportMapping.suggestions.filter((value): value is string => typeof value === "string")
+            : [],
           reportMapping,
           defaultWeight: Number(row.default_weight ?? 1),
           readinessPassCondition: row.readiness_pass_condition,

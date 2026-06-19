@@ -7,14 +7,16 @@ type ModalProps = {
   description?: ReactNode;
   children?: ReactNode;
   footer?: ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl" | "full";
   closeOnBackdrop?: boolean;
 };
 
 const SIZE: Record<NonNullable<ModalProps["size"]>, string> = {
   sm: "max-w-md",
   md: "max-w-xl",
-  lg: "max-w-3xl"
+  lg: "max-w-3xl",
+  xl: "max-w-5xl",
+  full: "max-w-[min(96vw,1400px)] h-[calc(100vh-4rem)]"
 };
 
 export function Modal({

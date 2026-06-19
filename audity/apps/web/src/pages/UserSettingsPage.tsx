@@ -3,19 +3,64 @@ import { Link } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { translate, type AudityLanguage } from "../i18n";
+import { PasswordStrength } from "./SetupPage";
+
+function evaluatePasswordStrength(value: string) {
+  let score = 0;
+  if (value.length >= 8) score++;
+  if (value.length >= 12) score++;
+  if (/[A-Z]/.test(value) && /[a-z]/.test(value)) score++;
+  if (/\d/.test(value)) score++;
+  if (/[^A-Za-z0-9]/.test(value)) score++;
+  return Math.min(score, 4);
+}
+
+type PreferencesPayload = {
+  language: AudityLanguage;
+  theme: string;
+  notificationsEnabled: boolean;
+  defaultView: string;
+  tableDensity: string;
+  exportFormat: string;
+  tooltipsEnabled: boolean;
+};
 
 export function UserSettingsPage() {
   const api = useApi();
   const { user, setupMfa, verifyMfaSetup } = useAuth();
+  const [mfaStatus, setMfaStatus] = useState<{ enabled: boolean; recoveryCodes: { remaining: number; total: number } } | null>(null);
+
+  useEffect(() => {
+    void api<{ enabled: boolean; recoveryCodes: { remaining: number; total: number } }>("/api/auth/mfa/status")
+      .then(setMfaStatus)
+      .catch(() => setMfaStatus(null));
+  }, [api]);
+
+  async function regenerateRecoveryCodes() {
+    try {
+      const payload = await api<{ recoveryCodes: string[] }>("/api/auth/mfa/recovery-codes", { method: "POST" });
+      setRecoveryCodes(payload.recoveryCodes);
+      const status = await api<{ enabled: boolean; recoveryCodes: { remaining: number; total: number } }>("/api/auth/mfa/status");
+      setMfaStatus(status);
+    } catch (err) {
+      // shown via local error state
+      console.error(err);
+    }
+  }
   const [tooltipsEnabled, setTooltipsEnabled] = useState(() => window.localStorage.getItem("audity_tooltips_enabled") !== "false");
-  const [preferences, setPreferences] = useState(() => ({
-    language: "English" as AudityLanguage,
-    theme: window.localStorage.getItem("audity_theme") ?? "System",
-    notifications: window.localStorage.getItem("audity_notifications") !== "false",
-    defaultView: window.localStorage.getItem("audity_default_view") ?? "Dashboard",
-    tableDensity: window.localStorage.getItem("audity_table_density") ?? "Comfortable",
-    exportFormat: window.localStorage.getItem("audity_export_format") ?? "CSV"
-  }));
+  const [preferences, setPreferences] = useState(() => {
+    const storedLanguage = window.localStorage.getItem("audity_language");
+    const language: AudityLanguage =
+      storedLanguage === "Deutsch" || storedLanguage === "English" ? storedLanguage : "English";
+    return {
+      language,
+      theme: window.localStorage.getItem("audity_theme") ?? "System",
+      notifications: window.localStorage.getItem("audity_notifications") !== "false",
+      defaultView: window.localStorage.getItem("audity_default_view") ?? "Dashboard",
+      tableDensity: window.localStorage.getItem("audity_table_density") ?? "Comfortable",
+      exportFormat: window.localStorage.getItem("audity_export_format") ?? "CSV"
+    };
+  });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -101,8 +146,8 @@ export function UserSettingsPage() {
         <h1 className="audity-page-title">{t("User Settings")}</h1>
         <p className="audity-page-copy">{user?.email} · {user?.role}</p>
       </div>
-      {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-      {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-[#17251D] px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
+      {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
+      {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-audity-success/10 px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
       <div className="grid gap-3 xl:grid-cols-2">
         <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
           <h2 className="mb-4 text-lg font-semibold">{t("Password")}</h2>
@@ -114,6 +159,9 @@ export function UserSettingsPage() {
             <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Use at least 8 characters. Prefer a unique password stored in a password manager.">
               {t("New Password")}
               <input className="mt-2 audity-input" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} />
+              {passwordForm.newPassword ? (
+                <div className="mt-2"><PasswordStrength value={evaluatePasswordStrength(passwordForm.newPassword)} /></div>
+              ) : null}
             </label>
             <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Repeat the new password to avoid typos.">
               {t("Confirm Password")}
@@ -157,12 +205,23 @@ export function UserSettingsPage() {
           ) : null}
           {recoveryCodes.length ? (
             <div className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Recovery codes</p>
+              <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Recovery codes (write these down — they will not be shown again)</p>
               <div className="grid gap-1 font-mono text-xs text-audity-secondary">
                 {recoveryCodes.map((code) => (
                   <span key={code}>{code}</span>
                 ))}
               </div>
+            </div>
+          ) : null}
+          {mfaStatus?.enabled ? (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-audity border border-audity-border bg-audity-page p-3">
+              <div>
+                <p className="text-xs font-semibold uppercase text-audity-muted">Recovery codes</p>
+                <p className="text-sm text-audity-secondary">{mfaStatus.recoveryCodes.remaining} of {mfaStatus.recoveryCodes.total} unused</p>
+              </div>
+              <button type="button" className="audity-btn-secondary" onClick={() => void regenerateRecoveryCodes()}>
+                Regenerate codes
+              </button>
             </div>
           ) : null}
         </section>

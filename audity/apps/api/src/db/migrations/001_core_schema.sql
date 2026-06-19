@@ -516,6 +516,10 @@ alter table frameworks add column if not exists disclaimer text;
 alter table frameworks add column if not exists imported_by uuid references users(id);
 alter table frameworks add column if not exists imported_at timestamptz;
 alter table frameworks add column if not exists license_confirmed boolean not null default false;
+alter table frameworks add column if not exists yaml_source_path text;
+alter table frameworks add column if not exists yaml_synced_at timestamptz;
+alter table frameworks add column if not exists archived_at timestamptz;
+create index if not exists idx_frameworks_archived_at on frameworks(archived_at);
 alter table framework_domains add column if not exists domain_id text;
 alter table framework_domains add column if not exists description text;
 alter table framework_controls add column if not exists audity_objective text;
@@ -996,3 +1000,15 @@ drop trigger if exists user_activity_logs_append_only on user_activity_logs;
 create trigger user_activity_logs_append_only
 before update or delete on user_activity_logs
 for each row execute function prevent_append_only_change();
+
+create table if not exists user_preferences (
+  user_id uuid primary key references users(id) on delete cascade,
+  language text not null default 'English',
+  theme text not null default 'System',
+  notifications_enabled boolean not null default true,
+  default_view text not null default 'Dashboard',
+  table_density text not null default 'Comfortable',
+  export_format text not null default 'CSV',
+  tooltips_enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);

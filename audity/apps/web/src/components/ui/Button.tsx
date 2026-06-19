@@ -1,20 +1,20 @@
 import { ButtonHTMLAttributes, ReactNode, forwardRef } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
-type Size = "sm" | "md";
+type Variant = "primary" | "secondary" | "soft" | "ghost" | "danger";
+type Size = "sm" | "md" | "lg";
 
 const VARIANT_CLASS: Record<Variant, string> = {
   primary: "audity-btn-primary",
   secondary: "audity-btn-secondary",
-  ghost:
-    "h-8 rounded-audity px-3 text-sm text-audity-secondary hover:bg-audity-panelAlt hover:text-audity-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary disabled:cursor-not-allowed disabled:opacity-60",
-  danger:
-    "h-8 rounded-audity bg-audity-error px-3 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-error disabled:cursor-not-allowed disabled:opacity-60"
+  soft: "audity-btn-soft",
+  ghost: "audity-btn-ghost",
+  danger: "audity-btn-danger"
 };
 
 const SIZE_CLASS: Record<Size, string> = {
-  sm: "h-7 px-2 text-xs",
-  md: ""
+  sm: "audity-btn-sm",
+  md: "",
+  lg: "audity-btn-lg"
 };
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -46,7 +46,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     VARIANT_CLASS[variant],
     SIZE_CLASS[size],
     fullWidth ? "w-full" : "",
-    "inline-flex items-center justify-center gap-1.5",
+    "relative", // for absolute spinner overlay
     className
   ]
     .filter(Boolean)
@@ -62,16 +62,53 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={classes}
       {...rest}
     >
-      {isLoading ? (
-        <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
-          <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-        </svg>
-      ) : leftIcon ? (
-        <span className="shrink-0" aria-hidden="true">{leftIcon}</span>
+      {leftIcon ? (
+        <span className={`shrink-0 ${isLoading ? "opacity-0" : ""}`} aria-hidden="true">
+          {leftIcon}
+        </span>
       ) : null}
-      <span className="min-w-0 truncate">{children}</span>
-      {!isLoading && rightIcon ? <span className="shrink-0" aria-hidden="true">{rightIcon}</span> : null}
+      <span className={`min-w-0 ${isLoading ? "opacity-0" : ""}`}>{children}</span>
+      {rightIcon ? (
+        <span className={`shrink-0 ${isLoading ? "opacity-0" : ""}`} aria-hidden="true">
+          {rightIcon}
+        </span>
+      ) : null}
+      {isLoading ? (
+        <span
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+        </span>
+      ) : null}
+    </button>
+  );
+});
+
+export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  icon: ReactNode;
+  label: string;
+  size?: "sm" | "md";
+};
+
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  { icon, label, size = "md", className = "", type = "button", ...rest },
+  ref
+) {
+  const sizeClass = size === "sm" ? "h-7 w-7" : "h-9 w-9";
+  return (
+    <button
+      ref={ref}
+      type={type}
+      aria-label={label}
+      title={label}
+      className={`audity-btn-icon ${sizeClass} ${className}`}
+      {...rest}
+    >
+      <span aria-hidden="true">{icon}</span>
     </button>
   );
 });

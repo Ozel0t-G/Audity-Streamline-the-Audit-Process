@@ -305,7 +305,7 @@ export function AssessmentAssetsPage() {
             <p className="audity-page-kicker">Evidence & Report Builder</p>
             <h1 className="audity-page-title">Assessment Assets</h1>
           </div>
-          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Evidence</h2>

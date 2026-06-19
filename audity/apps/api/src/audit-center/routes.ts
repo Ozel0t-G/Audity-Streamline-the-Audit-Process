@@ -202,17 +202,19 @@ async function ensureAuditTemplates() {
   await pool.query(
     `insert into audit_program_templates (id, name, description, program_type, phases, default_scope, default_controls)
      values
-       ($1, 'Internal Security Audit', 'General internal control audit with planning, evidence, interviews, findings, remediation and reporting.', 'internal_security_audit', $4::jsonb, '{}'::jsonb, '[]'::jsonb),
-       ($2, 'ISO 27001 Readiness Audit', 'Readiness-focused audit program with applicability, evidence and management-response workflow.', 'iso27001_readiness', $4::jsonb, '{}'::jsonb, '[]'::jsonb),
-       ($3, 'Vendor Security Audit', 'Third-party audit program with supplier scope, evidence requests and remediation follow-up.', 'vendor_security_audit', $4::jsonb, '{}'::jsonb, '[]'::jsonb)
+       ($1, 'Internal Security Audit', 'General internal control audit with planning, evidence, interviews, findings, remediation and reporting.', 'internal_security_audit', $3::jsonb, '{}'::jsonb, '[]'::jsonb),
+       ($2, 'Vendor Security Audit', 'Third-party audit program with supplier scope, evidence requests and remediation follow-up.', 'vendor_security_audit', $3::jsonb, '{}'::jsonb, '[]'::jsonb)
      on conflict (id) do update set phases = excluded.phases, updated_at = now()`,
     [
       "10000000-0000-4000-8000-000000000101",
-      "10000000-0000-4000-8000-000000000102",
       "10000000-0000-4000-8000-000000000103",
       JSON.stringify(defaultPhases)
     ]
   );
+  // Remove the legacy ISO 27001 program template that was previously seeded.
+  await pool.query(
+    "delete from audit_program_templates where id = '10000000-0000-4000-8000-000000000102'"
+  ).catch(() => undefined);
 }
 
 async function assertAssessmentAccess(user: AuthenticatedUser, assessmentId: string) {

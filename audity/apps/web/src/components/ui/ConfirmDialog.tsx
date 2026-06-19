@@ -20,7 +20,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   const confirm = useCallback((options: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
-      setPending({ ...options, resolve });
+      setPending((previous) => {
+        // If another confirm is still open, cancel it so the caller's promise
+        // resolves rather than leaking forever.
+        previous?.resolve(false);
+        return { ...options, resolve };
+      });
     });
   }, []);
 

@@ -77,7 +77,10 @@ function validateProductionConfig(config: AudityConfig): void {
   }
 }
 
+let cachedConfig: AudityConfig | null = null;
+
 export function loadConfig(): AudityConfig {
+  if (cachedConfig) return cachedConfig;
   const storageEndpoint = process.env.AUDITY_STORAGE_ENDPOINT ?? "http://audity-storage:9000";
   const publicUrl = process.env.AUDITY_PUBLIC_URL ?? "http://localhost";
   const config = {
@@ -109,5 +112,10 @@ export function loadConfig(): AudityConfig {
     ).split(",").map((type) => type.trim()).filter(Boolean)
   };
   validateProductionConfig(config);
+  cachedConfig = config;
   return config;
+}
+
+export function resetConfigCache(): void {
+  cachedConfig = null;
 }

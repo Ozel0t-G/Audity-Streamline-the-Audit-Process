@@ -189,26 +189,24 @@ export async function revokeSession(sessionId: string): Promise<void> {
 }
 
 export async function isSessionActive(sessionId: string): Promise<boolean> {
+  // Atomic check + update: only refreshes last_seen_at when the session is still
+  // active. Avoids the prior select-then-update race that caused write amplification
+  // when parallel requests for the same session arrived.
   const result = await pool.query<{ active: boolean }>(
-    `select exists(
-      select 1 from sessions
-      where id = $1
-        and revoked_at is null
-        and expires_at > now()
-        and last_seen_at > now() - (
-          coalesce(
-            (select (value #>> '{}')::int from settings where key = 'session_idle_timeout_minutes'),
-            $2::int
-          ) * interval '1 minute'
-        )
-    ) as active`,
+    `update sessions
+     set last_seen_at = now()
+     where id = $1
+       and revoked_at is null
+       and expires_at > now()
+       and last_seen_at > now() - (
+         coalesce(
+           (select (value #>> '{}')::int from settings where key = 'session_idle_timeout_minutes'),
+           $2::int
+         ) * interval '1 minute'
+       )
+     returning true as active`,
     [sessionId, process.env.AUDITY_SESSION_IDLE_TIMEOUT_MINUTES ?? "30"]
   );
-  if (result.rows[0]?.active === true) {
-    await pool.query("update sessions set last_seen_at = now() where id = $1", [
-      sessionId
-    ]);
-  }
   return result.rows[0]?.active === true;
 }
 

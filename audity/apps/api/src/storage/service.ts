@@ -15,6 +15,15 @@ export const storageClient = new Client({
   region: "us-east-1"
 });
 
+const publicStorageClient = new Client({
+  endPoint: publicEndpoint.hostname,
+  port: Number(publicEndpoint.port || (publicEndpoint.protocol === "https:" ? 443 : 80)),
+  useSSL: publicEndpoint.protocol === "https:",
+  accessKey: config.storageAccessKey,
+  secretKey: config.storageSecretKey,
+  region: "us-east-1"
+});
+
 export async function ensureBucket(): Promise<void> {
   const exists = await storageClient.bucketExists(config.storageBucket);
   if (!exists) {
@@ -39,28 +48,12 @@ export function backupBucket(): string {
 
 export async function signedGetUrl(objectKey: string): Promise<string> {
   await ensureBucket();
-  const publicClient = new Client({
-    endPoint: publicEndpoint.hostname,
-    port: Number(publicEndpoint.port || (publicEndpoint.protocol === "https:" ? 443 : 80)),
-    useSSL: publicEndpoint.protocol === "https:",
-    accessKey: config.storageAccessKey,
-    secretKey: config.storageSecretKey,
-    region: "us-east-1"
-  });
-  return publicClient.presignedGetObject(config.storageBucket, objectKey, 60 * 10);
+  return publicStorageClient.presignedGetObject(config.storageBucket, objectKey, 60 * 10);
 }
 
 export async function signedBackupGetUrl(objectKey: string): Promise<string> {
   await ensureBackupBucket();
-  const publicClient = new Client({
-    endPoint: publicEndpoint.hostname,
-    port: Number(publicEndpoint.port || (publicEndpoint.protocol === "https:" ? 443 : 80)),
-    useSSL: publicEndpoint.protocol === "https:",
-    accessKey: config.storageAccessKey,
-    secretKey: config.storageSecretKey,
-    region: "us-east-1"
-  });
-  return publicClient.presignedGetObject(config.backupBucket, objectKey, 60 * 10);
+  return publicStorageClient.presignedGetObject(config.backupBucket, objectKey, 60 * 10);
 }
 
 export async function objectDataUrl(objectKey: string, mimeType: string): Promise<string> {

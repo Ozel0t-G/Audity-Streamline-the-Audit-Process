@@ -126,7 +126,10 @@ export function FrameworkLibraryPage() {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "audity-questionnaire-template.csv";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
     anchor.click();
+    document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
   }
 
@@ -136,12 +139,12 @@ export function FrameworkLibraryPage() {
             <p className="audity-page-kicker">Framework Engine</p>
             <h1 className="audity-page-title">Framework Library</h1>
           </div>
-          <div className="mb-4 rounded-audity border border-audity-warning bg-[#282414] p-3 text-sm text-audity-secondary">
+          <div className="mb-4 rounded-audity border border-audity-warning bg-audity-warning/10 p-3 text-sm text-audity-secondary">
             {selected?.disclaimer ??
               "Framework catalogs are loaded from YAML files and synced automatically. User-imported or license-restricted frameworks require your own license confirmation."}
           </div>
-          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
-          {success ? <div className="mb-4 rounded-audity border border-audity-success bg-[#14241D] px-3 py-2 text-sm text-audity-success">{success}</div> : null}
+          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
+          {success ? <div className="mb-4 rounded-audity border border-audity-success bg-audity-success/10 px-3 py-2 text-sm text-audity-success">{success}</div> : null}
           <div className="grid min-w-0 gap-3 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_300px]">
             <section className="min-w-0 overflow-hidden rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-3 py-2.5">

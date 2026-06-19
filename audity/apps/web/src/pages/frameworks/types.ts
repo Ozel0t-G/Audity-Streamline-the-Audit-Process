@@ -83,6 +83,7 @@ export type GuidedQuestion = {
   evidenceGap?: boolean;
   evidenceExamples: string[];
   mappings: QuestionMapping[];
+  suggestions?: string[];
   answer: QuestionAnswer | null;
 };
 

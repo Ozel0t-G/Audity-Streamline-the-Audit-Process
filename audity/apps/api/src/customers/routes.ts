@@ -147,7 +147,10 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
     "/api/users/share-targets",
     { preHandler: requirePermission("assessment.view") },
     async (request) => {
-      const search = `%${(request.query.search ?? "").trim()}%`;
+      // Escape ILIKE wildcards in user input so a search for "a_b" doesn't
+      // match "aXb" because of a literal underscore being treated as a wildcard.
+      const rawSearch = (request.query.search ?? "").trim().replace(/[\\%_]/g, "\\$&");
+      const search = `%${rawSearch}%`;
       const result = await pool.query(
         `select u.id, u.name, u.email, r.name as role, u.status
          from users u
@@ -241,6 +244,71 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
         after: customer
       });
       return reply.code(201).send({ customer });
+    }
+  );
+
+  app.post(
+    "/api/customers/bulk-import",
+    { preHandler: requireCsrfPermission("assessment.create") },
+    async (request, reply) => {
+      const bulkSchema = z.object({
+        customers: z
+          .array(
+            z.object({
+              name: z.string().trim().min(1).max(200),
+              industry: z.string().max(80).optional(),
+              regulatoryContext: z.string().max(120).optional(),
+              criticalSystems: z.array(z.string().max(80)).max(20).optional(),
+              businessCriticality: z.string().max(40).optional(),
+              status: z.string().max(40).optional()
+            })
+          )
+          .min(1)
+          .max(500)
+      });
+      const body = validateBody(bulkSchema, request.body, reply);
+      if (!body) return;
+      const created: Array<Record<string, unknown>> = [];
+      const failures: Array<{ name: string; reason: string }> = [];
+      for (const row of body.customers) {
+        const id = randomUUID();
+        try {
+          await pool.query(
+            `insert into customers
+              (id, name, created_by_user_id, industry, regulatory_context, critical_systems, business_criticality, status)
+             values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              id,
+              row.name,
+              request.user!.sub,
+              row.industry ?? null,
+              row.regulatoryContext ?? null,
+              JSON.stringify(row.criticalSystems ?? []),
+              row.businessCriticality ?? null,
+              row.status ?? "active"
+            ]
+          );
+        } catch (error) {
+          failures.push({
+            name: row.name,
+            reason: error instanceof Error ? error.message : "Insert failed"
+          });
+          continue;
+        }
+        const customer = await loadCustomer(id).catch(() => null);
+        if (customer) {
+          created.push(customer);
+          await appendActivityEvent({
+            userId: request.user!.sub,
+            action: "customer.bulk_imported",
+            entityType: "customer",
+            entityId: id,
+            before: null,
+            after: customer
+          }).catch(() => undefined);
+        }
+      }
+      return reply.code(201).send({ created, failures });
     }
   );
 

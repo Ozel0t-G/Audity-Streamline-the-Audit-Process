@@ -32,12 +32,15 @@ export function AlphaDisclaimerPage() {
           <input className="mt-1" type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} />
           <span>I understand and accept the alpha limitations for this test environment.</span>
         </label>
-        {error ? <div className="mt-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+        {error ? <div className="mt-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
         <div className="mt-5 flex gap-2">
           <button className="audity-btn-primary" disabled={!accepted} onClick={() => void continueToApp()}>
             Accept and continue
           </button>
-          <button className="audity-btn-secondary" onClick={() => void logout()}>
+          <button
+            className="audity-btn-secondary"
+            onClick={() => void logout().finally(() => navigate("/login", { replace: true }))}
+          >
             Logout
           </button>
         </div>

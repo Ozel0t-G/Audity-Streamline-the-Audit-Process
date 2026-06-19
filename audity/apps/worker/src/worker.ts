@@ -64,7 +64,14 @@ const app = Fastify({
 const pool = new pg.Pool({
   connectionString:
     process.env.AUDITY_DATABASE_URL ??
-    "postgres://audity:change-me@audity-db:5432/audity"
+    "postgres://audity:change-me@audity-db:5432/audity",
+  max: Number(process.env.AUDITY_DB_POOL_MAX ?? 15),
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
+});
+
+pool.on("error", (error) => {
+  console.error("[worker-db] idle pg client error", error);
 });
 
 const storageEndpoint = new URL(
@@ -119,7 +126,7 @@ async function appendActivityEvent(
     );
     const timestamp = nextTimestamp(previous.rows[0]?.created_at).toISOString();
     const prevHash = previous.rows[0]?.event_hash ?? "";
-    const payload = JSON.stringify({ before, after });
+    const payload = JSON.stringify({ before: before ?? null, after: after ?? null });
     const eventHash = createHash("sha256")
       .update(timestamp + userId + action + entityId + payload + prevHash)
       .digest("hex");
@@ -133,8 +140,8 @@ async function appendActivityEvent(
         action,
         entityType,
         entityId,
-        JSON.stringify(before),
-        JSON.stringify(after),
+        JSON.stringify(before ?? null),
+        JSON.stringify(after ?? null),
         prevHash || null,
         eventHash,
         timestamp
@@ -142,7 +149,9 @@ async function appendActivityEvent(
     );
     await client.query("commit");
   } catch (error) {
-    await client.query("rollback");
+    // Roll back, but don't let a rollback failure (broken connection, etc.)
+    // mask the underlying error the caller cares about.
+    await client.query("rollback").catch(() => undefined);
     throw error;
   } finally {
     client.release();
@@ -949,6 +958,14 @@ new Worker(
       await appendReportExported(userId, reportId, objectKey);
       await job.updateProgress(100);
       return { objectKey };
+    } catch (error) {
+      // If PDF generation fails, reset status so the UI doesn't stay stuck
+      // showing "rendering". The job itself may still retry depending on queue settings.
+      await pool.query(
+        "update reports set status = 'export_failed', updated_at = now() where id = $1",
+        [reportId]
+      ).catch(() => undefined);
+      throw error;
     } finally {
       await browser.close();
     }

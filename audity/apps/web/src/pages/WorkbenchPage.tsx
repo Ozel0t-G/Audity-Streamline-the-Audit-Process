@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
-import { DataTable, SeverityBadge, useConfirm, useToast, type DataTableColumn } from "../components/ui";
+import { DataTable, EmptyState, PageSkeleton, SeverityBadge, useConfirm, useToast, type DataTableColumn } from "../components/ui";
 
 type WorkbenchRecord = {
   id: string;
@@ -101,7 +101,13 @@ export function WorkbenchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const canAdmin = Boolean(user?.permissions.includes("settings.manage"));
   const canEdit = canAdmin;
-  const [tab, setTab] = useState<"work" | "admin" | "analytics" | "coverage">("work");
+  const [tab, setTab] = useState<"work" | "admin" | "analytics" | "coverage">(() => {
+    const fromUrl = searchParams.get("tab");
+    if (fromUrl === "work" || fromUrl === "admin" || fromUrl === "analytics" || fromUrl === "coverage") {
+      return fromUrl;
+    }
+    return "work";
+  });
   const [overview, setOverview] = useState<WorkbenchOverview | null>(null);
   const [records, setRecords] = useState<WorkbenchRecord[]>([]);
   const [adminConfig, setAdminConfig] = useState<AdminConfig | null>(null);
@@ -204,13 +210,40 @@ export function WorkbenchPage() {
       destructive: status.toLowerCase() === "closed" || status.toLowerCase() === "rejected"
     });
     if (!ok) return;
+    const previous = new Map<string, string>();
+    for (const record of records) {
+      if (ids.includes(record.id)) previous.set(record.id, record.status);
+    }
     try {
       await api("/api/workbench/records/bulk", {
         method: "POST",
         body: JSON.stringify({ ids, status })
       });
       setSelectedIds([]);
-      toast.success(`Updated ${ids.length} record${ids.length === 1 ? "" : "s"}`);
+      toast.success(`Updated ${ids.length} record${ids.length === 1 ? "" : "s"}`, {
+        durationMs: 8000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            const groups = new Map<string, string[]>();
+            for (const [recordId, previousStatus] of previous) {
+              const list = groups.get(previousStatus) ?? [];
+              list.push(recordId);
+              groups.set(previousStatus, list);
+            }
+            void (async () => {
+              for (const [previousStatus, recordIds] of groups) {
+                await api("/api/workbench/records/bulk", {
+                  method: "POST",
+                  body: JSON.stringify({ ids: recordIds, status: previousStatus })
+                });
+              }
+              await load();
+              toast.info(`Reverted ${ids.length} record${ids.length === 1 ? "" : "s"}`);
+            })();
+          }
+        }
+      });
       await load();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Bulk update failed";
@@ -276,6 +309,18 @@ export function WorkbenchPage() {
     await load();
   }
 
+  if (!overview) {
+    return (
+      <>
+        <div className="audity-page-header">
+          <p className="audity-page-kicker">Operations</p>
+          <h1 className="audity-page-title">Workbench</h1>
+        </div>
+        <PageSkeleton cards={4} showTable />
+      </>
+    );
+  }
+
   return (
     <>
       <div className="audity-page-header">
@@ -283,12 +328,26 @@ export function WorkbenchPage() {
         <h1 className="audity-page-title">Workbench</h1>
         <p className="audity-page-copy">Tenant-wide admin center for searches, saved views, evidence requests, registers, approvals, automation, governance and security administration. Changes made here apply globally to this tenant.</p>
       </div>
-      {error ? <div className="mb-3 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+      {error ? <div className="mb-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
       {message ? <div className="mb-3 rounded-audity border border-audity-success bg-audity-page px-3 py-2 text-sm text-audity-success">{message}</div> : null}
-      <div className="mb-3 flex flex-wrap gap-2">
-        {(["work", "admin", "analytics", "coverage"] as const).map((item) => (
-          <button key={item} className={`h-8 rounded-audity border px-3 text-sm ${tab === item ? "border-audity-primary bg-audity-primaryActive text-audity-text" : "border-audity-borderStrong text-audity-secondary"}`} onClick={() => setTab(item)}>
-            {item === "work" ? "Workflows & Registers" : item === "admin" ? "Automation & Governance" : item === "analytics" ? "Analytics" : "Feature Coverage"}
+      <div className="mb-3 flex flex-wrap gap-2" role="tablist" aria-label="Workbench sections">
+        {([
+          ["work", "Workflows & Registers"],
+          ["admin", "Automation & Governance"],
+          ["analytics", "Analytics"],
+          ["coverage", "Feature Coverage"]
+        ] as const).map(([item, label]) => (
+          <button
+            key={item}
+            role="tab"
+            aria-selected={tab === item}
+            className={`h-8 rounded-audity border px-3 text-sm ${tab === item ? "border-audity-primary bg-audity-primaryActive text-audity-text" : "border-audity-borderStrong text-audity-secondary"}`}
+            onClick={() => {
+              setTab(item);
+              setSearchParams({ ...Object.fromEntries(searchParams), tab: item });
+            }}
+          >
+            {label}
           </button>
         ))}
       </div>
@@ -334,7 +393,13 @@ export function WorkbenchPage() {
                 rows={records}
                 getRowId={(record) => record.id}
                 selectable
-                emptyState="No records in this module yet."
+                emptyState={
+                  <EmptyState
+                    icon={<span className="text-xl">📋</span>}
+                    title="No records yet"
+                    description="No records have been created in this module. Use the form on the right to add one."
+                  />
+                }
                 bulkActions={[
                   { label: "Bulk review", onRun: (rows) => void bulkUpdate("in_review", rows) },
                   { label: "Bulk close", onRun: (rows) => void bulkUpdate("closed", rows) }

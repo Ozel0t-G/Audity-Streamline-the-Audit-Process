@@ -46,23 +46,6 @@ const assessmentSchema = z.object({
 
 const assessmentTemplates = [
   {
-    key: "iso27001_readiness",
-    name: "ISO 27001 Readiness",
-    type: "ISO 27001 Readiness Assessment",
-    audience: "Management + ISMS Owners",
-    language: "en",
-    status: "draft",
-    scope: {
-      inScopeSystems: ["ISMS scope", "Core business systems", "Security governance processes"],
-      outOfScope: ["Unlicensed official ISO standard text"],
-      businessProcesses: ["Risk management", "Access control", "Incident management", "Supplier security"],
-      regulatoryContext: "ISO/IEC 27001 readiness",
-      assumptions: "Assessment uses readiness questions and customer-provided evidence.",
-      limitations: "Not a certification audit.",
-      criticality: "High"
-    }
-  },
-  {
     key: "supplier_security",
     name: "Supplier Security Assessment",
     type: "Supplier Security Assessment",

@@ -188,7 +188,7 @@ const rangeOptions: DashboardRange[] = ["6h", "24h", "1w", "1m"];
 export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const api = useApi();
   const navigate = useNavigate();
-  const { accessToken, expireSession, refreshSession, user } = useAuth();
+  const { accessToken, csrfToken, expireSession, refreshSession, user } = useAuth();
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -267,17 +267,26 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [error, setError] = useState("");
 
   async function fetchWithFreshAuth(path: string, init: RequestInit = {}) {
-    const send = (token: string | null) =>
-      fetch(`${apiBaseUrl}${path}`, {
+    const send = (token: string | null, csrf: string | null) => {
+      const headers = new Headers(init.headers);
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      if (csrf && init.method && init.method !== "GET") headers.set("X-CSRF-Token", csrf);
+      return fetch(`${apiBaseUrl}${path}`, {
         ...init,
         credentials: "include",
-        headers: token ? { ...Object.fromEntries(new Headers(init.headers)), Authorization: `Bearer ${token}` } : init.headers
+        headers
       });
-    let response = await send(accessToken);
-    if (response.status === 401) {
+    };
+    let response = await send(accessToken, csrfToken);
+    let needsRetry = response.status === 401;
+    if (response.status === 403) {
+      const body = await response.clone().json().catch(() => null) as { code?: string } | null;
+      needsRetry = body?.code === "CSRF_INVALID";
+    }
+    if (needsRetry) {
       const refreshed = await refreshSession();
       if (refreshed) {
-        response = await send(refreshed.accessToken);
+        response = await send(refreshed.accessToken, refreshed.csrfToken);
       }
     }
     if (response.status === 401) {
@@ -376,15 +385,33 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
 
   useEffect(() => {
     if (section !== "system" || updateJob?.status !== "running") return;
-    const timer = window.setInterval(() => {
-      void api<{ update: UpdateStatus; job: UpdateJob | null }>("/api/admin/updates/status")
+    let timer: number | undefined;
+    const poll = () =>
+      api<{ update: UpdateStatus; job: UpdateJob | null }>("/api/admin/updates/status")
         .then((payload) => {
           setUpdateStatus(payload.update);
           setUpdateJob(payload.job);
         })
         .catch(() => undefined);
-    }, 5000);
-    return () => window.clearInterval(timer);
+    const start = () => {
+      if (timer !== undefined) return;
+      timer = window.setInterval(() => void poll(), 5000);
+    };
+    const stop = () => {
+      if (timer === undefined) return;
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+    const sync = () => {
+      if (document.visibilityState === "visible") start();
+      else stop();
+    };
+    sync();
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      document.removeEventListener("visibilitychange", sync);
+      stop();
+    };
   }, [api, section, updateJob?.status]);
 
   async function verifyHashChain() {
@@ -405,7 +432,10 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = filename;
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
     anchor.click();
+    document.body.removeChild(anchor);
     window.URL.revokeObjectURL(url);
   }
 
@@ -646,7 +676,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             <p className="audity-page-kicker">Administration</p>
             <h1 className="audity-page-title">{title}</h1>
           </div>
-          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           {section === "activity" ? (
           <section className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="mb-4 flex flex-wrap items-end gap-3">
@@ -916,7 +946,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   </div>
                   <span className={`rounded-audity border px-3 py-1 text-xs font-semibold ${
                     updateStatus?.updateAvailable
-                      ? "border-audity-warning bg-[#2A2514] text-audity-warning"
+                      ? "border-audity-warning bg-audity-warning/10 text-audity-warning"
                       : "border-audity-border bg-audity-page text-audity-secondary"
                   }`}>
                     {updateStatus?.updateAvailable ? "Update available" : "Up to date"}
@@ -966,7 +996,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   <p className="mt-3 text-xs text-audity-muted">Last checked {new Date(updateStatus.checkedAt).toLocaleString()}</p>
                 ) : null}
                 {updateStatus?.checkError ? (
-                  <p className="mt-2 rounded-audity border border-audity-error/40 bg-[#2A1C17] px-3 py-2 text-xs text-[#FFB199]">
+                  <p className="mt-2 rounded-audity border border-audity-error/40 bg-audity-error/10 px-3 py-2 text-xs text-audity-error">
                     {updateStatus.checkError}
                   </p>
                 ) : null}
@@ -979,7 +1009,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                         {updateJob.exitCode !== null ? ` · exit ${updateJob.exitCode}` : ""}
                       </span>
                     </div>
-                    <pre className="max-h-56 overflow-auto rounded-audity border border-audity-border bg-[#080C10] p-3 text-xs leading-relaxed text-audity-secondary">
+                    <pre className="max-h-56 overflow-auto rounded-audity border border-audity-border bg-audity-app p-3 text-xs leading-relaxed text-audity-secondary">
                       {updateJob.log.length ? updateJob.log.join("\n") : "No update log yet."}
                     </pre>
                   </div>
@@ -1047,7 +1077,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       {systemMonitor.snapshot.issues.length ? (
                         <div className="space-y-2">
                           {systemMonitor.snapshot.issues.map((issue) => (
-                            <div key={issue} className="rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">
+                            <div key={issue} className="rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">
                               {issue}
                             </div>
                           ))}
@@ -1150,6 +1180,9 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   <div className="mt-4 border-t border-audity-border pt-4">
                     <label className="block text-xs font-semibold uppercase text-audity-secondary">
                       Confirm Full Restore
+                      <span className="mt-1 block text-[11px] font-normal normal-case text-audity-muted">
+                        Type the exact phrase <code className="font-mono">RESTORE AUDITY</code> to enable the restore button. The phrase stays in English as a safety guard against accidental clicks during a localized session.
+                      </span>
                       <input
                         className="mt-2 audity-input"
                         placeholder="RESTORE AUDITY"
@@ -1158,7 +1191,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       />
                     </label>
                     <button
-                      className="mt-3 audity-btn-secondary border-audity-error bg-[#2A1C17] font-semibold text-[#FFB199]"
+                      className="mt-3 audity-btn-secondary border-audity-error bg-audity-error/10 font-semibold text-audity-error"
                       disabled={!restoreBackupId || restoreConfirmation !== "RESTORE AUDITY"}
                       onClick={() => void startFullRestore()}
                     >

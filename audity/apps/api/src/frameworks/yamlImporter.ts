@@ -37,6 +37,7 @@ const controlSchema = z.object({
   evidenceExamples: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
   licensedMappingSlots: z.array(z.record(z.string(), z.unknown())).default([]),
+  suggestions: z.array(z.string()).default([]),
   questions: z.array(questionSchema).optional()
 });
 
@@ -66,7 +67,8 @@ const frameworkYamlSchema = z.object({
     officialControlCatalogueIncluded: z.boolean().default(false),
     licensedContentImportSupported: z.boolean().default(false),
     redistributionNote: z.string().optional(),
-    disclaimer: z.string().optional()
+    disclaimer: z.string().optional(),
+    defaultSuggestions: z.array(z.string()).default([])
   }),
   domains: z.array(domainSchema).default([]),
   controlMappings: z.array(z.object({
@@ -140,7 +142,8 @@ function controlReportMapping(control: z.infer<typeof controlSchema>): Record<st
       categoryId: control.categoryId,
       categoryTitle: control.categoryTitle,
       categoryDescription: control.categoryDescription,
-      source: control.source
+      source: control.source,
+      suggestions: control.suggestions.length ? control.suggestions : undefined
     })
   };
 }
@@ -153,8 +156,9 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
       (id, name, short_name, version, source_type, license_status, distributed_by_audity,
        status_label, disclaimer, license_confirmed, delivery_mode, content_class,
        official_standard_text_included, official_control_catalogue_included,
-       licensed_content_import_supported, redistribution_note, updated_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14,$15,now())
+       licensed_content_import_supported, redistribution_note,
+       yaml_source_path, yaml_synced_at, archived_at, updated_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14,$15,$16,now(),null,now())
      on conflict (id) do update set
        name = excluded.name,
        short_name = excluded.short_name,
@@ -171,6 +175,9 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
        official_control_catalogue_included = excluded.official_control_catalogue_included,
        licensed_content_import_supported = excluded.licensed_content_import_supported,
        redistribution_note = excluded.redistribution_note,
+       yaml_source_path = excluded.yaml_source_path,
+       yaml_synced_at = now(),
+       archived_at = null,
        updated_at = now()`,
     [
       frameworkId,
@@ -187,7 +194,8 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
       framework.officialStandardTextIncluded,
       framework.officialControlCatalogueIncluded,
       framework.licensedContentImportSupported,
-      framework.redistributionNote ?? null
+      framework.redistributionNote ?? null,
+      file
     ]
   );
 
@@ -458,12 +466,18 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
     frameworks: []
   };
   const controlMappings: Array<{ source: string; target: string; type: string }> = [];
+  // Collect ALL legitimate file paths during this scan, even ones we skipped
+  // because their hash matched the cached one. We use this list to decide
+  // which frameworks were orphaned. If we only used `result.frameworks` we
+  // would archive every unchanged framework on every polling cycle.
+  const scannedPaths: string[] = [];
   try {
     for (const file of await yamlFiles(directory)) {
       result.scannedFiles += 1;
       try {
         const fileStat = await stat(file);
         if (!fileStat.isFile()) continue;
+        scannedPaths.push(file);
         const raw = await readFile(file, "utf8");
         const hash = sha256(raw);
         if (!options.force && syncedHashes.get(file) === hash) {
@@ -485,6 +499,25 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
     }
     for (const mapping of controlMappings) {
       await upsertControlMapping(mapping.source, mapping.target, mapping.type);
+    }
+    // Soft-archive frameworks whose YAML source file disappeared since the last
+    // sync. Frameworks without a yaml_source_path (e.g. legacy hand-imported
+    // tenant content) are left untouched.
+    if (scannedPaths.length > 0) {
+      await pool.query(
+        `update frameworks
+         set archived_at = now(), updated_at = now()
+         where yaml_source_path is not null
+           and archived_at is null
+           and yaml_source_path <> all($1::text[])`,
+        [scannedPaths]
+      );
+    } else {
+      await pool.query(
+        `update frameworks
+         set archived_at = now(), updated_at = now()
+         where yaml_source_path is not null and archived_at is null`
+      );
     }
     return result;
   } finally {

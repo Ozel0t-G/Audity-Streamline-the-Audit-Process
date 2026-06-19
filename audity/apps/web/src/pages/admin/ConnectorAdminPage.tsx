@@ -83,15 +83,15 @@ const connectorInputClass =
 
 const connectorSectionClass = "border-b border-audity-border pb-4 last:border-b-0 last:pb-0";
 
-const connectorVisuals: Record<ConnectorId, { mark: string; logoUrl: string; fallbackClass: string; accentClass: string }> = {
-  jira: { mark: "J", logoUrl: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/jira.svg", fallbackClass: "bg-[#0052CC] text-white", accentClass: "border-[#0052CC]/70" },
-  "microsoft-teams": { mark: "T", logoUrl: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/microsoftteams.svg", fallbackClass: "bg-[#6264A7] text-white", accentClass: "border-[#6264A7]/70" },
-  servicenow: { mark: "SN", logoUrl: "https://www.google.com/s2/favicons?domain=servicenow.com&sz=128", fallbackClass: "bg-[#81B5A1] text-[#0D2B1F]", accentClass: "border-[#81B5A1]/70" },
-  "sharepoint-onedrive": { mark: "SP", logoUrl: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/microsoftsharepoint.svg", fallbackClass: "bg-[#038387] text-white", accentClass: "border-[#038387]/70" },
-  "microsoft-entra-id": { mark: "E", logoUrl: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/microsoftazure.svg", fallbackClass: "bg-[#0078D4] text-white", accentClass: "border-[#0078D4]/70" },
-  "power-bi": { mark: "P", logoUrl: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/powerbi.svg", fallbackClass: "bg-[#F2C811] text-[#1A1A1A]", accentClass: "border-[#F2C811]/70" },
-  confluence: { mark: "C", logoUrl: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/confluence.svg", fallbackClass: "bg-[#172B4D] text-white", accentClass: "border-[#2684FF]/70" },
-  slack: { mark: "#", logoUrl: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/slack.svg", fallbackClass: "bg-[#4A154B] text-white", accentClass: "border-[#E01E5A]/70" }
+const connectorVisuals: Record<ConnectorId, { mark: string; fallbackClass: string; accentClass: string }> = {
+  jira: { mark: "J", fallbackClass: "bg-[#0052CC] text-white", accentClass: "border-[#0052CC]/70" },
+  "microsoft-teams": { mark: "T", fallbackClass: "bg-[#6264A7] text-white", accentClass: "border-[#6264A7]/70" },
+  servicenow: { mark: "SN", fallbackClass: "bg-[#81B5A1] text-[#0D2B1F]", accentClass: "border-[#81B5A1]/70" },
+  "sharepoint-onedrive": { mark: "SP", fallbackClass: "bg-[#038387] text-white", accentClass: "border-[#038387]/70" },
+  "microsoft-entra-id": { mark: "E", fallbackClass: "bg-[#0078D4] text-white", accentClass: "border-[#0078D4]/70" },
+  "power-bi": { mark: "P", fallbackClass: "bg-[#F2C811] text-[#1A1A1A]", accentClass: "border-[#F2C811]/70" },
+  confluence: { mark: "C", fallbackClass: "bg-[#172B4D] text-white", accentClass: "border-[#2684FF]/70" },
+  slack: { mark: "#", fallbackClass: "bg-[#4A154B] text-white", accentClass: "border-[#E01E5A]/70" }
 };
 
 function statusClass(status: string) {
@@ -104,18 +104,8 @@ function statusClass(status: string) {
 function ConnectorLogo({ connector }: { connector: Connector }) {
   const visual = connectorVisuals[connector.id];
   return (
-    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-audity border border-audity-border bg-white p-2 shadow-sm">
-      <img
-        className="h-full w-full object-contain"
-        src={visual.logoUrl}
-        alt={`${connector.displayName} logo`}
-        onError={(event) => {
-          const image = event.currentTarget;
-          image.style.display = "none";
-          image.parentElement?.classList.add(...visual.fallbackClass.split(" "));
-          if (image.parentElement) image.parentElement.textContent = visual.mark;
-        }}
-      />
+    <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-audity border border-audity-border p-2 shadow-sm text-base font-bold ${visual.fallbackClass}`}>
+      <span aria-label={`${connector.displayName} logo`}>{visual.mark}</span>
     </div>
   );
 }
@@ -222,7 +212,7 @@ export function ConnectorAdminPage() {
           Configure each external system once for the Audity instance. Enabled connectors synchronize customer data according to their sync settings.
         </p>
       </div>
-      {error ? <div className="mb-4 rounded-audity border border-audity-error bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+      {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
       {message ? <div className="mb-4 rounded-audity border border-audity-success bg-audity-page px-3 py-2 text-sm text-audity-success">{message}</div> : null}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {connectors.map((connector) => {

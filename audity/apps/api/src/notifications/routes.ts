@@ -2,10 +2,67 @@ import type { FastifyInstance } from "fastify";
 import { appendActivityEvent } from "../activity/service.js";
 import { ensureUpdateNotificationForAdmin } from "../admin/updateService.js";
 import { requireAuth, requireCsrf } from "../auth/hooks.js";
+import { verifyAccessToken } from "../auth/tokens.js";
 import { pool } from "../db/client.js";
 import { mapNotification } from "./service.js";
 
+async function notificationDigest(userId: string): Promise<string> {
+  const result = await pool.query<{ count: string; latest: string | null }>(
+    `select count(*)::text as count,
+            max(coalesce(read_at, created_at))::text as latest
+     from notifications where recipient_user_id = $1`,
+    [userId]
+  );
+  return `${result.rows[0]?.count ?? 0}|${result.rows[0]?.latest ?? ""}`;
+}
+
 export async function registerNotificationRoutes(app: FastifyInstance): Promise<void> {
+  app.get<{ Querystring: { token?: string } }>(
+    "/api/notifications/stream",
+    async (request, reply) => {
+      const token = request.query.token;
+      if (!token) {
+        return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Token query parameter required" });
+      }
+      let userId: string;
+      try {
+        userId = verifyAccessToken(token).sub;
+      } catch {
+        return reply.code(401).send({ code: "TOKEN_INVALID", message: "Access token is invalid" });
+      }
+      reply.raw.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no"
+      });
+      reply.raw.write(`: connected\n\n`);
+      let lastDigest = "";
+      let cancelled = false;
+      const sendUpdate = async () => {
+        const digest = await notificationDigest(userId).catch(() => "");
+        if (digest && digest !== lastDigest) {
+          lastDigest = digest;
+          reply.raw.write(`event: notifications.changed\ndata: {}\n\n`);
+        }
+      };
+      const interval = setInterval(() => {
+        if (cancelled) return;
+        void sendUpdate();
+      }, 15000);
+      const heartbeat = setInterval(() => {
+        if (cancelled) return;
+        reply.raw.write(`: heartbeat\n\n`);
+      }, 25000);
+      void sendUpdate();
+      request.raw.on("close", () => {
+        cancelled = true;
+        clearInterval(interval);
+        clearInterval(heartbeat);
+      });
+    }
+  );
+
   app.get("/api/system/session-timeout", { preHandler: requireAuth }, async () => {
     const result = await pool.query<{ value: unknown }>(
       "select value from settings where key = 'session_idle_timeout_minutes'"

@@ -1,9 +1,20 @@
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { PageSkeleton, SeverityBadge, WorkflowProgress, useConfirm, useToast, type WorkflowStep } from "../../components/ui";
 import { disabledTitle } from "../../utils/permissionReasons";
+import {
+  Field,
+  MiniStat,
+  Panel,
+  Pill,
+  dateValue,
+  numberValue,
+  readableLabel as label,
+  text,
+  toneClass
+} from "./auditPrimitives";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -71,6 +82,15 @@ const tabs = [
   "Gaps & Pack"
 ];
 
+function tabSlug(label: string): string {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function tabFromSlug(slug: string | null): string {
+  if (!slug) return tabs[0];
+  return tabs.find((tab) => tabSlug(tab) === slug) ?? tabs[0];
+}
+
 const scopeTypes = ["system", "process", "supplier", "data_type", "location", "regulation", "other"];
 const criticalities = ["low", "medium", "high", "critical"];
 const reviewStatuses = ["draft", "ready_for_review", "changes_requested", "approved"];
@@ -104,98 +124,6 @@ const emptyOverview: AuditOverview = {
   executiveSummary: ""
 };
 
-function text(value: unknown, fallback = "") {
-  if (value === null || value === undefined) return fallback;
-  return String(value);
-}
-
-function numberValue(value: unknown, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function dateValue(value: unknown) {
-  return text(value).slice(0, 10);
-}
-
-function label(value: unknown) {
-  return text(value, "-").replace(/_/g, " ");
-}
-
-function toneClass(value: string | null | undefined) {
-  if (["critical", "blocked", "rejected", "failed"].includes(String(value))) return "border-audity-error text-audity-error";
-  if (["high", "changes_requested", "ready", "ready_for_review", "received", "validated"].includes(String(value))) return "border-audity-warning text-audity-warning";
-  if (["approved", "signed", "closed", "passed", "final"].includes(String(value))) return "border-audity-success text-audity-success";
-  return "border-audity-borderStrong text-audity-secondary";
-}
-
-function Field({
-  label,
-  children,
-  wide,
-  required,
-  hint
-}: {
-  label: string;
-  children: ReactNode;
-  wide?: boolean;
-  required?: boolean;
-  hint?: ReactNode;
-}) {
-  return (
-    <label className={`block ${wide ? "sm:col-span-2" : ""}`}>
-      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-audity-muted">
-        {label}
-        {required ? <span className="ml-0.5 text-audity-error" aria-hidden="true">*</span> : null}
-        {required ? <span className="sr-only"> (required)</span> : null}
-      </span>
-      {children}
-      {hint ? <span className="mt-1 block text-xs text-audity-muted">{hint}</span> : null}
-    </label>
-  );
-}
-
-function Pill({ value }: { value: unknown }) {
-  return (
-    <span className={`inline-flex rounded-audity border px-2 py-0.5 text-xs font-semibold capitalize ${toneClass(text(value))}`}>
-      {label(value)}
-    </span>
-  );
-}
-
-function Panel({
-  title,
-  subtitle,
-  action,
-  children
-}: {
-  title: string;
-  subtitle?: string;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rounded-audity border border-audity-border bg-audity-panel">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-audity-border px-4 py-3">
-        <div>
-          <h2 className="text-base font-semibold text-audity-text">{title}</h2>
-          {subtitle ? <p className="mt-1 text-sm text-audity-muted">{subtitle}</p> : null}
-        </div>
-        {action}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-      <p className="text-xs font-semibold uppercase text-audity-muted">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-audity-text">{value}</p>
-    </div>
-  );
-}
 
 type AuditWorkflowCard = {
   title: string;
@@ -213,7 +141,18 @@ export function AuditCenterPage() {
   const canEdit = Boolean(user?.permissions.includes("assessment.edit"));
   const canApprove = Boolean(user?.permissions.includes("finding.approve"));
   const canReport = Boolean(user?.permissions.includes("report.export"));
-  const [activeTab, setActiveTab] = useState(tabs[0]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTabState] = useState(() => tabFromSlug(searchParams.get("tab")));
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", tabSlug(tab));
+    setSearchParams(next, { replace: true });
+  };
+  useEffect(() => {
+    const next = tabFromSlug(searchParams.get("tab"));
+    if (next !== activeTab) setActiveTabState(next);
+  }, [searchParams]);
   const [overview, setOverview] = useState<AuditOverview>(emptyOverview);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedControlId, setSelectedControlId] = useState("");
@@ -1323,7 +1262,12 @@ export function AuditCenterPage() {
                   <p className="mt-1 text-xs text-audity-muted">{label(finding.lifecycleStatus)} · {label(finding.calculatedSeverity ?? finding.priority)}</p>
                 </button>
               ))}
-              {!overview.findings.length ? <p className="text-sm text-audity-muted">No findings created yet.</p> : null}
+              {!overview.findings.length ? (
+                <div className="rounded-audity border border-dashed border-audity-border bg-audity-panel/40 px-4 py-6 text-center">
+                  <p className="text-sm font-semibold text-audity-text">No findings yet</p>
+                  <p className="mt-1 text-xs text-audity-secondary">Create a finding from a low score, missing evidence, or auditor observation using the form below.</p>
+                </div>
+              ) : null}
             </div>
           </Panel>
 

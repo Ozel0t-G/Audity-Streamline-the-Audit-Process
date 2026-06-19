@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
+import { PageSkeleton } from "../../components/ui";
 import type { Assessment, AssessmentScope, Customer } from "./types";
 
 type FrameworkOption = { id: string; name: string; shortName: string | null };
@@ -144,12 +145,21 @@ export function CustomerDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    void api<{ users: ShareTarget[] }>(`/api/users/share-targets?search=${encodeURIComponent(shareSearch)}`)
-      .then((payload) => {
-        setShareTargets(payload.users);
-        if (!shareUserId && payload.users[0]) setShareUserId(payload.users[0].id);
-      })
-      .catch(() => undefined);
+    let cancelled = false;
+    const handle = window.setTimeout(() => {
+      if (cancelled) return;
+      void api<{ users: ShareTarget[] }>(`/api/users/share-targets?search=${encodeURIComponent(shareSearch)}`)
+        .then((payload) => {
+          if (cancelled) return;
+          setShareTargets(payload.users);
+          if (!shareUserId && payload.users[0]) setShareUserId(payload.users[0].id);
+        })
+        .catch(() => undefined);
+    }, 200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, [shareSearch]);
 
   useEffect(() => {
@@ -232,12 +242,24 @@ export function CustomerDetailPage() {
     }
   }
 
+  if (!customer) {
+    return (
+      <>
+        <div className="audity-page-header">
+          <p className="audity-page-kicker">Customer Detail</p>
+          <h1 className="audity-page-title">Loading customer…</h1>
+        </div>
+        <PageSkeleton cards={2} showTable />
+      </>
+    );
+  }
+
   return (
     <>
           <div className="audity-page-header">
             <p className="audity-page-kicker">Customer Detail</p>
-            <h1 className="audity-page-title">{customer?.name ?? "Customer"}</h1>
-            <p className="audity-page-copy">{customer?.industry} · {customer?.businessCriticality}</p>
+            <h1 className="audity-page-title">{customer.name}</h1>
+            <p className="audity-page-copy">{customer.industry} · {customer.businessCriticality}</p>
           </div>
           <div className="mb-4 flex flex-wrap gap-2">
             {workflow.map(([label, locked], index) => (
@@ -255,7 +277,7 @@ export function CustomerDetailPage() {
               </div>
             ))}
           </div>
-          {error ? <div className="mb-4 rounded-audity border border-[#FF4B00] bg-[#2A1C17] px-3 py-2 text-sm text-[#FFB199]">{error}</div> : null}
+          {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
             <div className="min-w-0 space-y-3">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">

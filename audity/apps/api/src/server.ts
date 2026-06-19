@@ -35,7 +35,10 @@ const rateLimitRedis = new Redis(config.redisUrl, {
   enableReadyCheck: false
 });
 const publicOrigin = new URL(config.publicUrl.includes("://") ? config.publicUrl : `http://${config.publicUrl}`).origin;
-const allowedOrigins = Array.from(new Set([publicOrigin, "http://localhost", "http://127.0.0.1"]));
+const isProduction = config.env === "production";
+const allowedOrigins = isProduction
+  ? [publicOrigin]
+  : Array.from(new Set([publicOrigin, "http://localhost", "http://127.0.0.1"]));
 
 await app.register(helmet, {
   contentSecurityPolicy: {
@@ -46,10 +49,10 @@ await app.register(helmet, {
       fontSrc: ["'self'", "data:"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
-      imgSrc: ["'self'", "data:", "blob:", "https://cdn.jsdelivr.net", "https://www.google.com", "https://t0.gstatic.com", "https://t1.gstatic.com", "https://t2.gstatic.com", "https://t3.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
       objectSrc: ["'none'"],
       scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"]
+      styleSrc: isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"]
     }
   },
   global: true,

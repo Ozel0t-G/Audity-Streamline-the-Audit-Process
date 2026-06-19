@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useApi } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
-import { currentLanguage, translate } from "../i18n";
 import { BrandMark } from "./BrandMark";
 import { CommandPalette } from "./CommandPalette";
 import { HelpDrawer } from "./HelpDrawer";
+import { useIdleLogout } from "./layout/useIdleLogout";
+import { useTooltips } from "./layout/useTooltips";
+import { useLanguage, useUserTheme } from "./layout/useUserTheme";
+import { OnboardingTips } from "./OnboardingTips";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -19,7 +22,7 @@ const navSectionClass = "px-2 pt-4 pb-1 text-xs font-semibold uppercase tracking
 const customerSectionClass = "px-2 pt-4 pb-1 text-xs font-semibold tracking-normal text-audity-muted";
 const disabledNavClass = "block cursor-not-allowed rounded-audity px-2.5 py-1.5 text-sm text-audity-muted opacity-60";
 
-function shortCustomerName(value: string, maxLength = 12) {
+function shortCustomerName(value: string, maxLength = 24) {
   const trimmed = value.trim();
   if (trimmed.length <= maxLength) return trimmed;
   return `${trimmed.slice(0, maxLength)}...`;
@@ -37,210 +40,8 @@ function isAdminRole(role?: string) {
   return role === "Instance Admin" || role === "Tenant Admin";
 }
 
-function useIdleLogout() {
-  const api = useApi();
-  const { accessToken, logout } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!accessToken) return;
-    let timer: number | undefined;
-    let cancelled = false;
-    let timeoutMinutes = 30;
-    const activityEvents = ["click", "keydown", "mousemove", "scroll", "touchstart"];
-
-    const schedule = () => {
-      if (cancelled) return;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        window.localStorage.setItem("audity_login_notice", "Your session timed out because of inactivity.");
-        void logout().finally(() => navigate("/login", { replace: true }));
-      }, Math.max(5, timeoutMinutes) * 60 * 1000);
-    };
-
-    const loadTimeout = async () => {
-      const payload = await api<{ sessionIdleTimeoutMinutes: number }>("/api/system/session-timeout").catch(() => ({
-        sessionIdleTimeoutMinutes: 30
-      }));
-      timeoutMinutes = payload.sessionIdleTimeoutMinutes;
-      schedule();
-    };
-
-    void loadTimeout();
-    activityEvents.forEach((eventName) => window.addEventListener(eventName, reset, { passive: true }));
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-      activityEvents.forEach((eventName) => window.removeEventListener(eventName, reset));
-    };
-
-    function reset() {
-      schedule();
-    }
-  }, [accessToken, api, logout, navigate]);
-}
-
-const tooltipDictionary: Array<[RegExp, string]> = [
-  [/change password/i, "Update your password after confirming the current one."],
-  [/current password/i, "Enter the password you use to sign in today."],
-  [/new password/i, "Choose a new password with at least 8 characters."],
-  [/confirm password/i, "Repeat the new password so typos are caught before saving."],
-  [/tooltips/i, "Show or hide small help text when hovering controls."],
-  [/user settings/i, "Open your personal account and interface preferences."],
-  [/notifications/i, "Open recent system messages and review reminders."],
-  [/logout|sign out/i, "End this browser session and return to the login screen."],
-  [/dashboard/i, "Open the overview with current audit metrics."],
-  [/customers/i, "Open the customer and assessment workspace."],
-  [/activity log/i, "Review traceable application events and workflow changes."],
-  [/audit log/i, "Review security relevant events such as login and password activity."],
-  [/user management/i, "Manage users, roles, status, and visible permissions."],
-  [/apply/i, "Apply the selected filters to the current list."],
-  [/export/i, "Download the currently shown data as a file."],
-  [/verify hash/i, "Check whether the activity log hash chain is still intact."],
-  [/invite/i, "Create a new user with the entered role and temporary password."],
-  [/disable/i, "Disable this account so the user can no longer sign in."],
-  [/save/i, "Store the changes shown in this form."],
-  [/confirm finding/i, "Mark this suggested finding as confirmed by the reviewer."],
-  [/mark residual risk accepted/i, "Record that the remaining risk is knowingly accepted."],
-  [/reject finding/i, "Dismiss this finding while keeping an audit trail."],
-  [/risk register/i, "Review, edit, import, export, and track assessment risks."],
-  [/export csv/i, "Download the risk register as a CSV file."],
-  [/csv template/i, "Download a CSV template for importing risks."],
-  [/import csv/i, "Upload a CSV file and add its risks to this assessment."],
-  [/clear filter/i, "Remove the matrix filter and show all risks again."],
-  [/likelihood/i, "Set how probable the risk scenario is on a 1 to 5 scale."],
-  [/impact/i, "Set the expected business impact on a 1 to 5 scale."],
-  [/treatment/i, "Choose whether to mitigate, accept, transfer, or avoid the risk."],
-  [/owner/i, "Name the person or team responsible for this item."],
-  [/due date/i, "Set the target date for completing this action."],
-  [/treatment plan/i, "Describe the concrete steps planned for this risk."],
-  [/add review note/i, "Write a review comment that stays with this item."],
-  [/auto-generate/i, "Create roadmap actions from high and critical risks."],
-  [/generate from risk/i, "Create a roadmap action for the selected risk."],
-  [/backup/i, "Create or manage backup and restore jobs."],
-  [/restore/i, "Check or start a restore process from an existing backup."]
-];
-
-function tooltipFor(element: Element): string {
-  const explicit = element.getAttribute("aria-label") || element.getAttribute("placeholder") || element.getAttribute("name");
-  const text = element.textContent?.replace(/\s+/g, " ").trim();
-  const tag = element.tagName.toLowerCase();
-  const label = explicit || text;
-  if (label) {
-    const match = tooltipDictionary.find(([pattern]) => pattern.test(label));
-    if (match) return match[1];
-    if (tag === "a") return `Open ${label}.`;
-    if (tag === "button") return `Run the ${label} action.`;
-    return `Enter or choose a value for ${label}.`;
-  }
-  if (tag === "select") return "Choose one of the available options.";
-  if (tag === "textarea") return "Enter notes or longer audit text here.";
-  if (tag === "input") return "Enter a value for this field.";
-  return "Open this action.";
-}
-
-function useTooltips() {
-  const [enabled, setEnabled] = useState(() => window.localStorage.getItem("audity_tooltips_enabled") !== "false");
-
-  useEffect(() => {
-    const sync = () => setEnabled(window.localStorage.getItem("audity_tooltips_enabled") !== "false");
-    window.addEventListener("audity-tooltips-changed", sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener("audity-tooltips-changed", sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("audity-tooltips-off", !enabled);
-    let tooltip = document.getElementById("audity-tooltip-layer");
-    if (!tooltip) {
-      tooltip = document.createElement("div");
-      tooltip.id = "audity-tooltip-layer";
-      tooltip.className = "audity-tooltip-layer";
-      document.body.appendChild(tooltip);
-    }
-    const annotate = () => {
-      document.querySelectorAll("button, a, input, select, textarea, label").forEach((element) => {
-        if (element.hasAttribute("data-tooltip")) return;
-        if (element.closest("[data-tooltip-skip]")) return;
-        element.setAttribute("data-tooltip", tooltipFor(element));
-      });
-    };
-    annotate();
-    const show = (event: Event) => {
-      if (!enabled || !tooltip) return;
-      const target = event.target instanceof Element ? event.target.closest("[data-tooltip]") : null;
-      if (!target) return;
-      const text = target.getAttribute("data-tooltip");
-      if (!text) return;
-      const rect = target.getBoundingClientRect();
-      tooltip.textContent = text;
-      tooltip.style.display = "block";
-      const top = Math.max(8, rect.top + window.scrollY - tooltip.offsetHeight - 8);
-      const left = Math.min(window.innerWidth - tooltip.offsetWidth - 12, Math.max(8, rect.left + window.scrollX));
-      tooltip.style.top = `${top}px`;
-      tooltip.style.left = `${left}px`;
-    };
-    const hide = () => {
-      if (tooltip) tooltip.style.display = "none";
-    };
-    const observer = new MutationObserver(annotate);
-    observer.observe(document.body, { childList: true, subtree: true });
-    document.addEventListener("mouseover", show);
-    document.addEventListener("focusin", show);
-    document.addEventListener("mouseout", hide);
-    document.addEventListener("focusout", hide);
-    document.addEventListener("scroll", hide, true);
-    return () => {
-      observer.disconnect();
-      document.removeEventListener("mouseover", show);
-      document.removeEventListener("focusin", show);
-      document.removeEventListener("mouseout", hide);
-      document.removeEventListener("focusout", hide);
-      document.removeEventListener("scroll", hide, true);
-    };
-  }, [enabled]);
-}
-
-function useUserTheme() {
-  useEffect(() => {
-    const apply = () => {
-      const preference = window.localStorage.getItem("audity_theme") ?? "System";
-      const systemLight = window.matchMedia?.("(prefers-color-scheme: light)").matches ?? false;
-      const light = preference === "Light" || (preference === "System" && systemLight);
-      document.documentElement.classList.toggle("audity-theme-light", light);
-    };
-    apply();
-    window.addEventListener("audity-theme-changed", apply);
-    window.addEventListener("storage", apply);
-    return () => {
-      window.removeEventListener("audity-theme-changed", apply);
-      window.removeEventListener("storage", apply);
-    };
-  }, []);
-}
-
-function useLanguage() {
-  const [language, setLanguage] = useState(currentLanguage);
-  useEffect(() => {
-    const sync = () => setLanguage(currentLanguage());
-    window.addEventListener("audity-language-changed", sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener("audity-language-changed", sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
-  useEffect(() => {
-    document.documentElement.lang = "en";
-  }, [language]);
-  return (label: string) => translate(label, language);
-}
-
 function TopBar({ adminMode = false }: { adminMode?: boolean }) {
-  const { user, logout } = useAuth();
+  const { user, logout, accessToken } = useAuth();
   const t = useLanguage();
   const api = useApi();
   const navigate = useNavigate();
@@ -373,9 +174,50 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
 
   useEffect(() => {
     void loadNotifications().catch(() => undefined);
-    const timer = window.setInterval(() => void loadNotifications().catch(() => undefined), 30000);
-    return () => window.clearInterval(timer);
-  }, [api]);
+    if (!accessToken) return;
+    let source: EventSource | undefined;
+    let pollTimer: number | undefined;
+    const startStream = () => {
+      if (source) return;
+      try {
+        source = new EventSource(`/api/notifications/stream?token=${encodeURIComponent(accessToken)}`);
+        source.addEventListener("notifications.changed", () => void loadNotifications().catch(() => undefined));
+        source.onerror = () => {
+          source?.close();
+          source = undefined;
+          startPollingFallback();
+        };
+      } catch {
+        startPollingFallback();
+      }
+    };
+    const startPollingFallback = () => {
+      if (pollTimer !== undefined) return;
+      pollTimer = window.setInterval(() => void loadNotifications().catch(() => undefined), 30000);
+    };
+    const stop = () => {
+      source?.close();
+      source = undefined;
+      if (pollTimer !== undefined) {
+        window.clearInterval(pollTimer);
+        pollTimer = undefined;
+      }
+    };
+    const sync = () => {
+      if (document.visibilityState === "visible") {
+        void loadNotifications().catch(() => undefined);
+        startStream();
+      } else {
+        stop();
+      }
+    };
+    sync();
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      document.removeEventListener("visibilitychange", sync);
+      stop();
+    };
+  }, [api, accessToken]);
 
   async function openNotification(notification: (typeof notifications)[number]) {
     await api(`/api/notifications/${notification.id}/read`, { method: "PATCH" });
@@ -399,7 +241,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
   }
 
   return (
-    <header className="flex h-11 items-center justify-between border-b border-audity-border bg-audity-topnav px-4">
+    <header className="sticky top-0 z-40 flex h-11 items-center justify-between border-b border-audity-border bg-audity-topnav px-4">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
@@ -540,22 +382,7 @@ export function AppLayout() {
   useTooltips();
   useUserTheme();
   const [customerContext, setCustomerContext] = useState({ label: "", assessmentId: "" });
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  useEffect(() => {
-    const open = () => setMobileNavOpen(true);
-    const toggle = () => setMobileNavOpen((current) => !current);
-    window.addEventListener("audity-mobile-nav-open", open);
-    window.addEventListener("audity-mobile-nav-toggle", toggle);
-    return () => {
-      window.removeEventListener("audity-mobile-nav-open", open);
-      window.removeEventListener("audity-mobile-nav-toggle", toggle);
-    };
-  }, []);
-
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [location.pathname]);
+  const { mobileNavOpen, setMobileNavOpen } = useMobileNav();
 
   useEffect(() => {
     const handleCustomerContext = (event: Event) => {
@@ -624,59 +451,42 @@ export function AppLayout() {
       <span className={disabledNavClass} title="Select or create an assessment first.">{t("Audit Center")}</span>
       <span className={disabledNavClass} title="Select or create an assessment first.">{t("Findings & Risk")}</span>
       <span className={disabledNavClass} title="Select or create an assessment first.">{t("Evidence & Reports")}</span>
+      <p className="mt-1 rounded-audity border border-audity-borderStrong bg-audity-panelAlt px-2 py-1 text-[11px] leading-4 text-audity-muted">
+        Select or create an assessment first to enable these views.
+      </p>
     </>
   );
 
   return (
-    <div className="min-h-screen bg-audity-app text-audity-text">
-      <a href="#audity-main" className="audity-skip-link">{t("Skip to main content")}</a>
-      <TopBar />
-      {mobileNavOpen ? (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          aria-hidden="true"
-          onClick={() => setMobileNavOpen(false)}
-        />
-      ) : null}
-      <div className="grid min-h-[calc(100vh-44px)] grid-cols-1 lg:grid-cols-[208px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)] 2xl:grid-cols-[232px_minmax(0,1fr)]">
-        <aside
-          className={`fixed inset-y-[44px] left-0 z-40 w-64 border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4 transition-transform lg:static lg:inset-auto lg:w-auto lg:translate-x-0 ${mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
-          aria-label={t("Primary navigation")}
-        >
-          <nav className="space-y-0.5">
-            <p className={navSectionClass}>{t("Workspace")}</p>
-            <NavLink className={navClass} to="/dashboard">{t("Dashboard")}</NavLink>
-            <NavLink className={navClass} to="/customers/my">{t("Customers")}</NavLink>
-            <NavLink className={navClass} to="/customers/shared">{t("Shared Customers")}</NavLink>
-            {customerContext.label ? (
-              <>
-                <p className={customerSectionClass} title={customerContext.label}>{customerMenuLabel}</p>
-                {assessmentNav}
-              </>
-            ) : null}
-            <p className={navSectionClass}>{t("Settings")}</p>
-            <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
-            <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
-          </nav>
-        </aside>
-        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-x-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
-          <ErrorBoundary key={location.pathname}>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
-      </div>
-    </div>
+    <Shell
+      navAriaLabel={t("Primary navigation")}
+      mobileNavOpen={mobileNavOpen}
+      setMobileNavOpen={setMobileNavOpen}
+      topBar={<TopBar />}
+      skipLabel={t("Skip to main content")}
+      sidebar={
+        <nav className="space-y-0.5">
+          <p className={navSectionClass}>{t("Workspace")}</p>
+          <NavLink className={navClass} to="/dashboard">{t("Dashboard")}</NavLink>
+          <NavLink className={navClass} to="/customers/my">{t("Customers")}</NavLink>
+          <NavLink className={navClass} to="/customers/shared">{t("Shared Customers")}</NavLink>
+          {customerContext.label ? (
+            <>
+              <p className={customerSectionClass} title={customerContext.label}>{customerMenuLabel}</p>
+              {assessmentNav}
+            </>
+          ) : null}
+          <p className={navSectionClass}>{t("Settings")}</p>
+          <NavLink className={navClass} to="/user-settings">{t("User Settings")}</NavLink>
+          <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
+        </nav>
+      }
+    />
   );
 }
 
-export function AdminLayout() {
-  const { user } = useAuth();
+function useMobileNav() {
   const location = useLocation();
-  const t = useLanguage();
-  useIdleLogout();
-  useTooltips();
-  useUserTheme();
-  const can = (permission: string) => Boolean(user?.permissions.includes(permission));
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   useEffect(() => {
     const open = () => setMobileNavOpen(true);
@@ -691,10 +501,29 @@ export function AdminLayout() {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname]);
+  return { mobileNavOpen, setMobileNavOpen };
+}
+
+function Shell({
+  topBar,
+  sidebar,
+  skipLabel,
+  navAriaLabel,
+  mobileNavOpen,
+  setMobileNavOpen
+}: {
+  topBar: ReactNode;
+  sidebar: ReactNode;
+  skipLabel: string;
+  navAriaLabel: string;
+  mobileNavOpen: boolean;
+  setMobileNavOpen: (open: boolean) => void;
+}) {
+  const location = useLocation();
   return (
     <div className="min-h-screen bg-audity-app text-audity-text">
-      <a href="#audity-main" className="audity-skip-link">{t("Skip to main content")}</a>
-      <TopBar adminMode />
+      <a href="#audity-main" className="audity-skip-link">{skipLabel}</a>
+      {topBar}
       {mobileNavOpen ? (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -705,8 +534,38 @@ export function AdminLayout() {
       <div className="grid min-h-[calc(100vh-44px)] grid-cols-1 lg:grid-cols-[208px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)] 2xl:grid-cols-[232px_minmax(0,1fr)]">
         <aside
           className={`fixed inset-y-[44px] left-0 z-40 w-64 border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4 transition-transform lg:static lg:inset-auto lg:w-auto lg:translate-x-0 ${mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
-          aria-label={t("Admin navigation")}
+          aria-label={navAriaLabel}
         >
+          {sidebar}
+        </aside>
+        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-x-hidden bg-audity-page p-4 sm:p-5 lg:p-6 xl:p-7 focus:outline-none">
+          <OnboardingTips />
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export function AdminLayout() {
+  const { user } = useAuth();
+  const t = useLanguage();
+  useIdleLogout();
+  useTooltips();
+  useUserTheme();
+  const can = (permission: string) => Boolean(user?.permissions.includes(permission));
+  const { mobileNavOpen, setMobileNavOpen } = useMobileNav();
+  return (
+    <Shell
+      navAriaLabel={t("Admin navigation")}
+      mobileNavOpen={mobileNavOpen}
+      setMobileNavOpen={setMobileNavOpen}
+      topBar={<TopBar adminMode />}
+      skipLabel={t("Skip to main content")}
+      sidebar={
+        <>
           <nav className="space-y-0.5">
             <p className={navSectionClass}>{t("Administration")}</p>
             {can("roles.manage") ? <NavLink className={navClass} to="/admin/users">{t("User Management")}</NavLink> : null}
@@ -724,18 +583,13 @@ export function AdminLayout() {
             <NavLink className={navClass} to="/manual">{t("Manual")}</NavLink>
           </nav>
           <Link
-            className="mt-5 block rounded-audity border border-audity-error/60 bg-[#2A1C17] px-3 py-2 text-sm font-semibold text-[#FFB199] hover:border-audity-error hover:bg-[#351F19] hover:text-white"
+            className="mt-5 block rounded-audity border border-audity-error/60 bg-audity-error/10 px-3 py-2 text-sm font-semibold text-audity-error hover:border-audity-error hover:bg-audity-error/20 hover:text-white"
             to="/dashboard"
           >
             {t("Leave Admin Panel")}
           </Link>
-        </aside>
-        <main id="audity-main" tabIndex={-1} className="min-w-0 overflow-x-hidden bg-audity-page p-3 sm:p-4 focus:outline-none">
-          <ErrorBoundary key={location.pathname}>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

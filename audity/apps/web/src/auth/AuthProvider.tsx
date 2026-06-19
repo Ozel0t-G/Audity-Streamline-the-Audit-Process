@@ -43,9 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const expireSession = useCallback((notice = "Your session expired. Please sign in again.") => {
-    window.localStorage.removeItem("audity_access_token");
-    window.localStorage.removeItem("audity_csrf_token");
-    window.localStorage.removeItem("audity_user");
     window.localStorage.setItem("audity_login_notice", notice);
     setAccessToken(null);
     setCsrfToken(null);
@@ -69,9 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    window.localStorage.removeItem("audity_access_token");
-    window.localStorage.removeItem("audity_csrf_token");
-    window.localStorage.removeItem("audity_user");
     void refreshSession().finally(() => setIsLoading(false));
   }, [refreshSession]);
 
@@ -119,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const verifyMfaChallenge = useCallback(async (challengeToken: string, code: string) => {
-    const response = await fetch(`${apiBaseUrl}/api/auth/mfa/verify`, {
+    const response = await fetch(`${apiBaseUrl}/api/auth/mfa/challenge`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -172,10 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       credentials: "include",
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
-    });
-    window.localStorage.removeItem("audity_access_token");
-    window.localStorage.removeItem("audity_csrf_token");
-    window.localStorage.removeItem("audity_user");
+    }).catch(() => undefined);
     setAccessToken(null);
     setCsrfToken(null);
     setUser(null);

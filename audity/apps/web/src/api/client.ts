@@ -33,19 +33,30 @@ export function useApi() {
         });
       };
 
+      const parseBody = async (response: Response) => {
+        if (response.status === 204 || response.headers.get("content-length") === "0") {
+          return null;
+        }
+        const contentType = response.headers.get("content-type") ?? "";
+        if (!contentType.includes("application/json")) {
+          return null;
+        }
+        return response.json().catch(() => null);
+      };
+
       const initialTokens = tokenRef.current;
       let response = await send(initialTokens.accessToken, initialTokens.csrfToken);
-      let error = (await response.json().catch(() => null)) as { code?: string; message?: string } | null;
+      let body = (await parseBody(response)) as { code?: string; message?: string } | null;
       let refreshFailed = false;
 
       if (
         !response.ok &&
-        (response.status === 401 || (response.status === 403 && error?.code === "CSRF_INVALID"))
+        (response.status === 401 || (response.status === 403 && body?.code === "CSRF_INVALID"))
       ) {
         const refreshed = await refreshSession();
         if (refreshed) {
           response = await send(refreshed.accessToken, refreshed.csrfToken);
-          error = (await response.json().catch(() => null)) as { code?: string; message?: string } | null;
+          body = (await parseBody(response)) as { code?: string; message?: string } | null;
         } else {
           refreshFailed = true;
         }
@@ -59,9 +70,9 @@ export function useApi() {
           expireSession("Your session expired. Please sign in again.");
           navigate("/login", { replace: true });
         }
-        throw new Error(error?.message ?? `Request failed: ${response.status}`);
+        throw new Error(body?.message ?? `Request failed: ${response.status}`);
       }
-      return error as T;
+      return (body ?? ({ status: "ok" } as unknown)) as T;
     },
     // Identity-stable: token changes go through tokenRef, not through deps.
     // refreshSession/expireSession are themselves stable (useCallback with []).

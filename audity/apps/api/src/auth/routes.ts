@@ -15,7 +15,9 @@ import {
   disableMfa,
   enableMfa,
   getMfaSecret,
+  getRecoveryCodeStatus,
   isMfaEnabled,
+  regenerateRecoveryCodes,
   storePendingMfaSecret,
   verifyTotp
 } from "./mfa.js";
@@ -48,11 +50,6 @@ type LoginBody = {
   password?: string;
 };
 
-type MfaVerifyBody = {
-  code?: string;
-  challengeToken?: string;
-};
-
 type ChangePasswordBody = {
   currentPassword?: string;
   newPassword?: string;
@@ -78,9 +75,12 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1).max(256)
 });
-const mfaVerifySchema = z.object({
-  code: z.string().trim().min(6).max(12).optional(),
-  challengeToken: z.string().min(1).optional()
+const mfaChallengeSchema = z.object({
+  code: z.string().trim().min(6).max(12),
+  challengeToken: z.string().min(1)
+});
+const mfaSetupVerifySchema = z.object({
+  code: z.string().trim().min(6).max(12)
 });
 const disableMfaSchema = z.object({
   userId: z.string().uuid().optional()
@@ -248,14 +248,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return setup;
   });
 
-  app.post<{ Body: MfaVerifyBody }>("/api/auth/mfa/verify", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
-    const body = validateBody(mfaVerifySchema, request.body);
-    const code = body.code;
-    if (!code) {
-      return reply.code(400).send({ code: "INVALID_INPUT", message: "TOTP code is required" });
-    }
-
-    if (body.challengeToken) {
+  app.post<{ Body: { code?: string; challengeToken?: string } }>(
+    "/api/auth/mfa/challenge",
+    { config: { rateLimit: authRateLimit } },
+    async (request, reply) => {
+      const body = validateBody(mfaChallengeSchema, request.body);
       let challenge;
       try {
         challenge = verifyMfaChallengeToken(body.challengeToken);
@@ -265,7 +262,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           .send({ code: "MFA_CHALLENGE_INVALID", message: "MFA challenge is invalid" });
       }
       const secret = await getMfaSecret(challenge.sub);
-      if (!secret || !verifyTotp(secret, code)) {
+      if (!secret || !verifyTotp(secret, body.code)) {
         await appendAuditEvent({
           actor: challenge.sub,
           action: "auth.login.failed",
@@ -300,34 +297,37 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         user: publicUser(user)
       };
     }
+  );
 
-    await requireAuth(request, reply);
-    if (reply.sent) {
-      return;
+  app.post<{ Body: { code?: string } }>(
+    "/api/auth/mfa/verify",
+    { config: { rateLimit: authRateLimit }, preHandler: requireAuth },
+    async (request, reply) => {
+      const body = validateBody(mfaSetupVerifySchema, request.body);
+      const secret = await getMfaSecret(request.user!.sub);
+      if (!secret || !verifyTotp(secret, body.code)) {
+        return reply.code(401).send({ code: "MFA_FAILED", message: "MFA code is invalid" });
+      }
+      const recoveryCodes = await enableMfa(request.user!.sub);
+      await appendAuditEvent({
+        actor: request.user!.sub,
+        action: "auth.mfa.enabled",
+        entity: "mfa_settings",
+        entityId: request.user!.sub,
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? null
+      });
+      await appendAuditEvent({
+        actor: request.user!.sub,
+        action: "auth.mfa.verified",
+        entity: "mfa_settings",
+        entityId: request.user!.sub,
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? null
+      });
+      return { status: "ok", recoveryCodes };
     }
-    const secret = await getMfaSecret(request.user!.sub);
-    if (!secret || !verifyTotp(secret, code)) {
-      return reply.code(401).send({ code: "MFA_FAILED", message: "MFA code is invalid" });
-    }
-    const recoveryCodes = await enableMfa(request.user!.sub);
-    await appendAuditEvent({
-      actor: request.user!.sub,
-      action: "auth.mfa.enabled",
-      entity: "mfa_settings",
-      entityId: request.user!.sub,
-      ip: request.ip,
-      userAgent: request.headers["user-agent"] ?? null
-    });
-    await appendAuditEvent({
-      actor: request.user!.sub,
-      action: "auth.mfa.verified",
-      entity: "mfa_settings",
-      entityId: request.user!.sub,
-      ip: request.ip,
-      userAgent: request.headers["user-agent"] ?? null
-    });
-    return { status: "ok", recoveryCodes };
-  });
+  );
 
   app.post<{ Body: { userId?: string } }>(
     "/api/auth/mfa/disable",
@@ -401,10 +401,105 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get(
+    "/api/auth/mfa/status",
+    { preHandler: requireAuth },
+    async (request) => ({
+      enabled: await isMfaEnabled(request.user!.sub),
+      recoveryCodes: await getRecoveryCodeStatus(request.user!.sub)
+    })
+  );
+
+  app.post(
+    "/api/auth/mfa/recovery-codes",
+    { preHandler: requireCsrf },
+    async (request, reply) => {
+      if (!(await isMfaEnabled(request.user!.sub))) {
+        return reply.code(409).send({ code: "MFA_NOT_ENABLED", message: "MFA must be enabled first" });
+      }
+      const recoveryCodes = await regenerateRecoveryCodes(request.user!.sub);
+      await appendAuditEvent({
+        actor: request.user!.sub,
+        action: "auth.mfa.recovery_codes_regenerated",
+        entity: "mfa_settings",
+        entityId: request.user!.sub,
+        ip: request.ip,
+        userAgent: request.headers["user-agent"] ?? null
+      });
+      return { recoveryCodes };
+    }
+  );
+
+  app.get(
     "/api/auth/me",
     { preHandler: requirePermission("assessment.view") },
     async (request) => ({
       user: publicUser(request.user!)
     })
+  );
+
+  const preferencesSchema = z.object({
+    language: z.enum(["English", "Deutsch"]).optional(),
+    theme: z.enum(["System", "Light", "Dark"]).optional(),
+    notificationsEnabled: z.boolean().optional(),
+    defaultView: z.string().trim().min(1).max(40).optional(),
+    tableDensity: z.enum(["Comfortable", "Compact"]).optional(),
+    exportFormat: z.enum(["CSV", "JSON"]).optional(),
+    tooltipsEnabled: z.boolean().optional()
+  });
+
+  app.get(
+    "/api/user/preferences",
+    { preHandler: requireAuth },
+    async (request) => {
+      const result = await pool.query(
+        `select language, theme, notifications_enabled, default_view, table_density, export_format, tooltips_enabled
+         from user_preferences where user_id = $1`,
+        [request.user!.sub]
+      );
+      const row = result.rows[0];
+      return {
+        preferences: {
+          language: row?.language ?? "English",
+          theme: row?.theme ?? "System",
+          notificationsEnabled: row?.notifications_enabled ?? true,
+          defaultView: row?.default_view ?? "Dashboard",
+          tableDensity: row?.table_density ?? "Comfortable",
+          exportFormat: row?.export_format ?? "CSV",
+          tooltipsEnabled: row?.tooltips_enabled ?? true
+        }
+      };
+    }
+  );
+
+  app.put(
+    "/api/user/preferences",
+    { preHandler: requireCsrf },
+    async (request) => {
+      const body = validateBody(preferencesSchema, request.body);
+      await pool.query(
+        `insert into user_preferences (user_id, language, theme, notifications_enabled, default_view, table_density, export_format, tooltips_enabled, updated_at)
+         values ($1, coalesce($2, 'English'), coalesce($3, 'System'), coalesce($4, true), coalesce($5, 'Dashboard'), coalesce($6, 'Comfortable'), coalesce($7, 'CSV'), coalesce($8, true), now())
+         on conflict (user_id) do update set
+           language = coalesce($2, user_preferences.language),
+           theme = coalesce($3, user_preferences.theme),
+           notifications_enabled = coalesce($4, user_preferences.notifications_enabled),
+           default_view = coalesce($5, user_preferences.default_view),
+           table_density = coalesce($6, user_preferences.table_density),
+           export_format = coalesce($7, user_preferences.export_format),
+           tooltips_enabled = coalesce($8, user_preferences.tooltips_enabled),
+           updated_at = now()`,
+        [
+          request.user!.sub,
+          body.language ?? null,
+          body.theme ?? null,
+          body.notificationsEnabled ?? null,
+          body.defaultView ?? null,
+          body.tableDensity ?? null,
+          body.exportFormat ?? null,
+          body.tooltipsEnabled ?? null
+        ]
+      );
+      return { status: "ok" };
+    }
   );
 }

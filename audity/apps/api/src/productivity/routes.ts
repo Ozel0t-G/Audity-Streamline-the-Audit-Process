@@ -170,7 +170,9 @@ function nullDate(value?: string | null): string | null {
 }
 
 async function ensureProductivityDefaults(userId: string) {
-  await pool.query("update saved_views set shared = true where shared = false");
+  // Previously this function force-shared all private saved_views on every call,
+  // which clobbered tenant users' private views. Removed; defaults below only
+  // insert new seed rows via ON CONFLICT DO NOTHING.
   await pool.query(
     `insert into assessment_templates (id, name, description, default_audience, default_due_days, settings, created_by)
      values
@@ -451,7 +453,15 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
   });
 
   app.post<{ Body: { ids?: string[]; status?: string; priority?: string; owner?: string } }>("/api/workbench/records/bulk", { preHandler: requireCsrfPermission("settings.manage") }, async (request) => {
-    const body = parseBody(z.object({ ids: z.array(z.string().uuid()).min(1), status: z.string().optional(), priority: z.string().optional(), owner: z.string().optional() }), request.body);
+    const body = parseBody(
+      z.object({
+        ids: z.array(z.string().uuid()).min(1).max(500),
+        status: z.string().trim().min(1).max(80).optional(),
+        priority: z.string().trim().min(1).max(80).optional(),
+        owner: z.string().trim().max(240).optional()
+      }),
+      request.body
+    );
     const result = await pool.query(
       `update workbench_records
        set status = coalesce($2, status), priority = coalesce($3, priority), owner = coalesce($4, owner),

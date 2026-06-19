@@ -85,3 +85,33 @@ export async function disableMfa(userId: string): Promise<void> {
     [userId]
   );
 }
+
+export async function regenerateRecoveryCodes(userId: string): Promise<string[]> {
+  const recoveryCodes = Array.from({ length: 10 }, () => randomToken(9));
+  const hashedCodes = await Promise.all(
+    recoveryCodes.map((code) => argon2.hash(code, { type: argon2.argon2id }))
+  );
+  const result = await pool.query(
+    `update mfa_settings
+     set recovery_codes_hash = $2,
+         updated_at = now()
+     where user_id = $1 and enabled = true`,
+    [userId, JSON.stringify(hashedCodes)]
+  );
+  // If the update affected no rows, MFA was disabled between the route check
+  // and this update. Refuse to return plaintext codes that are not stored.
+  if (!result.rowCount) {
+    throw Object.assign(new Error("MFA is not enabled"), { statusCode: 409, code: "MFA_NOT_ENABLED" });
+  }
+  return recoveryCodes;
+}
+
+export async function getRecoveryCodeStatus(userId: string): Promise<{ remaining: number; total: number }> {
+  const result = await pool.query<{ recovery_codes_hash: string | string[] | null }>(
+    "select recovery_codes_hash from mfa_settings where user_id = $1 and enabled = true",
+    [userId]
+  );
+  const raw = result.rows[0]?.recovery_codes_hash;
+  const codes = Array.isArray(raw) ? raw : typeof raw === "string" ? (JSON.parse(raw) as string[]) : [];
+  return { remaining: codes.length, total: 10 };
+}
