@@ -1,18 +1,19 @@
 {
   "channel": "production",
   "branch": "production",
-  "version": "0.1.2",
-  "imageTag": "0.1.2",
-  "releasedAt": "2026-06-19T07:59:16Z",
+  "version": "0.1.3",
+  "imageTag": "0.1.3",
+  "releasedAt": "2026-06-19T08:24:46Z",
   "modules": {
-    "web": "ghcr.io/ozel0t-g/audity-web:0.1.2",
-    "api": "ghcr.io/ozel0t-g/audity-api:0.1.2",
-    "worker": "ghcr.io/ozel0t-g/audity-worker:0.1.2",
-    "updater": "ghcr.io/ozel0t-g/audity-updater:0.1.2"
+    "web": "ghcr.io/ozel0t-g/audity-web:0.1.3",
+    "api": "ghcr.io/ozel0t-g/audity-api:0.1.3",
+    "worker": "ghcr.io/ozel0t-g/audity-worker:0.1.3",
+    "updater": "ghcr.io/ozel0t-g/audity-updater:0.1.3"
   },
   "notes": [
     "Production release channel manifest. Update checks must use this file from the production branch.",
     "Makes the System Update Panel visible at the top of System Settings and refreshes browser cache behavior.",
-    "Publishes the latest main branch changes to the production update channel."
+    "Publishes the latest main branch changes to the production update channel.",
+    "Restores shipped framework YAML catalogs on image-based updates when the host catalog is missing."
   ]
 }
