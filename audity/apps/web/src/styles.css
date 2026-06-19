@@ -125,7 +125,7 @@ body {
   }
 
   .audity-sticky-actions {
-    @apply sticky bottom-0 -mx-3 mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-audity-border bg-audity-panel/95 px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-audity-panel/75 sm:-mx-4 sm:px-4;
+    @apply sticky bottom-0 -mx-3 mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-audity-border bg-audity-panel px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4;
   }
 
   .audity-btn-base {
