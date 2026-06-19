@@ -103,6 +103,10 @@ function yamlDirectory(): string {
     : resolve(process.cwd(), config.frameworkYamlDirectory);
 }
 
+function shippedYamlDirectory(): string {
+  return resolve(process.cwd(), "shipped-frameworks");
+}
+
 function sha256(text: string): string {
   return createHash("sha256").update(text).digest("hex");
 }
@@ -456,23 +460,31 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
     };
   }
   syncInProgress = true;
-  const directory = yamlDirectory();
-  const result: FrameworkYamlSyncResult = {
-    directory,
-    scannedFiles: 0,
-    syncedFiles: 0,
-    skippedFiles: 0,
-    errors: [],
-    frameworks: []
-  };
-  const controlMappings: Array<{ source: string; target: string; type: string }> = [];
-  // Collect ALL legitimate file paths during this scan, even ones we skipped
-  // because their hash matched the cached one. We use this list to decide
-  // which frameworks were orphaned. If we only used `result.frameworks` we
-  // would archive every unchanged framework on every polling cycle.
-  const scannedPaths: string[] = [];
   try {
-    for (const file of await yamlFiles(directory)) {
+    let directory = yamlDirectory();
+    let files = await yamlFiles(directory);
+    if (files.length === 0 && directory !== shippedYamlDirectory()) {
+      const shippedFiles = await yamlFiles(shippedYamlDirectory());
+      if (shippedFiles.length > 0) {
+        directory = shippedYamlDirectory();
+        files = shippedFiles;
+      }
+    }
+    const result: FrameworkYamlSyncResult = {
+      directory,
+      scannedFiles: 0,
+      syncedFiles: 0,
+      skippedFiles: 0,
+      errors: [],
+      frameworks: []
+    };
+    const controlMappings: Array<{ source: string; target: string; type: string }> = [];
+    // Collect ALL legitimate file paths during this scan, even ones we skipped
+    // because their hash matched the cached one. We use this list to decide
+    // which frameworks were orphaned. If we only used `result.frameworks` we
+    // would archive every unchanged framework on every polling cycle.
+    const scannedPaths: string[] = [];
+    for (const file of files) {
       result.scannedFiles += 1;
       try {
         const fileStat = await stat(file);

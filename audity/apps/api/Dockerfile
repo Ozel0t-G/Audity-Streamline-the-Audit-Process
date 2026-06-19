@@ -25,6 +25,7 @@ COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY apps/api/src/db/migrations apps/api/dist/db/migrations
 COPY frameworks frameworks
+COPY frameworks shipped-frameworks
 USER node
 EXPOSE 3000
 CMD ["node", "apps/api/dist/server.js"]
