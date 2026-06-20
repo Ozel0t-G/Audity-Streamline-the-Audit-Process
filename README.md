@@ -1,4 +1,7 @@
-<img width="203" height="254" alt="grc_template_repo_logo_clean_transparent" src="https://github.com/user-attachments/assets/53b3e596-f962-4029-b83f-09dd9f943466" />
+<img width="771" height="280" alt="audity-lockup-dark" src="https://github.com/user-attachments/assets/c0db9260-437c-4860-ab6d-270197e4b040" /><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 771 280" width="771" height="280">
+ 
+
+
 
 
 # Audity — Self-Hosted Audit & GRC Assessment Platform
