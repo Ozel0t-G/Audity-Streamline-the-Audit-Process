@@ -40,7 +40,7 @@ export function Field({
 }) {
   return (
     <label className={`block ${wide ? "sm:col-span-2" : ""}`}>
-      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-audity-muted">
+      <span className="mb-1 block text-xs font-medium tracking-wide text-audity-muted">
         {label}
         {required ? <span className="ml-0.5 text-audity-error" aria-hidden="true">*</span> : null}
         {required ? <span className="sr-only"> (required)</span> : null}
@@ -87,7 +87,7 @@ export function Panel({
 export function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-      <p className="text-xs font-semibold uppercase text-audity-muted">{label}</p>
+      <p className="text-xs font-medium text-audity-muted">{label}</p>
       <p className="mt-1 text-xl font-semibold text-audity-text">{value}</p>
     </div>
   );

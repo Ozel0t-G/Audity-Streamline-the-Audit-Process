@@ -88,13 +88,22 @@ const storageClient = new Client({
   secretKey: process.env.AUDITY_STORAGE_SECRET_KEY ?? "replace-me"
 });
 
+let bucketReady: Promise<void> | null = null;
 async function ensureBucket(): Promise<void> {
-  if (!(await storageClient.bucketExists(storageBucket))) {
-    await storageClient.makeBucket(storageBucket);
+  if (!bucketReady) {
+    bucketReady = (async () => {
+      if (!(await storageClient.bucketExists(storageBucket))) {
+        await storageClient.makeBucket(storageBucket);
+      }
+      if (!(await storageClient.bucketExists(backupBucket))) {
+        await storageClient.makeBucket(backupBucket);
+      }
+    })().catch((err) => {
+      bucketReady = null;
+      throw err;
+    });
   }
-  if (!(await storageClient.bucketExists(backupBucket))) {
-    await storageClient.makeBucket(backupBucket);
-  }
+  return bucketReady;
 }
 
 function nextTimestamp(previous?: Date): Date {
@@ -1032,3 +1041,27 @@ await app.listen({
   host: "0.0.0.0",
   port: Number(process.env.WORKER_HEALTH_PORT ?? 3001)
 });
+
+process.on("unhandledRejection", (reason) => {
+  app.log.error({ reason }, "Unhandled promise rejection in worker");
+});
+process.on("uncaughtException", (error) => {
+  app.log.fatal({ err: error }, "Uncaught exception in worker — exiting");
+  setTimeout(() => process.exit(1), 100).unref();
+});
+
+let workerShuttingDown = false;
+async function shutdownWorker(signal: string) {
+  if (workerShuttingDown) return;
+  workerShuttingDown = true;
+  app.log.info({ signal }, "Shutting down worker");
+  try {
+    await app.close();
+  } catch (err) {
+    app.log.error({ err }, "Worker shutdown error");
+  } finally {
+    process.exit(0);
+  }
+}
+process.once("SIGTERM", () => void shutdownWorker("SIGTERM"));
+process.once("SIGINT", () => void shutdownWorker("SIGINT"));

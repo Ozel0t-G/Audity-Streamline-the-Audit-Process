@@ -31,9 +31,11 @@ export function UserSettingsPage() {
   const [mfaStatus, setMfaStatus] = useState<{ enabled: boolean; recoveryCodes: { remaining: number; total: number } } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     void api<{ enabled: boolean; recoveryCodes: { remaining: number; total: number } }>("/api/auth/mfa/status")
-      .then(setMfaStatus)
-      .catch(() => setMfaStatus(null));
+      .then((payload) => { if (!cancelled) setMfaStatus(payload); })
+      .catch(() => { if (!cancelled) setMfaStatus(null); });
+    return () => { cancelled = true; };
   }, [api]);
 
   async function regenerateRecoveryCodes() {
@@ -152,18 +154,18 @@ export function UserSettingsPage() {
         <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
           <h2 className="mb-4 text-lg font-semibold">{t("Password")}</h2>
           <form className="space-y-3" onSubmit={changePassword}>
-            <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Enter your current password to confirm this change.">
+            <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Enter your current password to confirm this change.">
               {t("Current Password")}
               <input className="mt-2 audity-input" type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} />
             </label>
-            <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Use at least 8 characters. Prefer a unique password stored in a password manager.">
+            <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Use at least 8 characters. Prefer a unique password stored in a password manager.">
               {t("New Password")}
               <input className="mt-2 audity-input" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} />
               {passwordForm.newPassword ? (
                 <div className="mt-2"><PasswordStrength value={evaluatePasswordStrength(passwordForm.newPassword)} /></div>
               ) : null}
             </label>
-            <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Repeat the new password to avoid typos.">
+            <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Repeat the new password to avoid typos.">
               {t("Confirm Password")}
               <input className="mt-2 audity-input" type="password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })} />
             </label>
@@ -205,7 +207,7 @@ export function UserSettingsPage() {
           ) : null}
           {recoveryCodes.length ? (
             <div className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Recovery codes (write these down — they will not be shown again)</p>
+              <p className="mb-2 text-xs font-medium text-audity-muted">Recovery codes (write these down — they will not be shown again)</p>
               <div className="grid gap-1 font-mono text-xs text-audity-secondary">
                 {recoveryCodes.map((code) => (
                   <span key={code}>{code}</span>
@@ -216,7 +218,7 @@ export function UserSettingsPage() {
           {mfaStatus?.enabled ? (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-audity border border-audity-border bg-audity-page p-3">
               <div>
-                <p className="text-xs font-semibold uppercase text-audity-muted">Recovery codes</p>
+                <p className="text-xs font-medium text-audity-muted">Recovery codes</p>
                 <p className="text-sm text-audity-secondary">{mfaStatus.recoveryCodes.remaining} of {mfaStatus.recoveryCodes.total} unused</p>
               </div>
               <button type="button" className="audity-btn-secondary" onClick={() => void regenerateRecoveryCodes()}>
@@ -236,13 +238,13 @@ export function UserSettingsPage() {
               <input type="checkbox" checked={tooltipsEnabled} onChange={(event) => setTooltipsEnabled(event.target.checked)} />
             </label>
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose the language preference saved for your browser.">
+              <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Choose the language preference saved for your browser.">
                 {t("Language")}
                 <select className="mt-2 audity-input" value={preferences.language} onChange={() => setPreferences({ ...preferences, language: "English" })}>
                   <option>English</option>
                 </select>
               </label>
-              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose how the interface should look on this browser.">
+              <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Choose how the interface should look on this browser.">
                 {t("Theme")}
                 <select className="mt-2 audity-input" value={preferences.theme} onChange={(event) => setPreferences({ ...preferences, theme: event.target.value })}>
                   <option>System</option>
@@ -250,7 +252,7 @@ export function UserSettingsPage() {
                   <option>Light</option>
                 </select>
               </label>
-              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose the first workspace view you normally want to open.">
+              <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Choose the first workspace view you normally want to open.">
                 {t("Default View")}
                 <select className="mt-2 audity-input" value={preferences.defaultView} onChange={(event) => setPreferences({ ...preferences, defaultView: event.target.value })}>
                   <option>Dashboard</option>
@@ -259,14 +261,14 @@ export function UserSettingsPage() {
                   <option>Shared Customers</option>
                 </select>
               </label>
-              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Choose how compact tables and lists should appear.">
+              <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Choose how compact tables and lists should appear.">
                 {t("Table Density")}
                 <select className="mt-2 audity-input" value={preferences.tableDensity} onChange={(event) => setPreferences({ ...preferences, tableDensity: event.target.value })}>
                   <option>Comfortable</option>
                   <option>Compact</option>
                 </select>
               </label>
-              <label className="block text-xs font-semibold uppercase text-audity-secondary" data-tooltip="Set your preferred default file type for exports.">
+              <label className="block text-xs font-medium text-audity-secondary" data-tooltip="Set your preferred default file type for exports.">
                 {t("Export Format")}
                 <select className="mt-2 audity-input" value={preferences.exportFormat} onChange={(event) => setPreferences({ ...preferences, exportFormat: event.target.value })}>
                   <option>CSV</option>

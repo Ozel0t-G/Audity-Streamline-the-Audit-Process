@@ -670,19 +670,19 @@ export function AssessmentWorkflowPage() {
           <section className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="grid gap-2 md:grid-cols-4">
               <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Draft</p>
+                <p className="text-xs font-medium text-audity-muted">Draft</p>
                 <p className="mt-1 text-xl font-semibold">{reviewSummary.draft}</p>
               </div>
               <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">In Review</p>
+                <p className="text-xs font-medium text-audity-muted">In Review</p>
                 <p className="mt-1 text-xl font-semibold">{reviewSummary.inReview}</p>
               </div>
               <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Needs Changes</p>
+                <p className="text-xs font-medium text-audity-muted">Needs Changes</p>
                 <p className="mt-1 text-xl font-semibold">{reviewSummary.needsChanges}</p>
               </div>
               <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold uppercase text-audity-muted">Approved</p>
+                <p className="text-xs font-medium text-audity-muted">Approved</p>
                 <p className="mt-1 text-xl font-semibold">{reviewSummary.approved}</p>
               </div>
             </div>
@@ -708,13 +708,13 @@ export function AssessmentWorkflowPage() {
               </div>
               {canApproveFindings ? (
               <form className="flex flex-wrap items-end gap-2 border-b border-audity-border px-3 py-2.5" onSubmit={bulkUpdateFindings}>
-                <label className="block text-xs font-semibold uppercase text-audity-secondary">Status
+                <label className="block text-xs font-medium text-audity-secondary">Status
                   <select className="mt-2 audity-input" value={findingBulkForm.status} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, status: event.target.value })}>
                     <option value="">No change</option>
                     {findingStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
                   </select>
                 </label>
-                <label className="block text-xs font-semibold uppercase text-audity-secondary">Priority
+                <label className="block text-xs font-medium text-audity-secondary">Priority
                   <select className="mt-2 audity-input" value={findingBulkForm.priority} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, priority: event.target.value })}>
                     <option value="">No change</option>
                     {findingPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
@@ -748,22 +748,22 @@ export function AssessmentWorkflowPage() {
                 <div className="p-4">
                   {selectedFinding ? (
                     <>
-                      <p className="text-xs font-semibold uppercase text-audity-primary">{selectedFinding.controlCode}</p>
+                      <p className="text-xs font-medium text-audity-primary">{selectedFinding.controlCode}</p>
                       <h3 className="mt-1 text-xl font-semibold">{selectedFinding.title}</h3>
                       <p className="mt-3 text-sm text-audity-secondary">{selectedFinding.sourceExplanation}</p>
                       {canApproveFindings ? (
                       <form className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3" onSubmit={updateFindingDetails}>
                         <div className="grid gap-3 md:grid-cols-2">
-                          <label className="block text-xs font-semibold uppercase text-audity-secondary">Title
+                          <label className="block text-xs font-medium text-audity-secondary">Title
                             <input className="mt-2 audity-input bg-audity-panel" value={findingEditForm.title} onChange={(event) => setFindingEditForm({ ...findingEditForm, title: event.target.value })} />
                           </label>
                           <div className="grid grid-cols-2 gap-3">
-                            <label className="block text-xs font-semibold uppercase text-audity-secondary">Priority
+                            <label className="block text-xs font-medium text-audity-secondary">Priority
                               <select className="mt-2 audity-input bg-audity-panel" value={findingEditForm.priority} onChange={(event) => setFindingEditForm({ ...findingEditForm, priority: event.target.value })}>
                                 {findingPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
                               </select>
                             </label>
-                            <label className="block text-xs font-semibold uppercase text-audity-secondary">Status
+                            <label className="block text-xs font-medium text-audity-secondary">Status
                               <select className="mt-2 audity-input bg-audity-panel" value={findingEditForm.status} onChange={(event) => setFindingEditForm({ ...findingEditForm, status: event.target.value })}>
                                 {findingStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
                               </select>
@@ -771,10 +771,10 @@ export function AssessmentWorkflowPage() {
                           </div>
                         </div>
                         <div className="mt-3 grid gap-3 md:grid-cols-2">
-                          <label className="block text-xs font-semibold uppercase text-audity-secondary">Observation
+                          <label className="block text-xs font-medium text-audity-secondary">Observation
                             <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={findingEditForm.observation} onChange={(event) => setFindingEditForm({ ...findingEditForm, observation: event.target.value })} />
                           </label>
-                          <label className="block text-xs font-semibold uppercase text-audity-secondary">Recommendation
+                          <label className="block text-xs font-medium text-audity-secondary">Recommendation
                             <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={findingEditForm.recommendation} onChange={(event) => setFindingEditForm({ ...findingEditForm, recommendation: event.target.value })} />
                           </label>
                         </div>
@@ -783,11 +783,11 @@ export function AssessmentWorkflowPage() {
                       ) : (
                       <div className="mt-4 grid gap-3 md:grid-cols-2">
                         <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                          <p className="text-xs font-semibold uppercase text-audity-muted">Observation</p>
+                          <p className="text-xs font-medium text-audity-muted">Observation</p>
                           <p className="mt-2 text-sm text-audity-secondary">{selectedFinding.observation}</p>
                         </div>
                         <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                          <p className="text-xs font-semibold uppercase text-audity-muted">Recommendation</p>
+                          <p className="text-xs font-medium text-audity-muted">Recommendation</p>
                           <p className="mt-2 text-sm text-audity-secondary">{selectedFinding.recommendation}</p>
                         </div>
                       </div>
@@ -815,7 +815,7 @@ export function AssessmentWorkflowPage() {
                       </div>
                       ) : null}
                       <div className="mt-5">
-                        <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Framework Mapping</p>
+                        <p className="mb-2 text-xs font-medium text-audity-muted">Framework Mapping</p>
                         <div className="grid gap-2 md:grid-cols-2">
                           {selectedFinding.mappings.map((mapping) => (
                             <div key={`${mapping.controlId}-${mapping.code}`} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
@@ -826,11 +826,11 @@ export function AssessmentWorkflowPage() {
                         </div>
                       </div>
                       <div className="mt-5">
-                        <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Change History</p>
+                        <p className="mb-2 text-xs font-medium text-audity-muted">Change History</p>
                         <HistoryList events={findingHistory} />
                       </div>
                       <div className="mt-5">
-                        <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Review Comments</p>
+                        <p className="mb-2 text-xs font-medium text-audity-muted">Review Comments</p>
                         <CommentList comments={findingComments} />
                         {canApproveFindings ? (
                         <form className="mt-3 flex gap-2" onSubmit={(event) => {
@@ -867,7 +867,7 @@ export function AssessmentWorkflowPage() {
                 ) : null}
                 <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-3">
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase text-audity-muted">5x5 Matrix</p>
+                    <p className="text-xs font-medium text-audity-muted">5x5 Matrix</p>
                     {matrixFilter ? <button className="text-xs text-audity-primary hover:text-audity-primaryHover" onClick={() => setMatrixFilter(null)}>Clear filter</button> : null}
                   </div>
                   <div className="grid grid-cols-[28px_repeat(5,minmax(0,1fr))] gap-1 text-center text-xs">
@@ -906,7 +906,7 @@ export function AssessmentWorkflowPage() {
                 </div>
                 {canEditRisk ? (
                 <form className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3" onSubmit={bulkUpdateRisks}>
-                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Bulk Actions</p>
+                  <p className="mb-2 text-xs font-medium text-audity-muted">Bulk Actions</p>
                   <div className="grid grid-cols-2 gap-2">
                     <select className="audity-input bg-audity-panel" value={riskBulkForm.status} onChange={(event) => setRiskBulkForm({ ...riskBulkForm, status: event.target.value })}>
                       <option value="">Status</option>
@@ -967,48 +967,48 @@ export function AssessmentWorkflowPage() {
                   {selectedRisk.sourceGeneratedAt ? <p className="mt-1 text-xs text-audity-muted">Generated {formatDateTime(selectedRisk.sourceGeneratedAt)}</p> : null}
                 </div>
                 ) : null}
-                <label className="block text-xs font-semibold uppercase text-audity-secondary">Title
+                <label className="block text-xs font-medium text-audity-secondary">Title
                   <input className="mt-2 audity-input" value={riskEditForm.title} onChange={(event) => setRiskEditForm({ ...riskEditForm, title: event.target.value })} disabled={!selectedRisk} />
                 </label>
-                <label className="mt-3 flex items-center gap-2 text-xs font-semibold uppercase text-audity-secondary">
+                <label className="mt-3 flex items-center gap-2 text-xs font-medium text-audity-secondary">
                   <input type="checkbox" checked={riskEditForm.draft} onChange={(event) => setRiskEditForm({ ...riskEditForm, draft: event.target.checked })} disabled={!selectedRisk} />
                   Draft
                 </label>
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Likelihood
+                  <label className="block text-xs font-medium text-audity-secondary">Likelihood
                     <input className="mt-2 audity-input" type="number" min="1" max="5" value={riskEditForm.likelihood} onChange={(event) => setRiskEditForm({ ...riskEditForm, likelihood: Number(event.target.value) })} disabled={!selectedRisk} />
                   </label>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Impact
+                  <label className="block text-xs font-medium text-audity-secondary">Impact
                     <input className="mt-2 audity-input" type="number" min="1" max="5" value={riskEditForm.impact} onChange={(event) => setRiskEditForm({ ...riskEditForm, impact: Number(event.target.value) })} disabled={!selectedRisk} />
                   </label>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Treatment
+                  <label className="block text-xs font-medium text-audity-secondary">Treatment
                     <select className="mt-2 audity-input" value={riskEditForm.treatmentOption} onChange={(event) => setRiskEditForm({ ...riskEditForm, treatmentOption: event.target.value })} disabled={!selectedRisk}>
                       {treatmentOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                     </select>
                   </label>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Status
+                  <label className="block text-xs font-medium text-audity-secondary">Status
                     <select className="mt-2 audity-input" value={riskEditForm.status} onChange={(event) => setRiskEditForm({ ...riskEditForm, status: event.target.value })} disabled={!selectedRisk}>
                       {riskStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
                     </select>
                   </label>
                 </div>
-                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Owner
+                <label className="mt-3 block text-xs font-medium text-audity-secondary">Owner
                   <input className="mt-2 audity-input" value={riskEditForm.owner} onChange={(event) => setRiskEditForm({ ...riskEditForm, owner: event.target.value })} disabled={!selectedRisk} />
                 </label>
-                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Due Date
+                <label className="mt-3 block text-xs font-medium text-audity-secondary">Due Date
                   <input className="mt-2 audity-input" type="date" value={riskEditForm.dueDate} onChange={(event) => setRiskEditForm({ ...riskEditForm, dueDate: event.target.value })} disabled={!selectedRisk} />
                 </label>
-                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Treatment Plan
+                <label className="mt-3 block text-xs font-medium text-audity-secondary">Treatment Plan
                   <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.treatmentPlan} onChange={(event) => setRiskEditForm({ ...riskEditForm, treatmentPlan: event.target.value })} disabled={!selectedRisk} />
                 </label>
                 {(riskEditForm.treatmentOption === "accept" || riskEditForm.status === "accepted") ? (
                 <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Acceptance Reason
+                  <label className="block text-xs font-medium text-audity-secondary">Acceptance Reason
                     <textarea className="mt-2 min-h-20 w-full rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskEditForm.acceptanceReason} onChange={(event) => setRiskEditForm({ ...riskEditForm, acceptanceReason: event.target.value })} disabled={!selectedRisk} />
                   </label>
-                  <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Acceptance Expires
+                  <label className="mt-3 block text-xs font-medium text-audity-secondary">Acceptance Expires
                     <input className="mt-2 audity-input bg-audity-panel" type="date" value={riskEditForm.acceptanceExpiresAt} onChange={(event) => setRiskEditForm({ ...riskEditForm, acceptanceExpiresAt: event.target.value })} disabled={!selectedRisk} />
                   </label>
                 </div>
@@ -1018,11 +1018,11 @@ export function AssessmentWorkflowPage() {
                   <button type="button" className="audity-btn-secondary border-audity-error text-audity-error hover:bg-audity-error/10" onClick={() => void deleteRisk()} disabled={!selectedRisk}>Delete</button>
                 </div>
                 <div className="mt-5">
-                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Change History</p>
+                  <p className="mb-2 text-xs font-medium text-audity-muted">Change History</p>
                   <HistoryList events={riskHistory} />
                 </div>
                 <div className="mt-5">
-                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Review Comments</p>
+                  <p className="mb-2 text-xs font-medium text-audity-muted">Review Comments</p>
                   <CommentList comments={riskComments} />
                   <form className="mt-3 flex gap-2" onSubmit={(event) => {
                     event.preventDefault();
@@ -1037,21 +1037,21 @@ export function AssessmentWorkflowPage() {
               {canEditRisk ? (
               <form onSubmit={createRisk} className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">Add Manual Risk</h2>
-                <label className="block text-xs font-semibold uppercase text-audity-secondary">Title
+                <label className="block text-xs font-medium text-audity-secondary">Title
                   <input className="mt-2 audity-input" value={riskForm.title} onChange={(event) => setRiskForm({ ...riskForm, title: event.target.value })} placeholder={selectedFinding?.title ?? "Risk title"} />
                 </label>
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Likelihood
+                  <label className="block text-xs font-medium text-audity-secondary">Likelihood
                     <input className="mt-2 audity-input" type="number" min="1" max="5" value={riskForm.likelihood} onChange={(event) => setRiskForm({ ...riskForm, likelihood: Number(event.target.value) })} />
                   </label>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">Impact
+                  <label className="block text-xs font-medium text-audity-secondary">Impact
                     <input className="mt-2 audity-input" type="number" min="1" max="5" value={riskForm.impact} onChange={(event) => setRiskForm({ ...riskForm, impact: Number(event.target.value) })} />
                   </label>
                 </div>
-                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Owner
+                <label className="mt-3 block text-xs font-medium text-audity-secondary">Owner
                   <input className="mt-2 audity-input" value={riskForm.owner} onChange={(event) => setRiskForm({ ...riskForm, owner: event.target.value })} />
                 </label>
-                <label className="mt-3 block text-xs font-semibold uppercase text-audity-secondary">Treatment Plan
+                <label className="mt-3 block text-xs font-medium text-audity-secondary">Treatment Plan
                   <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" value={riskForm.treatmentPlan} onChange={(event) => setRiskForm({ ...riskForm, treatmentPlan: event.target.value })} />
                 </label>
                 <button className="mt-3 audity-btn-primary">Add risk</button>

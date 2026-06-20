@@ -5,7 +5,7 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { canAccessAssessment, canAccessCustomer } from "../customers/access.js";
 import { pool } from "../db/client.js";
-import { validateBody } from "../utils/validation.js";
+import { isUuid, validateBody } from "../utils/validation.js";
 
 type AssessmentBody = {
   templateKey?: string;
@@ -109,6 +109,7 @@ function mapAssessment(row: Record<string, unknown>) {
 }
 
 async function loadAssessment(id: string) {
+  if (!isUuid(id)) return null;
   const result = await pool.query("select * from assessments where id = $1", [id]);
   return result.rows[0] ? mapAssessment(result.rows[0]) : null;
 }

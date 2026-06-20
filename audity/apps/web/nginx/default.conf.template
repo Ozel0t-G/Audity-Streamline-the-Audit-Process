@@ -5,7 +5,7 @@ server {
   index index.html;
   client_max_body_size 30m;
 
-  add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self' http://localhost:9000 http://127.0.0.1:9000; frame-ancestors 'none'; frame-src 'self' blob:; img-src 'self' data: blob: https://cdn.jsdelivr.net https://www.google.com https://t0.gstatic.com https://t1.gstatic.com https://t2.gstatic.com https://t3.gstatic.com; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'" always;
+  add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self' ${AUDITY_CSP_CONNECT_EXTRA}; frame-ancestors 'none'; frame-src 'self' blob:; img-src 'self' data: blob: https://cdn.jsdelivr.net https://www.google.com https://t0.gstatic.com https://t1.gstatic.com https://t2.gstatic.com https://t3.gstatic.com; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'" always;
   add_header Cross-Origin-Opener-Policy "same-origin" always;
   add_header Cross-Origin-Resource-Policy "same-origin" always;
   add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;

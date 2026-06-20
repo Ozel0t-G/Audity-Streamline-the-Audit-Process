@@ -1,0 +1,36 @@
+framework:
+  schemaVersion: 1
+  key: test.fix.verify
+  name: Fix Verify
+  version: "1.0"
+  status: draft
+  language: de
+  source: user_uploaded
+  importMeta:
+    sourceFile: test-fix.csv
+    importedAt: 2026-06-20T00:00:00Z
+    importedBy: admin
+    llmProvider: none
+    llmModel: null
+domains:
+  - id: test
+    name: Test
+    controls:
+      - id: T-1
+        title: OVERRIDDEN BY ADMIN
+        weight: 2
+        answerType: scale
+        tags:
+          - admin-edit-tag
+        question: Admin overrides this question
+        purpose: Admin-defined purpose
+        expectedOutcome:
+          - Admin outcome
+        howTo:
+          - step: Admin step
+        evidenceExamples:
+          - Admin evidence
+        scoring:
+          scale: 0-5+NA
+          passWhen: score >= 4
+          gapWhen: score <= 2

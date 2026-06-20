@@ -368,7 +368,12 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
       for await (const chunk of file.file) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       }
-      const secure = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { encrypted?: string; checksum?: string };
+      let secure: { encrypted?: string; checksum?: string };
+      try {
+        secure = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { encrypted?: string; checksum?: string };
+      } catch {
+        return reply.code(400).send({ code: "IMPORT_INVALID", message: "Encrypted package is invalid" });
+      }
       let bundle: Awaited<ReturnType<typeof loadAssessmentBundle>>;
       try {
         const files = decryptZipPackage(secure);

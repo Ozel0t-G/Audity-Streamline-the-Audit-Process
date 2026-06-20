@@ -3,9 +3,12 @@ import { loadConfig } from "../config.js";
 
 const { Pool } = pg;
 
+const parsedPoolMax = Number.parseInt(process.env.AUDITY_DB_POOL_MAX ?? "", 10);
+const poolMax = Number.isFinite(parsedPoolMax) && parsedPoolMax > 0 ? parsedPoolMax : 20;
+
 export const pool = new Pool({
   connectionString: loadConfig().databaseUrl,
-  max: Number(process.env.AUDITY_DB_POOL_MAX ?? 20),
+  max: poolMax,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
 });

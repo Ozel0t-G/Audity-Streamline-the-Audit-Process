@@ -10,6 +10,9 @@ services:
       - /var/cache/nginx:uid=101,gid=101,mode=1777
       - /var/run:uid=101,gid=101,mode=1777
       - /tmp:uid=101,gid=101,mode=1777
+      - /etc/nginx/conf.d:uid=101,gid=101,mode=1777
+    environment:
+      AUDITY_CSP_CONNECT_EXTRA: ${AUDITY_CSP_CONNECT_EXTRA:-http://localhost:9000 http://127.0.0.1:9000}
     depends_on:
       audity-api:
         condition: service_healthy
@@ -28,6 +31,8 @@ services:
       - /tmp
     volumes:
       - ./frameworks:/app/frameworks:ro
+      - ./audity_frameworks:/app/audity_frameworks:ro
+      - ./user_frameworks:/app/user_frameworks
     environment:
       AUDITY_ENV: ${AUDITY_ENV:-production}
       AUDITY_IMAGE_REGISTRY: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}
@@ -54,6 +59,9 @@ services:
       AUDITY_UPLOAD_MAX_BYTES: ${AUDITY_UPLOAD_MAX_BYTES:-26214400}
       AUDITY_UPLOAD_ALLOWED_TYPES: ${AUDITY_UPLOAD_ALLOWED_TYPES:-application/pdf,text/plain,text/csv,image/png,image/jpeg,application/json}
       AUDITY_FRAMEWORK_YAML_DIR: ${AUDITY_FRAMEWORK_YAML_DIR:-frameworks}
+      AUDITY_AUDITY_YAML_DIR: ${AUDITY_AUDITY_YAML_DIR:-audity_frameworks}
+      AUDITY_USER_YAML_DIR: ${AUDITY_USER_YAML_DIR:-user_frameworks}
+      AUDITY_USER_SOURCES_DIR: ${AUDITY_USER_SOURCES_DIR:-user_frameworks/_sources}
       AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS: ${AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS:-10}
       AUDITY_DEFAULT_FRAMEWORK_KEY: ${AUDITY_DEFAULT_FRAMEWORK_KEY:-nist-csf-2}
       AUDITY_DEFAULT_FRAMEWORK_ID: ${AUDITY_DEFAULT_FRAMEWORK_ID:-}
@@ -114,11 +122,15 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+    volumes:
+      - ./user_frameworks:/app/user_frameworks
     environment:
       AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
       AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
       AUDITY_DATABASE_URL: ${AUDITY_DATABASE_URL:-postgres://audity:change-me@audity-db:5432/audity}
       AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
+      AUDITY_USER_YAML_DIR: ${AUDITY_USER_YAML_DIR:-user_frameworks}
+      AUDITY_USER_SOURCES_DIR: ${AUDITY_USER_SOURCES_DIR:-user_frameworks/_sources}
       AUDITY_STORAGE_ENDPOINT: ${AUDITY_STORAGE_ENDPOINT:-http://audity-storage:9000}
       AUDITY_STORAGE_PUBLIC_ENDPOINT: ${AUDITY_STORAGE_PUBLIC_ENDPOINT:-}
       AUDITY_STORAGE_BUCKET: ${AUDITY_STORAGE_BUCKET:-audity-evidence}
@@ -155,7 +167,7 @@ services:
     volumes:
       - audity-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U audity -d audity"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -182,7 +194,7 @@ services:
     volumes:
       - audity-storage-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10

@@ -204,7 +204,7 @@ export function GuidedQuestionsPage() {
     <div className="flex min-h-[calc(100vh-44px-2rem)] min-w-0 flex-col gap-3">
       <header className="flex flex-wrap items-end justify-between gap-3 rounded-audity border border-audity-border bg-audity-panel px-4 py-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-audity-primary">Guided Workflow</p>
+          <p className="text-[11px] font-medium tracking-wide text-audity-primary">Guided Workflow</p>
           <h1 className="mt-0.5 text-lg font-semibold text-audity-text">
             {payload?.framework.name ?? "Framework"} · Questions
           </h1>
@@ -215,7 +215,7 @@ export function GuidedQuestionsPage() {
           <Stat label="Gaps" value={progressSummary.evidenceGaps} tone="warning" />
           <Stat label="Low conf." value={progressSummary.lowConfidence} tone="error" />
           <div className="hidden min-w-[160px] xl:block">
-            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase text-audity-muted">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-audity-muted">
               <span>Coverage</span>
               <span>{coveragePercent}%</span>
             </div>
@@ -299,7 +299,7 @@ export function GuidedQuestionsPage() {
                                   <span className="text-[9px] font-bold">{answered ? "✓" : question.evidenceGap ? "!" : ""}</span>
                                 </span>
                                 <span className="min-w-0 flex-1">
-                                  <span className="block text-[11px] font-semibold uppercase text-audity-primary">{question.code}</span>
+                                  <span className="block text-[11px] font-medium text-audity-primary">{question.code}</span>
                                   <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-audity-secondary">{question.question}</span>
                                 </span>
                               </button>
@@ -323,7 +323,7 @@ export function GuidedQuestionsPage() {
             <>
               <header className="rounded-audity border border-audity-border bg-audity-panel px-5 py-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-audity-primary">
+                  <p className="text-xs font-medium tracking-wide text-audity-primary">
                     {activeDomain?.name}
                     {activeCategoryLabel ? <span className="ml-2 text-audity-muted">· {activeCategoryLabel}</span> : null}
                   </p>
@@ -365,7 +365,7 @@ export function GuidedQuestionsPage() {
                 ) : null}
                 {activeQuestion.categoryDescription ? (
                   <div className="mt-4 max-w-3xl rounded-audity border-l-2 border-audity-primary bg-audity-panelAlt/40 px-4 py-3 text-sm leading-6 text-audity-secondary">
-                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-audity-primary">
+                    <p className="mb-1 text-[11px] font-medium tracking-wide text-audity-primary">
                       Category context
                       {activeQuestion.categoryTitle ? <span className="ml-1 text-audity-muted">· {activeQuestion.categoryTitle}</span> : null}
                     </p>
@@ -374,7 +374,7 @@ export function GuidedQuestionsPage() {
                 ) : null}
                 {activeQuestion.evidenceExamples.length ? (
                   <div className="mt-4 max-w-3xl">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-audity-muted">Evidence examples</p>
+                    <p className="text-[11px] font-medium tracking-wide text-audity-muted">Evidence examples</p>
                     <ul className="mt-1 flex flex-wrap gap-1.5">
                       {activeQuestion.evidenceExamples.map((example) => (
                         <li key={example} className="rounded-audity border border-audity-borderStrong bg-audity-page px-2 py-0.5 text-xs text-audity-secondary">{example}</li>
@@ -384,7 +384,7 @@ export function GuidedQuestionsPage() {
                 ) : null}
                 {activeQuestion.mappings.length ? (
                   <div className="mt-3 max-w-3xl">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-audity-muted">Framework mappings</p>
+                    <p className="text-[11px] font-medium tracking-wide text-audity-muted">Framework mappings</p>
                     <ul className="mt-1 flex flex-wrap gap-1.5">
                       {activeQuestion.mappings.map((mapping) => (
                         <li key={`${mapping.controlId}-${mapping.code}`} className="rounded-audity border border-audity-borderStrong bg-audity-page px-2 py-0.5 text-xs text-audity-secondary" title={mapping.title}>
@@ -493,7 +493,7 @@ function Stat({ label, value, tone }: { label: string; value: number | string; t
   const toneClass = tone === "error" ? "text-audity-error" : tone === "warning" ? "text-audity-warning" : "text-audity-text";
   return (
     <div className="flex flex-col leading-tight">
-      <span className="text-[11px] font-semibold uppercase text-audity-muted">{label}</span>
+      <span className="text-[11px] font-medium text-audity-muted">{label}</span>
       <span className={`text-base font-semibold ${toneClass}`}>{value}</span>
     </div>
   );
@@ -501,7 +501,7 @@ function Stat({ label, value, tone }: { label: string; value: number | string; t
 
 function FormField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <label className="block min-w-0 text-xs font-semibold uppercase tracking-wide text-audity-secondary">
+    <label className="block min-w-0 text-xs font-medium tracking-wide text-audity-secondary">
       {label}
       <div className="mt-1.5 normal-case">{children}</div>
       {hint ? <span className="mt-1 block text-[11px] normal-case font-normal text-audity-muted">{hint}</span> : null}

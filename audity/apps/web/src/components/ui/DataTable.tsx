@@ -186,7 +186,7 @@ export function DataTable<TRow>({
                     key={col.key}
                     scope="col"
                     aria-sort={sortable ? ariaSort : undefined}
-                    className={`px-3 py-2 ${alignClass[col.align ?? "left"]} text-xs font-semibold uppercase tracking-wide text-audity-muted ${col.className ?? ""}`}
+                    className={`px-3 py-2 ${alignClass[col.align ?? "left"]} text-xs font-medium tracking-wide text-audity-muted ${col.className ?? ""}`}
                     style={col.width ? { width: col.width } : undefined}
                   >
                     {sortable ? (

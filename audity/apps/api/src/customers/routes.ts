@@ -6,7 +6,7 @@ import { appendAuditEvent } from "../audit/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { createNotification } from "../notifications/service.js";
-import { validateBody } from "../utils/validation.js";
+import { isUuid, validateBody } from "../utils/validation.js";
 import { canAccessCustomer, canManageCustomerAccess, customerAccessRecipients, isAdminRole } from "./access.js";
 
 type CustomerBody = {
@@ -86,6 +86,7 @@ function customerSelect(where: string) {
 }
 
 async function loadCustomer(id: string) {
+  if (!isUuid(id)) return null;
   const result = await pool.query(`${customerSelect("where c.id = $1 and c.archived_at is null")}`, [id]);
   return result.rows[0] ? mapCustomer(result.rows[0]) : null;
 }

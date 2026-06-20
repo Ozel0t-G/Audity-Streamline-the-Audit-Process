@@ -69,7 +69,7 @@ function publicUser(user: AuthUser) {
 const setupSchema = z.object({
   email: z.string().email(),
   name: z.string().trim().min(1).max(160).optional(),
-  password: z.string().min(8).max(256)
+  password: z.string().min(12).max(256)
 });
 const loginSchema = z.object({
   email: z.string().email(),
@@ -87,7 +87,7 @@ const disableMfaSchema = z.object({
 });
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(256),
-  newPassword: z.string().min(8).max(256)
+  newPassword: z.string().min(12).max(256)
 });
 
 function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): T {
@@ -194,12 +194,13 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
     if (token) {
       try {
-        await revokeSession(verifyAccessToken(token).sid);
+        const payload = verifyAccessToken(token);
+        await revokeSession(payload.sid);
         await appendAuditEvent({
-          actor: verifyAccessToken(token).sub,
+          actor: payload.sub,
           action: "auth.logout",
           entity: "session",
-          entityId: verifyAccessToken(token).sid,
+          entityId: payload.sid,
           ip: request.ip,
           userAgent: request.headers["user-agent"] ?? null
         });
@@ -242,7 +243,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post("/api/auth/mfa/setup", { preHandler: requireAuth }, async (request) => {
+  app.post("/api/auth/mfa/setup", { config: { rateLimit: authRateLimit }, preHandler: requireAuth }, async (request) => {
     const setup = await createMfaSetup(request.user!.email);
     await storePendingMfaSecret(request.user!.sub, setup.secret);
     return setup;
@@ -331,7 +332,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: { userId?: string } }>(
     "/api/auth/mfa/disable",
-    { preHandler: requireCsrf },
+    { config: { rateLimit: authRateLimit }, preHandler: requireCsrf },
     async (request, reply) => {
       const body = validateBody(disableMfaSchema, request.body);
       const targetUserId = body.userId ?? request.user!.sub;
@@ -357,7 +358,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
   app.post(
     "/api/auth/change-password",
-    { preHandler: requireCsrf },
+    { config: { rateLimit: authRateLimit }, preHandler: requireCsrf },
     async (request, reply) => {
       const body = validateBody(changePasswordSchema, request.body) as Required<ChangePasswordBody>;
       const user = await pool.query<{ password_hash: string }>(

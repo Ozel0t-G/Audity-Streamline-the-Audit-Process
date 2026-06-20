@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import { AUDITY_VERSION, type HealthResponse } from "@audity/shared";
 import { Redis } from "ioredis";
@@ -25,9 +26,35 @@ import { registerSecureRoutes } from "./secure/routes.js";
 import { registerWorkflowRoutes } from "./workflow/routes.js";
 
 const config = loadConfig();
+function redactSensitiveQuery(url: string): string {
+  if (!url.includes("?")) return url;
+  const [path, search] = url.split("?", 2);
+  const sanitized = search
+    .split("&")
+    .map((part) => {
+      const [key] = part.split("=", 1);
+      if (/^(token|access_token|password|refresh|secret)$/i.test(key)) {
+        return `${key}=[REDACTED]`;
+      }
+      return part;
+    })
+    .join("&");
+  return `${path}?${sanitized}`;
+}
+
 const app = Fastify({
   logger: {
-    level: config.logLevel
+    level: config.logLevel,
+    serializers: {
+      req(request: { method?: string; url?: string; remoteAddress?: string; remotePort?: number }) {
+        return {
+          method: request.method,
+          url: request.url ? redactSensitiveQuery(request.url) : undefined,
+          remoteAddress: request.remoteAddress,
+          remotePort: request.remotePort
+        };
+      }
+    }
   }
 });
 const rateLimitRedis = new Redis(config.redisUrl, {
@@ -73,6 +100,12 @@ await app.register(cors, {
   credentials: true,
   origin: allowedOrigins
 });
+await app.register(multipart, {
+  limits: {
+    fileSize: config.uploadMaxBytes ?? 26 * 1024 * 1024,
+    files: 5
+  }
+});
 
 app.addHook("preHandler", async (request, reply) => {
   if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return;
@@ -86,7 +119,6 @@ app.addHook("preHandler", async (request, reply) => {
 });
 
 app.setErrorHandler((error, request, reply) => {
-  request.log.error(error);
   const detail = error as { statusCode?: number; code?: string; message?: string };
   const statusCode =
     detail.statusCode && detail.statusCode >= 400
@@ -94,6 +126,13 @@ app.setErrorHandler((error, request, reply) => {
       : detail.code === "RATE_LIMITED"
         ? 429
         : 500;
+  if (statusCode >= 500) {
+    request.log.error({ err: error }, "Request failed");
+  } else if (statusCode === 429) {
+    request.log.warn({ code: detail.code }, "Rate limited");
+  } else {
+    request.log.info({ code: detail.code, statusCode }, "Client error");
+  }
   reply.code(statusCode).send({
     code: statusCode >= 500 ? "INTERNAL_ERROR" : detail.code ?? "REQUEST_ERROR",
     message: statusCode >= 500 ? "Internal server error" : detail.message
@@ -121,6 +160,15 @@ app.get("/ready", async () => {
 
 await verifyDatabaseConnection();
 await applyCoreSchema();
+// Recover stuck framework-import jobs on startup so they don't display
+// an eternal progress bar after an API restart mid-job.
+await (await import("./db/client.js")).pool.query(
+  `update framework_imports
+     set status = 'failed',
+         error_message = coalesce(error_message, 'API restarted while job was still running. Please retry.'),
+         updated_at = now()
+   where status in ('extracting', 'enriching')`
+);
 startFrameworkYamlAutoSync(app.log);
 startConnectorSyncWorker(app.log);
 await registerAuthRoutes(app);
@@ -138,3 +186,29 @@ await registerEvidenceRoutes(app);
 await registerReportRoutes(app);
 await registerSecureRoutes(app);
 await app.listen({ host: "0.0.0.0", port: config.port });
+
+let shuttingDown = false;
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  app.log.info({ signal }, "Shutting down API");
+  try {
+    await app.close();
+    await rateLimitRedis.quit().catch(() => undefined);
+  } catch (err) {
+    app.log.error({ err }, "Shutdown error");
+  } finally {
+    process.exit(0);
+  }
+}
+
+process.once("SIGTERM", () => void shutdown("SIGTERM"));
+process.once("SIGINT", () => void shutdown("SIGINT"));
+
+process.on("unhandledRejection", (reason) => {
+  app.log.error({ reason }, "Unhandled promise rejection in API");
+});
+process.on("uncaughtException", (error) => {
+  app.log.fatal({ err: error }, "Uncaught exception in API — exiting");
+  setTimeout(() => process.exit(1), 100).unref();
+});

@@ -162,7 +162,7 @@ export function ManualPage() {
             if (!items.length) return null;
             return (
               <div key={category.id} className="mb-3">
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-audity-muted">{category.label}</p>
+                <p className="mb-1 text-[11px] font-medium tracking-wide text-audity-muted">{category.label}</p>
                 <nav className="space-y-0.5">
                   {items.map((article) => (
                     <button
@@ -189,11 +189,11 @@ export function ManualPage() {
           <div className="rounded-audity border border-audity-border bg-audity-panel p-5 lg:p-7">
             <header className="mb-5 border-b border-audity-border pb-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-audity-primary">
+                <span className="text-[11px] font-medium tracking-wide text-audity-primary">
                   {manualCategories.find((category) => category.id === activeArticle.category)?.label}
                 </span>
                 <span
-                  className={`rounded-audity border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${audienceLabels[activeArticle.audience].className}`}
+                  className={`rounded-audity border px-2 py-0.5 text-[11px] font-medium tracking-wide ${audienceLabels[activeArticle.audience].className}`}
                 >
                   {audienceLabels[activeArticle.audience].label}
                 </span>
@@ -231,7 +231,7 @@ export function ManualPage() {
             </div>
             {activeArticle.related?.length ? (
               <footer className="mt-6 border-t border-audity-border pt-4">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-audity-muted">Related articles</p>
+                <p className="mb-2 text-[11px] font-medium tracking-wide text-audity-muted">Related articles</p>
                 <div className="flex flex-wrap gap-2">
                   {activeArticle.related.map((relatedId) => {
                     const related = manualArticles.find((article) => article.id === relatedId);

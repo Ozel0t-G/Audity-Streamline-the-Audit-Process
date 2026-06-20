@@ -155,6 +155,38 @@ else
   fi
 fi
 
+has_framework_yaml_files() {
+  [ -d frameworks ] && find frameworks -type f \( -name '*.yaml' -o -name '*.yml' \) -print -quit | grep -q .
+}
+
+restore_frameworks_from_api_image() {
+  if has_framework_yaml_files; then
+    return 0
+  fi
+
+  image="${registry}/audity-api:${requested_version}"
+  echo "No framework YAML files found on host. Restoring shipped framework catalog from $image..."
+  mkdir -p frameworks
+  container_id="$(docker create "$image" 2>/dev/null || true)"
+  if [ -z "$container_id" ]; then
+    echo "Could not create temporary API container to restore framework catalog." >&2
+    return 1
+  fi
+  if ! docker cp "${container_id}:/app/frameworks/." frameworks/; then
+    docker rm "$container_id" >/dev/null 2>&1 || true
+    echo "Could not copy framework catalog from target API image." >&2
+    return 1
+  fi
+  docker rm "$container_id" >/dev/null 2>&1 || true
+
+  if ! has_framework_yaml_files; then
+    echo "Target API image did not provide any framework YAML files." >&2
+    return 1
+  fi
+}
+
+restore_frameworks_from_api_image
+
 echo "Running migration and seed with target API image..."
 if ! compose run --rm audity-api node apps/api/dist/db/migrate.js; then
   echo "Migration failed. Existing running containers were not restarted." >&2

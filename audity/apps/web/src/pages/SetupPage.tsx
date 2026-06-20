@@ -107,11 +107,11 @@ export function SetupPage() {
         {step === "account" ? (
           <form className="rounded-audity border border-audity-border bg-audity-panel p-6" onSubmit={handleAccount}>
             <h1 className="mb-4 text-xl font-semibold">Create the initial Instance Admin</h1>
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Admin name</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">Admin name</label>
             <input className="mb-3 audity-input" value={name} onChange={(event) => setName(event.target.value)} />
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Admin email</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">Admin email</label>
             <input className="mb-3 audity-input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Admin password</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">Admin password</label>
             <input
               className="mb-2 audity-input"
               type="password"
@@ -132,17 +132,17 @@ export function SetupPage() {
         ) : (
           <form className="rounded-audity border border-audity-border bg-audity-panel p-6" onSubmit={handleOptional}>
             <h1 className="mb-4 text-xl font-semibold">Optional: SMTP &amp; report branding</h1>
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP Host</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">SMTP Host</label>
             <input className="mb-3 audity-input" value={smtpHost} onChange={(event) => setSmtpHost(event.target.value)} />
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP User</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">SMTP User</label>
             <input className="mb-3 audity-input" value={smtpUser} onChange={(event) => setSmtpUser(event.target.value)} />
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">SMTP Password</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">SMTP Password</label>
             <input className="mb-3 audity-input" type="password" value={smtpPassword} onChange={(event) => setSmtpPassword(event.target.value)} />
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Sender</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">Sender</label>
             <input className="mb-3 audity-input" value={sender} onChange={(event) => setSender(event.target.value)} />
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Report Header</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">Report Header</label>
             <input className="mb-3 audity-input" value={headerText} onChange={(event) => setHeaderText(event.target.value)} />
-            <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Report Footer</label>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">Report Footer</label>
             <input className="audity-input" value={footerText} onChange={(event) => setFooterText(event.target.value)} />
             {error ? <p className="mt-3 text-sm text-audity-error">{error}</p> : null}
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">

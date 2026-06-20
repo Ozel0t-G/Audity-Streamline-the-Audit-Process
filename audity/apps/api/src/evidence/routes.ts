@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import multipart from "@fastify/multipart";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { loadConfig } from "../config.js";
@@ -13,9 +12,9 @@ type MultipartField = {
   value?: unknown;
 };
 
-function multipartTextField(value: unknown): string {
+function multipartTextField(value: unknown, maxLength = 2000): string {
   if (value && typeof value === "object" && "value" in value) {
-    return String((value as MultipartField).value ?? "");
+    return String((value as MultipartField).value ?? "").slice(0, maxLength);
   }
   return "";
 }
@@ -40,8 +39,6 @@ function mapEvidence(row: Record<string, unknown>) {
 }
 
 export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void> {
-  await app.register(multipart);
-
   app.post<{ Params: { id: string } }>(
     "/api/assessments/:id/evidence",
     { preHandler: requireCsrfPermission("evidence.upload") },

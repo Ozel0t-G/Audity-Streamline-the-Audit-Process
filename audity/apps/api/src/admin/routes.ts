@@ -6,6 +6,27 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrf, requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { syncFrameworkYamlFiles } from "../frameworks/yamlImporter.js";
+import { createLlmProvider, estimateCostCents, type EnrichInput } from "../llm/provider.js";
+import {
+  loadLlmConfigInternal,
+  loadLlmConfigPublic,
+  saveLlmConfig,
+  type LlmProviderKind
+} from "../llm/settings.js";
+import {
+  commitDraft,
+  createImportRecord,
+  deleteImport,
+  deleteUserFrameworkYaml,
+  getImportRecord,
+  listImports,
+  mapImportRecord,
+  persistSourceFile,
+  scheduleImport,
+  updateImportStatus,
+  type DraftYaml
+} from "../frameworks/importJobs.js";
+import { CSV_TEMPLATE } from "../frameworks/csvParser.js";
 import { backupQueue, restoreQueue } from "../jobs/queue.js";
 import { signedBackupGetUrl } from "../storage/service.js";
 import { validateBody } from "../utils/validation.js";
@@ -1157,6 +1178,384 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         after: after.rows[0]
       });
       return { user: after.rows[0] };
+    }
+  );
+
+  // ----- LLM / AI Settings -----
+  const llmConfigSchema = z.object({
+    provider: z.enum(["none", "ollama", "anthropic", "openai"]),
+    endpoint: z.string().trim().max(500).optional(),
+    model: z.string().trim().max(120).optional(),
+    apiKey: z.string().min(1).max(500).optional(),
+    clearKey: z.boolean().optional(),
+    timeoutSeconds: z.number().int().min(5).max(600).optional(),
+    maxTokens: z.number().int().min(256).max(8000).optional()
+  });
+
+  app.get(
+    "/api/admin/llm/config",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async () => loadLlmConfigPublic()
+  );
+
+  app.put(
+    "/api/admin/llm/config",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const body = validateBody(llmConfigSchema, request.body, reply);
+      if (!body) return;
+      const previous = await loadLlmConfigPublic();
+      const next = await saveLlmConfig(
+        {
+          provider: body.provider as LlmProviderKind,
+          endpoint: body.endpoint,
+          model: body.model,
+          apiKey: body.apiKey,
+          clearKey: body.clearKey,
+          timeoutSeconds: body.timeoutSeconds,
+          maxTokens: body.maxTokens
+        },
+        request.user!.sub
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "llm.config.updated",
+        entityType: "settings",
+        entityId: "llm_config",
+        before: { provider: previous.provider, model: previous.model, hasKey: previous.hasKey },
+        after: { provider: next.provider, model: next.model, hasKey: next.hasKey }
+      });
+      return { llmConfig: next };
+    }
+  );
+
+  app.post(
+    "/api/admin/llm/test",
+    {
+      preHandler: requireAdminPermission("settings.manage"),
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } }
+    },
+    async () => {
+      const config = await loadLlmConfigInternal();
+      const provider = createLlmProvider(config);
+      return provider.testConnection();
+    }
+  );
+
+  const enrichPreviewSchema = z.object({
+    title: z.string().trim().min(1).max(300),
+    requirement: z.string().trim().min(1).max(4000),
+    language: z.enum(["de", "en"]).optional(),
+    domain: z.string().trim().max(120).optional()
+  });
+
+  app.post(
+    "/api/admin/llm/enrich-preview",
+    {
+      preHandler: requireAdminPermission("settings.manage"),
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } }
+    },
+    async (request, reply) => {
+      const body = validateBody(enrichPreviewSchema, request.body, reply);
+      if (!body) return;
+      const config = await loadLlmConfigInternal();
+      const provider = createLlmProvider(config);
+      const input: EnrichInput = {
+        title: body.title,
+        requirement: body.requirement,
+        language: (body.language ?? "de") as "de" | "en",
+        domain: body.domain
+      };
+      try {
+        const result = await provider.enrich(input);
+        return { result, provider: config.provider, model: config.model };
+      } catch (error) {
+        return reply.code(502).send({
+          code: "LLM_FAILED",
+          message: error instanceof Error ? error.message : "LLM call failed"
+        });
+      }
+    }
+  );
+
+  // ----- Framework Imports -----
+  app.get(
+    "/api/admin/frameworks/csv-template",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (_request, reply) => {
+      reply.header("Content-Type", "text/csv; charset=utf-8");
+      reply.header("Content-Disposition", "attachment; filename=\"audity-framework-template.csv\"");
+      return CSV_TEMPLATE;
+    }
+  );
+
+  app.post(
+    "/api/admin/frameworks/import",
+    {
+      preHandler: requireAdminPermission("settings.manage"),
+      config: { rateLimit: { max: 10, timeWindow: "1 hour" } }
+    },
+    async (request, reply) => {
+      const file = await request.file();
+      if (!file) {
+        return reply.code(400).send({ code: "FILE_REQUIRED", message: "Bitte eine CSV-Datei hochladen." });
+      }
+      const allowed = new Set(["text/csv", "application/vnd.ms-excel", "application/octet-stream"]);
+      if (!allowed.has(file.mimetype)) {
+        return reply.code(415).send({ code: "FILE_TYPE_BLOCKED", message: `Mime-Type ${file.mimetype} ist nicht erlaubt. Erlaubt: CSV.` });
+      }
+      const fields = file.fields as Record<string, { value?: string } | undefined>;
+      const frameworkKey = fields.framework_key?.value?.trim();
+      const frameworkName = fields.framework_name?.value?.trim();
+      const frameworkVersion = fields.framework_version?.value?.trim();
+      const languageRaw = fields.language?.value?.trim();
+      const language = languageRaw === "en" ? "en" : "de";
+      if (!frameworkKey || !frameworkName || !frameworkVersion) {
+        return reply.code(400).send({
+          code: "META_REQUIRED",
+          message: "framework_key, framework_name und framework_version sind Pflicht-Felder im Upload-Formular."
+        });
+      }
+      const chunks: Buffer[] = [];
+      for await (const chunk of file.file) chunks.push(chunk as Buffer);
+      const buffer = Buffer.concat(chunks);
+      const persisted = await persistSourceFile(buffer, file.filename);
+      const record = await createImportRecord({
+        uploadedBy: request.user!.sub,
+        sourceFilename: file.filename,
+        sourceMime: file.mimetype,
+        sourcePath: persisted.path,
+        frameworkKey,
+        frameworkName,
+        frameworkVersion,
+        frameworkLanguage: language
+      });
+      scheduleImport(record.id);
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "framework.import.uploaded",
+        entityType: "framework_import",
+        entityId: record.id,
+        before: null,
+        after: { framework_key: frameworkKey, source_filename: file.filename }
+      });
+      return { import: mapImportRecord(record) };
+    }
+  );
+
+  app.get(
+    "/api/admin/frameworks/imports",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async () => ({ imports: (await listImports()).map(mapImportRecord) })
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/admin/frameworks/imports/:id",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const record = await getImportRecord(request.params.id);
+      if (!record) return reply.code(404).send({ code: "NOT_FOUND", message: "Import not found" });
+      return { import: mapImportRecord(record) };
+    }
+  );
+
+  const patchControlSchema = z.object({
+    domainIndex: z.number().int().min(0),
+    controlIndex: z.number().int().min(0),
+    control: z.record(z.string(), z.unknown())
+  });
+  app.patch<{ Params: { id: string } }>(
+    "/api/admin/frameworks/imports/:id",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const body = validateBody(patchControlSchema, request.body, reply);
+      if (!body) return;
+      const record = await getImportRecord(request.params.id);
+      if (!record || !record.draft_yaml) {
+        return reply.code(404).send({ code: "NOT_FOUND", message: "Import or draft not found" });
+      }
+      const draft: DraftYaml = JSON.parse(JSON.stringify(record.draft_yaml));
+      const domain = draft.domains[body.domainIndex];
+      if (!domain || !domain.controls[body.controlIndex]) {
+        return reply.code(400).send({ code: "INVALID_INDEX", message: "Domain or control index out of range" });
+      }
+      domain.controls[body.controlIndex] = {
+        ...domain.controls[body.controlIndex],
+        ...(body.control as Record<string, unknown>)
+      } as typeof domain.controls[number];
+      await updateImportStatus(record.id, { draft_yaml: draft });
+      return { ok: true };
+    }
+  );
+
+  const regenerateSchema = z.object({
+    domainIndex: z.number().int().min(0),
+    controlIndex: z.number().int().min(0)
+  });
+  app.post<{ Params: { id: string } }>(
+    "/api/admin/frameworks/imports/:id/regenerate-control",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const body = validateBody(regenerateSchema, request.body, reply);
+      if (!body) return;
+      const record = await getImportRecord(request.params.id);
+      if (!record || !record.draft_yaml) {
+        return reply.code(404).send({ code: "NOT_FOUND", message: "Import or draft not found" });
+      }
+      const config = await loadLlmConfigInternal();
+      if (config.provider === "none") {
+        return reply.code(400).send({ code: "LLM_DISABLED", message: "LLM provider is disabled" });
+      }
+      const draft: DraftYaml = JSON.parse(JSON.stringify(record.draft_yaml));
+      const control = draft.domains[body.domainIndex]?.controls[body.controlIndex];
+      if (!control) return reply.code(400).send({ code: "INVALID_INDEX", message: "Control not found" });
+      const requirement = control._source?.requirement ?? control.title;
+      const provider = createLlmProvider(config);
+      const result = await provider.enrich({
+        title: control.title,
+        requirement,
+        language: draft.framework.language ?? "de",
+        domain: draft.domains[body.domainIndex].name
+      });
+      const updated = {
+        ...control,
+        question: result.fields.question,
+        purpose: result.fields.purpose,
+        expectedOutcome: result.fields.expectedOutcome,
+        howTo: result.fields.howTo,
+        evidenceExamples: result.fields.evidenceExamples,
+        tags: control.tags?.length ? control.tags : result.fields.tags,
+        weight: result.fields.weightHint ?? control.weight
+      };
+      draft.domains[body.domainIndex].controls[body.controlIndex] = updated as typeof control;
+      await updateImportStatus(record.id, {
+        draft_yaml: draft,
+        // If the active provider differs from the import's initial provider,
+        // update the row so cost-tracking and review-UI reflect what the
+        // re-generate actually used.
+        llm_provider: config.provider,
+        llm_model: config.model || null,
+        llm_tokens_in: record.llm_tokens_in + result.tokensIn,
+        llm_tokens_out: record.llm_tokens_out + result.tokensOut,
+        llm_estimated_cost_cents:
+          record.llm_estimated_cost_cents + estimateCostCents(config.provider, result.tokensIn, result.tokensOut)
+      });
+      return { control: updated };
+    }
+  );
+
+  app.post<{ Params: { id: string }; Body: { draft?: DraftYaml } }>(
+    "/api/admin/frameworks/imports/:id/commit",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const record = await getImportRecord(request.params.id);
+      if (!record || !record.draft_yaml) {
+        return reply.code(404).send({ code: "NOT_FOUND", message: "Import or draft not found" });
+      }
+      if (request.body?.draft) {
+        await updateImportStatus(record.id, { draft_yaml: request.body.draft });
+        record.draft_yaml = request.body.draft;
+      }
+      const result = await commitDraft(record);
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "framework.import.committed",
+        entityType: "framework_import",
+        entityId: record.id,
+        before: null,
+        after: { yaml_path: result.path }
+      });
+      return { ok: true, path: result.path };
+    }
+  );
+
+  app.post<{ Params: { id: string } }>(
+    "/api/admin/frameworks/imports/:id/retry",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const record = await getImportRecord(request.params.id);
+      if (!record) return reply.code(404).send({ code: "NOT_FOUND", message: "Import not found" });
+      if (record.status !== "failed") {
+        return reply.code(400).send({ code: "INVALID_STATE", message: "Only failed imports can be retried" });
+      }
+      await updateImportStatus(record.id, {
+        status: "uploaded",
+        error_message: null,
+        draft_yaml: null,
+        enriched_controls: 0,
+        total_controls: 0
+      });
+      scheduleImport(record.id);
+      return { ok: true };
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    "/api/admin/frameworks/imports/:id",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const record = await getImportRecord(request.params.id);
+      if (!record) return reply.code(404).send({ code: "NOT_FOUND", message: "Import not found" });
+      await deleteImport(record);
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "framework.import.discarded",
+        entityType: "framework_import",
+        entityId: record.id,
+        before: null,
+        after: null
+      });
+      return { ok: true };
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    "/api/admin/frameworks/user/:id",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async (request, reply) => {
+      const result = await pool.query<{ yaml_source_path: string | null }>(
+        "select yaml_source_path from frameworks where id = $1 and source_kind = 'user_uploaded'",
+        [request.params.id]
+      );
+      if (!result.rows[0]) {
+        return reply.code(404).send({ code: "NOT_FOUND", message: "User framework not found" });
+      }
+      const yamlPath = result.rows[0].yaml_source_path;
+      if (yamlPath) await deleteUserFrameworkYaml(yamlPath);
+      await pool.query("update frameworks set archived_at = now() where id = $1", [request.params.id]);
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "framework.user.deleted",
+        entityType: "framework",
+        entityId: request.params.id,
+        before: null,
+        after: null
+      });
+      return { ok: true };
+    }
+  );
+
+  app.get(
+    "/api/admin/llm/usage",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async () => {
+      const totals = await pool.query<{
+        provider: string | null;
+        tokens_in: number;
+        tokens_out: number;
+        cost_cents: number;
+        imports: number;
+      }>(`
+        select llm_provider as provider,
+               coalesce(sum(llm_tokens_in), 0)::int as tokens_in,
+               coalesce(sum(llm_tokens_out), 0)::int as tokens_out,
+               coalesce(sum(llm_estimated_cost_cents), 0)::int as cost_cents,
+               count(*)::int as imports
+        from framework_imports
+        where created_at >= now() - interval '30 days'
+        group by llm_provider
+      `);
+      return { last30Days: totals.rows };
     }
   );
 }

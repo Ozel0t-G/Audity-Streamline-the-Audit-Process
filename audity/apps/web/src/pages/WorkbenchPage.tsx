@@ -566,7 +566,7 @@ export function WorkbenchPage() {
             ["Connector Errors", overview?.analytics.connectors.errors30d]
           ].map(([label, value]) => (
             <section key={label} className="rounded-audity border border-audity-border bg-audity-panel p-3">
-              <p className="text-xs font-semibold uppercase text-audity-muted">{label}</p>
+              <p className="text-xs font-medium text-audity-muted">{label}</p>
               <p className="mt-2 text-2xl font-semibold">{value ?? 0}</p>
             </section>
           ))}

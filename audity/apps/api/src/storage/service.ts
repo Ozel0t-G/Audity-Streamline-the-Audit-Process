@@ -24,18 +24,37 @@ const publicStorageClient = new Client({
   region: "us-east-1"
 });
 
+let evidenceBucketReady: Promise<void> | null = null;
+let backupBucketReady: Promise<void> | null = null;
+
 export async function ensureBucket(): Promise<void> {
-  const exists = await storageClient.bucketExists(config.storageBucket);
-  if (!exists) {
-    await storageClient.makeBucket(config.storageBucket);
+  if (!evidenceBucketReady) {
+    evidenceBucketReady = (async () => {
+      const exists = await storageClient.bucketExists(config.storageBucket);
+      if (!exists) {
+        await storageClient.makeBucket(config.storageBucket);
+      }
+    })().catch((err) => {
+      evidenceBucketReady = null;
+      throw err;
+    });
   }
+  return evidenceBucketReady;
 }
 
 export async function ensureBackupBucket(): Promise<void> {
-  const exists = await storageClient.bucketExists(config.backupBucket);
-  if (!exists) {
-    await storageClient.makeBucket(config.backupBucket);
+  if (!backupBucketReady) {
+    backupBucketReady = (async () => {
+      const exists = await storageClient.bucketExists(config.backupBucket);
+      if (!exists) {
+        await storageClient.makeBucket(config.backupBucket);
+      }
+    })().catch((err) => {
+      backupBucketReady = null;
+      throw err;
+    });
   }
+  return backupBucketReady;
 }
 
 export function storageBucket(): string {

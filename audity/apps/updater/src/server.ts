@@ -116,3 +116,19 @@ app.listen({ host: "0.0.0.0", port }).catch((error) => {
   app.log.error(error);
   process.exit(1);
 });
+
+process.on("unhandledRejection", (reason) => {
+  app.log.error({ reason }, "Unhandled promise rejection in updater");
+});
+process.on("uncaughtException", (error) => {
+  app.log.fatal({ err: error }, "Uncaught exception in updater — exiting");
+  setTimeout(() => process.exit(1), 100).unref();
+});
+process.once("SIGTERM", () => {
+  app.log.info("Updater received SIGTERM");
+  void app.close().finally(() => process.exit(0));
+});
+process.once("SIGINT", () => {
+  app.log.info("Updater received SIGINT");
+  void app.close().finally(() => process.exit(0));
+});

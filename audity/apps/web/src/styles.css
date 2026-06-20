@@ -19,16 +19,21 @@
   --color-text-secondary: #a8b0ba;
   --color-text-muted: #7c858f;
   --color-text-disabled: #5e666f;
-  --color-severity-critical: #ff4b00;
-  --color-severity-high: #ff6a00;
-  --color-severity-medium: #f5a400;
-  --color-severity-low: #9aa4b2;
+  --color-accent: #4dd6c1;
+  --color-accent-soft: rgba(77, 214, 193, 0.16);
+  --color-severity-critical: #ff3b30;
+  --color-severity-high: #ff8a3d;
+  --color-severity-medium: #f5c245;
+  --color-severity-low: #94a3b8;
   --color-success: #2ecc71;
-  --color-warning: #f5a400;
-  --color-error: #ff4b00;
-  --radius-sm: 4px;
-  --radius-md: 5px;
-  --topnav-height: 44px;
+  --color-warning: #f5c245;
+  --color-error: #ff3b30;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-button: 4px;
+  --topnav-height: 48px;
   --sidebar-width: 232px;
   --page-padding: 16px;
   --panel-padding: 12px;
@@ -37,32 +42,38 @@
   --spacing-card: 0.75rem;
   --spacing-section: 1rem;
   --spacing-page: 1.5rem;
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  --shadow-raised: 0 6px 24px -8px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .audity-theme-light {
   --color-bg-app: #f4f7fb;
   --color-bg-page: #ffffff;
-  --color-bg-panel: #f9fbfd;
-  --color-bg-panel-alt: #eef4fa;
-  --color-bg-table-header: #e8eef5;
+  --color-bg-panel: #ffffff;
+  --color-bg-panel-alt: #f2f6fb;
+  --color-bg-table-header: #eef3f9;
   --color-bg-sidebar: #ffffff;
-  --color-bg-topnav: #0b3a66;
-  --color-border-subtle: #d6dee8;
-  --color-border-strong: #b8c4d2;
-  --color-primary: #006bd6;
-  --color-primary-hover: #005bb8;
+  --color-bg-topnav: #ffffff;
+  --color-border-subtle: #e3e8ef;
+  --color-border-strong: #c3cdd9;
+  --color-primary: #0061d6;
+  --color-primary-hover: #0052b8;
   --color-primary-active: #d9ecff;
-  --color-text-primary: #17202a;
-  --color-text-secondary: #4f5f70;
-  --color-text-muted: #728092;
+  --color-text-primary: #0f1822;
+  --color-text-secondary: #4a5666;
+  --color-text-muted: #6b7686;
   --color-text-disabled: #aeb6c2;
-  --color-severity-critical: #c43400;
-  --color-severity-high: #d05400;
+  --color-accent: #0d9488;
+  --color-accent-soft: #d2efea;
+  --color-severity-critical: #c4302a;
+  --color-severity-high: #d05a00;
   --color-severity-medium: #b27a00;
   --color-severity-low: #6b7480;
   --color-success: #058048;
   --color-warning: #b27a00;
-  --color-error: #c43400;
+  --color-error: #c4302a;
+  --shadow-soft: 0 1px 2px rgba(15, 24, 34, 0.06), 0 0 0 1px rgba(15, 24, 34, 0.02);
+  --shadow-raised: 0 8px 24px -10px rgba(15, 24, 34, 0.18), 0 1px 2px rgba(15, 24, 34, 0.05);
 }
 
 html {
@@ -73,9 +84,12 @@ body {
   margin: 0;
   min-width: 320px;
   background: var(--color-bg-app);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -83,8 +97,11 @@ body {
 }
 
 @layer base {
+  h1, h2, h3 {
+    letter-spacing: -0.011em;
+  }
   h1 {
-    letter-spacing: 0;
+    letter-spacing: -0.018em;
   }
 
   button,
@@ -93,80 +110,163 @@ body {
   textarea {
     font: inherit;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
 }
 
 @layer components {
   .audity-page-header {
-    @apply mb-4 border-b border-audity-border pb-3;
+    @apply mb-5 pb-3;
   }
 
   .audity-page-kicker {
-    @apply text-xs font-semibold uppercase tracking-normal text-audity-primary;
+    @apply text-xs font-medium tracking-normal text-audity-muted;
   }
 
   .audity-page-title {
-    @apply mt-1 text-xl font-semibold text-audity-text sm:text-2xl;
+    @apply mt-1 text-2xl font-semibold leading-tight text-audity-text sm:text-[28px];
+    letter-spacing: -0.018em;
   }
 
   .audity-page-copy {
-    @apply mt-1 max-w-3xl text-sm leading-6 text-audity-secondary;
+    @apply mt-2 max-w-3xl text-sm leading-6 text-audity-secondary;
+  }
+
+  .audity-section-title {
+    @apply text-base font-semibold text-audity-text;
+    letter-spacing: -0.01em;
   }
 
   .audity-card {
-    @apply rounded-audity border border-audity-border bg-audity-panel p-3 shadow-sm;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-panel);
+    padding: 1rem;
+    box-shadow: var(--shadow-soft);
   }
 
   .audity-card-muted {
-    @apply rounded-audity border border-audity-border bg-audity-page p-3;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-page);
+    padding: 0.75rem;
+  }
+
+  .audity-card-page {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-page);
+    padding: 0.75rem;
+    box-shadow: var(--shadow-soft);
   }
 
   .audity-card-interactive {
     @apply audity-card cursor-pointer transition duration-150 hover:-translate-y-0.5 hover:border-audity-primary hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary active:translate-y-0 active:shadow-sm;
   }
 
+  .audity-section-divider {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .audity-metric-value {
+    font-size: 2rem;
+    line-height: 2.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .audity-metric-label {
+    @apply text-xs font-medium text-audity-muted;
+    letter-spacing: 0;
+  }
+
   .audity-sticky-actions {
-    @apply sticky bottom-0 -mx-3 mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-audity-border bg-audity-panel/95 px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-audity-panel/75 sm:-mx-4 sm:px-4;
+    @apply sticky bottom-0 -mx-3 mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-audity-border bg-audity-panel px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4;
   }
 
   .audity-btn-base {
-    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-audity px-3.5 text-sm font-medium transition-[background,border,color,box-shadow,transform] duration-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary active:translate-y-px disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex h-9 items-center justify-center gap-2 px-3.5 text-sm font-medium transition-[background-color,border-color,color,transform] duration-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary active:translate-y-px disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50;
+    border-radius: var(--radius-button);
+    box-shadow: none;
   }
 
   .audity-btn-primary {
-    @apply audity-btn-base bg-audity-primary text-white shadow-sm hover:bg-audity-primaryHover hover:shadow active:bg-audity-primaryActive;
+    @apply audity-btn-base bg-audity-primary text-white;
+  }
+  .audity-btn-primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+  .audity-btn-primary:active {
+    background-color: color-mix(in srgb, var(--color-primary) 88%, #000);
   }
 
   .audity-btn-secondary {
-    @apply audity-btn-base border border-audity-borderStrong bg-audity-panel text-audity-text hover:border-audity-primary hover:bg-audity-panelAlt active:bg-audity-panelAlt;
+    @apply audity-btn-base border bg-audity-page text-audity-text;
+    border-color: var(--color-border-subtle);
+  }
+  .audity-btn-secondary:hover {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-bg-panel-alt);
+  }
+  .audity-btn-secondary:active {
+    background-color: var(--color-bg-panel);
   }
 
   .audity-btn-soft {
     @apply audity-btn-base text-audity-primary;
-    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
   }
-
   .audity-btn-soft:hover {
     background-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
-
   .audity-btn-soft:active {
-    background-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+    background-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
   }
 
   .audity-btn-ghost {
-    @apply audity-btn-base text-audity-secondary hover:bg-audity-panelAlt hover:text-audity-text active:bg-audity-panel;
+    @apply audity-btn-base text-audity-secondary;
+    background-color: transparent;
+  }
+  .audity-btn-ghost:hover {
+    background-color: var(--color-bg-panel-alt);
+    color: var(--color-text-primary);
+  }
+  .audity-btn-ghost:active {
+    background-color: var(--color-bg-panel);
   }
 
   .audity-btn-danger {
-    @apply audity-btn-base bg-audity-error text-white shadow-sm hover:opacity-90 hover:shadow active:opacity-100;
+    @apply audity-btn-base bg-audity-error text-white;
+  }
+  .audity-btn-danger:hover {
+    background-color: color-mix(in srgb, var(--color-error) 92%, #000);
+  }
+  .audity-btn-danger:active {
+    background-color: color-mix(in srgb, var(--color-error) 84%, #000);
   }
 
   .audity-btn-icon {
-    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-audity text-audity-secondary transition hover:bg-audity-panelAlt hover:text-audity-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary active:bg-audity-panel disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center text-audity-secondary transition-[background-color,color,transform] duration-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-audity-primary active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
+    border-radius: var(--radius-button);
+    background-color: transparent;
+  }
+  .audity-btn-icon:hover {
+    background-color: var(--color-bg-panel-alt);
+    color: var(--color-text-primary);
+  }
+  .audity-btn-icon:active {
+    background-color: var(--color-bg-panel);
   }
 
   .audity-btn-sm {
-    @apply h-7 px-2.5 text-xs;
+    @apply h-7 gap-1.5 px-2.5 text-xs;
   }
 
   .audity-btn-lg {
@@ -174,7 +274,8 @@ body {
   }
 
   .audity-input {
-    @apply h-9 w-full rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none transition-colors focus-visible:border-audity-primary focus-visible:ring-2 focus-visible:ring-audity-primary/30 disabled:cursor-not-allowed disabled:opacity-70 aria-[invalid=true]:border-audity-error aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-audity-error/30;
+    @apply h-9 w-full border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none transition-colors focus-visible:border-audity-primary focus-visible:ring-2 focus-visible:ring-audity-primary disabled:cursor-not-allowed disabled:opacity-70 aria-[invalid=true]:border-audity-error aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-audity-error;
+    border-radius: var(--radius-sm);
   }
 
   textarea.audity-input,
@@ -188,7 +289,8 @@ body {
   }
 
   .audity-label {
-    @apply block text-xs font-semibold uppercase tracking-normal text-audity-secondary;
+    @apply mb-1.5 block text-[13px] font-medium tracking-normal text-audity-secondary;
+    text-transform: none;
   }
 
   .audity-label-required::after {
@@ -197,11 +299,22 @@ body {
   }
 
   .audity-status-pill {
-    @apply rounded-audity border px-2 py-0.5 text-xs font-semibold;
+    @apply px-2 py-0.5 text-xs font-medium;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    background: transparent;
+  }
+
+  .audity-chip {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-audity-secondary;
+    border-radius: 999px;
+    background: var(--color-bg-panel-alt);
+    border: 1px solid var(--color-border-subtle);
   }
 
   .audity-skip-link {
-    @apply absolute left-2 top-2 z-[100] -translate-y-16 rounded-audity bg-audity-primary px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-transform focus:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white;
+    @apply absolute left-2 top-2 z-[100] -translate-y-16 bg-audity-primary px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-transform focus:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white;
+    border-radius: var(--radius-sm);
   }
 
   .audity-skip-link:focus {
@@ -217,11 +330,19 @@ body {
     );
     background-size: 200% 100%;
     animation: audity-skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--radius-sm);
   }
 
   @keyframes audity-skeleton-shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  .audity-kbd {
+    @apply inline-flex h-5 min-w-[20px] items-center justify-center px-1.5 text-[11px] font-medium text-audity-muted;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-panel-alt);
+    border-radius: var(--radius-xs);
   }
 }
 
@@ -244,36 +365,6 @@ input[type="radio"] {
   height: 14px;
   width: 14px;
   accent-color: var(--color-primary);
-}
-
-@layer components {
-  .audity-card {
-    padding: 0.75rem;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border-subtle);
-    background: var(--color-bg-panel);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02);
-  }
-
-  .audity-card-page {
-    padding: 0.75rem;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border-subtle);
-    background: var(--color-bg-page);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02);
-  }
-
-  .audity-section-divider {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
-
-  .audity-metric-value {
-    font-size: 1.5rem;
-    line-height: 1.8rem;
-    font-weight: 600;
-  }
 }
 
 table {

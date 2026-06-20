@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
@@ -368,10 +368,23 @@ export function AuditCenterPage() {
     });
   }, [selectedFinding]);
 
+  const flashTimerRef = useRef<number | undefined>(undefined);
+  useEffect(() => () => {
+    if (flashTimerRef.current !== undefined) {
+      window.clearTimeout(flashTimerRef.current);
+    }
+  }, []);
+
   function flash(message: string) {
     setSaved(message);
     toast.success(message);
-    window.setTimeout(() => setSaved(""), 3000);
+    if (flashTimerRef.current !== undefined) {
+      window.clearTimeout(flashTimerRef.current);
+    }
+    flashTimerRef.current = window.setTimeout(() => {
+      setSaved("");
+      flashTimerRef.current = undefined;
+    }, 3000);
   }
 
   async function submit(event: FormEvent, action: () => Promise<void>) {
@@ -591,7 +604,10 @@ export function AuditCenterPage() {
       const link = document.createElement("a");
       link.href = url;
       link.download = `audity-evidence-pack-${id}.json`;
+      link.style.display = "none";
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
       flash("Evidence pack generated");
     } catch (packError) {
@@ -847,7 +863,7 @@ export function AuditCenterPage() {
     <div id="audit-center-workspace" className="h-[calc(100vh-76px)] min-w-0 overflow-y-auto pr-1">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-audity-primary">Audit Center</p>
+          <p className="text-xs font-medium tracking-wide text-audity-primary">Audit Center</p>
           <h1 className="mt-1 text-2xl font-semibold text-audity-text">{text(overview.assessment.name, "Assessment audit workspace")}</h1>
           <p className="mt-1 text-sm text-audity-muted">{text(overview.assessment.customerName)} · {text(overview.assessment.framework)}</p>
         </div>

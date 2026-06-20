@@ -2,7 +2,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
-import { PageSkeleton } from "../../components/ui";
+import { useCustomerContext } from "../../components/CustomerContextProvider";
+import { MultiCombobox, PageSkeleton, type ComboOption } from "../../components/ui";
 import type { Assessment, AssessmentScope, Customer } from "./types";
 
 type FrameworkOption = { id: string; name: string; shortName: string | null };
@@ -50,6 +51,7 @@ export function CustomerDetailPage() {
   const { id } = useParams();
   const api = useApi();
   const { user } = useAuth();
+  const { setCustomerLabel, setAssessmentId: setActiveAssessmentId } = useCustomerContext();
   const canCreateAssessment = Boolean(user?.permissions.includes("assessment.create"));
   const canEditAssessment = Boolean(user?.permissions.includes("assessment.edit"));
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -103,8 +105,7 @@ export function CustomerDetailPage() {
     if (!assessmentForm.frameworkId && selected[0]) {
       setAssessmentForm((current) => ({ ...current, frameworkId: selected[0] }));
     }
-    window.localStorage.setItem("audity_current_customer_label", customerPayload.customer.name);
-    window.dispatchEvent(new CustomEvent("audity-customer-context", { detail: customerPayload.customer.name }));
+    setCustomerLabel(customerPayload.customer.name);
     setAssessments(assessmentPayload.assessments);
     const current = assessmentPayload.assessments[0];
     if (current) {
@@ -168,9 +169,11 @@ export function CustomerDetailPage() {
     }
     if (selectedAssessmentId) {
       window.localStorage.setItem("audity_last_assessment_id", selectedAssessmentId);
-      window.dispatchEvent(new CustomEvent("audity-assessment-context", { detail: selectedAssessmentId }));
+      setActiveAssessmentId(selectedAssessmentId);
+    } else {
+      setActiveAssessmentId("");
     }
-  }, [selectedAssessmentId]);
+  }, [selectedAssessmentId, setActiveAssessmentId]);
 
   async function createAssessment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -311,9 +314,20 @@ export function CustomerDetailPage() {
                   {canManageAccess ? <button className="audity-btn-primary" onClick={() => void saveFrameworkScope()}>Save scope</button> : null}
                 </div>
                 {canManageAccess ? (
-                  <select multiple className="mt-3 min-h-36 w-full rounded-audity border border-audity-border bg-audity-page px-2 py-2 text-sm text-audity-text outline-none focus:border-audity-primary" value={scopeFrameworkIds} onChange={(event) => setScopeFrameworkIds(Array.from(event.target.selectedOptions).map((option) => option.value))}>
-                    {frameworks.map((framework) => <option key={framework.id} value={framework.id}>{framework.shortName ?? framework.name}</option>)}
-                  </select>
+                  <div className="mt-3">
+                    <MultiCombobox
+                      options={frameworks.map((framework): ComboOption => ({
+                        value: framework.id,
+                        label: framework.shortName ?? framework.name,
+                        hint: framework.shortName ? framework.name : undefined
+                      }))}
+                      value={scopeFrameworkIds}
+                      onChange={setScopeFrameworkIds}
+                      placeholder="Add frameworks…"
+                      ariaLabel="Framework scope"
+                      emptyText="No frameworks available"
+                    />
+                  </div>
                 ) : null}
               </section>
               <section className="min-w-0 overflow-x-auto rounded-audity border border-audity-border bg-audity-panel">
@@ -389,7 +403,7 @@ export function CustomerDetailPage() {
                   ["limitations", "Limitations"],
                   ["criticality", "Criticality"]
                 ].map(([key, label]) => (
-                  <label key={key} className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                  <label key={key} className="mb-3 block text-xs font-medium text-audity-secondary">
                     {label}
                     <textarea
                       className="mt-2 min-h-20 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
@@ -406,7 +420,7 @@ export function CustomerDetailPage() {
             {canCreateAssessment ? (
             <form onSubmit={createAssessment} className="rounded-audity border border-audity-border bg-audity-panel p-4">
               <h2 className="mb-4 text-lg font-semibold">Create assessment</h2>
-              <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+              <label className="mb-3 block text-xs font-medium text-audity-secondary">
                 Template
                 <select className="mt-2 audity-input" value={assessmentForm.templateKey} onChange={(event) => applyTemplate(event.target.value)}>
                   {templates.map((template) => <option key={template.key} value={template.key}>{template.name}</option>)}
@@ -419,7 +433,7 @@ export function CustomerDetailPage() {
                 ["targetDate", "Target date"],
                 ["status", "Status"]
               ].map(([key, label]) => (
-                <label key={key} className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                <label key={key} className="mb-3 block text-xs font-medium text-audity-secondary">
                   {label}
                   <input
                     className="mt-2 audity-input"
@@ -429,7 +443,7 @@ export function CustomerDetailPage() {
                   />
                 </label>
               ))}
-              <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+              <label className="mb-3 block text-xs font-medium text-audity-secondary">
                 Framework
                 <select className="mt-2 audity-input" value={assessmentForm.frameworkId} onChange={(event) => setAssessmentForm({ ...assessmentForm, frameworkId: event.target.value })}>
                   {(customer?.selectedFrameworks ?? []).map((framework) => <option key={framework.id} value={framework.id}>{framework.shortName ?? framework.name}</option>)}
@@ -446,17 +460,17 @@ export function CustomerDetailPage() {
                 <div className="mb-4 border-b border-audity-border pb-3">
                   <h2 className="text-lg font-semibold">Share Customer</h2>
                 </div>
-                <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                <label className="mb-3 block text-xs font-medium text-audity-secondary">
                   Search active users
                   <input className="mt-2 audity-input" value={shareSearch} onChange={(event) => setShareSearch(event.target.value)} />
                 </label>
-                <label className="mb-3 block text-xs font-semibold uppercase text-audity-secondary">
+                <label className="mb-3 block text-xs font-medium text-audity-secondary">
                   User
                   <select className="mt-2 audity-input" value={shareUserId} onChange={(event) => setShareUserId(event.target.value)}>
                     {shareTargets.map((target) => <option key={target.id} value={target.id}>{target.name ?? target.email} · {target.email}</option>)}
                   </select>
                 </label>
-                <label className="mb-4 block text-xs font-semibold uppercase text-audity-secondary">
+                <label className="mb-4 block text-xs font-medium text-audity-secondary">
                   Invitation message
                   <textarea className="mt-2 min-h-24 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-sm normal-case text-audity-text outline-none focus:border-audity-primary" placeholder="Optional message, for example: Please review the evidence section and check the open findings." value={shareMessage} onChange={(event) => setShareMessage(event.target.value)} />
                 </label>

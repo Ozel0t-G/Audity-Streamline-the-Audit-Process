@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useId, useRef } from "react";
 
 type ModalProps = {
   open: boolean;
@@ -30,6 +30,7 @@ export function Modal({
   closeOnBackdrop = true
 }: ModalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -55,7 +56,7 @@ export function Modal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="audity-modal-title"
+      aria-labelledby={titleId}
       onClick={(event) => {
         if (closeOnBackdrop && event.target === event.currentTarget) onClose();
       }}
@@ -67,7 +68,7 @@ export function Modal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-audity-border px-4 py-3">
           <div className="min-w-0">
-            <h2 id="audity-modal-title" className="text-sm font-semibold text-audity-text">
+            <h2 id={titleId} className="text-sm font-semibold text-audity-text">
               {title}
             </h2>
             {description ? (

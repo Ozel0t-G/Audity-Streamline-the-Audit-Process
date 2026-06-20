@@ -53,7 +53,7 @@ function Metric({ label, value, detail }: { label: string; value: number; detail
   return (
     <div className="rounded-audity border border-audity-border bg-audity-page p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-xs font-semibold uppercase text-audity-muted">{label}</span>
+        <span className="text-xs font-medium text-audity-muted">{label}</span>
         <span className="text-sm font-semibold text-audity-text">{value}%</span>
       </div>
       <ProgressBar value={value} />
@@ -688,7 +688,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 ["dateFrom", "From"],
                 ["dateTo", "To"]
               ].map(([key, label]) => (
-                <label key={key} className="block text-xs font-semibold uppercase text-audity-secondary">
+                <label key={key} className="block text-xs font-medium text-audity-secondary">
                   {label}
                   <input
                     className="mt-2 h-9 w-40 rounded-audity border border-audity-border bg-audity-page px-3 text-sm normal-case text-audity-text outline-none focus:border-audity-primary"
@@ -746,11 +746,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   <div className="space-y-3">
                     <p className="text-sm text-audity-secondary">{selectedLog.action} · {selectedLog.eventHash.slice(0, 16)}</p>
                     <div>
-                      <p className="mb-1 text-xs font-semibold uppercase text-audity-muted">Before</p>
+                      <p className="mb-1 text-xs font-medium text-audity-muted">Before</p>
                       <pre className="max-h-48 overflow-auto rounded-audity border border-audity-border bg-audity-panel p-3 text-xs text-audity-secondary">{jsonBlock(selectedLog.before)}</pre>
                     </div>
                     <div>
-                      <p className="mb-1 text-xs font-semibold uppercase text-audity-muted">After</p>
+                      <p className="mb-1 text-xs font-medium text-audity-muted">After</p>
                       <pre className="max-h-48 overflow-auto rounded-audity border border-audity-border bg-audity-panel p-3 text-xs text-audity-secondary">{jsonBlock(selectedLog.after)}</pre>
                     </div>
                   </div>
@@ -765,15 +765,15 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <h2 className="text-lg font-semibold">Security Audit Log</h2>
                 <div className="flex flex-wrap items-end gap-2">
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                  <label className="block text-xs font-medium text-audity-secondary">
                     Action
                     <input className="mt-2 w-44 audity-input" value={auditFilters.action} onChange={(event) => setAuditFilters({ ...auditFilters, action: event.target.value })} />
                   </label>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                  <label className="block text-xs font-medium text-audity-secondary">
                     From
                     <input className="mt-2 audity-input" type="date" value={auditFilters.dateFrom} onChange={(event) => setAuditFilters({ ...auditFilters, dateFrom: event.target.value })} />
                   </label>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                  <label className="block text-xs font-medium text-audity-secondary">
                     To
                     <input className="mt-2 audity-input" type="date" value={auditFilters.dateTo} onChange={(event) => setAuditFilters({ ...auditFilters, dateTo: event.target.value })} />
                   </label>
@@ -886,13 +886,13 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               </form>
               <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveBranding(event)}>
                 {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
-                  <label key={key} className="text-xs font-semibold uppercase text-audity-secondary">
+                  <label key={key} className="text-xs font-medium text-audity-secondary">
                     {key}
                     <input type="color" className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
                   </label>
                 ))}
                 {(["headerText", "footerText", "confidentialityLabel", "watermark"] as const).map((key) => (
-                  <label key={key} className="text-xs font-semibold uppercase text-audity-secondary">
+                  <label key={key} className="text-xs font-medium text-audity-secondary">
                     {key}
                     <input className="mt-2 audity-input" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
                   </label>
@@ -938,7 +938,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-audity-border pb-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-audity-muted">System Updates</p>
+                    <p className="text-xs font-medium text-audity-muted">System Updates</p>
                     <h2 className="mt-1 text-lg font-semibold">Audity Update Panel</h2>
                     <p className="mt-1 text-sm text-audity-secondary">
                       Updates are checked only against the production branch and installed by the server-side updater.
@@ -961,14 +961,14 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       ["Updater", updateStatus?.updaterConfigured ? "Configured" : "Not configured", updateJob?.status ? `Job ${updateJob.status}` : "No active job"]
                     ].map(([label, value, detail]) => (
                       <div key={label} className="rounded-audity border border-audity-border bg-audity-page p-3">
-                        <p className="text-xs font-semibold uppercase text-audity-muted">{label}</p>
+                        <p className="text-xs font-medium text-audity-muted">{label}</p>
                         <p className="mt-2 truncate text-sm font-semibold text-audity-text">{value}</p>
                         <p className="mt-1 truncate text-xs text-audity-secondary">{detail}</p>
                       </div>
                     ))}
                   </div>
                   <div className="flex flex-col gap-3 rounded-audity border border-audity-border bg-audity-page p-3 sm:flex-row sm:items-end xl:flex-col xl:items-stretch">
-                    <label className="block min-w-0 flex-1 text-xs font-semibold uppercase text-audity-secondary">
+                    <label className="block min-w-0 flex-1 text-xs font-medium text-audity-secondary">
                       Target version
                       <input
                         className="mt-2 audity-input"
@@ -1003,7 +1003,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 {updateJob ? (
                   <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase text-audity-muted">Update Job Log</p>
+                      <p className="text-xs font-medium text-audity-muted">Update Job Log</p>
                       <span className="text-xs text-audity-secondary">
                         {updateJob.startedAt ? new Date(updateJob.startedAt).toLocaleString() : "Not started"}
                         {updateJob.exitCode !== null ? ` · exit ${updateJob.exitCode}` : ""}
@@ -1017,7 +1017,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               </section>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <form className="max-w-md space-y-3" onSubmit={saveSystemSettings}>
-                  <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                  <label className="block text-xs font-medium text-audity-secondary">
                     Session idle timeout
                     <select
                       className="mt-2 audity-input"
@@ -1038,7 +1038,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-audity-border pb-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase text-audity-muted">Admin System Monitor</p>
+                      <p className="text-xs font-medium text-audity-muted">Admin System Monitor</p>
                       <h2 className="mt-1 text-lg font-semibold">Docker / Server Status</h2>
                       <p className="mt-1 text-xs text-audity-secondary">
                         {systemMonitor.snapshot.hostname} · {systemMonitor.snapshot.serverIp} · Uptime {formatUptime(systemMonitor.snapshot.uptimeSeconds)}
@@ -1073,7 +1073,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   </div>
                   <div className="mt-3 grid min-w-0 gap-3 2xl:grid-cols-[300px_minmax(0,1fr)]">
                     <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                      <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">System Problems</p>
+                      <p className="mb-2 text-xs font-medium text-audity-muted">System Problems</p>
                       {systemMonitor.snapshot.issues.length ? (
                         <div className="space-y-2">
                           {systemMonitor.snapshot.issues.map((issue) => (
@@ -1090,7 +1090,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     </div>
                     <div className="rounded-audity border border-audity-border bg-audity-page p-3">
                       <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase text-audity-muted">Server Timeline</p>
+                        <p className="text-xs font-medium text-audity-muted">Server Timeline</p>
                         <span className="text-xs text-audity-secondary">{systemMonitor.timeline.length} samples</span>
                       </div>
                       <div className="flex h-28 items-end gap-1 overflow-hidden rounded-audity border border-audity-border bg-audity-panel p-2">
@@ -1118,7 +1118,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                   <h2 className="mb-4 text-lg font-semibold">Manual Backup</h2>
                   {user?.role === "Instance Admin" ? <form className="space-y-3" onSubmit={(event) => void triggerBackup(event)}>
-                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    <label className="block text-xs font-medium text-audity-secondary">
                       Backup Type
                       <select className="mt-2 audity-input" value={backupType} onChange={(event) => setBackupType(event.target.value as typeof backupType)}>
                         <option value="full">Full</option>
@@ -1148,11 +1148,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       <input type="checkbox" checked={backupSettings.automaticBackupsEnabled} onChange={(event) => setBackupSettings({ ...backupSettings, automaticBackupsEnabled: event.target.checked })} />
                       Enabled
                     </label>
-                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    <label className="block text-xs font-medium text-audity-secondary">
                       Schedule
                       <input className="mt-2 audity-input" value={backupSettings.scheduleCron} onChange={(event) => setBackupSettings({ ...backupSettings, scheduleCron: event.target.value })} />
                     </label>
-                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    <label className="block text-xs font-medium text-audity-secondary">
                       Retention days
                       <input className="mt-2 audity-input" type="number" min={1} max={3650} value={backupSettings.retentionDays} onChange={(event) => setBackupSettings({ ...backupSettings, retentionDays: Number(event.target.value) })} />
                     </label>
@@ -1164,7 +1164,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                   <h2 className="mb-4 text-lg font-semibold">Restore Precheck</h2>
                   <form className="space-y-3" onSubmit={(event) => void runRestorePrecheck(event)}>
-                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    <label className="block text-xs font-medium text-audity-secondary">
                       Backup
                       <select className="mt-2 audity-input" value={restoreBackupId} onChange={(event) => setRestoreBackupId(event.target.value)}>
                         {backupJobs.map((job) => (
@@ -1178,7 +1178,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     {restorePrecheck ? <pre className="max-h-48 overflow-auto rounded-audity bg-audity-page p-3 text-xs text-audity-secondary">{jsonBlock(restorePrecheck)}</pre> : null}
                   </form>
                   <div className="mt-4 border-t border-audity-border pt-4">
-                    <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                    <label className="block text-xs font-medium text-audity-secondary">
                       Confirm Full Restore
                       <span className="mt-1 block text-[11px] font-normal normal-case text-audity-muted">
                         Type the exact phrase <code className="font-mono">RESTORE AUDITY</code> to enable the restore button. The phrase stays in English as a safety guard against accidental clicks during a localized session.

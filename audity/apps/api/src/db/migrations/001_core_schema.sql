@@ -519,7 +519,37 @@ alter table frameworks add column if not exists license_confirmed boolean not nu
 alter table frameworks add column if not exists yaml_source_path text;
 alter table frameworks add column if not exists yaml_synced_at timestamptz;
 alter table frameworks add column if not exists archived_at timestamptz;
+alter table frameworks add column if not exists source_kind text not null default 'shipped';
 create index if not exists idx_frameworks_archived_at on frameworks(archived_at);
+create index if not exists idx_frameworks_source_kind on frameworks(source_kind);
+
+create table if not exists framework_imports (
+  id uuid primary key,
+  uploaded_by uuid not null references users(id),
+  source_filename text not null,
+  source_mime text not null,
+  source_path text not null,
+  status text not null,
+  framework_key text,
+  framework_name text,
+  framework_version text,
+  framework_language text default 'en',
+  draft_yaml jsonb,
+  llm_provider text,
+  llm_model text,
+  llm_tokens_in int not null default 0,
+  llm_tokens_out int not null default 0,
+  llm_estimated_cost_cents int not null default 0,
+  total_controls int not null default 0,
+  enriched_controls int not null default 0,
+  error_message text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  committed_at timestamptz,
+  committed_yaml_path text
+);
+create index if not exists idx_framework_imports_status on framework_imports(status);
+create index if not exists idx_framework_imports_uploaded_by on framework_imports(uploaded_by);
 alter table framework_domains add column if not exists domain_id text;
 alter table framework_domains add column if not exists description text;
 alter table framework_controls add column if not exists audity_objective text;

@@ -3,6 +3,9 @@ export type AudityConfig = {
   databaseUrl: string;
   encryptionKey: string;
   env: string;
+  auditYamlDirectory: string;
+  userYamlDirectory: string;
+  userSourcesDirectory: string;
   frameworkYamlDirectory: string;
   frameworkYamlSyncIntervalSeconds: number;
   logLevel: string;
@@ -75,6 +78,11 @@ function validateProductionConfig(config: AudityConfig): void {
         .join(", ")}. Use ./scripts/install.sh or generate new random values.`
     );
   }
+  if (config.encryptionKey === config.appSecret) {
+    throw new Error(
+      "Refusing to start production with AUDITY_ENCRYPTION_KEY equal to AUDITY_APP_SECRET. Generate a separate key (e.g. openssl rand -base64 32)."
+    );
+  }
 }
 
 let cachedConfig: AudityConfig | null = null;
@@ -90,6 +98,9 @@ export function loadConfig(): AudityConfig {
       "postgres://audity:change-me@audity-db:5432/audity",
     env: process.env.AUDITY_ENV ?? "production",
     encryptionKey: process.env.AUDITY_ENCRYPTION_KEY ?? process.env.AUDITY_APP_SECRET ?? "change-me",
+    auditYamlDirectory: process.env.AUDITY_AUDITY_YAML_DIR ?? "audity_frameworks",
+    userYamlDirectory: process.env.AUDITY_USER_YAML_DIR ?? "user_frameworks",
+    userSourcesDirectory: process.env.AUDITY_USER_SOURCES_DIR ?? "user_frameworks/_sources",
     frameworkYamlDirectory: process.env.AUDITY_FRAMEWORK_YAML_DIR ?? "frameworks",
     frameworkYamlSyncIntervalSeconds: Number(process.env.AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS ?? 10),
     logLevel: process.env.AUDITY_LOG_LEVEL ?? "info",

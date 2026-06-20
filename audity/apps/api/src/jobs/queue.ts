@@ -36,3 +36,4 @@ export const connectorQueue = new Queue("audity-connector-sync", {
   connection: { url: config.redisUrl },
   defaultJobOptions
 });
+

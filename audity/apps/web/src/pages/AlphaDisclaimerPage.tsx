@@ -21,7 +21,7 @@ export function AlphaDisclaimerPage() {
   return (
     <main className="min-h-screen bg-audity-app p-5 text-audity-text">
       <section className="mx-auto mt-16 max-w-2xl rounded-audity border border-audity-border bg-audity-panel p-5">
-        <p className="text-xs font-semibold uppercase text-audity-primary">Alpha Notice</p>
+        <p className="text-xs font-medium text-audity-primary">Alpha Notice</p>
         <h1 className="mt-1 text-2xl font-semibold">Audity Alpha Limitations</h1>
         <div className="mt-4 space-y-2 text-sm leading-6 text-audity-secondary">
           <p>This build is for controlled beta testing and may contain incomplete workflows, security limitations, and changing data models.</p>
