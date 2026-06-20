@@ -349,7 +349,7 @@ export function AssessmentAssetsPage() {
               </form>
               <form className="space-y-3" onSubmit={(event) => void saveBranding(event)}>
                 {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
-                  <label key={key} className="grid grid-cols-[120px_1fr] items-center gap-3 text-xs font-semibold uppercase text-audity-secondary">
+                  <label key={key} className="grid grid-cols-[120px_1fr] items-center gap-3 text-xs font-medium text-audity-secondary">
                     {key}
                     <input type="color" className="h-9 w-full rounded-audity border border-audity-border bg-audity-page" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
                   </label>
@@ -374,7 +374,7 @@ export function AssessmentAssetsPage() {
                 ))}
               </div>
               <div className="space-y-2">
-                <label className="block text-xs font-semibold uppercase text-audity-secondary">
+                <label className="block text-xs font-medium text-audity-secondary">
                   Export Format
                   <select className="mt-2 audity-input" value={exportFormat} onChange={(event) => setExportFormat(event.target.value)}>
                     <option>PDF</option>
@@ -386,7 +386,7 @@ export function AssessmentAssetsPage() {
                   <input key={key} className="audity-input" value={value} onChange={(event) => setAuthorInfo({ ...authorInfo, [key]: event.target.value })} />
                 ))}
                 <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase text-audity-muted">Quality Check</p>
+                  <p className="mb-2 text-xs font-medium text-audity-muted">Quality Check</p>
                   <div className="space-y-1">
                     {qualityChecks.map((check) => (
                       <div key={check.label} className="flex items-center justify-between gap-3 text-xs">

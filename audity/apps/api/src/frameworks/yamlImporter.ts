@@ -103,8 +103,38 @@ function yamlDirectory(): string {
     : resolve(process.cwd(), config.frameworkYamlDirectory);
 }
 
+function auditYamlDirectory(): string {
+  return isAbsolute(config.auditYamlDirectory)
+    ? config.auditYamlDirectory
+    : resolve(process.cwd(), config.auditYamlDirectory);
+}
+
+function userYamlDirectory(): string {
+  return isAbsolute(config.userYamlDirectory)
+    ? config.userYamlDirectory
+    : resolve(process.cwd(), config.userYamlDirectory);
+}
+
 function shippedYamlDirectory(): string {
   return resolve(process.cwd(), "shipped-frameworks");
+}
+
+type SyncSource = "shipped" | "user_uploaded" | "legacy";
+
+async function discoverYamlFiles(): Promise<Array<{ path: string; source: SyncSource }>> {
+  const results: Array<{ path: string; source: SyncSource }> = [];
+  for (const file of await yamlFiles(auditYamlDirectory())) {
+    results.push({ path: file, source: "shipped" });
+  }
+  for (const file of await yamlFiles(userYamlDirectory())) {
+    if (file.includes(`${"/"}_sources${"/"}`)) continue;
+    results.push({ path: file, source: "user_uploaded" });
+  }
+  for (const file of await yamlFiles(yamlDirectory())) {
+    if (results.some((entry) => entry.path === file)) continue;
+    results.push({ path: file, source: "legacy" });
+  }
+  return results;
 }
 
 function sha256(text: string): string {
@@ -152,7 +182,7 @@ function controlReportMapping(control: z.infer<typeof controlSchema>): Record<st
   };
 }
 
-async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
+async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml, sourceKind: SyncSource = "shipped") {
   const framework = yaml.framework;
   const frameworkId = stableUuid(`framework:${framework.key}`);
   await pool.query(
@@ -161,8 +191,8 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
        status_label, disclaimer, license_confirmed, delivery_mode, content_class,
        official_standard_text_included, official_control_catalogue_included,
        licensed_content_import_supported, redistribution_note,
-       yaml_source_path, yaml_synced_at, archived_at, updated_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14,$15,$16,now(),null,now())
+       yaml_source_path, yaml_synced_at, source_kind, archived_at, updated_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14,$15,$16,now(),$17,null,now())
      on conflict (id) do update set
        name = excluded.name,
        short_name = excluded.short_name,
@@ -181,6 +211,7 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
        redistribution_note = excluded.redistribution_note,
        yaml_source_path = excluded.yaml_source_path,
        yaml_synced_at = now(),
+       source_kind = excluded.source_kind,
        archived_at = null,
        updated_at = now()`,
     [
@@ -199,7 +230,8 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml) {
       framework.officialControlCatalogueIncluded,
       framework.licensedContentImportSupported,
       framework.redistributionNote ?? null,
-      file
+      file,
+      sourceKind
     ]
   );
 
@@ -461,15 +493,12 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
   }
   syncInProgress = true;
   try {
-    let directory = yamlDirectory();
-    let files = await yamlFiles(directory);
-    if (files.length === 0 && directory !== shippedYamlDirectory()) {
+    let entries = await discoverYamlFiles();
+    if (entries.length === 0) {
       const shippedFiles = await yamlFiles(shippedYamlDirectory());
-      if (shippedFiles.length > 0) {
-        directory = shippedYamlDirectory();
-        files = shippedFiles;
-      }
+      entries = shippedFiles.map((path) => ({ path, source: "shipped" as SyncSource }));
     }
+    const directory = `${auditYamlDirectory()}, ${userYamlDirectory()}, ${yamlDirectory()}`;
     const result: FrameworkYamlSyncResult = {
       directory,
       scannedFiles: 0,
@@ -479,12 +508,9 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
       frameworks: []
     };
     const controlMappings: Array<{ source: string; target: string; type: string }> = [];
-    // Collect ALL legitimate file paths during this scan, even ones we skipped
-    // because their hash matched the cached one. We use this list to decide
-    // which frameworks were orphaned. If we only used `result.frameworks` we
-    // would archive every unchanged framework on every polling cycle.
     const scannedPaths: string[] = [];
-    for (const file of files) {
+    for (const entry of entries) {
+      const file = entry.path;
       result.scannedFiles += 1;
       try {
         const fileStat = await stat(file);
@@ -497,7 +523,7 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
           continue;
         }
         const parsed = frameworkYamlSchema.parse(parse(raw));
-        const framework = await upsertFrameworkFromYaml(file, parsed);
+        const framework = await upsertFrameworkFromYaml(file, parsed, entry.source);
         controlMappings.push(...parsed.controlMappings);
         syncedHashes.set(file, hash);
         result.syncedFiles += 1;

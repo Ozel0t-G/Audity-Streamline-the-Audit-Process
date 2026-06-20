@@ -104,6 +104,7 @@ function mapFramework(row: Record<string, unknown>) {
     officialControlCatalogueIncluded: row.official_control_catalogue_included,
     licensedContentImportSupported: row.licensed_content_import_supported,
     redistributionNote: row.redistribution_note,
+    sourceKind: row.source_kind,
     controlCount: Number(row.control_count ?? 0)
   };
 }

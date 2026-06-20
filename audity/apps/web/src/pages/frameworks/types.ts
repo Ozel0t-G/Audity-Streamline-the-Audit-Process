@@ -17,6 +17,7 @@ export type Framework = {
   officialControlCatalogueIncluded?: boolean;
   licensedContentImportSupported?: boolean;
   redistributionNote?: string | null;
+  sourceKind?: "shipped" | "user_uploaded" | "legacy";
   controlCount: number;
 };
 

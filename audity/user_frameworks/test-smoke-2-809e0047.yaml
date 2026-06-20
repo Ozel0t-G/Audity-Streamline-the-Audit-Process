@@ -1,0 +1,57 @@
+framework:
+  key: test.smoke.2
+  name: Smoke Test Framework 2
+  source: user_uploaded
+  status: draft
+  version: "1.0"
+  language: de
+  importMeta:
+    llmModel: null
+    importedAt: 2026-06-20T07:41:56.062Z
+    importedBy: df2ab456-f2e7-42b1-83db-4450946b8fdb
+    sourceFile: test-framework.csv
+    llmProvider: none
+  schemaVersion: 1
+domains:
+  - id: access
+    name: Access
+    controls:
+      - id: CTRL-1
+        tags:
+          - Access
+        howTo:
+          - step: "TODO: howTo step manuell ausfüllen (LLM-Provider ist auf 'none')."
+        title: MFA for all users
+        weight: 3
+        purpose: "TODO: purpose manuell ausfüllen (LLM-Provider ist auf 'none')."
+        scoring:
+          scale: 0-5+NA
+          gapWhen: score <= 2 OR evidenceCount == 0
+          passWhen: score >= 4 AND evidenceCount >= 1
+        question: "TODO: question manuell ausfüllen (LLM-Provider ist auf 'none')."
+        answerType: scale
+        expectedOutcome:
+          - "TODO: expectedOutcome manuell ausfüllen (LLM-Provider ist auf 'none')."
+        evidenceExamples:
+          - "TODO: evidence example manuell ausfüllen (LLM-Provider ist auf 'none')."
+  - id: backup
+    name: Backup
+    controls:
+      - id: CTRL-2
+        tags:
+          - Backup
+        howTo:
+          - step: "TODO: howTo step manuell ausfüllen (LLM-Provider ist auf 'none')."
+        title: Daily encrypted backup
+        weight: 3
+        purpose: "TODO: purpose manuell ausfüllen (LLM-Provider ist auf 'none')."
+        scoring:
+          scale: 0-5+NA
+          gapWhen: score <= 2 OR evidenceCount == 0
+          passWhen: score >= 4 AND evidenceCount >= 1
+        question: "TODO: question manuell ausfüllen (LLM-Provider ist auf 'none')."
+        answerType: scale
+        expectedOutcome:
+          - "TODO: expectedOutcome manuell ausfüllen (LLM-Provider ist auf 'none')."
+        evidenceExamples:
+          - "TODO: evidence example manuell ausfüllen (LLM-Provider ist auf 'none')."

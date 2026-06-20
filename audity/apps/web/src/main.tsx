@@ -15,6 +15,8 @@ const UserSettingsPage = lazy(() => import("./pages/UserSettingsPage").then((m) 
 const WorkbenchPage = lazy(() => import("./pages/WorkbenchPage").then((m) => ({ default: m.WorkbenchPage })));
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage").then((m) => ({ default: m.AdminDashboardPage })));
 const ConnectorAdminPage = lazy(() => import("./pages/admin/ConnectorAdminPage").then((m) => ({ default: m.ConnectorAdminPage })));
+const AiSettingsPage = lazy(() => import("./pages/admin/AiSettingsPage").then((m) => ({ default: m.AiSettingsPage })));
+const FrameworkImportReviewPage = lazy(() => import("./pages/admin/FrameworkImportReviewPage").then((m) => ({ default: m.FrameworkImportReviewPage })));
 const AlphaDisclaimerPage = lazy(() => import("./pages/AlphaDisclaimerPage").then((m) => ({ default: m.AlphaDisclaimerPage })));
 const AuditCenterPage = lazy(() => import("./pages/audit/AuditCenterPage").then((m) => ({ default: m.AuditCenterPage })));
 const CustomerDetailPage = lazy(() => import("./pages/customers/CustomerDetailPage").then((m) => ({ default: m.CustomerDetailPage })));
@@ -61,6 +63,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/branding" element={<RequirePermission permission="branding.manage"><LazyRoute><AdminDashboardPage section="branding" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/email" element={<RequirePermission permission="email.manage"><LazyRoute><AdminDashboardPage section="email" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/connectors" element={<RequirePermission permission="connectors.manage"><LazyRoute><ConnectorAdminPage /></LazyRoute></RequirePermission>} />
+              <Route path="/admin/ai" element={<RequirePermission permission="settings.manage"><LazyRoute><AiSettingsPage /></LazyRoute></RequirePermission>} />
+              <Route path="/admin/frameworks/imports/:importId" element={<RequirePermission permission="settings.manage"><LazyRoute><FrameworkImportReviewPage /></LazyRoute></RequirePermission>} />
               <Route path="/admin/workbench" element={<RequirePermission permission="settings.manage"><LazyRoute><WorkbenchPage /></LazyRoute></RequirePermission>} />
               <Route path="/admin/system" element={<RequirePermission permission="settings.manage"><LazyRoute><AdminDashboardPage section="system" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/backup" element={<RequirePermission instanceAdminOnly><LazyRoute><AdminDashboardPage section="backup" /></LazyRoute></RequirePermission>} />

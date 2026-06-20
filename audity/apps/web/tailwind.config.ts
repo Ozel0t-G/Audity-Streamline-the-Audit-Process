@@ -18,6 +18,8 @@ export default {
           primary: "var(--color-primary)",
           primaryHover: "var(--color-primary-hover)",
           primaryActive: "var(--color-primary-active)",
+          accent: "var(--color-accent)",
+          accentSoft: "var(--color-accent-soft)",
           text: "var(--color-text-primary)",
           secondary: "var(--color-text-secondary)",
           muted: "var(--color-text-muted)",
@@ -27,7 +29,25 @@ export default {
         }
       },
       borderRadius: {
-        audity: "6px"
+        "audity-xs": "var(--radius-xs)",
+        audity: "var(--radius-sm)",
+        "audity-md": "var(--radius-md)",
+        "audity-lg": "var(--radius-lg)",
+        "audity-button": "var(--radius-button)"
+      },
+      fontFamily: {
+        sans: [
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif"
+        ]
+      },
+      boxShadow: {
+        "audity-soft": "var(--shadow-soft)",
+        "audity-raised": "var(--shadow-raised)"
       }
     }
   },

@@ -21,3 +21,6 @@ export { FormSection, FormRow, FormField } from "./Form";
 export type { FormFieldProps } from "./Form";
 export { DataTable } from "./DataTable";
 export type { DataTableColumn, BulkAction } from "./DataTable";
+export { MultiCombobox } from "./MultiCombobox";
+export type { ComboOption } from "./MultiCombobox";
+export { Slideover } from "./Slideover";

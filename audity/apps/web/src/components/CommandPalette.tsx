@@ -125,7 +125,7 @@ export function CommandPalette({
           ) : null}
           {Array.from(grouped.entries()).map(([type, items]) => (
             <div key={type} className="mb-2 last:mb-0">
-              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-audity-muted">
+              <div className="px-3 pb-1 pt-2 text-[10px] font-medium tracking-wide text-audity-muted">
                 {categoryLabel(type)}
               </div>
               {items.map((result) => {

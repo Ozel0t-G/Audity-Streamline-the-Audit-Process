@@ -4,6 +4,7 @@ import { loadConfig } from "../config.js";
 
 const accessTokenTtlSeconds = 15 * 60;
 const refreshTokenTtlDays = 30;
+const SIGNING_ALGORITHM = "HS256" as const;
 
 export type AccessTokenPayload = {
   sub: string;
@@ -17,6 +18,7 @@ export type MfaChallengePayload = {
 
 export function signAccessToken(payload: AccessTokenPayload): string {
   return jwt.sign(payload, loadConfig().appSecret, {
+    algorithm: SIGNING_ALGORITHM,
     expiresIn: accessTokenTtlSeconds,
     issuer: "audity"
   });
@@ -24,12 +26,14 @@ export function signAccessToken(payload: AccessTokenPayload): string {
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
   return jwt.verify(token, loadConfig().appSecret, {
+    algorithms: [SIGNING_ALGORITHM],
     issuer: "audity"
   }) as AccessTokenPayload;
 }
 
 export function signMfaChallengeToken(userId: string): string {
   return jwt.sign({ sub: userId, purpose: "mfa_challenge" }, loadConfig().appSecret, {
+    algorithm: SIGNING_ALGORITHM,
     expiresIn: 5 * 60,
     issuer: "audity"
   });
@@ -37,6 +41,7 @@ export function signMfaChallengeToken(userId: string): string {
 
 export function verifyMfaChallengeToken(token: string): MfaChallengePayload {
   const payload = jwt.verify(token, loadConfig().appSecret, {
+    algorithms: [SIGNING_ALGORITHM],
     issuer: "audity"
   }) as MfaChallengePayload;
   if (payload.purpose !== "mfa_challenge") {

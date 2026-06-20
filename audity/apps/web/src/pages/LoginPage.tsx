@@ -73,7 +73,7 @@ export function LoginPage() {
       </header>
       <section className="mx-auto grid min-h-[calc(100vh-44px)] max-w-5xl grid-cols-1 items-center gap-4 px-4 py-7 lg:grid-cols-[1fr_380px]">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase text-audity-primary">Self-hosted GRC workspace</p>
+          <p className="mb-2 text-xs font-medium text-audity-primary">Self-hosted GRC workspace</p>
           <h1 className="text-3xl font-semibold leading-tight">Sign in to Audity</h1>
           <p className="mt-3 max-w-xl text-sm text-audity-secondary">
             Audity is a local-first audit workspace. Sign in to continue your assessments, findings, evidence collection
@@ -85,7 +85,7 @@ export function LoginPage() {
           {error ? <div className="mb-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           {challengeToken ? (
             <>
-              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Authenticator code</label>
+              <label className="mb-2 block text-xs font-medium text-audity-secondary">Authenticator code</label>
               <input
                 className="audity-input"
                 value={mfaCode}
@@ -99,9 +99,9 @@ export function LoginPage() {
             </>
           ) : (
             <>
-              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Email</label>
+              <label className="mb-2 block text-xs font-medium text-audity-secondary">Email</label>
               <input className="mb-3 audity-input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" required />
-              <label className="mb-2 block text-xs font-semibold uppercase text-audity-secondary">Password</label>
+              <label className="mb-2 block text-xs font-medium text-audity-secondary">Password</label>
               <input className="audity-input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
               <button className="mt-3 w-full audity-btn-primary" disabled={loading}>
                 Sign in

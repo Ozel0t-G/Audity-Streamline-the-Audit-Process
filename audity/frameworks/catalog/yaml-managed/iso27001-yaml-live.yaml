@@ -10,7 +10,6 @@ framework:
   distributedByAudity: true
   deliveryMode: yaml_content_sync
   contentClass: audity_native_readiness
-  contentStatus: YAML-managed readiness workflow. Official ISO standard text is not included.
   officialStandardTextIncluded: false
   officialControlCatalogueIncluded: false
   licensedContentImportSupported: true

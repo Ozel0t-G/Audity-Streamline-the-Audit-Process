@@ -12,7 +12,9 @@ COPY apps/web apps/web
 RUN npm run build --workspace @audity/web
 
 FROM nginx:1.27-alpine
-COPY apps/web/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+ENV AUDITY_CSP_CONNECT_EXTRA="http://localhost:9000 http://127.0.0.1:9000"
+ENV NGINX_ENVSUBST_FILTER="^AUDITY_"
 USER nginx
 EXPOSE 8080

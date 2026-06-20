@@ -59,9 +59,13 @@ type DashboardPayload = {
   sharedCustomers: SharedCustomer[];
 };
 
+type WidgetCategory = "metrics" | "work" | "risk" | "delivery" | "team";
+
 type WidgetId =
+  | "summary"
+  | "customers"
+  | "shared"
   | "openTasks"
-  | "myAssignedItems"
   | "criticalRisks"
   | "overdueItems"
   | "upcomingDeadlines"
@@ -69,226 +73,60 @@ type WidgetId =
   | "evidenceGaps"
   | "reviewQueue"
   | "recentlyChanged"
-  | "auditActivityFeed"
   | "riskHeatmap"
   | "topRiskOwners"
-  | "controlDomains"
   | "frameworkCoverage"
   | "reportReadiness"
   | "latestReports"
   | "customerHealth"
-  | "acceptedRisksExpiring"
   | "accountSecurityStatus"
   | "dataQualityIssues"
   | "importExportShortcuts"
-  | "notificationsSummary"
-  | "teamWorkload"
   | "roadmapTimeline"
   | "executiveSummary"
-  | "summary"
-  | "customers"
-  | "shared"
   | "riskSignals"
   | "dueActions"
   | "reports"
   | "onboarding";
 
 const storageKey = "audity_dashboard_widget_order";
-const defaultWidgets: WidgetId[] = ["summary", "openTasks", "customers", "criticalRisks", "evidenceGaps"];
+const defaultWidgets: WidgetId[] = ["summary", "openTasks", "criticalRisks", "customers"];
 
-const widgetLibrary: Record<WidgetId, { title: string; eyebrow: string; description: string; preview: string }> = {
-  openTasks: {
-    title: "Open Tasks",
-    eyebrow: "Tasks",
-    description: "Shows open work from findings, risks, evidence gaps and roadmap follow-ups. Best for users who want one operational queue.",
-    preview: "Task queue"
-  },
-  myAssignedItems: {
-    title: "My Assigned Items",
-    eyebrow: "Personal",
-    description: "Focuses on items assigned to the current user or likely owned by them. It helps each user start with their own work.",
-    preview: "My work"
-  },
-  criticalRisks: {
-    title: "Critical Risks",
-    eyebrow: "Risk",
-    description: "Shows assessments that currently carry critical risk. Use it as an executive escalation view.",
-    preview: "Critical list"
-  },
-  overdueItems: {
-    title: "Overdue Items",
-    eyebrow: "Due",
-    description: "Shows overdue roadmap actions and follow-ups. It is intended for daily cleanup and escalation.",
-    preview: "Overdue"
-  },
-  upcomingDeadlines: {
-    title: "Upcoming Deadlines",
-    eyebrow: "Due",
-    description: "Shows target dates and upcoming assessment deadlines. Useful for planning the next review cycle.",
-    preview: "Timeline"
-  },
-  assessmentProgress: {
-    title: "Assessment Progress",
-    eyebrow: "Progress",
-    description: "Compares progress across active assessments. It helps identify where answering or evidence work is stuck.",
-    preview: "Progress bars"
-  },
-  evidenceGaps: {
-    title: "Evidence Gaps",
-    eyebrow: "Evidence",
-    description: "Highlights assessments with missing or unvalidated evidence. Use it to drive evidence collection before reporting.",
-    preview: "Gap list"
-  },
-  reviewQueue: {
-    title: "Review Queue",
-    eyebrow: "Review",
-    description: "Shows findings and risk signals that still need review. It gives reviewers a compact approval queue.",
-    preview: "Review list"
-  },
-  recentlyChanged: {
-    title: "Recently Changed",
-    eyebrow: "Activity",
-    description: "Summarizes recently active customer and assessment areas. It is a lightweight shortcut back to recent work.",
-    preview: "Recent feed"
-  },
-  auditActivityFeed: {
-    title: "Audit Activity Feed",
-    eyebrow: "Activity",
-    description: "Shows a compact workflow event view for audit-relevant changes. It keeps audit movement visible without opening Admin.",
-    preview: "Feed"
-  },
-  riskHeatmap: {
-    title: "Risk Heatmap",
-    eyebrow: "Risk",
-    description: "Visualizes the risk distribution in a compact matrix-style view. It gives a quick sense of risk pressure.",
-    preview: "5x5"
-  },
-  topRiskOwners: {
-    title: "Top Risk Owners",
-    eyebrow: "Ownership",
-    description: "Shows where risk ownership is concentrated or missing. It helps identify workload and accountability problems.",
-    preview: "Owners"
-  },
-  controlDomains: {
-    title: "Control Domains",
-    eyebrow: "Controls",
-    description: "Shows maturity and coverage grouped by broad control domains. It is useful for domain-level steering.",
-    preview: "Domains"
-  },
-  frameworkCoverage: {
-    title: "Framework Coverage",
-    eyebrow: "Framework",
-    description: "Shows which frameworks are represented in active assessments. It helps teams understand coverage breadth.",
-    preview: "Coverage"
-  },
-  reportReadiness: {
-    title: "Report Readiness",
-    eyebrow: "Reports",
-    description: "Checks whether reports are likely ready based on risks, evidence gaps and findings. Use it before generating deliverables.",
-    preview: "Checklist"
-  },
-  latestReports: {
-    title: "Latest Reports",
-    eyebrow: "Reports",
-    description: "Shows recent report counts and shortcuts to report pages. It is useful for delivery-focused users.",
-    preview: "Reports"
-  },
-  customerHealth: {
-    title: "Customer Health",
-    eyebrow: "Customers",
-    description: "Gives each customer a simple health signal based on risks, findings and overdue items. It helps prioritize attention.",
-    preview: "Health"
-  },
-  acceptedRisksExpiring: {
-    title: "Accepted Risks Expiring",
-    eyebrow: "Risk",
-    description: "Shows accepted-risk expiry pressure once acceptance dates are available. For now it highlights assessments likely to need review.",
-    preview: "Expiry"
-  },
-  accountSecurityStatus: {
-    title: "MFA / Account Security Status",
-    eyebrow: "Security",
-    description: "Shows account security posture and a link to User Settings. The setup flow itself stays outside the dashboard.",
-    preview: "Security"
-  },
-  dataQualityIssues: {
-    title: "Data Quality Issues",
-    eyebrow: "Quality",
-    description: "Highlights missing owners, plans, due dates and evidence signals. It helps clean up audit data before reporting.",
-    preview: "Quality"
-  },
-  importExportShortcuts: {
-    title: "Import/Export Shortcuts",
-    eyebrow: "Tools",
-    description: "Provides quick links to report builder, assessment export and framework import areas. Useful for power users.",
-    preview: "Shortcuts"
-  },
-  notificationsSummary: {
-    title: "Notifications Summary",
-    eyebrow: "Notifications",
-    description: "Shows a compact reminder that notifications live in the top bar. It avoids duplicating the full notification feed.",
-    preview: "Badge"
-  },
-  teamWorkload: {
-    title: "Team Workload",
-    eyebrow: "Team",
-    description: "Summarizes workload by ownership signals and shared customers. It helps managers see collaboration load.",
-    preview: "Workload"
-  },
-  roadmapTimeline: {
-    title: "Roadmap Timeline",
-    eyebrow: "Roadmap",
-    description: "Shows work across 0-30d, 31-90d, 3-6M and 6-12M phases. It gives roadmap structure without opening the workflow page.",
-    preview: "Timeline"
-  },
-  executiveSummary: {
-    title: "Executive Summary",
-    eyebrow: "Executive",
-    description: "Creates a concise status narrative from the current dashboard metrics. It is suitable for leadership check-ins.",
-    preview: "Summary"
-  },
-  summary: {
-    title: "Audit Summary",
-    eyebrow: "Metrics",
-    description: "Shows the most important audit totals in one compact row. Good as the first widget for daily work.",
-    preview: "4 KPI tiles"
-  },
-  customers: {
-    title: "My Customers & Assessments",
-    eyebrow: "Workspace",
-    description: "Lists your active customers and assessments with progress and risk signals. Use it when you mostly jump into current work.",
-    preview: "Customer cards"
-  },
-  shared: {
-    title: "Customers Shared With Me",
-    eyebrow: "Collaboration",
-    description: "Shows customers another user has shared with you. Useful for reviewers and contributors who do not own the customer.",
-    preview: "Shared list"
-  },
-  riskSignals: {
-    title: "Risk Signals",
-    eyebrow: "Risk",
-    description: "Highlights critical risks, high risks, findings and evidence gaps. This helps you spot audit pressure points quickly.",
-    preview: "Risk bars"
-  },
-  dueActions: {
-    title: "Due Actions",
-    eyebrow: "Roadmap",
-    description: "Shows assessments with overdue roadmap work and upcoming target dates. Use it to drive follow-up meetings.",
-    preview: "Due list"
-  },
-  reports: {
-    title: "Report Status",
-    eyebrow: "Reports",
-    description: "Summarizes how many reports exist per assessment. Useful when you are preparing customer deliverables.",
-    preview: "Report counts"
-  },
-  onboarding: {
-    title: "First Setup",
-    eyebrow: "Setup",
-    description: "Shows a short setup checklist for new users. Keep it while onboarding, then remove it from the dashboard.",
-    preview: "4 setup steps"
-  }
+const widgetLibrary: Record<WidgetId, { title: string; category: WidgetCategory; description: string }> = {
+  summary: { title: "Audit Summary", category: "metrics", description: "Customers, assessments, critical risks and evidence gaps at a glance." },
+  customers: { title: "My Customers & Assessments", category: "work", description: "Active customers and assessments with progress and risk signals." },
+  shared: { title: "Shared With Me", category: "work", description: "Customers another user has shared with you." },
+  openTasks: { title: "Open Tasks", category: "work", description: "Findings, evidence gaps and overdue roadmap items in one queue." },
+  assessmentProgress: { title: "Assessment Progress", category: "work", description: "Compare progress across active assessments." },
+  evidenceGaps: { title: "Evidence Gaps", category: "work", description: "Assessments missing evidence — drives collection." },
+  reviewQueue: { title: "Review Queue", category: "work", description: "Findings and risk signals waiting for review." },
+  upcomingDeadlines: { title: "Upcoming Deadlines", category: "work", description: "Target dates and assessment deadlines." },
+  overdueItems: { title: "Overdue Items", category: "work", description: "Past-due roadmap actions and follow-ups." },
+  dueActions: { title: "Due Actions", category: "work", description: "Roadmap items with overdue or upcoming targets." },
+  criticalRisks: { title: "Critical Risks", category: "risk", description: "Assessments carrying critical risk — executive escalation." },
+  riskSignals: { title: "Risk Signals", category: "risk", description: "Critical, high, findings and gap counts side-by-side." },
+  riskHeatmap: { title: "Risk Heatmap", category: "risk", description: "Compact matrix view of risk pressure." },
+  recentlyChanged: { title: "Recent Activity", category: "risk", description: "Recently active customer and assessment areas." },
+  dataQualityIssues: { title: "Data Quality", category: "risk", description: "Missing owners, plans, due dates and evidence gaps." },
+  reportReadiness: { title: "Report Readiness", category: "delivery", description: "Pre-delivery checklist based on risks, evidence and findings." },
+  latestReports: { title: "Latest Reports", category: "delivery", description: "Recent report counts with shortcuts." },
+  reports: { title: "Report Status", category: "delivery", description: "How many reports exist per assessment." },
+  importExportShortcuts: { title: "Import/Export", category: "delivery", description: "Quick links to report builder, framework import, exports." },
+  roadmapTimeline: { title: "Roadmap Timeline", category: "delivery", description: "0-30d, 31-90d, 3-6M and 6-12M phases." },
+  executiveSummary: { title: "Executive Summary", category: "delivery", description: "Concise narrative from current dashboard metrics." },
+  topRiskOwners: { title: "Top Risk Owners", category: "team", description: "Where risk ownership is concentrated or missing." },
+  customerHealth: { title: "Customer Health", category: "team", description: "Per-customer health signal from risks and overdue items." },
+  frameworkCoverage: { title: "Framework Coverage", category: "team", description: "Which frameworks are represented in active assessments." },
+  accountSecurityStatus: { title: "Account Security", category: "team", description: "MFA and account security posture link." },
+  onboarding: { title: "First Setup", category: "team", description: "Short checklist for new users — remove after onboarding." }
+};
+
+const categoryLabels: Record<WidgetCategory, string> = {
+  metrics: "Overview",
+  work: "Daily work",
+  risk: "Risk & quality",
+  delivery: "Reports & delivery",
+  team: "Team & coverage"
 };
 
 function loadWidgetOrder(): WidgetId[] {
@@ -304,24 +142,29 @@ function loadWidgetOrder(): WidgetId[] {
   }
 }
 
-function ProgressBar({ value }: { value: number }) {
+function ProgressBar({ value, tone = "primary" }: { value: number; tone?: "primary" | "warning" | "error" }) {
+  const safe = Math.max(0, Math.min(100, value));
+  const fill = tone === "error" ? "bg-audity-error" : tone === "warning" ? "bg-audity-warning" : "bg-audity-primary";
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-audity-page">
-      <div className="h-full bg-audity-primary" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    <div className="h-1.5 overflow-hidden rounded-full bg-audity-panelAlt">
+      <div className={`h-full rounded-full ${fill} transition-all`} style={{ width: `${safe}%` }} />
     </div>
   );
 }
 
-function SignalPill({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "warning" | "error" }) {
+function SignalPill({ label, value, tone = "neutral" }: { label: string; value: number; tone?: "neutral" | "warning" | "error" | "success" }) {
   const toneClass =
     tone === "error"
-      ? "border-audity-error text-audity-error"
+      ? "border-audity-error/40 bg-audity-error/10 text-audity-error"
       : tone === "warning"
-        ? "border-audity-warning text-audity-warning"
-        : "border-audity-borderStrong text-audity-secondary";
+        ? "border-audity-warning/40 bg-audity-warning/10 text-audity-warning"
+        : tone === "success"
+          ? "border-audity-success/40 bg-audity-success/10 text-audity-success"
+          : "border-audity-border bg-audity-panelAlt text-audity-secondary";
   return (
-    <span className={`rounded-audity border px-2 py-1 text-xs ${toneClass}`}>
-      {label}: {value}
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums ${toneClass}`}>
+      <span className="text-audity-muted">{label}</span>
+      <span className="font-semibold">{value}</span>
     </span>
   );
 }
@@ -359,7 +202,7 @@ function WidgetShell({
         setDropRef(node);
       }}
       style={style}
-      className={`rounded-audity border bg-audity-panel p-4 ${isOver ? "border-audity-primary" : "border-audity-border"} ${isDragging ? "opacity-70" : ""}`}
+      className={`audity-card transition ${isOver ? "border-audity-primary" : ""} ${isDragging ? "opacity-70" : ""}`}
     >
       {editMode ? (
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-audity-border pb-3">
@@ -368,14 +211,19 @@ function WidgetShell({
             {...listeners}
             {...attributes}
           >
-            <p className="text-xs font-semibold uppercase text-audity-primary">{widgetLibrary[id].eyebrow}</p>
-            <p className="mt-1 truncate text-sm font-semibold text-audity-text">{widgetLibrary[id].title}</p>
+            <p className="text-[11px] font-medium text-audity-muted">{categoryLabels[widgetLibrary[id].category]}</p>
+            <p className="mt-0.5 truncate text-sm font-semibold text-audity-text">{widgetLibrary[id].title}</p>
           </div>
-          <div className="flex shrink-0 gap-2">
-            <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">Drag</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="audity-chip cursor-grab" {...listeners} {...attributes}>
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <circle cx="9" cy="6" r="1" /><circle cx="15" cy="6" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="9" cy="18" r="1" /><circle cx="15" cy="18" r="1" />
+              </svg>
+              Drag
+            </span>
             <button
               type="button"
-              className="rounded-audity border border-audity-error px-2 py-1 text-xs text-audity-error hover:bg-audity-error/10"
+              className="audity-btn-ghost audity-btn-sm text-audity-error hover:bg-audity-error/10 hover:text-audity-error"
               onClick={() => onRemove(id)}
             >
               Remove
@@ -398,30 +246,38 @@ function LibraryCard({ id, onAdd }: { id: WidgetId; onAdd: (id: WidgetId) => voi
       style={style}
       {...listeners}
       {...attributes}
-      className={`cursor-grab rounded-audity border border-audity-border bg-audity-page p-3 active:cursor-grabbing ${isDragging ? "opacity-70" : ""}`}
+      className={`cursor-grab rounded-audity-md border border-audity-border bg-audity-page p-3 transition active:cursor-grabbing hover:border-audity-borderStrong ${isDragging ? "opacity-70" : ""}`}
     >
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase text-audity-primary">{meta.eyebrow}</p>
-          <h3 className="mt-1 text-sm font-semibold text-audity-text">{meta.title}</h3>
+          <h3 className="truncate text-[13px] font-semibold text-audity-text">{meta.title}</h3>
+          <p className="mt-1 text-[12px] leading-5 text-audity-secondary">{meta.description}</p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">{meta.preview}</span>
-          <button
-            type="button"
-            className="rounded-audity border border-audity-primary px-2 py-1 text-xs text-audity-primary hover:border-audity-primaryHover"
-            onClick={() => onAdd(id)}
-          >
-            Add
-          </button>
-        </div>
+        <button
+          type="button"
+          className="audity-btn-soft audity-btn-sm shrink-0"
+          onClick={() => onAdd(id)}
+        >
+          Add
+        </button>
       </div>
-      <div className="mb-3 grid grid-cols-4 gap-1">
-        {Array.from({ length: 8 }, (_, index) => (
-          <div key={index} className={`h-4 rounded-sm ${index % 3 === 0 ? "bg-audity-primary" : "bg-audity-panel"}`} />
+    </div>
+  );
+}
+
+function WidgetSkeleton() {
+  return (
+    <div className="audity-card">
+      <div className="audity-skeleton mb-3 h-3 w-20" />
+      <div className="audity-skeleton mb-4 h-5 w-48" />
+      <div className="grid gap-3 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-audity-md border border-audity-border bg-audity-page p-3">
+            <div className="audity-skeleton h-3 w-16" />
+            <div className="audity-skeleton mt-3 h-7 w-12" />
+          </div>
         ))}
       </div>
-      <p className="text-xs leading-5 text-audity-secondary">{meta.description}</p>
     </div>
   );
 }
@@ -432,6 +288,7 @@ export function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(loadWidgetOrder);
   const [editMode, setEditMode] = useState(false);
+  const [libraryFilter, setLibraryFilter] = useState<WidgetCategory | "all">("all");
   const [error, setError] = useState("");
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -439,9 +296,11 @@ export function DashboardPage() {
   );
 
   useEffect(() => {
+    let cancelled = false;
     void api<DashboardPayload>("/api/dashboard")
-      .then(setDashboard)
-      .catch((err) => setError(err instanceof Error ? err.message : "Dashboard load failed"));
+      .then((payload) => { if (!cancelled) setDashboard(payload); })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Dashboard load failed"); });
+    return () => { cancelled = true; };
   }, [api]);
 
   useEffect(() => {
@@ -466,6 +325,7 @@ export function DashboardPage() {
   }), [assessments, dashboard]);
 
   const unusedWidgets = (Object.keys(widgetLibrary) as WidgetId[]).filter((id) => !widgetOrder.includes(id));
+  const filteredUnused = libraryFilter === "all" ? unusedWidgets : unusedWidgets.filter((id) => widgetLibrary[id].category === libraryFilter);
 
   function moveWidget(activeId: WidgetId, overId: WidgetId) {
     setWidgetOrder((current) => {
@@ -503,37 +363,35 @@ export function DashboardPage() {
     setWidgetOrder((current) => current.filter((item) => item !== id));
   }
 
-  function widgetHeader(eyebrow: string, title: string) {
+  function widgetHeader(title: string, action?: ReactNode) {
     return (
-      <div className="mb-4 border-b border-audity-border pb-3">
-        <p className="text-xs font-semibold uppercase text-audity-muted">{eyebrow}</p>
-        <h2 className="mt-1 text-lg font-semibold">{title}</h2>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <h2 className="audity-section-title">{title}</h2>
+        {action}
       </div>
     );
   }
 
   function emptyState(text: string) {
-    return <p className="rounded-audity border border-audity-border bg-audity-page px-3 py-8 text-center text-sm text-audity-muted">{text}</p>;
+    return <p className="rounded-audity-md border border-dashed border-audity-border px-3 py-8 text-center text-sm text-audity-muted">{text}</p>;
   }
 
   function assessmentLink(assessment: (typeof assessments)[number], to: string, right?: ReactNode) {
     return (
-      <Link key={`${to}-${assessment.id}`} className="block rounded-audity border border-audity-border bg-audity-page px-3 py-2 hover:border-audity-primary" to={to}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-audity-text">{assessment.customerName}</p>
-            <p className="mt-1 text-xs text-audity-muted">{assessment.type} · {assessment.framework ?? "No framework"}</p>
-          </div>
-          {right}
+      <Link key={`${to}-${assessment.id}`} className="group flex items-start justify-between gap-3 rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5 transition hover:border-audity-primary hover:bg-audity-panelAlt" to={to}>
+        <div className="min-w-0">
+          <p className="truncate text-[13px] font-semibold text-audity-text">{assessment.customerName}</p>
+          <p className="mt-0.5 text-xs text-audity-muted">{assessment.type} · {assessment.framework ?? "No framework"}</p>
         </div>
+        {right}
       </Link>
     );
   }
 
-  function compactList(title: string, eyebrow: string, items: ReactNode[], emptyText: string) {
+  function compactList(title: string, items: ReactNode[], emptyText: string) {
     return (
       <>
-        {widgetHeader(eyebrow, title)}
+        {widgetHeader(title)}
         <div className="space-y-2">
           {items.length ? items.slice(0, 8) : emptyState(emptyText)}
         </div>
@@ -553,47 +411,37 @@ export function DashboardPage() {
             <SignalPill label="Gaps" value={assessment.evidenceGaps ?? 0} tone={(assessment.evidenceGaps ?? 0) ? "warning" : "neutral"} />
           </div>
         ));
-      return compactList("Open Tasks", "Tasks", items, "No open tasks found");
-    }
-    if (id === "myAssignedItems") {
-      const items = assessments
-        .filter((assessment) => (assessment.openHighRisks ?? 0) || (assessment.overdueRoadmapItems ?? 0))
-        .map((assessment) => assessmentLink(
-          assessment,
-          `/assessments/${assessment.id}/workflow`,
-          <SignalPill label="Assigned signals" value={(assessment.openHighRisks ?? 0) + (assessment.overdueRoadmapItems ?? 0)} tone="warning" />
-        ));
-      return compactList("My Assigned Items", "Personal", items, "No assigned items detected");
+      return compactList("Open Tasks", items, "No open tasks");
     }
     if (id === "criticalRisks") {
       const items = assessments
         .filter((assessment) => (assessment.criticalRisks ?? 0) > 0)
         .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/workflow`, <SignalPill label="Critical" value={assessment.criticalRisks ?? 0} tone="error" />));
-      return compactList("Critical Risks", "Risk", items, "No critical risks");
+      return compactList("Critical Risks", items, "No critical risks");
     }
     if (id === "overdueItems") {
       const items = assessments
         .filter((assessment) => (assessment.overdueRoadmapItems ?? 0) > 0)
         .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/workflow`, <SignalPill label="Overdue" value={assessment.overdueRoadmapItems ?? 0} tone="error" />));
-      return compactList("Overdue Items", "Due", items, "No overdue items");
+      return compactList("Overdue Items", items, "No overdue items");
     }
     if (id === "upcomingDeadlines") {
       const items = assessments
         .filter((assessment) => assessment.targetDate)
         .sort((a, b) => String(a.targetDate).localeCompare(String(b.targetDate)))
-        .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/questions`, <span className="shrink-0 text-xs text-audity-secondary">{assessment.targetDate}</span>));
-      return compactList("Upcoming Deadlines", "Due", items, "No upcoming deadlines");
+        .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/questions`, <span className="shrink-0 text-xs font-medium tabular-nums text-audity-secondary">{assessment.targetDate}</span>));
+      return compactList("Upcoming Deadlines", items, "No upcoming deadlines");
     }
     if (id === "assessmentProgress") {
       return (
         <>
-          {widgetHeader("Progress", "Assessment Progress")}
+          {widgetHeader("Assessment Progress")}
           <div className="space-y-3">
             {assessments.slice(0, 8).map((assessment) => (
-              <Link key={assessment.id} to={`/assessments/${assessment.id}/questions`} className="block rounded-audity border border-audity-border bg-audity-page px-3 py-2 hover:border-audity-primary">
+              <Link key={assessment.id} to={`/assessments/${assessment.id}/questions`} className="block rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5 transition hover:border-audity-primary">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="truncate text-sm font-semibold">{assessment.customerName} · {assessment.type}</p>
-                  <span className="text-xs text-audity-secondary">{assessment.progressPercent ?? 0}%</span>
+                  <p className="truncate text-[13px] font-semibold">{assessment.customerName} · {assessment.type}</p>
+                  <span className="shrink-0 text-xs font-semibold tabular-nums text-audity-secondary">{assessment.progressPercent ?? 0}%</span>
                 </div>
                 <ProgressBar value={assessment.progressPercent ?? 0} />
               </Link>
@@ -607,60 +455,57 @@ export function DashboardPage() {
       const items = assessments
         .filter((assessment) => (assessment.evidenceGaps ?? 0) > 0)
         .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/questions`, <SignalPill label="Gaps" value={assessment.evidenceGaps ?? 0} tone="warning" />));
-      return compactList("Evidence Gaps", "Evidence", items, "No evidence gaps");
+      return compactList("Evidence Gaps", items, "No evidence gaps");
     }
     if (id === "reviewQueue") {
       const items = assessments
         .filter((assessment) => (assessment.openFindings ?? 0) > 0 || (assessment.openHighRisks ?? 0) > 0)
         .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/workflow`, <SignalPill label="Review" value={(assessment.openFindings ?? 0) + (assessment.openHighRisks ?? 0)} tone="warning" />));
-      return compactList("Review Queue", "Review", items, "No items waiting for review");
+      return compactList("Review Queue", items, "Nothing waiting for review");
     }
-    if (id === "recentlyChanged" || id === "auditActivityFeed") {
-      const title = id === "recentlyChanged" ? "Recently Changed" : "Audit Activity Feed";
+    if (id === "recentlyChanged") {
       const items = assessments.slice(0, 8).map((assessment) => assessmentLink(
         assessment,
         `/assessments/${assessment.id}/workflow`,
-        <span className="shrink-0 rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">{assessment.status}</span>
+        <span className="audity-chip shrink-0">{assessment.status}</span>
       ));
-      return compactList(title, "Activity", items, "No recent activity");
+      return compactList("Recent Activity", items, "No recent activity");
     }
     if (id === "riskHeatmap") {
       const cells = [
-        ["Critical", totals.critical, "bg-audity-error"],
-        ["High", Math.max(0, totals.high - totals.critical), "bg-audity-warning"],
-        ["Findings", totals.findings, "bg-audity-primary"],
+        ["Critical", totals.critical, "bg-audity-error/80"],
+        ["High", Math.max(0, totals.high - totals.critical), "bg-audity-warning/80"],
+        ["Findings", totals.findings, "bg-audity-primary/80"],
         ["Gaps", totals.gaps, "bg-audity-panelAlt"]
       ] as Array<[string, number, string]>;
       return (
         <>
-          {widgetHeader("Risk", "Risk Heatmap")}
+          {widgetHeader("Risk Heatmap")}
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             {cells.map(([label, value, color]) => (
-              <div key={label} className="rounded-audity border border-audity-border bg-audity-page p-3">
-                <div className={`mb-2 h-16 rounded-audity ${color}`} />
-                <p className="text-sm font-semibold">{label}</p>
-                <p className="mt-1 text-xl font-semibold">{value}</p>
+              <div key={label} className="rounded-audity-md border border-audity-border bg-audity-page p-3">
+                <div className={`mb-3 h-12 rounded-audity ${color}`} />
+                <p className="text-xs font-medium text-audity-muted">{label}</p>
+                <p className="audity-metric-value mt-0.5 text-audity-text" style={{ fontSize: "1.5rem", lineHeight: "1.75rem" }}>{value}</p>
               </div>
             ))}
           </div>
         </>
       );
     }
-    if (id === "topRiskOwners" || id === "teamWorkload") {
+    if (id === "topRiskOwners") {
       const items = dashboard?.ownedCustomers.slice(0, 8).map((customer) => {
         const count = customer.assessments.reduce((sum, assessment) => sum + (assessment.openHighRisks ?? 0) + (assessment.openFindings ?? 0), 0);
         return (
-          <Link key={customer.customerId} to={`/customers/${customer.customerId}`} className="block rounded-audity border border-audity-border bg-audity-page px-3 py-2 hover:border-audity-primary">
-            <div className="flex items-center justify-between gap-3">
-              <p className="truncate text-sm font-semibold">{customer.customerName}</p>
-              <SignalPill label={id === "teamWorkload" ? "Items" : "Risk load"} value={count} tone={count ? "warning" : "neutral"} />
-            </div>
+          <Link key={customer.customerId} to={`/customers/${customer.customerId}`} className="flex items-center justify-between gap-3 rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5 transition hover:border-audity-primary">
+            <p className="truncate text-[13px] font-semibold">{customer.customerName}</p>
+            <SignalPill label="Risk load" value={count} tone={count ? "warning" : "neutral"} />
           </Link>
         );
       }) ?? [];
-      return compactList(id === "teamWorkload" ? "Team Workload" : "Top Risk Owners", id === "teamWorkload" ? "Team" : "Ownership", items, "No workload signals");
+      return compactList("Top Risk Owners", items, "No workload signals");
     }
-    if (id === "controlDomains" || id === "frameworkCoverage") {
+    if (id === "frameworkCoverage") {
       const byFramework = new Map<string, { count: number; progress: number }>();
       assessments.forEach((assessment) => {
         const key = assessment.framework ?? "No framework";
@@ -668,15 +513,15 @@ export function DashboardPage() {
         byFramework.set(key, { count: current.count + 1, progress: current.progress + (assessment.progressPercent ?? 0) });
       });
       const items = Array.from(byFramework.entries()).map(([name, value]) => (
-        <div key={name} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
+        <div key={name} className="rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="truncate text-sm font-semibold">{id === "controlDomains" ? `Domain view: ${name}` : name}</p>
-            <span className="text-xs text-audity-secondary">{Math.round(value.progress / Math.max(1, value.count))}%</span>
+            <p className="truncate text-[13px] font-semibold">{name}</p>
+            <span className="shrink-0 text-xs font-semibold tabular-nums text-audity-secondary">{Math.round(value.progress / Math.max(1, value.count))}%</span>
           </div>
           <ProgressBar value={value.progress / Math.max(1, value.count)} />
         </div>
       ));
-      return compactList(id === "controlDomains" ? "Control Domains" : "Framework Coverage", id === "controlDomains" ? "Controls" : "Framework", items, "No framework coverage yet");
+      return compactList("Framework Coverage", items, "No framework coverage yet");
     }
     if (id === "reportReadiness") {
       const checks = [
@@ -687,12 +532,15 @@ export function DashboardPage() {
       ] as Array<[string, boolean]>;
       return (
         <>
-          {widgetHeader("Reports", "Report Readiness")}
+          {widgetHeader("Report Readiness")}
           <div className="space-y-2">
             {checks.map(([label, ok]) => (
-              <div key={label} className="flex items-center justify-between rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <span className="text-sm text-audity-secondary">{label}</span>
-                <span className={ok ? "text-audity-success" : "text-audity-warning"}>{ok ? "OK" : "Review"}</span>
+              <div key={label} className="flex items-center justify-between rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5">
+                <span className="text-[13px] text-audity-secondary">{label}</span>
+                <span className={`inline-flex items-center gap-1 text-xs font-semibold ${ok ? "text-audity-success" : "text-audity-warning"}`}>
+                  <span className={`h-2 w-2 rounded-full ${ok ? "bg-audity-success" : "bg-audity-warning"}`} />
+                  {ok ? "Ready" : "Review"}
+                </span>
               </div>
             ))}
           </div>
@@ -703,37 +551,29 @@ export function DashboardPage() {
       const items = assessments
         .filter((assessment) => (assessment.reports ?? 0) > 0)
         .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/assets`, <SignalPill label="Reports" value={assessment.reports ?? 0} />));
-      return compactList("Latest Reports", "Reports", items, "No reports created yet");
+      return compactList("Latest Reports", items, "No reports created yet");
     }
     if (id === "customerHealth") {
       const items = dashboard?.ownedCustomers.slice(0, 8).map((customer) => {
         const score = customer.assessments.reduce((sum, assessment) => sum + (assessment.criticalRisks ?? 0) * 3 + (assessment.openHighRisks ?? 0) + (assessment.overdueRoadmapItems ?? 0), 0);
-        const tone = score > 5 ? "error" : score > 0 ? "warning" : "neutral";
+        const tone = score > 5 ? "error" : score > 0 ? "warning" : "success";
         return (
-          <Link key={customer.customerId} to={`/customers/${customer.customerId}`} className="block rounded-audity border border-audity-border bg-audity-page px-3 py-2 hover:border-audity-primary">
-            <div className="flex items-center justify-between gap-3">
-              <p className="truncate text-sm font-semibold">{customer.customerName}</p>
-              <SignalPill label="Health load" value={score} tone={tone} />
-            </div>
+          <Link key={customer.customerId} to={`/customers/${customer.customerId}`} className="flex items-center justify-between gap-3 rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5 transition hover:border-audity-primary">
+            <p className="truncate text-[13px] font-semibold">{customer.customerName}</p>
+            <SignalPill label="Health" value={score} tone={tone} />
           </Link>
         );
       }) ?? [];
-      return compactList("Customer Health", "Customers", items, "No customer health signals");
-    }
-    if (id === "acceptedRisksExpiring") {
-      const items = assessments
-        .filter((assessment) => (assessment.openHighRisks ?? 0) > 0)
-        .map((assessment) => assessmentLink(assessment, `/assessments/${assessment.id}/workflow`, <span className="text-xs text-audity-warning">Review acceptance</span>));
-      return compactList("Accepted Risks Expiring", "Risk", items, "No accepted-risk expiry signals");
+      return compactList("Customer Health", items, "No customer health signals");
     }
     if (id === "accountSecurityStatus") {
       return (
         <>
-          {widgetHeader("Security", "MFA / Account Security Status")}
-          <div className="rounded-audity border border-audity-border bg-audity-page p-3">
-            <p className="text-sm font-semibold">{user?.email}</p>
-            <p className="mt-1 text-xs text-audity-muted">{user?.role} · MFA setup is managed in User Settings.</p>
-            <Link className="mt-3 inline-block rounded-audity border border-audity-borderStrong px-3 py-2 text-sm text-audity-primary" to="/user-settings">Open User Settings</Link>
+          {widgetHeader("Account Security")}
+          <div className="rounded-audity-md border border-audity-border bg-audity-page p-3">
+            <p className="text-[13px] font-semibold">{user?.email}</p>
+            <p className="mt-1 text-xs text-audity-muted">{user?.role} · MFA is managed in User Settings.</p>
+            <Link className="audity-btn-soft audity-btn-sm mt-3" to="/user-settings">Open User Settings</Link>
           </div>
         </>
       );
@@ -747,9 +587,14 @@ export function DashboardPage() {
       ] as Array<[string, number]>;
       return (
         <>
-          {widgetHeader("Quality", "Data Quality Issues")}
+          {widgetHeader("Data Quality")}
           <div className="grid gap-2 md:grid-cols-2">
-            {issues.map(([label, value]) => <SignalPill key={label} label={label} value={value} tone={value ? "warning" : "neutral"} />)}
+            {issues.map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5">
+                <span className="text-xs text-audity-secondary">{label}</span>
+                <SignalPill label="" value={value} tone={value ? "warning" : "success"} />
+              </div>
+            ))}
           </div>
         </>
       );
@@ -758,40 +603,30 @@ export function DashboardPage() {
       const firstAssessment = assessments[0];
       return (
         <>
-          {widgetHeader("Tools", "Import/Export Shortcuts")}
+          {widgetHeader("Import / Export")}
           <div className="flex flex-wrap gap-2">
-            <Link className="rounded-audity border border-audity-borderStrong px-3 py-2 text-sm text-audity-primary" to={firstAssessment ? `/assessments/${firstAssessment.id}/assets` : "/customers"}>Report Builder</Link>
-            <Link className="rounded-audity border border-audity-borderStrong px-3 py-2 text-sm text-audity-primary" to="/admin/frameworks">Framework Import</Link>
-            <Link className="rounded-audity border border-audity-borderStrong px-3 py-2 text-sm text-audity-primary" to={firstAssessment ? `/assessments/${firstAssessment.id}/workflow` : "/customers"}>Risk CSV</Link>
-          </div>
-        </>
-      );
-    }
-    if (id === "notificationsSummary") {
-      return (
-        <>
-          {widgetHeader("Notifications", "Notifications Summary")}
-          <div className="rounded-audity border border-audity-border bg-audity-page p-3 text-sm text-audity-secondary">
-            Notifications are shown in the top bar bell. Keep this widget as a reminder or remove it if the top bar is enough.
+            <Link className="audity-btn-secondary audity-btn-sm" to={firstAssessment ? `/assessments/${firstAssessment.id}/assets` : "/customers"}>Report Builder</Link>
+            <Link className="audity-btn-secondary audity-btn-sm" to="/admin/frameworks">Framework Import</Link>
+            <Link className="audity-btn-secondary audity-btn-sm" to={firstAssessment ? `/assessments/${firstAssessment.id}/workflow` : "/customers"}>Risk CSV</Link>
           </div>
         </>
       );
     }
     if (id === "roadmapTimeline") {
       const phases = [
-        ["0-30d", totals.overdue],
-        ["31-90d", totals.high],
-        ["3-6M", totals.findings],
-        ["6-12M", totals.gaps]
+        ["0–30 d", totals.overdue],
+        ["31–90 d", totals.high],
+        ["3–6 M", totals.findings],
+        ["6–12 M", totals.gaps]
       ] as Array<[string, number]>;
       return (
         <>
-          {widgetHeader("Roadmap", "Roadmap Timeline")}
+          {widgetHeader("Roadmap Timeline")}
           <div className="grid gap-2 md:grid-cols-4">
             {phases.map(([phase, value]) => (
-              <div key={phase} className="rounded-audity border border-audity-border bg-audity-page p-3">
-                <p className="text-sm font-semibold">{phase}</p>
-                <p className="mt-2 text-2xl font-semibold">{value}</p>
+              <div key={phase} className="rounded-audity-md border border-audity-border bg-audity-page p-3">
+                <p className="text-xs font-medium text-audity-muted">{phase}</p>
+                <p className="audity-metric-value mt-1 text-audity-text" style={{ fontSize: "1.5rem", lineHeight: "1.75rem" }}>{value}</p>
               </div>
             ))}
           </div>
@@ -801,30 +636,33 @@ export function DashboardPage() {
     if (id === "executiveSummary") {
       return (
         <>
-          {widgetHeader("Executive", "Executive Summary")}
-          <p className="rounded-audity border border-audity-border bg-audity-page p-3 text-sm leading-6 text-audity-secondary">
-            Current workspace contains {totals.customers} customers and {totals.assessments} assessments. There are {totals.critical} critical risks, {totals.high} high or critical risk signals, {totals.gaps} evidence gaps and {totals.overdue} overdue roadmap items.
+          {widgetHeader("Executive Summary")}
+          <p className="rounded-audity-md border border-audity-border bg-audity-page p-4 text-[13px] leading-6 text-audity-secondary">
+            Your workspace contains <strong className="text-audity-text tabular-nums">{totals.customers}</strong> customers
+            and <strong className="text-audity-text tabular-nums">{totals.assessments}</strong> assessments. There are
+            currently <strong className="text-audity-error tabular-nums">{totals.critical}</strong> critical risks,
+            <strong className="text-audity-warning tabular-nums"> {totals.high}</strong> high or critical signals,
+            <strong className="text-audity-warning tabular-nums"> {totals.gaps}</strong> evidence gaps
+            and <strong className="text-audity-error tabular-nums">{totals.overdue}</strong> overdue roadmap items.
           </p>
         </>
       );
     }
     if (id === "summary") {
+      const tiles: Array<[string, number, "neutral" | "error" | "warning"]> = [
+        ["Customers", totals.customers, "neutral"],
+        ["Assessments", totals.assessments, "neutral"],
+        ["Critical risks", totals.critical, totals.critical ? "error" : "neutral"],
+        ["Evidence gaps", totals.gaps, totals.gaps ? "warning" : "neutral"]
+      ];
       return (
         <>
-          <div className="mb-4 border-b border-audity-border pb-3">
-            <p className="text-xs font-semibold uppercase text-audity-muted">Metrics</p>
-            <h2 className="mt-1 text-lg font-semibold">Audit Summary</h2>
-          </div>
-          <div className="grid gap-3 md:grid-cols-4">
-            {([
-              ["Customers", totals.customers],
-              ["Assessments", totals.assessments],
-              ["Critical Risks", totals.critical],
-              ["Evidence Gaps", totals.gaps]
-            ] as Array<[string, number]>).map(([label, value]) => (
-              <div key={label} className="rounded-audity border border-audity-border bg-audity-page px-3 py-3">
-                <p className="text-xs font-semibold uppercase text-audity-muted">{label}</p>
-                <p className="mt-2 text-2xl font-semibold">{value}</p>
+          {widgetHeader("Audit Summary")}
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+            {tiles.map(([label, value, tone]) => (
+              <div key={label} className="rounded-audity-md border border-audity-border bg-audity-page px-3 py-3.5">
+                <p className="audity-metric-label">{label}</p>
+                <p className={`audity-metric-value mt-1 ${tone === "error" ? "text-audity-error" : tone === "warning" ? "text-audity-warning" : "text-audity-text"}`}>{value}</p>
               </div>
             ))}
           </div>
@@ -834,23 +672,20 @@ export function DashboardPage() {
     if (id === "customers") {
       return (
         <>
-          <div className="mb-4 border-b border-audity-border pb-3">
-            <p className="text-xs font-semibold uppercase text-audity-muted">In Progress</p>
-            <h2 className="mt-1 text-lg font-semibold">My Customers & Assessments</h2>
-          </div>
+          {widgetHeader("My Customers & Assessments", <Link to="/customers/my" className="text-xs font-medium text-audity-primary hover:underline">View all →</Link>)}
           <div className="space-y-3">
             {dashboard?.ownedCustomers.map((customer) => (
-              <div key={customer.customerId} className="rounded-audity border border-audity-border bg-audity-page p-3">
+              <div key={customer.customerId} className="rounded-audity-md border border-audity-border bg-audity-page p-3">
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <Link className="text-sm font-semibold text-audity-text hover:text-audity-primary" to={`/customers/${customer.customerId}`}>
+                  <div className="min-w-0">
+                    <Link className="truncate text-[13px] font-semibold text-audity-text hover:text-audity-primary" to={`/customers/${customer.customerId}`}>
                       {customer.customerName}
                     </Link>
-                    <p className="mt-1 text-xs text-audity-muted">Customer status: {customer.customerStatus}</p>
+                    <p className="mt-0.5 text-xs text-audity-muted">{customer.customerStatus}</p>
                   </div>
-                  <div className="max-w-md text-right text-xs text-audity-secondary">
+                  <div className="text-right text-xs text-audity-muted">
                     {customer.sharedWith.length ? (
-                      <span>Shared with {customer.sharedWith.map((shared) => shared.name || shared.email).join(", ")}</span>
+                      <span>Shared · {customer.sharedWith.length}</span>
                     ) : (
                       <span>Not shared</span>
                     )}
@@ -860,30 +695,32 @@ export function DashboardPage() {
                   {customer.assessments.map((assessment) => (
                     <Link
                       key={assessment.id}
-                      className="block rounded-audity border border-audity-border bg-audity-panel px-3 py-2 hover:border-audity-primary"
+                      className="block rounded-audity-md border border-audity-border bg-audity-panelAlt/50 px-3 py-2.5 transition hover:border-audity-primary hover:bg-audity-panelAlt"
                       to={`/assessments/${assessment.id}/questions`}
                     >
                       <div className="mb-2 flex items-center justify-between gap-3">
-                        <span className="truncate text-sm font-semibold">{assessment.type}</span>
-                        <span className="shrink-0 text-xs text-audity-secondary">{assessment.progressPercent ?? 0}%</span>
+                        <span className="truncate text-[13px] font-semibold">{assessment.type}</span>
+                        <span className="shrink-0 text-xs font-semibold tabular-nums text-audity-secondary">{assessment.progressPercent ?? 0}%</span>
                       </div>
                       <ProgressBar value={assessment.progressPercent ?? 0} />
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        <SignalPill label="Critical" value={assessment.criticalRisks ?? 0} tone={(assessment.criticalRisks ?? 0) > 0 ? "error" : "neutral"} />
-                        <SignalPill label="High/Critical" value={assessment.openHighRisks ?? 0} tone={(assessment.openHighRisks ?? 0) > 0 ? "warning" : "neutral"} />
-                        <SignalPill label="Findings" value={assessment.openFindings ?? 0} />
-                        <SignalPill label="Evidence gaps" value={assessment.evidenceGaps ?? 0} tone={(assessment.evidenceGaps ?? 0) > 0 ? "warning" : "neutral"} />
-                        <SignalPill label="Overdue" value={assessment.overdueRoadmapItems ?? 0} tone={(assessment.overdueRoadmapItems ?? 0) > 0 ? "error" : "neutral"} />
+                      <div className="mt-2.5 flex flex-wrap gap-1">
+                        {(assessment.criticalRisks ?? 0) > 0 ? <SignalPill label="Critical" value={assessment.criticalRisks ?? 0} tone="error" /> : null}
+                        {(assessment.openHighRisks ?? 0) > 0 ? <SignalPill label="High" value={assessment.openHighRisks ?? 0} tone="warning" /> : null}
+                        {(assessment.openFindings ?? 0) > 0 ? <SignalPill label="Findings" value={assessment.openFindings ?? 0} /> : null}
+                        {(assessment.evidenceGaps ?? 0) > 0 ? <SignalPill label="Gaps" value={assessment.evidenceGaps ?? 0} tone="warning" /> : null}
+                        {(assessment.overdueRoadmapItems ?? 0) > 0 ? <SignalPill label="Overdue" value={assessment.overdueRoadmapItems ?? 0} tone="error" /> : null}
+                        {!(assessment.criticalRisks ?? 0) && !(assessment.openHighRisks ?? 0) && !(assessment.openFindings ?? 0) && !(assessment.evidenceGaps ?? 0) && !(assessment.overdueRoadmapItems ?? 0) ? (
+                          <span className="text-[11px] text-audity-muted">No open signals</span>
+                        ) : null}
                       </div>
-                      <p className="mt-2 text-xs text-audity-muted">
+                      <p className="mt-2 text-[11px] text-audity-muted">
                         {assessment.framework ?? "No framework"} · {assessment.status}
                         {assessment.targetDate ? ` · Target ${assessment.targetDate}` : ""}
-                        {assessment.reports ? ` · ${assessment.reports} reports` : ""}
                       </p>
                     </Link>
                   ))}
                   {!customer.assessments.length ? (
-                    <p className="rounded-audity border border-audity-border bg-audity-panel px-3 py-4 text-sm text-audity-muted">No assessment running</p>
+                    <p className="rounded-audity-md border border-dashed border-audity-border px-3 py-4 text-xs text-audity-muted">No assessment running</p>
                   ) : null}
                 </div>
               </div>
@@ -896,19 +733,16 @@ export function DashboardPage() {
     if (id === "shared") {
       return (
         <>
-          <div className="mb-4 border-b border-audity-border pb-3">
-            <p className="text-xs font-semibold uppercase text-audity-muted">Shared</p>
-            <h2 className="mt-1 text-lg font-semibold">Customers Shared With Me</h2>
-          </div>
+          {widgetHeader("Shared With Me")}
           <div className="space-y-2">
             {dashboard?.sharedCustomers.map((customer) => (
-              <Link key={customer.id} className="block rounded-audity border border-audity-border bg-audity-page px-3 py-3 hover:border-audity-primary" to={`/customers/${customer.id}`}>
+              <Link key={customer.id} className="block rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5 transition hover:border-audity-primary" to={`/customers/${customer.id}`}>
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-audity-text">{customer.name}</p>
-                    <p className="mt-1 text-xs text-audity-muted">Owner: {customer.ownerName ?? customer.ownerEmail ?? "Unknown"}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-semibold text-audity-text">{customer.name}</p>
+                    <p className="mt-0.5 text-xs text-audity-muted">Owner: {customer.ownerName ?? customer.ownerEmail ?? "Unknown"}</p>
                   </div>
-                  <span className="text-xs text-audity-secondary">{customer.assessments.length} assessments</span>
+                  <span className="shrink-0 text-xs font-medium tabular-nums text-audity-secondary">{customer.assessments.length}</span>
                 </div>
               </Link>
             ))}
@@ -918,22 +752,20 @@ export function DashboardPage() {
       );
     }
     if (id === "riskSignals") {
+      const tiles: Array<[string, number, "neutral" | "error" | "warning"]> = [
+        ["Critical risks", totals.critical, totals.critical ? "error" : "neutral"],
+        ["High risks", totals.high, totals.high ? "warning" : "neutral"],
+        ["Open findings", totals.findings, totals.findings ? "warning" : "neutral"],
+        ["Evidence gaps", totals.gaps, totals.gaps ? "warning" : "neutral"]
+      ];
       return (
         <>
-          <div className="mb-4 border-b border-audity-border pb-3">
-            <p className="text-xs font-semibold uppercase text-audity-muted">Risk</p>
-            <h2 className="mt-1 text-lg font-semibold">Risk Signals</h2>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {([
-              ["Critical risks", totals.critical, "border-audity-error text-audity-error"],
-              ["High/Critical risks", totals.high, "border-audity-warning text-audity-warning"],
-              ["Open findings", totals.findings, "border-audity-primary text-audity-primary"],
-              ["Evidence gaps", totals.gaps, "border-audity-warning text-audity-warning"]
-            ] as Array<[string, number, string]>).map(([label, value, tone]) => (
-              <div key={label} className={`rounded-audity border bg-audity-page p-3 ${tone}`}>
-                <p className="text-sm font-semibold">{label}</p>
-                <p className="mt-2 text-2xl font-semibold">{value}</p>
+          {widgetHeader("Risk Signals")}
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {tiles.map(([label, value, tone]) => (
+              <div key={label} className="rounded-audity-md border border-audity-border bg-audity-page p-3">
+                <p className="audity-metric-label">{label}</p>
+                <p className={`audity-metric-value mt-1 ${tone === "error" ? "text-audity-error" : tone === "warning" ? "text-audity-warning" : "text-audity-text"}`}>{value}</p>
               </div>
             ))}
           </div>
@@ -944,17 +776,14 @@ export function DashboardPage() {
       const due = assessments.filter((assessment) => (assessment.overdueRoadmapItems ?? 0) > 0 || assessment.targetDate);
       return (
         <>
-          <div className="mb-4 border-b border-audity-border pb-3">
-            <p className="text-xs font-semibold uppercase text-audity-muted">Roadmap</p>
-            <h2 className="mt-1 text-lg font-semibold">Due Actions</h2>
-          </div>
+          {widgetHeader("Due Actions")}
           <div className="space-y-2">
             {due.slice(0, 8).map((assessment) => (
-              <Link key={assessment.id} className="block rounded-audity border border-audity-border bg-audity-page px-3 py-2 hover:border-audity-primary" to={`/assessments/${assessment.id}/workflow`}>
+              <Link key={assessment.id} className="block rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5 transition hover:border-audity-primary" to={`/assessments/${assessment.id}/workflow`}>
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-audity-text">{assessment.customerName}</p>
-                    <p className="mt-1 text-xs text-audity-muted">{assessment.type}{assessment.targetDate ? ` · Target ${assessment.targetDate}` : ""}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-semibold text-audity-text">{assessment.customerName}</p>
+                    <p className="mt-0.5 text-xs text-audity-muted">{assessment.type}{assessment.targetDate ? ` · Target ${assessment.targetDate}` : ""}</p>
                   </div>
                   <SignalPill label="Overdue" value={assessment.overdueRoadmapItems ?? 0} tone={(assessment.overdueRoadmapItems ?? 0) > 0 ? "error" : "neutral"} />
                 </div>
@@ -968,19 +797,16 @@ export function DashboardPage() {
     if (id === "reports") {
       return (
         <>
-          <div className="mb-4 border-b border-audity-border pb-3">
-            <p className="text-xs font-semibold uppercase text-audity-muted">Reports</p>
-            <h2 className="mt-1 text-lg font-semibold">Report Status</h2>
-          </div>
+          {widgetHeader("Report Status")}
           <div className="space-y-2">
             {assessments.slice(0, 8).map((assessment) => (
-              <Link key={assessment.id} className="block rounded-audity border border-audity-border bg-audity-page px-3 py-2 hover:border-audity-primary" to={`/assessments/${assessment.id}/assets`}>
+              <Link key={assessment.id} className="block rounded-audity-md border border-audity-border bg-audity-page px-3 py-2.5 transition hover:border-audity-primary" to={`/assessments/${assessment.id}/assets`}>
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-audity-text">{assessment.customerName}</p>
-                    <p className="mt-1 text-xs text-audity-muted">{assessment.type}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-semibold text-audity-text">{assessment.customerName}</p>
+                    <p className="mt-0.5 text-xs text-audity-muted">{assessment.type}</p>
                   </div>
-                  <span className="rounded-audity border border-audity-borderStrong px-2 py-1 text-xs text-audity-secondary">{assessment.reports ?? 0} reports</span>
+                  <SignalPill label="Reports" value={assessment.reports ?? 0} />
                 </div>
               </Link>
             ))}
@@ -992,55 +818,49 @@ export function DashboardPage() {
     if (id === "onboarding") {
       return (
         <>
-          <div className="mb-4 border-b border-audity-border pb-3">
-            <p className="text-xs font-semibold uppercase text-audity-muted">Setup</p>
-            <h2 className="mt-1 text-lg font-semibold">Start a clean audit workspace</h2>
-          </div>
-          <div className="grid gap-2 md:grid-cols-4">
+          {widgetHeader("First Setup")}
+          <ol className="grid gap-2 md:grid-cols-4">
             {["Review User Settings", "Create or open Customer", "Start Assessment", "Answer Questions"].map((step, index) => (
-              <div key={step} className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
-                <p className="text-xs font-semibold text-audity-muted">Step {index + 1}</p>
-                <p className="mt-1 text-sm text-audity-secondary">{step}</p>
-              </div>
+              <li key={step} className="rounded-audity-md border border-audity-border bg-audity-page px-3 py-3">
+                <p className="text-[11px] font-medium tracking-wide text-audity-primary">Step {index + 1}</p>
+                <p className="mt-1.5 text-[13px] text-audity-text">{step}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </>
       );
     }
-    const meta = (widgetLibrary as Record<string, { title: string; eyebrow: string; description: string; preview: string } | undefined>)[id];
+    const meta = (widgetLibrary as Record<string, { title: string; category: WidgetCategory; description: string } | undefined>)[id];
     return (
       <>
-        <div className="mb-4 border-b border-audity-border pb-3">
-          <p className="text-xs font-semibold uppercase text-audity-muted">{meta?.eyebrow ?? "Coming soon"}</p>
-          <h2 className="mt-1 text-lg font-semibold">{meta?.title ?? id}</h2>
-        </div>
-        <div className="rounded-audity border border-dashed border-audity-border bg-audity-panelAlt/40 px-4 py-6 text-center">
-          <p className="text-xs font-semibold uppercase text-audity-muted">Coming soon</p>
+        {widgetHeader(meta?.title ?? id)}
+        <div className="rounded-audity-md border border-dashed border-audity-border bg-audity-panelAlt/40 px-4 py-6 text-center">
+          <p className="text-xs font-semibold text-audity-muted">Coming soon</p>
           <p className="mt-1 text-sm text-audity-secondary">{meta?.description ?? "This widget is not implemented yet."}</p>
         </div>
       </>
     );
   }
 
+  const loading = !dashboard && !error;
+
   return (
     <>
-      <div className="audity-page-header">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="audity-page-kicker">Workspace Overview</p>
-            <h1 className="audity-page-title">Dashboard</h1>
-            <p className="audity-page-copy">{user?.email} · {user?.role}</p>
-          </div>
-          <div className="flex gap-2">
-            {editMode ? (
-              <button className="audity-btn-secondary" onClick={() => setWidgetOrder(defaultWidgets)}>
-                Reset
-              </button>
-            ) : null}
-            <button className="audity-btn-primary" onClick={() => setEditMode(!editMode)}>
-              {editMode ? "Done" : "Edit Dashboard"}
+      <div className="audity-page-header flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="audity-page-kicker">Workspace overview</p>
+          <h1 className="audity-page-title">Dashboard</h1>
+          <p className="audity-page-copy">{user?.email} · {user?.role}</p>
+        </div>
+        <div className="flex gap-2">
+          {editMode ? (
+            <button className="audity-btn-secondary" onClick={() => setWidgetOrder(defaultWidgets)}>
+              Reset to default
             </button>
-          </div>
+          ) : null}
+          <button className={editMode ? "audity-btn-primary" : "audity-btn-secondary"} onClick={() => setEditMode(!editMode)}>
+            {editMode ? "Done" : "Customize"}
+          </button>
         </div>
       </div>
 
@@ -1058,57 +878,71 @@ export function DashboardPage() {
             }
             action={
               <div className="flex flex-wrap justify-center gap-2">
-                <Link to="/customers/my" className="audity-btn-primary inline-flex items-center gap-1.5">
-                  Create your first customer
-                </Link>
-                <Link to="/manual" className="audity-btn-secondary inline-flex items-center gap-1.5">
-                  Read the manual
-                </Link>
+                <Link to="/customers/my" className="audity-btn-primary">Create your first customer</Link>
+                <Link to="/manual" className="audity-btn-secondary">Read the manual</Link>
               </div>
             }
           />
         </div>
       ) : null}
 
-      <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
-        <div className={editMode ? "grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid gap-3"}>
-          <DroppableArea id="dashboard" className="min-h-72 rounded-audity border border-dashed border-audity-border bg-audity-page p-3">
-            <div className="grid gap-3">
-              {widgetOrder.map((id) => (
-                <WidgetShell key={id} id={id} editMode={editMode} onRemove={removeWidget}>
-                  {renderWidget(id)}
-                </WidgetShell>
-              ))}
-              {!widgetOrder.length ? (
-                <div className="rounded-audity border border-audity-border bg-audity-panel px-3 py-12 text-center text-sm text-audity-muted">
-                  Drag elements from the library into your dashboard.
-                </div>
-              ) : null}
-            </div>
-          </DroppableArea>
-
-          {editMode ? (
-            <DroppableArea id="library" className="rounded-audity border border-dashed border-audity-border bg-audity-panel p-3">
-              <div className="mb-4 border-b border-audity-border pb-3">
-                <p className="text-xs font-semibold uppercase text-audity-primary">Element Library</p>
-                <h2 className="mt-1 text-lg font-semibold">Unused & New Elements</h2>
-                <p className="mt-1 text-xs text-audity-muted">Drag cards into the dashboard. Drop dashboard elements anywhere in this sidebar to remove them.</p>
-              </div>
-              <DroppableArea id="remove-zone" className="mb-3 rounded-audity border border-dashed border-audity-error bg-audity-error/10 px-3 py-3 text-sm text-audity-error">
-                Drop here to remove an element from the dashboard.
-              </DroppableArea>
-              <div className="space-y-3">
-                {unusedWidgets.map((id) => <LibraryCard key={id} id={id} onAdd={addWidget} />)}
-                {!unusedWidgets.length ? (
-                  <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-8 text-center text-sm text-audity-muted">
-                    All available elements are already on the dashboard.
+      {loading ? (
+        <div className="grid gap-3">
+          <WidgetSkeleton />
+          <WidgetSkeleton />
+        </div>
+      ) : (
+        <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
+          <div className={editMode ? "grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]" : "grid gap-3"}>
+            <DroppableArea id="dashboard" className={editMode ? "min-h-72 rounded-audity-md border border-dashed border-audity-border bg-audity-panelAlt/30 p-3" : ""}>
+              <div className="grid gap-3">
+                {widgetOrder.map((id) => (
+                  <WidgetShell key={id} id={id} editMode={editMode} onRemove={removeWidget}>
+                    {renderWidget(id)}
+                  </WidgetShell>
+                ))}
+                {!widgetOrder.length ? (
+                  <div className="rounded-audity-md border border-dashed border-audity-border bg-audity-panelAlt/40 px-3 py-12 text-center text-sm text-audity-muted">
+                    Drag elements from the library into your dashboard, or click <strong>Add</strong> on a library card.
                   </div>
                 ) : null}
               </div>
             </DroppableArea>
-          ) : null}
-        </div>
-      </DndContext>
+
+            {editMode ? (
+              <DroppableArea id="library" className="rounded-audity-md border border-audity-border bg-audity-panel p-3 shadow-audity-soft">
+                <div className="mb-3">
+                  <h2 className="audity-section-title">Element library</h2>
+                  <p className="mt-1 text-xs text-audity-muted">Drag a card into the dashboard, or drop a dashboard element here to remove it.</p>
+                </div>
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {(["all", "metrics", "work", "risk", "delivery", "team"] as const).map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setLibraryFilter(cat)}
+                      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${libraryFilter === cat ? "border-audity-primary bg-audity-primaryActive text-audity-primary" : "border-audity-border bg-audity-page text-audity-secondary hover:border-audity-borderStrong"}`}
+                    >
+                      {cat === "all" ? "All" : categoryLabels[cat]}
+                    </button>
+                  ))}
+                </div>
+                <DroppableArea id="remove-zone" className="mb-3 rounded-audity-md border border-dashed border-audity-error/60 bg-audity-error/10 px-3 py-3 text-xs text-audity-error">
+                  Drop here to remove an element from the dashboard.
+                </DroppableArea>
+                <div className="space-y-2">
+                  {filteredUnused.map((id) => <LibraryCard key={id} id={id} onAdd={addWidget} />)}
+                  {!filteredUnused.length ? (
+                    <div className="rounded-audity-md border border-dashed border-audity-border bg-audity-page px-3 py-8 text-center text-xs text-audity-muted">
+                      {libraryFilter === "all" ? "All available elements are already on the dashboard." : "No elements in this category — try another filter."}
+                    </div>
+                  ) : null}
+                </div>
+              </DroppableArea>
+            ) : null}
+          </div>
+        </DndContext>
+      )}
     </>
   );
 }
