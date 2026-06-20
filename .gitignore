@@ -1,4 +1,5 @@
 .DS_Store
+audity/Keys/
 .env
 audity/.env
 .tools/
