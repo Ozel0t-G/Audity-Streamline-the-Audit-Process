@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import loginBackground from "../assets/login_bg.gif";
 import { BrandMark } from "../components/BrandMark";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
@@ -127,8 +128,13 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-audity-app text-audity-text">
-      <header className="flex h-12 items-center border-b border-audity-border bg-audity-topnav px-5">
+    <main
+      className="relative min-h-screen overflow-hidden bg-audity-app bg-cover bg-center text-audity-text"
+      style={{ backgroundImage: `url(${loginBackground})` }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-slate-950/30" aria-hidden="true" />
+      <div className="relative z-10 min-h-screen">
+      <header className="flex h-12 items-center border-b border-audity-border bg-audity-topnav/90 px-5 backdrop-blur-sm">
         <div className="flex items-center">
           <BrandMark />
         </div>
@@ -142,7 +148,7 @@ export function LoginPage() {
             and report deliveries.
           </p>
         </div>
-        <form className="rounded-audity border border-audity-border bg-audity-panel p-5" onSubmit={challengeToken ? handleMfaSubmit : handleSubmit}>
+        <form className="rounded-audity border border-audity-border bg-audity-panel/95 p-5 shadow-xl backdrop-blur-sm" onSubmit={challengeToken ? handleMfaSubmit : handleSubmit}>
           {notice ? <div className="mb-3 rounded-audity border border-audity-warning bg-audity-warning/10 px-3 py-2 text-sm text-audity-warning">{notice}</div> : null}
           {error ? <div className="mb-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           {challengeToken ? (
@@ -185,7 +191,7 @@ export function LoginPage() {
         </button>
         {showVerify ? (
           <form
-            className="mt-3 rounded-audity border border-audity-border bg-audity-panel p-4"
+            className="mt-3 rounded-audity border border-audity-border bg-audity-panel/95 p-4 shadow-lg backdrop-blur-sm"
             onSubmit={handleVerifyPhrase}
           >
             <p className="mb-3 text-xs text-audity-secondary">
@@ -232,6 +238,7 @@ export function LoginPage() {
           </form>
         ) : null}
       </section>
+      </div>
     </main>
   );
 }
