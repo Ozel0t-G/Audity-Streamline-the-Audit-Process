@@ -156,7 +156,12 @@ else
 fi
 
 has_framework_yaml_files() {
-  [ -d frameworks ] && find frameworks -type f \( -name '*.yaml' -o -name '*.yml' \) -print -quit | grep -q .
+  for directory in audity_frameworks user_frameworks frameworks; do
+    if [ -d "$directory" ] && find "$directory" -type f \( -name '*.yaml' -o -name '*.yml' \) -print -quit | grep -q .; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 restore_frameworks_from_api_image() {
@@ -166,13 +171,13 @@ restore_frameworks_from_api_image() {
 
   image="${registry}/audity-api:${requested_version}"
   echo "No framework YAML files found on host. Restoring shipped framework catalog from $image..."
-  mkdir -p frameworks
+  mkdir -p audity_frameworks
   container_id="$(docker create "$image" 2>/dev/null || true)"
   if [ -z "$container_id" ]; then
     echo "Could not create temporary API container to restore framework catalog." >&2
     return 1
   fi
-  if ! docker cp "${container_id}:/app/frameworks/." frameworks/; then
+  if ! docker cp "${container_id}:/app/audity_frameworks/." audity_frameworks/; then
     docker rm "$container_id" >/dev/null 2>&1 || true
     echo "Could not copy framework catalog from target API image." >&2
     return 1
