@@ -1,14 +1,14 @@
 {
   "channel": "production",
   "branch": "production",
-  "version": "0.1.5",
-  "imageTag": "0.1.5",
-  "releasedAt": "2026-06-20T10:58:27Z",
+  "version": "0.2.0",
+  "imageTag": "0.2.0",
+  "releasedAt": "2026-06-21T11:31:10Z",
   "modules": {
-    "web": "ghcr.io/ozel0t-g/audity-web:0.1.5",
-    "api": "ghcr.io/ozel0t-g/audity-api:0.1.5",
-    "worker": "ghcr.io/ozel0t-g/audity-worker:0.1.5",
-    "updater": "ghcr.io/ozel0t-g/audity-updater:0.1.5"
+    "web": "ghcr.io/ozel0t-g/audity-web:0.2.0",
+    "api": "ghcr.io/ozel0t-g/audity-api:0.2.0",
+    "worker": "ghcr.io/ozel0t-g/audity-worker:0.2.0",
+    "updater": "ghcr.io/ozel0t-g/audity-updater:0.2.0"
   },
   "notes": [
     "Production release channel manifest. Update checks must use this file from the production branch.",
