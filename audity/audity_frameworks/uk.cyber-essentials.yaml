@@ -1,0 +1,257 @@
+framework:
+  schemaVersion: 1
+  key: uk.cyber-essentials
+  name: "UK Cyber Essentials"
+  shortName: "Cyber Essentials"
+  version: "2026 update"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Small / Mid-Size Org Lead"
+    - "IT Operations"
+    - "Auditor"
+  estimatedDurationMinutes: 120
+  description: |
+    UK Cyber Essentials is a government-backed scheme published by the
+    National Cyber Security Centre that defines five technical
+    controls organizations should implement to protect against the
+    most common internet-borne attacks. Cyber Essentials is required
+    for many UK public sector contracts.
+
+    This YAML covers the five Cyber Essentials technical controls as
+    audit-readiness controls. Cyber Essentials Plus extends this with
+    independent verification but uses the same control set.
+  scopeNote: |
+    In scope: the five Cyber Essentials technical controls as one
+    audit-control per control.
+
+    Out of scope: Cyber Essentials Plus assessment procedures; the
+    NCSC Cyber Assessment Framework (separate framework); IASME
+    certification scope variations.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Cyber Essentials is published by the UK NCSC under the Open
+      Government Licence. Control content has been paraphrased into
+      audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a Cyber Essentials control unmet; blocks
+    certification and exposes the basic attack surface.
+  high: |
+    Material gap with limited compensating controls.
+  medium: |
+    Partial implementation; remediable in the normal improvement
+    cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: uk.cyber-essentials:CE-01
+    target: iso27001:A.8.20
+    type: related
+  - source: uk.cyber-essentials:CE-02
+    target: iso27001:A.8.9
+    type: covers
+  - source: uk.cyber-essentials:CE-03
+    target: iso27001:A.5.15
+    type: covers
+  - source: uk.cyber-essentials:CE-04
+    target: iso27001:A.8.7
+    type: covers
+  - source: uk.cyber-essentials:CE-05
+    target: iso27001:A.8.8
+    type: covers
+
+domains:
+  - id: technical-controls
+    name: "Cyber Essentials Technical Controls"
+    description: |
+      The five Cyber Essentials technical controls.
+    controls:
+      - id: uk.cyber-essentials:CE-01
+        title: "Firewalls"
+        weight: 3
+        answerType: scale
+        tags: [ce, firewalls, network, boundary]
+        question: |
+          Are boundary firewalls and / or internet gateways in place
+          and configured to block unrequested traffic to in-scope
+          devices?
+        purpose: |
+          Boundary protection is the first technical line of defense.
+          Default-deny inbound is non-negotiable.
+        expectedOutcome:
+          - "Boundary firewall is in place."
+          - "Default-deny inbound is enforced."
+          - "Rule changes follow change control."
+        howTo:
+          - step: "Deploy boundary firewall"
+          - step: "Enforce default-deny inbound"
+          - step: "Channel rule changes through change control"
+        evidenceExamples:
+          - "Firewall configuration"
+          - "Rule export"
+          - "Change records"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No firewall"
+            "3": "Permissive"
+            "5": "Default-deny + change-controlled"
+
+      - id: uk.cyber-essentials:CE-02
+        title: "Secure Configuration"
+        weight: 3
+        answerType: scale
+        tags: [ce, configuration, hardening, baseline]
+        question: |
+          Are devices and software configured securely, including
+          removal of unnecessary accounts, software, and services and
+          changing default passwords?
+        purpose: |
+          Default and over-permissive configuration is one of the
+          easiest attack paths. Cyber Essentials closes it.
+        expectedOutcome:
+          - "Secure configuration baselines exist."
+          - "Defaults are changed."
+          - "Unused services / accounts are removed."
+        howTo:
+          - step: "Define secure configuration baselines"
+          - step: "Change defaults"
+          - step: "Remove unused services / accounts"
+        evidenceExamples:
+          - "Baseline definition"
+          - "Default-change evidence"
+          - "Service / account audit"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Default config"
+            "3": "Partial"
+            "5": "Baseline + cleaned"
+        crossReferences:
+          - iso27001:A.8.9
+
+      - id: uk.cyber-essentials:CE-03
+        title: "User Access Control"
+        weight: 3
+        answerType: scale
+        tags: [ce, access-control, iam, mfa]
+        question: |
+          Is access controlled through unique accounts, MFA on
+          internet-facing services, and minimal admin privileges?
+        purpose: |
+          Access control determines who can do what. Cyber Essentials
+          sets the baseline.
+        expectedOutcome:
+          - "Unique accounts are issued."
+          - "MFA enforced for internet-facing services."
+          - "Admin privileges minimized and separated."
+        howTo:
+          - step: "Issue unique accounts"
+          - step: "Enforce MFA on internet-facing services"
+          - step: "Minimize and separate admin privileges"
+        evidenceExamples:
+          - "Account inventory"
+          - "MFA enforcement report"
+          - "Privileged account policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Shared admins"
+            "3": "No MFA"
+            "5": "Unique + MFA + minimal admin"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: uk.cyber-essentials:CE-04
+        title: "Malware Protection"
+        weight: 3
+        answerType: scale
+        tags: [ce, malware, anti-malware, allowlisting]
+        question: |
+          Is malware protection in place on in-scope devices through
+          anti-malware software, application allowlisting, or
+          application sandboxing?
+        purpose: |
+          Malware protection reduces the success rate of routine
+          malware delivery.
+        expectedOutcome:
+          - "Anti-malware deployed and current."
+          - "Or application allowlisting in use."
+          - "Or sandboxing in use."
+        howTo:
+          - step: "Deploy anti-malware and keep current"
+          - step: "Or use application allowlisting"
+          - step: "Or use sandboxing"
+        evidenceExamples:
+          - "Anti-malware coverage report"
+          - "Allowlist configuration"
+          - "Sandbox configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No protection"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.7
+
+      - id: uk.cyber-essentials:CE-05
+        title: "Security Update Management"
+        weight: 3
+        answerType: scale
+        tags: [ce, patching, updates, vulnerability]
+        question: |
+          Are security updates applied to in-scope devices and
+          software within the defined timeframes (e.g., critical and
+          high-severity updates within 14 days)?
+        purpose: |
+          Timely patching directly drives breach probability. Cyber
+          Essentials sets explicit SLAs.
+        expectedOutcome:
+          - "Patching SLA documented."
+          - "SLA met for critical / high-severity updates."
+          - "Unsupported software is removed."
+        howTo:
+          - step: "Document patching SLA"
+          - step: "Meet SLA for critical / high"
+          - step: "Remove unsupported software"
+        evidenceExamples:
+          - "Patching policy"
+          - "Compliance report"
+          - "Unsupported removal log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No patching"
+            "3": "Patching slow"
+            "5": "SLAs met"
+        crossReferences:
+          - iso27001:A.8.8

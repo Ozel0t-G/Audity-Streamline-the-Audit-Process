@@ -1,0 +1,3586 @@
+framework:
+  schemaVersion: 1
+  key: iso27001.annexA.2022
+  name: "ISO/IEC 27001:2022 Annex A"
+  shortName: "ISO 27001:2022 A"
+  version: "2022"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: iso27001
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "ISMS Manager"
+    - "Risk Owner"
+    - "CISO"
+    - "Compliance Officer"
+  estimatedDurationMinutes: 420
+  description: |
+    ISO/IEC 27001:2022 is the international standard for information
+    security management systems (ISMS). Annex A of the standard lists
+    93 reference controls, grouped into four themes: Organizational,
+    People, Physical, and Technological controls.
+
+    This YAML covers all 93 Annex A controls as individual audit-readiness
+    items for the Audity platform. The management clauses 4 to 10 of the
+    main standard (ISMS requirements) are intentionally out of scope of
+    this Annex-A-only file and should be authored separately.
+
+    The original ISO/IEC 27001:2022 text is copyright-protected. All
+    audit questions, purposes, expected outcomes, and operational guidance
+    in this file have been paraphrased and do not reproduce the standard's
+    wording.
+  scopeNote: |
+    In scope: all 93 reference controls of Annex A of ISO/IEC 27001:2022
+    organized into the four themes A.5 Organizational, A.6 People,
+    A.7 Physical, and A.8 Technological.
+
+    Out of scope (intentionally not included here for licensing reasons
+    and scope clarity): the management system clauses 4 to 10 of
+    ISO/IEC 27001:2022, the implementation guidance in ISO/IEC 27002:2022,
+    and sector-specific extensions (e.g., 27017, 27018, 27701). Cross-
+    references to other frameworks in this file are advisory only.
+  license:
+    status: tenant_licensed
+    confirmationRequired: true
+    notice: |
+      ISO/IEC 27001:2022 is published by ISO and IEC and is protected by
+      international copyright. Lawful use generally requires a licensed
+      copy of the standard per user or per organization. This file
+      reproduces only the publicly cited control identifiers (e.g.,
+      A.5.1, A.8.24) and short reference titles; all audit-question
+      content has been paraphrased into Audity audit-readiness language
+      and does not reproduce ISO text. Tenants are responsible for
+      ensuring that their use of this file is consistent with their own
+      ISO licensing.
+
+severityRubric:
+  critical: |
+    Control failure would directly expose regulated information, halt a
+    mission-critical service, or breach a contractual or regulatory
+    obligation triggering mandatory reporting.
+  high: |
+    Material breach of policy or absence of a core safeguard without a
+    compensating control; significant operational, legal, or reputational
+    impact is likely.
+  medium: |
+    Control is partially implemented or inconsistently applied; residual
+    risk is visible but not acute and can be remediated in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate harm; primarily a
+    completeness or housekeeping issue.
+
+controlMappings:
+  - source: iso27001:A.5.1
+    target: nist-csf-2.0:GV.PO-01
+    type: covers
+  - source: iso27001:A.5.2
+    target: nist-csf-2.0:GV.RR-02
+    type: covers
+  - source: iso27001:A.5.7
+    target: nist-csf-2.0:ID.RA-02
+    type: covers
+  - source: iso27001:A.5.9
+    target: nist-csf-2.0:ID.AM-01
+    type: covers
+  - source: iso27001:A.5.12
+    target: nist-csf-2.0:ID.AM-05
+    type: covers
+  - source: iso27001:A.5.15
+    target: nist-csf-2.0:PR.AA-05
+    type: covers
+  - source: iso27001:A.5.16
+    target: nist-csf-2.0:PR.AA-01
+    type: covers
+  - source: iso27001:A.5.18
+    target: nist-csf-2.0:PR.AA-05
+    type: covers
+  - source: iso27001:A.5.20
+    target: nist-csf-2.0:GV.SC-05
+    type: covers
+  - source: iso27001:A.5.23
+    target: nist-csf-2.0:GV.SC-07
+    type: related
+  - source: iso27001:A.5.24
+    target: nist-csf-2.0:ID.IM-04
+    type: covers
+  - source: iso27001:A.5.25
+    target: nist-csf-2.0:DE.AE-08
+    type: covers
+  - source: iso27001:A.5.26
+    target: nist-csf-2.0:RS.MA-01
+    type: covers
+  - source: iso27001:A.5.27
+    target: nist-csf-2.0:RS.AN-03
+    type: covers
+  - source: iso27001:A.5.29
+    target: nist-csf-2.0:RC.RP-01
+    type: covers
+  - source: iso27001:A.5.31
+    target: nist-csf-2.0:GV.OC-03
+    type: covers
+  - source: iso27001:A.6.3
+    target: nist-csf-2.0:PR.AT-01
+    type: covers
+  - source: iso27001:A.6.8
+    target: nist-csf-2.0:ID.RA-08
+    type: related
+  - source: iso27001:A.7.2
+    target: nist-csf-2.0:PR.AA-06
+    type: covers
+  - source: iso27001:A.7.4
+    target: nist-csf-2.0:DE.CM-02
+    type: covers
+  - source: iso27001:A.8.5
+    target: nist-csf-2.0:PR.AA-03
+    type: covers
+  - source: iso27001:A.8.8
+    target: nist-csf-2.0:ID.RA-01
+    type: covers
+  - source: iso27001:A.8.9
+    target: nist-csf-2.0:PR.PS-01
+    type: covers
+  - source: iso27001:A.8.13
+    target: nist-csf-2.0:PR.DS-11
+    type: covers
+  - source: iso27001:A.8.15
+    target: nist-csf-2.0:PR.PS-04
+    type: covers
+  - source: iso27001:A.8.16
+    target: nist-csf-2.0:DE.CM-01
+    type: covers
+  - source: iso27001:A.8.20
+    target: nist-csf-2.0:PR.IR-01
+    type: covers
+  - source: iso27001:A.8.24
+    target: nist-csf-2.0:PR.DS-01
+    type: related
+  - source: iso27001:A.8.25
+    target: nist-csf-2.0:PR.PS-06
+    type: covers
+
+domains:
+  - id: organizational
+    name: "A.5 Organizational controls"
+    description: |
+      Controls concerning policy, roles and responsibilities, supplier
+      relationships, incident management, continuity, legal and
+      regulatory obligations, and documented operating procedures.
+    controls:
+      - id: ISO27001:A.5.1
+        title: "Policies for information security"
+        weight: 3
+        answerType: scale
+        tags: [governance, policy, isms]
+        question: |
+          Are information security policies defined, approved by
+          management, published, communicated to relevant personnel, and
+          reviewed at planned intervals or after material changes?
+        purpose: |
+          Policies make management's expectations enforceable and
+          auditable. Without an approved and communicated policy set the
+          ISMS has no binding authority and no consistent basis for
+          decision-making.
+        expectedOutcome:
+          - "A current information security policy set is approved by management."
+          - "Policies are published and acknowledged by affected personnel."
+          - "Policies are reviewed on a defined cadence and after material change."
+        howTo:
+          - step: "Maintain a top-level information security policy and supporting topic policies"
+          - step: "Obtain management approval and document acknowledgements"
+          - step: "Define a review cadence and triggers"
+        evidenceExamples:
+          - "Approved policy documents"
+          - "Acknowledgement log"
+          - "Policy review minutes"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy set"
+            "3": "Policies exist, not reviewed"
+            "5": "Approved, communicated, reviewed"
+        crossReferences:
+          - nist-csf-2.0:GV.PO-01
+
+      - id: ISO27001:A.5.2
+        title: "Information security roles and responsibilities"
+        weight: 3
+        answerType: scale
+        tags: [governance, roles, raci]
+        question: |
+          Are information security roles and responsibilities defined,
+          allocated, and communicated according to organizational needs?
+        purpose: |
+          Ambiguous accountability is the most common root cause of
+          missed controls. Allocated roles make handovers cleaner and
+          give audit a single owner per control area.
+        expectedOutcome:
+          - "Security roles are defined for relevant areas of the ISMS."
+          - "Allocations are documented and communicated."
+          - "Role changes trigger handover and update."
+        howTo:
+          - step: "Maintain a RACI for ISMS roles"
+          - step: "Reflect roles in job descriptions and onboarding"
+          - step: "Update on organizational changes"
+        evidenceExamples:
+          - "RACI matrix"
+          - "Sample job description with security duties"
+          - "Handover record on role change"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No documented roles"
+            "3": "Roles documented, not communicated"
+            "5": "Roles allocated and current"
+        crossReferences:
+          - nist-csf-2.0:GV.RR-02
+
+      - id: ISO27001:A.5.3
+        title: "Segregation of duties"
+        weight: 3
+        answerType: scale
+        tags: [governance, sod, access-control]
+        question: |
+          Are conflicting duties and conflicting areas of responsibility
+          segregated to reduce the risk of fraud, error, or
+          unauthorized actions?
+        purpose: |
+          Single-person workflows for sensitive operations create
+          uncheckable failure modes. Segregation forces a second pair of
+          eyes where the impact justifies it.
+        expectedOutcome:
+          - "Toxic role / permission combinations are documented."
+          - "Segregation is enforced in process and tooling."
+          - "Compensating controls are documented where segregation is impractical."
+        howTo:
+          - step: "Identify sensitive duties and toxic combinations"
+          - step: "Enforce segregation in process and tooling"
+          - step: "Document compensating controls where needed"
+        evidenceExamples:
+          - "SoD matrix"
+          - "IAM policy enforcing splits"
+          - "Compensating control register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SoD"
+            "3": "SoD documented, not enforced"
+            "5": "SoD enforced with compensations"
+
+      - id: ISO27001:A.5.4
+        title: "Management responsibilities"
+        weight: 2
+        answerType: scale
+        tags: [governance, leadership, accountability]
+        question: |
+          Does management require all personnel to apply information
+          security in accordance with established policies and procedures,
+          and does it demonstrate visible support for the ISMS?
+        purpose: |
+          Visible management support signals priority to the rest of the
+          organization. Programs that depend only on the security team
+          for enforcement consistently underperform.
+        expectedOutcome:
+          - "Management expectations on security are explicit in policy or charter."
+          - "Management participates in ISMS reviews."
+          - "Non-compliance is addressed visibly."
+        howTo:
+          - step: "Capture management expectations in the policy or charter"
+          - step: "Schedule recurring ISMS management reviews"
+          - step: "Address non-compliance through documented channels"
+        evidenceExamples:
+          - "Management commitment statement"
+          - "Management review minutes"
+          - "Non-compliance handling record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Management absent"
+            "3": "Management nominally engaged"
+            "5": "Management visibly engaged"
+
+      - id: ISO27001:A.5.5
+        title: "Contact with authorities"
+        weight: 2
+        answerType: scale
+        tags: [governance, authorities, incident-response]
+        question: |
+          Is appropriate contact with relevant authorities (e.g., law
+          enforcement, regulators, CERT) established and maintained?
+        purpose: |
+          Establishing contact before an incident is the single biggest
+          accelerator during one. Cold-starting the contact during a
+          crisis costs hours that the response cannot afford.
+        expectedOutcome:
+          - "A current list of relevant authorities and contact channels exists."
+          - "Contacts are validated periodically."
+          - "Notification obligations are documented."
+        howTo:
+          - step: "Identify relevant authorities and contact channels"
+          - step: "Validate contacts at least annually"
+          - step: "Document notification obligations and timing"
+        evidenceExamples:
+          - "Authority contact list"
+          - "Contact validation log"
+          - "Notification obligation register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No authority contacts"
+            "3": "Contacts exist, not validated"
+            "5": "Validated contacts with obligations"
+
+      - id: ISO27001:A.5.6
+        title: "Contact with special interest groups"
+        weight: 1
+        answerType: scale
+        tags: [governance, community, threat-intelligence]
+        question: |
+          Is contact maintained with special interest groups, forums,
+          and professional associations to receive early information
+          about threats, vulnerabilities, and good practices?
+        purpose: |
+          Industry forums often surface threats before vendor or public
+          channels do. Membership keeps the organization informed and
+          provides peer benchmarking.
+        expectedOutcome:
+          - "Relevant memberships and channels are documented."
+          - "Intake from forums feeds threat / vulnerability processes."
+          - "Insights are shared internally."
+        howTo:
+          - step: "Identify relevant forums (ISAC, sector groups)"
+          - step: "Route intake into threat / vulnerability processes"
+          - step: "Share insights internally"
+        evidenceExamples:
+          - "Membership list"
+          - "Intake routing process"
+          - "Internal briefing"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No engagement"
+            "3": "Member, not used"
+            "5": "Member, routed, shared"
+
+      - id: ISO27001:A.5.7
+        title: "Threat intelligence"
+        weight: 2
+        answerType: scale
+        tags: [governance, threat-intelligence, risk-assessment]
+        question: |
+          Is information about threats collected, analyzed, and used to
+          inform risk assessments and protective decisions?
+        purpose: |
+          Threat intelligence converts external signal into prioritized
+          action. Without it, risk assessments default to generic
+          scenarios that may not reflect actual exposure.
+        expectedOutcome:
+          - "Relevant intelligence sources are subscribed."
+          - "Intelligence is triaged and analyzed."
+          - "Analysis informs risk and detection decisions."
+        howTo:
+          - step: "Subscribe to relevant intelligence sources"
+          - step: "Triage and analyze incoming intel"
+          - step: "Feed analysis into risk and detection processes"
+        evidenceExamples:
+          - "Intel source list"
+          - "Triaged intel queue"
+          - "Risk decision citing intel"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No intel"
+            "3": "Intel collected, not used"
+            "5": "Intel used in decisions"
+        crossReferences:
+          - nist-csf-2.0:ID.RA-02
+
+      - id: ISO27001:A.5.8
+        title: "Information security in project management"
+        weight: 2
+        answerType: scale
+        tags: [governance, project-management, sdlc]
+        question: |
+          Is information security integrated into project management
+          methodology so that risks are assessed and controls are
+          considered throughout each project's lifecycle?
+        purpose: |
+          Security retrofitted into projects after design is the most
+          expensive and least effective form of control. Embedding into
+          project methodology catches risk at the cheapest stage.
+        expectedOutcome:
+          - "Project methodology includes security checkpoints."
+          - "Risk and controls are documented per project."
+          - "Project closures verify security obligations are met."
+        howTo:
+          - step: "Embed security checkpoints in project methodology"
+          - step: "Require risk assessment at key gates"
+          - step: "Verify security at project closure"
+        evidenceExamples:
+          - "Project methodology with security gates"
+          - "Project risk assessment"
+          - "Project closure checklist"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Security not in projects"
+            "3": "Security ad hoc"
+            "5": "Embedded across lifecycle"
+
+      - id: ISO27001:A.5.9
+        title: "Inventory of information and other associated assets"
+        weight: 3
+        answerType: scale
+        tags: [asset-management, inventory, classification]
+        question: |
+          Is an inventory of information and associated assets, including
+          owners, developed and maintained?
+        purpose: |
+          Asset inventory is the foundation of every downstream control
+          (classification, access, monitoring). Missing entries become
+          unmanaged blind spots.
+        expectedOutcome:
+          - "A central asset inventory exists with owners."
+          - "Information assets and supporting assets are both covered."
+          - "Inventory is reconciled periodically."
+        howTo:
+          - step: "Maintain a central asset inventory"
+          - step: "Capture both information and supporting assets"
+          - step: "Reconcile against discovery periodically"
+        evidenceExamples:
+          - "Asset inventory extract"
+          - "Reconciliation report"
+          - "Owner assignment record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Inventory partial"
+            "5": "Inventory maintained, owners assigned"
+        crossReferences:
+          - nist-csf-2.0:ID.AM-01
+          - nist-csf-2.0:ID.AM-02
+
+      - id: ISO27001:A.5.10
+        title: "Acceptable use of information and other associated assets"
+        weight: 2
+        answerType: scale
+        tags: [governance, acceptable-use, policy]
+        question: |
+          Are rules for the acceptable use and procedures for handling
+          information and other associated assets defined, documented,
+          and communicated?
+        purpose: |
+          Acceptable use rules give users a clear line and give the
+          organization grounds for enforcement. Their absence makes
+          violations harder to address.
+        expectedOutcome:
+          - "An acceptable use policy is documented and acknowledged."
+          - "Handling rules align with classification."
+          - "Violations are addressed under disciplinary process."
+        howTo:
+          - step: "Maintain an acceptable use policy"
+          - step: "Align handling rules to classification"
+          - step: "Tie violations to disciplinary process"
+        evidenceExamples:
+          - "Acceptable use policy"
+          - "Acknowledgement record"
+          - "Handling rules document"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No AUP"
+            "3": "AUP exists, not enforced"
+            "5": "AUP enforced and acknowledged"
+
+      - id: ISO27001:A.5.11
+        title: "Return of assets"
+        weight: 2
+        answerType: scale
+        tags: [asset-management, offboarding, leavers]
+        question: |
+          Are personnel and other interested parties required to return
+          information and other associated assets in their possession
+          upon termination or change of employment, contract, or
+          agreement?
+        purpose: |
+          Unreturned assets are a common source of post-termination
+          data leakage. A documented return process closes the loop and
+          provides evidence of due diligence.
+        expectedOutcome:
+          - "Return process is part of offboarding."
+          - "Returned assets are inventoried and verified."
+          - "Non-returns trigger escalation."
+        howTo:
+          - step: "Build return into offboarding checklists"
+          - step: "Inventory and verify returns"
+          - step: "Escalate non-returns"
+        evidenceExamples:
+          - "Offboarding checklist"
+          - "Asset return log"
+          - "Escalation record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No return process"
+            "3": "Return inconsistent"
+            "5": "Return verified, escalated"
+
+      - id: ISO27001:A.5.12
+        title: "Classification of information"
+        weight: 3
+        answerType: scale
+        tags: [asset-management, classification, data]
+        question: |
+          Is information classified according to needs for confidentiality,
+          integrity, availability, and other applicable requirements?
+        purpose: |
+          Without classification, controls cannot be applied
+          proportionally. Classification is the gating decision that
+          drives downstream handling and protection.
+        expectedOutcome:
+          - "A classification scheme is defined and approved."
+          - "Information assets carry classification metadata."
+          - "Classification drives handling and access controls."
+        howTo:
+          - step: "Approve a classification scheme"
+          - step: "Apply classification to assets"
+          - step: "Tie controls to classification"
+        evidenceExamples:
+          - "Classification scheme document"
+          - "Assets with classification metadata"
+          - "Control mapping by classification"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No classification"
+            "3": "Scheme exists, not applied"
+            "5": "Applied and drives controls"
+        crossReferences:
+          - nist-csf-2.0:ID.AM-05
+
+      - id: ISO27001:A.5.13
+        title: "Labelling of information"
+        weight: 2
+        answerType: scale
+        tags: [asset-management, labelling, data]
+        question: |
+          Is an appropriate set of procedures for information labelling
+          developed and implemented in accordance with the classification
+          scheme?
+        purpose: |
+          Labelling makes classification visible at the point of use.
+          Without labels, classification metadata cannot influence the
+          handling decisions of users and systems.
+        expectedOutcome:
+          - "Labelling procedures align to the classification scheme."
+          - "Labels are applied consistently in tools and documents."
+          - "Automation supports labelling where practical."
+        howTo:
+          - step: "Define labelling procedures aligned to classification"
+          - step: "Apply labels in tools and documents"
+          - step: "Use automation where practical"
+        evidenceExamples:
+          - "Labelling procedure"
+          - "Labelled sample"
+          - "Automation configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No labelling"
+            "3": "Labelling inconsistent"
+            "5": "Labelling consistent and automated"
+
+      - id: ISO27001:A.5.14
+        title: "Information transfer"
+        weight: 2
+        answerType: scale
+        tags: [data, transfer, encryption]
+        question: |
+          Are rules, procedures, and agreements for information transfer
+          in place for all types of transfer (electronic, physical,
+          verbal) within the organization and with external parties?
+        purpose: |
+          Transfer is the moment when information leaves controlled
+          environments. Defined rules prevent ad hoc, insecure paths
+          that bypass other safeguards.
+        expectedOutcome:
+          - "Transfer rules cover electronic, physical, and verbal."
+          - "External transfer agreements are in place where needed."
+          - "Sensitive transfers use approved methods."
+        howTo:
+          - step: "Document transfer rules per channel"
+          - step: "Put agreements in place with external parties"
+          - step: "Enforce approved methods for sensitive transfers"
+        evidenceExamples:
+          - "Transfer policy"
+          - "Sample data transfer agreement"
+          - "Approved channel inventory"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No transfer rules"
+            "3": "Rules partial"
+            "5": "Rules and agreements in place"
+
+      - id: ISO27001:A.5.15
+        title: "Access control"
+        weight: 3
+        answerType: scale
+        tags: [access-control, iam, authorization]
+        question: |
+          Are rules to control physical and logical access to information
+          and other associated assets established and implemented based
+          on business and information security requirements?
+        purpose: |
+          Access control is the most-audited and most-misconfigured
+          control area. Documented rules anchored to business needs make
+          access decisions defensible and consistent.
+        expectedOutcome:
+          - "Access control policy is documented and applied."
+          - "Rules are based on business need and risk."
+          - "Compliance with access rules is monitored."
+        howTo:
+          - step: "Document an access control policy"
+          - step: "Drive rules from business need and risk"
+          - step: "Monitor compliance"
+        evidenceExamples:
+          - "Access control policy"
+          - "Access compliance report"
+          - "Sample access decision"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy"
+            "3": "Policy exists, not enforced"
+            "5": "Policy enforced and monitored"
+        crossReferences:
+          - nist-csf-2.0:PR.AA-05
+
+      - id: ISO27001:A.5.16
+        title: "Identity management"
+        weight: 3
+        answerType: scale
+        tags: [iam, identity, lifecycle]
+        question: |
+          Is the full lifecycle of identities (creation, maintenance,
+          deactivation) managed under a documented process?
+        purpose: |
+          Identity is the control plane for access. Lifecycle gaps,
+          especially failure to deactivate, are the dominant root cause
+          of access-related incidents.
+        expectedOutcome:
+          - "Identity lifecycle is documented and applied."
+          - "Joiner / mover / leaver events trigger identity updates."
+          - "Inactive or stale identities are removed."
+        howTo:
+          - step: "Maintain identity lifecycle procedures"
+          - step: "Couple JML events to identity updates"
+          - step: "Remove inactive or stale identities"
+        evidenceExamples:
+          - "Identity lifecycle procedure"
+          - "JML process map"
+          - "Stale identity removal report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No identity lifecycle"
+            "3": "Partial lifecycle"
+            "5": "Full lifecycle with cleanup"
+        crossReferences:
+          - nist-csf-2.0:PR.AA-01
+
+      - id: ISO27001:A.5.17
+        title: "Authentication information"
+        weight: 3
+        answerType: scale
+        tags: [iam, authentication, secrets, passwords]
+        question: |
+          Are allocation and management of authentication information
+          (passwords, tokens, keys) controlled by a management process
+          and supported by good user practice?
+        purpose: |
+          Weak or shared authentication information is the most-exploited
+          weakness in initial access. Controlled allocation and rotation
+          materially reduce that risk.
+        expectedOutcome:
+          - "Allocation, rotation, and revocation procedures exist."
+          - "Secrets are stored protected (vault, KMS)."
+          - "Password / MFA policy reflects current threats."
+        howTo:
+          - step: "Define allocation, rotation, revocation procedures"
+          - step: "Use secrets vaults and KMS"
+          - step: "Apply current password / MFA guidance"
+        evidenceExamples:
+          - "Secrets management standard"
+          - "Vault audit log"
+          - "Password / MFA policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Secrets in plaintext"
+            "3": "Vaults partial"
+            "5": "Vaults and MFA enforced"
+
+      - id: ISO27001:A.5.18
+        title: "Access rights"
+        weight: 3
+        answerType: scale
+        tags: [iam, access-review, least-privilege]
+        question: |
+          Are access rights provisioned, reviewed, modified, and removed
+          in accordance with the access control policy?
+        purpose: |
+          Provisioning without later review accumulates privilege.
+          Periodic review and clean removal limit the blast radius of
+          any one compromised account.
+        expectedOutcome:
+          - "Provisioning follows approval workflow."
+          - "Periodic access reviews are performed."
+          - "Removal on leaver / mover events is verified."
+        howTo:
+          - step: "Run provisioning through an approval workflow"
+          - step: "Run access reviews on a defined cadence"
+          - step: "Verify removal on leaver / mover events"
+        evidenceExamples:
+          - "Approval workflow record"
+          - "Access review report"
+          - "Leaver removal log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No reviews"
+            "3": "Reviews irregular"
+            "5": "Reviews + verified removal"
+        crossReferences:
+          - nist-csf-2.0:PR.AA-05
+
+      - id: ISO27001:A.5.19
+        title: "Information security in supplier relationships"
+        weight: 2
+        answerType: scale
+        tags: [supplier, third-party, governance]
+        question: |
+          Are processes and procedures defined and implemented to manage
+          the information security risks associated with the use of
+          suppliers' products or services?
+        purpose: |
+          Supplier risk is one of the most cited audit gaps. A documented
+          program ensures consistent treatment across procurement and
+          operations.
+        expectedOutcome:
+          - "Supplier risk management process is documented."
+          - "Process is integrated with procurement."
+          - "Roles for managing supplier risks are clear."
+        howTo:
+          - step: "Document the supplier risk management process"
+          - step: "Integrate with procurement"
+          - step: "Assign roles for supplier risk owners"
+        evidenceExamples:
+          - "Supplier risk management process"
+          - "Procurement integration map"
+          - "Supplier risk role description"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No supplier process"
+            "3": "Process exists, not used"
+            "5": "Process integrated and used"
+
+      - id: ISO27001:A.5.20
+        title: "Addressing information security within supplier agreements"
+        weight: 3
+        answerType: scale
+        tags: [supplier, contracts, legal]
+        question: |
+          Are relevant information security requirements established and
+          agreed with each supplier based on the type of supplier
+          relationship?
+        purpose: |
+          Contracts are the only enforceable lever against supplier
+          underperformance. Tiered, fit-for-purpose security clauses
+          turn intent into obligation.
+        expectedOutcome:
+          - "Standard security clauses exist per supplier tier."
+          - "Clauses include incident notification and audit rights."
+          - "Deviations are recorded and approved."
+        howTo:
+          - step: "Develop tiered standard security clauses with legal"
+          - step: "Mandate use in procurement templates"
+          - step: "Track and approve deviations"
+        evidenceExamples:
+          - "Standard clause library"
+          - "Procurement template"
+          - "Deviation register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No security clauses"
+            "3": "Clauses inconsistent"
+            "5": "Clauses standardized and enforced"
+        crossReferences:
+          - nist-csf-2.0:GV.SC-05
+
+      - id: ISO27001:A.5.21
+        title: "Managing information security in the ICT supply chain"
+        weight: 2
+        answerType: scale
+        tags: [supplier, supply-chain, ict]
+        question: |
+          Are processes and procedures defined to manage information
+          security risks associated with the ICT products and services
+          supply chain?
+        purpose: |
+          Compromises in upstream ICT components propagate to consuming
+          organizations. Managing the ICT supply chain specifically is
+          necessary because generic supplier processes miss technical
+          provenance and integrity.
+        expectedOutcome:
+          - "ICT-specific supply chain risks are identified."
+          - "Provenance and integrity checks are defined."
+          - "Critical components have documented risk treatment."
+        howTo:
+          - step: "Map ICT components and their provenance"
+          - step: "Define integrity and authenticity checks"
+          - step: "Treat risks for critical components"
+        evidenceExamples:
+          - "ICT supply chain risk register"
+          - "Integrity check policy"
+          - "Provenance documentation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No ICT chain controls"
+            "3": "Partial"
+            "5": "Mapped, checked, treated"
+
+      - id: ISO27001:A.5.22
+        title: "Monitoring, review and change management of supplier services"
+        weight: 2
+        answerType: scale
+        tags: [supplier, monitoring, change-management]
+        question: |
+          Are supplier service changes, including the maintenance and
+          improvement of existing security policies, procedures, and
+          controls, monitored, reviewed, and managed?
+        purpose: |
+          Supplier posture drifts after onboarding. Continuous monitoring
+          and change management of supplier services catch silent
+          regression.
+        expectedOutcome:
+          - "Supplier services are reviewed on a defined cadence."
+          - "Material changes trigger reassessment."
+          - "Findings feed contractual and operational decisions."
+        howTo:
+          - step: "Define review cadence per supplier tier"
+          - step: "Trigger reassessment on material change"
+          - step: "Use findings in contractual / operational decisions"
+        evidenceExamples:
+          - "Supplier review schedule"
+          - "Change reassessment record"
+          - "Decision based on findings"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No supplier review"
+            "3": "Annual only"
+            "5": "Cadenced + event-driven"
+
+      - id: ISO27001:A.5.23
+        title: "Information security for use of cloud services"
+        weight: 3
+        answerType: scale
+        tags: [supplier, cloud, shared-responsibility]
+        question: |
+          Are processes for acquisition, use, management, and exit from
+          cloud services established in accordance with information
+          security requirements?
+        purpose: |
+          Cloud usage often bypasses procurement and security review,
+          creating shadow exposure. A defined cloud process makes shared
+          responsibility explicit and verifiable.
+        expectedOutcome:
+          - "A cloud usage policy with shared responsibility model exists."
+          - "Acquisition, use, and exit are covered."
+          - "Cloud configurations are reviewed against baselines."
+        howTo:
+          - step: "Document a cloud usage policy with shared responsibility"
+          - step: "Cover acquisition, ongoing use, and exit"
+          - step: "Review cloud configurations against baselines"
+        evidenceExamples:
+          - "Cloud policy"
+          - "Shared responsibility matrix"
+          - "Configuration baseline report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No cloud policy"
+            "3": "Policy exists, drift"
+            "5": "Policy + baselines + reviews"
+        crossReferences:
+          - nist-csf-2.0:GV.SC-07
+        appliesIf: "organization.uses_cloud == true"
+
+      - id: ISO27001:A.5.24
+        title: "Information security incident management planning and preparation"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, plan, preparation]
+        question: |
+          Has the organization planned and prepared for managing
+          information security incidents by defining, establishing, and
+          communicating incident management processes, roles, and
+          responsibilities?
+        purpose: |
+          Improvised incident response is consistently worse than
+          planned response. Preparation determines whether the
+          organization contains incidents quickly or scrambles through
+          them.
+        expectedOutcome:
+          - "An incident management process exists with roles and authorities."
+          - "Process is communicated and exercised."
+          - "Tooling and runbooks support the process."
+        howTo:
+          - step: "Document the incident management process and roles"
+          - step: "Communicate to involved teams"
+          - step: "Exercise the process at least annually"
+        evidenceExamples:
+          - "IR process document"
+          - "Exercise report"
+          - "Runbook library"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No IR process"
+            "3": "Process exists, untested"
+            "5": "Process exercised regularly"
+        crossReferences:
+          - nist-csf-2.0:ID.IM-04
+
+      - id: ISO27001:A.5.25
+        title: "Assessment and decision on information security events"
+        weight: 2
+        answerType: scale
+        tags: [incident-response, triage, declaration]
+        question: |
+          Are information security events assessed and decisions made
+          on whether they are to be categorized as information security
+          incidents?
+        purpose: |
+          Without an explicit decision step, real incidents are missed
+          and noise is over-elevated. Documented criteria normalize
+          the call.
+        expectedOutcome:
+          - "Event-to-incident criteria are documented."
+          - "Decisions are recorded with rationale."
+          - "Outcomes feed metrics."
+        howTo:
+          - step: "Document event-to-incident criteria"
+          - step: "Record decisions with rationale"
+          - step: "Track outcomes as metrics"
+        evidenceExamples:
+          - "Decision criteria document"
+          - "Sample decision record"
+          - "Triage metrics"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No criteria"
+            "3": "Criteria informal"
+            "5": "Criteria applied and tracked"
+        crossReferences:
+          - nist-csf-2.0:DE.AE-08
+
+      - id: ISO27001:A.5.26
+        title: "Response to information security incidents"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, response, execution]
+        question: |
+          Are information security incidents responded to in accordance
+          with documented procedures?
+        purpose: |
+          Procedure adherence under stress determines whether response
+          is consistent and auditable. Deviation without reason is a
+          common audit finding.
+        expectedOutcome:
+          - "Response procedures are followed during incidents."
+          - "Deviations are recorded with rationale."
+          - "Response actions are timestamped."
+        howTo:
+          - step: "Apply documented response procedures"
+          - step: "Record deviations and rationale"
+          - step: "Timestamp response actions"
+        evidenceExamples:
+          - "Response procedure"
+          - "Incident timeline"
+          - "Deviation record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Procedures not used"
+            "3": "Partial adherence"
+            "5": "Procedures followed and logged"
+        crossReferences:
+          - nist-csf-2.0:RS.MA-01
+
+      - id: ISO27001:A.5.27
+        title: "Learning from information security incidents"
+        weight: 2
+        answerType: scale
+        tags: [incident-response, lessons-learned, improvement]
+        question: |
+          Is knowledge gained from information security incidents used
+          to strengthen and improve information security controls?
+        purpose: |
+          Repeating incidents indicate that lessons did not become
+          changes. A structured lessons-learned step turns incidents
+          into program inputs.
+        expectedOutcome:
+          - "Lessons learned are documented per material incident."
+          - "Improvements are tracked to closure."
+          - "Recurring root causes drive program changes."
+        howTo:
+          - step: "Conduct lessons learned after material incidents"
+          - step: "Track improvements to closure"
+          - step: "Aggregate recurring root causes"
+        evidenceExamples:
+          - "Lessons learned report"
+          - "Improvement backlog"
+          - "Root cause trend report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No lessons learned"
+            "3": "Captured, not tracked"
+            "5": "Tracked and driving change"
+        crossReferences:
+          - nist-csf-2.0:RS.AN-03
+
+      - id: ISO27001:A.5.28
+        title: "Collection of evidence"
+        weight: 2
+        answerType: scale
+        tags: [incident-response, forensics, evidence]
+        question: |
+          Are procedures for the identification, collection, acquisition,
+          and preservation of evidence related to information security
+          events established and applied?
+        purpose: |
+          Evidence collected without procedure can be inadmissible or
+          unreliable. Documented procedures protect the value of
+          evidence for both internal and external uses.
+        expectedOutcome:
+          - "Evidence handling procedures are documented."
+          - "Integrity and provenance are preserved."
+          - "Chain of custody is maintained."
+        howTo:
+          - step: "Adopt evidence handling procedures"
+          - step: "Preserve integrity and provenance"
+          - step: "Maintain chain of custody"
+        evidenceExamples:
+          - "Evidence handling SOP"
+          - "Hash / signature record"
+          - "Chain of custody form"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Ad hoc collection"
+            "3": "Procedures partial"
+            "5": "Procedures applied"
+
+      - id: ISO27001:A.5.29
+        title: "Information security during disruption"
+        weight: 3
+        answerType: scale
+        tags: [continuity, resilience, disruption]
+        question: |
+          Has the organization planned how to maintain information
+          security at an appropriate level during disruption?
+        purpose: |
+          Security controls often degrade or are disabled during
+          disruption. Pre-planned security degradation modes prevent
+          security from becoming the cost of continuity.
+        expectedOutcome:
+          - "Security expectations during disruption are documented."
+          - "Compensating controls are planned for degraded modes."
+          - "Plans are exercised."
+        howTo:
+          - step: "Document security expectations during disruption"
+          - step: "Plan compensating controls for degraded modes"
+          - step: "Exercise plans"
+        evidenceExamples:
+          - "Security continuity plan"
+          - "Degraded mode controls"
+          - "Exercise report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plan"
+            "3": "Plan untested"
+            "5": "Plan exercised"
+        crossReferences:
+          - nist-csf-2.0:RC.RP-01
+
+      - id: ISO27001:A.5.30
+        title: "ICT readiness for business continuity"
+        weight: 2
+        answerType: scale
+        tags: [continuity, ict, rto]
+        question: |
+          Is ICT readiness planned, implemented, maintained, and tested
+          based on business continuity objectives and ICT continuity
+          requirements?
+        purpose: |
+          Business continuity plans that assume ICT services will return
+          on demand frequently fail. Documented and tested ICT
+          continuity meets the BCP at the right point.
+        expectedOutcome:
+          - "ICT continuity requirements are documented."
+          - "ICT recovery plans are tested."
+          - "Test outcomes inform BCP and ICT investment."
+        howTo:
+          - step: "Capture ICT continuity requirements (RTO, RPO)"
+          - step: "Test recovery procedures"
+          - step: "Feed outcomes to BCP and investment planning"
+        evidenceExamples:
+          - "ICT continuity plan"
+          - "Recovery test report"
+          - "BCP update record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No ICT continuity"
+            "3": "Plan untested"
+            "5": "Plan tested, integrated"
+
+      - id: ISO27001:A.5.31
+        title: "Legal, statutory, regulatory and contractual requirements"
+        weight: 3
+        answerType: scale
+        tags: [governance, compliance, legal]
+        question: |
+          Are legal, statutory, regulatory, and contractual requirements
+          relevant to information security and the organization's
+          approach to meet them identified, documented, and kept up to
+          date for each information system and the organization?
+        purpose: |
+          Failure to meet a known obligation is a fast path to penalty,
+          contract loss, or breach notification. An obligations register
+          is the basis for demonstrating due care.
+        expectedOutcome:
+          - "A current register of applicable obligations exists."
+          - "Each obligation has an owner and a control mapping."
+          - "Changes in obligations trigger impact review."
+        howTo:
+          - step: "Maintain a register of applicable obligations"
+          - step: "Map each obligation to internal controls"
+          - step: "Review on legal / contract changes"
+        evidenceExamples:
+          - "Legal obligations register"
+          - "Obligation-to-control mapping"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No register"
+            "3": "Register outdated"
+            "5": "Register maintained and mapped"
+        crossReferences:
+          - nist-csf-2.0:GV.OC-03
+
+      - id: ISO27001:A.5.32
+        title: "Intellectual property rights"
+        weight: 2
+        answerType: scale
+        tags: [governance, ip, legal, licensing]
+        question: |
+          Are appropriate procedures implemented to protect intellectual
+          property rights and ensure compliance with related obligations
+          (e.g., software licensing)?
+        purpose: |
+          IP misuse exposes the organization to legal action and
+          contract termination. Procedures around licensing and use
+          reduce both inadvertent and deliberate misuse.
+        expectedOutcome:
+          - "IP and licensing procedures are documented."
+          - "Software license inventory is maintained."
+          - "Compliance is monitored."
+        howTo:
+          - step: "Document IP and licensing procedures"
+          - step: "Maintain software license inventory"
+          - step: "Monitor compliance"
+        evidenceExamples:
+          - "IP policy"
+          - "License inventory"
+          - "Compliance scan report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No IP control"
+            "3": "Inventory partial"
+            "5": "Inventory + compliance"
+
+      - id: ISO27001:A.5.33
+        title: "Protection of records"
+        weight: 2
+        answerType: scale
+        tags: [data, records, retention]
+        question: |
+          Are records protected from loss, destruction, falsification,
+          unauthorized access, and unauthorized release in accordance
+          with legislative, regulatory, contractual, and business
+          requirements?
+        purpose: |
+          Records carry evidentiary, contractual, and regulatory weight.
+          Their loss or tampering produces direct legal and operational
+          consequences.
+        expectedOutcome:
+          - "Records retention requirements are documented."
+          - "Protection controls match requirements."
+          - "Retention and disposal are auditable."
+        howTo:
+          - step: "Document records retention requirements"
+          - step: "Apply protection commensurate with requirements"
+          - step: "Audit retention and disposal"
+        evidenceExamples:
+          - "Records retention schedule"
+          - "Protection control mapping"
+          - "Disposal audit log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No retention rules"
+            "3": "Rules exist, not audited"
+            "5": "Rules audited and enforced"
+
+      - id: ISO27001:A.5.34
+        title: "Privacy and protection of PII"
+        weight: 3
+        answerType: scale
+        tags: [privacy, pii, dpo, gdpr]
+        question: |
+          Are privacy and the protection of personally identifiable
+          information addressed as required by applicable laws,
+          regulations, and contractual requirements?
+        purpose: |
+          PII handling is regulated globally with material penalties.
+          Aligning privacy and security controls is required to meet
+          obligations and to demonstrate accountability.
+        expectedOutcome:
+          - "Privacy obligations are identified and assigned an owner."
+          - "Privacy controls (lawful basis, DPIA, subject rights) are documented."
+          - "Privacy and security incident processes are linked."
+        howTo:
+          - step: "Identify privacy obligations and owner"
+          - step: "Document privacy controls (DPIAs, subject rights, lawful basis)"
+          - step: "Link privacy with security incident processes"
+        evidenceExamples:
+          - "Privacy obligations register"
+          - "DPIA template / record"
+          - "Privacy incident playbook"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No privacy program"
+            "3": "Partial"
+            "5": "Documented and exercised"
+        appliesIf: "data.contains_pii == true"
+
+      - id: ISO27001:A.5.35
+        title: "Independent review of information security"
+        weight: 2
+        answerType: scale
+        tags: [governance, audit, review]
+        question: |
+          Is the organization's approach to managing information
+          security and its implementation reviewed independently at
+          planned intervals or when significant changes occur?
+        purpose: |
+          Self-assessment alone misses blind spots. Independent review
+          (internal audit, external review, certification audits)
+          provides a fresh perspective and reassurance.
+        expectedOutcome:
+          - "Independent review cadence is documented."
+          - "Findings are tracked to closure."
+          - "Reviews cover both design and operating effectiveness."
+        howTo:
+          - step: "Schedule independent reviews on a defined cadence"
+          - step: "Track findings to closure"
+          - step: "Cover both design and operating effectiveness"
+        evidenceExamples:
+          - "Audit plan / schedule"
+          - "Audit report"
+          - "Findings tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No reviews"
+            "3": "Reviews irregular"
+            "5": "Reviews regular, findings tracked"
+
+      - id: ISO27001:A.5.36
+        title: "Compliance with policies, rules and standards for information security"
+        weight: 2
+        answerType: scale
+        tags: [governance, compliance, monitoring]
+        question: |
+          Is compliance with the organization's information security
+          policy, topic-specific policies, rules, and standards regularly
+          reviewed?
+        purpose: |
+          Policies without compliance monitoring drift into voluntary
+          guidelines. Routine review keeps the policy stack credible.
+        expectedOutcome:
+          - "Compliance reviews are scheduled and performed."
+          - "Non-compliance is recorded and addressed."
+          - "Trends inform policy updates."
+        howTo:
+          - step: "Schedule compliance reviews per policy"
+          - step: "Record and address non-compliance"
+          - step: "Feed trends into policy review"
+        evidenceExamples:
+          - "Compliance review plan"
+          - "Non-compliance log"
+          - "Policy update from trend"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No compliance review"
+            "3": "Reviewed irregularly"
+            "5": "Reviewed and acted upon"
+
+      - id: ISO27001:A.5.37
+        title: "Documented operating procedures"
+        weight: 2
+        answerType: scale
+        tags: [governance, procedures, documentation, operations]
+        question: |
+          Are operating procedures for information processing facilities
+          documented and made available to all users who need them?
+        purpose: |
+          Tribal knowledge fails as soon as staff change. Documented
+          procedures preserve operational consistency and reduce
+          error-driven incidents.
+        expectedOutcome:
+          - "Operating procedures are documented and accessible."
+          - "Procedures are reviewed periodically."
+          - "Critical procedures are verified by exercise or use."
+        howTo:
+          - step: "Document operating procedures and store centrally"
+          - step: "Review on a defined cadence"
+          - step: "Verify critical procedures in exercises"
+        evidenceExamples:
+          - "Procedure library"
+          - "Review log"
+          - "Exercise / use record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No procedures"
+            "3": "Procedures partial"
+            "5": "Procedures maintained and verified"
+
+  - id: people
+    name: "A.6 People controls"
+    description: |
+      Controls covering personnel security across the employment
+      lifecycle: pre-employment screening, awareness and training,
+      acceptable conduct, and post-employment obligations.
+    controls:
+      - id: ISO27001:A.6.1
+        title: "Screening"
+        weight: 2
+        answerType: scale
+        tags: [people, screening, hr, joiners]
+        question: |
+          Are background verification checks on all candidates for
+          employment carried out prior to joining, and on an ongoing
+          basis where appropriate, in accordance with applicable laws
+          and ethical considerations?
+        purpose: |
+          Screening reduces insider risk where the role warrants it.
+          Doing it consistently and lawfully balances risk reduction
+          with employee rights.
+        expectedOutcome:
+          - "Screening requirements are defined by role sensitivity."
+          - "Screening is performed before access is granted."
+          - "Results are recorded confidentially."
+        howTo:
+          - step: "Define screening requirements by role sensitivity"
+          - step: "Run screening before access is granted"
+          - step: "Record results under HR confidentiality"
+        evidenceExamples:
+          - "Screening policy"
+          - "Sample screening record"
+          - "Pre-onboarding gate evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No screening"
+            "3": "Screening inconsistent"
+            "5": "Screening per role, recorded"
+
+      - id: ISO27001:A.6.2
+        title: "Terms and conditions of employment"
+        weight: 2
+        answerType: scale
+        tags: [people, contracts, hr]
+        question: |
+          Do employment contractual agreements state personnel and the
+          organization's responsibilities for information security?
+        purpose: |
+          Contractual security obligations are the legal basis for
+          enforcement. Omitting them weakens both disciplinary action
+          and post-employment obligations.
+        expectedOutcome:
+          - "Security obligations appear in employment contracts."
+          - "Standard clauses exist and are used."
+          - "Updates to obligations are communicated."
+        howTo:
+          - step: "Add standard security clauses to employment contracts"
+          - step: "Maintain clauses centrally with legal"
+          - step: "Communicate updates"
+        evidenceExamples:
+          - "Sample employment contract"
+          - "Standard clause library"
+          - "Communication record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No clauses"
+            "3": "Inconsistent"
+            "5": "Standard clauses applied"
+
+      - id: ISO27001:A.6.3
+        title: "Information security awareness, education and training"
+        weight: 2
+        answerType: scale
+        tags: [people, awareness, training, education]
+        question: |
+          Do personnel and relevant interested parties receive
+          appropriate information security awareness, education, and
+          training, and regular updates about the organization's
+          policies and procedures?
+        purpose: |
+          People are part of the attack surface. Training reduces
+          policy violations, phishing success, and accidental
+          mishandling of information.
+        expectedOutcome:
+          - "Annual training is delivered to all in-scope personnel."
+          - "Completion is tracked."
+          - "Effectiveness is measured."
+        howTo:
+          - step: "Roll out annual training"
+          - step: "Track completion and follow up"
+          - step: "Measure effectiveness (e.g., phishing tests)"
+        evidenceExamples:
+          - "Training completion report"
+          - "Phishing simulation results"
+          - "Curriculum reference"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Training, low completion"
+            "5": "High completion, effectiveness measured"
+        crossReferences:
+          - nist-csf-2.0:PR.AT-01
+
+      - id: ISO27001:A.6.4
+        title: "Disciplinary process"
+        weight: 2
+        answerType: scale
+        tags: [people, hr, enforcement]
+        question: |
+          Is a formal and communicated disciplinary process in place to
+          take action against personnel and other relevant interested
+          parties who have committed information security policy
+          violations?
+        purpose: |
+          Enforcement legitimacy depends on a known and proportional
+          process. Absent that, disciplinary action becomes contestable
+          and inconsistent.
+        expectedOutcome:
+          - "Disciplinary process is documented and communicated."
+          - "Process aligns with HR and legal standards."
+          - "Process is applied consistently."
+        howTo:
+          - step: "Document the disciplinary process with HR / legal"
+          - step: "Communicate the process to personnel"
+          - step: "Apply consistently"
+        evidenceExamples:
+          - "Disciplinary policy"
+          - "Communication record"
+          - "Sample handling case (anonymized)"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process exists, inconsistent"
+            "5": "Process applied consistently"
+
+      - id: ISO27001:A.6.5
+        title: "Responsibilities after termination or change of employment"
+        weight: 2
+        answerType: scale
+        tags: [people, offboarding, leavers]
+        question: |
+          Are information security responsibilities and duties that
+          remain valid after termination or change of employment
+          defined, enforced, and communicated to relevant personnel?
+        purpose: |
+          Post-employment obligations (confidentiality, IP, non-solicit)
+          materially reduce post-exit data risk if they are explicit
+          and enforced.
+        expectedOutcome:
+          - "Post-employment obligations are defined."
+          - "Obligations are communicated at exit."
+          - "Enforcement options are documented."
+        howTo:
+          - step: "Define post-employment obligations"
+          - step: "Communicate at exit interview"
+          - step: "Maintain enforcement options with legal"
+        evidenceExamples:
+          - "Post-employment obligation clause"
+          - "Exit checklist"
+          - "Enforcement playbook"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No obligations"
+            "3": "Obligations not communicated"
+            "5": "Communicated and enforceable"
+
+      - id: ISO27001:A.6.6
+        title: "Confidentiality or non-disclosure agreements"
+        weight: 2
+        answerType: scale
+        tags: [people, nda, confidentiality, legal]
+        question: |
+          Are confidentiality or non-disclosure agreements reflecting
+          the organization's needs for the protection of information
+          identified, regularly reviewed, and signed by personnel and
+          other relevant interested parties?
+        purpose: |
+          NDAs are the standard legal lever protecting confidential
+          information shared with employees, contractors, and partners.
+          Current, signed agreements are evidence of intent and basis
+          for action.
+        expectedOutcome:
+          - "Standard NDAs exist for relevant roles and engagements."
+          - "NDAs are signed and stored."
+          - "NDAs are reviewed periodically."
+        howTo:
+          - step: "Maintain NDA templates with legal"
+          - step: "Require signature where relevant"
+          - step: "Review NDAs on cadence"
+        evidenceExamples:
+          - "NDA template library"
+          - "Signed NDA record"
+          - "Review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No NDAs"
+            "3": "NDAs partial"
+            "5": "NDAs current and signed"
+
+      - id: ISO27001:A.6.7
+        title: "Remote working"
+        weight: 2
+        answerType: scale
+        tags: [people, remote, endpoint, byod]
+        question: |
+          Are security measures implemented when personnel are working
+          remotely to protect information accessed, processed, or stored
+          outside the organization's premises?
+        purpose: |
+          Remote work removes physical control over the environment.
+          Specific controls are needed to restore equivalent assurance
+          over devices, networks, and behaviors off-premises.
+        expectedOutcome:
+          - "A remote working policy is in place."
+          - "Endpoint hardening and VPN / zero-trust controls are applied."
+          - "Awareness includes remote-specific risks."
+        howTo:
+          - step: "Adopt a remote working policy"
+          - step: "Apply endpoint hardening and secure remote access"
+          - step: "Cover remote-specific risks in awareness"
+        evidenceExamples:
+          - "Remote working policy"
+          - "Endpoint hardening baseline"
+          - "Remote access configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No remote controls"
+            "3": "Controls partial"
+            "5": "Controls comprehensive"
+
+      - id: ISO27001:A.6.8
+        title: "Information security event reporting"
+        weight: 2
+        answerType: scale
+        tags: [people, reporting, events, awareness]
+        question: |
+          Does the organization provide a mechanism for personnel to
+          report observed or suspected information security events
+          through appropriate channels in a timely manner?
+        purpose: |
+          Many incidents are first noticed by users. A trusted, easy
+          reporting channel shortens detection time and increases the
+          rate of catching issues early.
+        expectedOutcome:
+          - "Reporting channel is published and easy to use."
+          - "Reports are acknowledged and triaged."
+          - "Reporters receive feedback where appropriate."
+        howTo:
+          - step: "Publish a reporting channel (email, button, hotline)"
+          - step: "Acknowledge and triage reports"
+          - step: "Give reporters feedback"
+        evidenceExamples:
+          - "Reporting channel reference"
+          - "Triage log"
+          - "Feedback sample"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No channel"
+            "3": "Channel exists, low use"
+            "5": "Channel used and triaged"
+        crossReferences:
+          - nist-csf-2.0:ID.RA-08
+
+  - id: physical
+    name: "A.7 Physical controls"
+    description: |
+      Controls protecting facilities, equipment, and people against
+      physical and environmental threats; includes perimeter security,
+      entry control, monitoring, equipment maintenance, and secure
+      disposal.
+    controls:
+      - id: ISO27001:A.7.1
+        title: "Physical security perimeters"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, perimeter, facilities]
+        question: |
+          Are physical security perimeters defined and used to protect
+          areas containing information and other associated assets?
+        purpose: |
+          A defined perimeter is the most basic physical safeguard.
+          Without it, every other physical control depends on hope
+          rather than design.
+        expectedOutcome:
+          - "Perimeters are documented per facility."
+          - "Perimeter integrity is maintained."
+          - "Inspections detect and repair breaches."
+        howTo:
+          - step: "Document perimeters per facility"
+          - step: "Maintain perimeter integrity (walls, doors, fences)"
+          - step: "Inspect and repair on a cadence"
+        evidenceExamples:
+          - "Facility security design"
+          - "Inspection log"
+          - "Repair ticket"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No defined perimeter"
+            "3": "Perimeter not inspected"
+            "5": "Perimeter maintained"
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.2
+        title: "Physical entry"
+        weight: 3
+        answerType: scale
+        tags: [physical-security, access, entry-control]
+        question: |
+          Are secure areas protected by appropriate entry controls and
+          access points, and are entries logged and reviewed?
+        purpose: |
+          Uncontrolled entry undoes downstream controls. Tiered entry
+          with logging makes physical access auditable.
+        expectedOutcome:
+          - "Entry controls correspond to area sensitivity."
+          - "Entries are logged."
+          - "Logs are reviewed periodically."
+        howTo:
+          - step: "Apply entry controls per sensitivity tier"
+          - step: "Log entries"
+          - step: "Review logs periodically"
+        evidenceExamples:
+          - "Entry control matrix"
+          - "Badge log extract"
+          - "Log review report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No entry control"
+            "3": "Entry control, no review"
+            "5": "Entry control + review"
+        crossReferences:
+          - nist-csf-2.0:PR.AA-06
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.3
+        title: "Securing offices, rooms and facilities"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, facilities]
+        question: |
+          Are physical security measures designed and implemented for
+          offices, rooms, and facilities?
+        purpose: |
+          Generic perimeters do not address internal area sensitivity
+          (server rooms, archive, finance). Internal segmentation
+          limits internal misuse.
+        expectedOutcome:
+          - "Internal sensitive areas are identified and protected."
+          - "Construction and locks match sensitivity."
+          - "Reviews keep design current."
+        howTo:
+          - step: "Identify internal sensitive areas"
+          - step: "Apply construction / lock standards"
+          - step: "Review design on changes"
+        evidenceExamples:
+          - "Internal area inventory"
+          - "Standards document"
+          - "Review report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No internal segmentation"
+            "3": "Some segmentation"
+            "5": "Segmented and reviewed"
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.4
+        title: "Physical security monitoring"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, monitoring, cctv]
+        question: |
+          Are premises continuously monitored for unauthorized physical
+          access?
+        purpose: |
+          Monitoring shortens time-to-detect for physical intrusion and
+          gives investigators evidence after the fact.
+        expectedOutcome:
+          - "Monitoring (CCTV, alarms, sensors) covers sensitive areas."
+          - "Alarms are routed and triaged."
+          - "Recordings are retained per policy."
+        howTo:
+          - step: "Cover sensitive areas with monitoring"
+          - step: "Route alarms to a triage process"
+          - step: "Retain recordings per policy"
+        evidenceExamples:
+          - "Monitoring coverage map"
+          - "Alarm triage log"
+          - "Retention configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Monitoring without triage"
+            "5": "Monitoring + triage + retention"
+        crossReferences:
+          - nist-csf-2.0:DE.CM-02
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.5
+        title: "Protecting against physical and environmental threats"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, environmental, facilities]
+        question: |
+          Is protection against physical and environmental threats
+          (e.g., natural disasters, malicious attack, accidents)
+          designed and implemented?
+        purpose: |
+          Environmental events cause as much downtime as cyber events
+          for many organizations. Defensive design reduces both
+          probability and impact.
+        expectedOutcome:
+          - "Environmental risk assessment is documented."
+          - "Protections match assessed risk."
+          - "Protections are tested."
+        howTo:
+          - step: "Assess environmental risks (fire, water, weather, seismic)"
+          - step: "Apply protections to match"
+          - step: "Test protections periodically"
+        evidenceExamples:
+          - "Environmental risk assessment"
+          - "Protection design"
+          - "Test report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No environmental design"
+            "3": "Design without testing"
+            "5": "Design and tested"
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.6
+        title: "Working in secure areas"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, procedures, secure-areas]
+        question: |
+          Are security measures for working in secure areas designed
+          and implemented?
+        purpose: |
+          Behaviours in secure areas (recording, escorting, device use)
+          determine whether the area's protection holds during normal
+          work.
+        expectedOutcome:
+          - "Procedures for working in secure areas exist."
+          - "Personnel are briefed."
+          - "Compliance is monitored."
+        howTo:
+          - step: "Document procedures for working in secure areas"
+          - step: "Brief authorized personnel"
+          - step: "Monitor compliance"
+        evidenceExamples:
+          - "Secure area procedure"
+          - "Brief sign-off"
+          - "Compliance check"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No procedures"
+            "3": "Procedures, not briefed"
+            "5": "Briefed and monitored"
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.7
+        title: "Clear desk and clear screen"
+        weight: 1
+        answerType: scale
+        tags: [physical-security, clear-desk, clear-screen]
+        question: |
+          Are clear desk rules for papers and removable storage media,
+          and clear screen rules for information processing facilities,
+          defined and enforced?
+        purpose: |
+          Visible information on unattended desks and screens is a
+          common low-effort source of information leakage.
+        expectedOutcome:
+          - "Clear desk / clear screen policy is documented."
+          - "Personnel are aware of the policy."
+          - "Spot checks verify compliance."
+        howTo:
+          - step: "Document clear desk / clear screen policy"
+          - step: "Raise awareness"
+          - step: "Run spot checks"
+        evidenceExamples:
+          - "Policy document"
+          - "Awareness material"
+          - "Spot check report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy"
+            "3": "Policy, no checks"
+            "5": "Policy + spot checks"
+
+      - id: ISO27001:A.7.8
+        title: "Equipment siting and protection"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, equipment, facilities]
+        question: |
+          Is equipment sited securely and protected to reduce risks
+          from physical and environmental threats and unauthorized
+          access?
+        purpose: |
+          Where equipment lives matters: poor siting amplifies
+          environmental, theft, and tampering risk regardless of
+          configuration.
+        expectedOutcome:
+          - "Siting standards exist for critical equipment."
+          - "Equipment in sensitive areas is identified."
+          - "Risks at the siting level are reviewed."
+        howTo:
+          - step: "Document siting standards"
+          - step: "Identify equipment in sensitive areas"
+          - step: "Review siting risks on relocations"
+        evidenceExamples:
+          - "Siting standards document"
+          - "Critical equipment register"
+          - "Siting review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No siting standards"
+            "3": "Standards partial"
+            "5": "Standards applied and reviewed"
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.9
+        title: "Security of assets off-premises"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, off-premises, mobile, byod]
+        question: |
+          Are off-site assets protected from risks of working outside
+          the organization's premises?
+        purpose: |
+          Mobile devices and assets used off-site are exposed to higher
+          loss and theft risk. Specific controls are needed to retain
+          assurance away from controlled premises.
+        expectedOutcome:
+          - "Off-site asset controls (encryption, locking, tracking) are defined."
+          - "Loss reporting is in place."
+          - "Remote wipe capability exists where appropriate."
+        howTo:
+          - step: "Define off-site asset controls"
+          - step: "Implement loss reporting"
+          - step: "Enable remote wipe where appropriate"
+        evidenceExamples:
+          - "Off-site asset policy"
+          - "Loss reporting record"
+          - "Remote wipe configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No off-site controls"
+            "3": "Controls partial"
+            "5": "Controls comprehensive"
+
+      - id: ISO27001:A.7.10
+        title: "Storage media"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, media, removable-media]
+        question: |
+          Are storage media managed through their lifecycle (acquisition,
+          use, transportation, disposal) in accordance with the
+          classification scheme and handling requirements?
+        purpose: |
+          Removable and storage media carry data that bypass perimeters.
+          Lifecycle management ensures classification rules continue to
+          apply.
+        expectedOutcome:
+          - "Media handling policy aligns with classification."
+          - "Transport and disposal are controlled."
+          - "Media inventory is current."
+        howTo:
+          - step: "Align media handling with classification"
+          - step: "Control transport and disposal"
+          - step: "Maintain media inventory"
+        evidenceExamples:
+          - "Media handling policy"
+          - "Disposal certificate"
+          - "Media inventory"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No media controls"
+            "3": "Controls partial"
+            "5": "Lifecycle managed"
+
+      - id: ISO27001:A.7.11
+        title: "Supporting utilities"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, utilities, availability]
+        question: |
+          Are information processing facilities protected from power
+          failures and other disruptions caused by failures in
+          supporting utilities?
+        purpose: |
+          Utility failures are a leading cause of facility-level
+          outages. Redundancy and conditioning protect availability of
+          critical services.
+        expectedOutcome:
+          - "Power conditioning and backup (UPS, generator) are in place where needed."
+          - "Utility risk is assessed."
+          - "Backup utilities are tested."
+        howTo:
+          - step: "Assess utility risk per facility"
+          - step: "Provision conditioning and backup"
+          - step: "Test backups periodically"
+        evidenceExamples:
+          - "Utility risk assessment"
+          - "UPS / generator inventory"
+          - "Test report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No utility protection"
+            "3": "Backups untested"
+            "5": "Backups tested"
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.12
+        title: "Cabling security"
+        weight: 1
+        answerType: scale
+        tags: [physical-security, cabling, facilities]
+        question: |
+          Are cables carrying power, data, or supporting information
+          services protected from interception, interference, or
+          damage?
+        purpose: |
+          Cabling is a high-impact, often-overlooked attack and failure
+          surface. Protected runs reduce both deliberate and accidental
+          disruption.
+        expectedOutcome:
+          - "Cable runs follow protected paths."
+          - "Critical runs are documented."
+          - "Inspections detect damage or interception attempts."
+        howTo:
+          - step: "Route cables through protected paths"
+          - step: "Document critical runs"
+          - step: "Inspect periodically"
+        evidenceExamples:
+          - "Cable design document"
+          - "Inspection log"
+          - "Critical run map"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No cable design"
+            "3": "Design without inspection"
+            "5": "Design + inspection"
+        appliesIf: "facility.onPremises == true"
+
+      - id: ISO27001:A.7.13
+        title: "Equipment maintenance"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, maintenance, equipment]
+        question: |
+          Is equipment maintained correctly to ensure availability,
+          integrity, and confidentiality of information?
+        purpose: |
+          Maintenance lapses produce both availability and security
+          failures. Controlled maintenance, with authorized providers
+          and documented records, sustains assurance.
+        expectedOutcome:
+          - "Maintenance schedules exist for critical equipment."
+          - "Maintenance providers are authorized."
+          - "Maintenance is logged."
+        howTo:
+          - step: "Schedule maintenance for critical equipment"
+          - step: "Authorize maintenance providers"
+          - step: "Log maintenance"
+        evidenceExamples:
+          - "Maintenance schedule"
+          - "Provider authorization record"
+          - "Maintenance log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No maintenance regime"
+            "3": "Maintenance ad hoc"
+            "5": "Maintenance scheduled and logged"
+
+      - id: ISO27001:A.7.14
+        title: "Secure disposal or re-use of equipment"
+        weight: 3
+        answerType: scale
+        tags: [physical-security, disposal, sanitization]
+        question: |
+          Are items of equipment containing storage media verified to
+          ensure that any sensitive data and licensed software has been
+          removed or securely overwritten prior to disposal or re-use?
+        purpose: |
+          Improperly disposed equipment is a frequent source of data
+          leakage and regulatory action. Verified sanitization closes
+          that path.
+        expectedOutcome:
+          - "Sanitization procedure exists per media type."
+          - "Sanitization is verified before disposal or re-use."
+          - "Certificates are retained."
+        howTo:
+          - step: "Document sanitization procedure per media type"
+          - step: "Verify sanitization before disposal / re-use"
+          - step: "Retain certificates"
+        evidenceExamples:
+          - "Sanitization procedure"
+          - "Sanitization certificate"
+          - "Disposal log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No sanitization"
+            "3": "Sanitization not verified"
+            "5": "Verified and certified"
+
+  - id: technological
+    name: "A.8 Technological controls"
+    description: |
+      Technical controls covering endpoints, access, cryptography,
+      logging, monitoring, network security, secure development,
+      change management, and protection of test and production
+      environments.
+    controls:
+      - id: ISO27001:A.8.1
+        title: "User endpoint devices"
+        weight: 3
+        answerType: scale
+        tags: [endpoint, devices, hardening]
+        question: |
+          Is information stored on, processed by, or accessible via
+          user endpoint devices protected through documented controls
+          appropriate to risk?
+        purpose: |
+          Endpoints are where users interact with sensitive data and
+          where most initial compromises land. Endpoint controls are
+          high-leverage in real-world risk reduction.
+        expectedOutcome:
+          - "Endpoint hardening baseline is defined and enforced."
+          - "Endpoint protection (EDR, anti-malware) is deployed."
+          - "Endpoint compliance is monitored."
+        howTo:
+          - step: "Define hardening baseline"
+          - step: "Deploy endpoint protection"
+          - step: "Monitor endpoint compliance"
+        evidenceExamples:
+          - "Hardening baseline"
+          - "Endpoint compliance dashboard"
+          - "EDR coverage report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No endpoint controls"
+            "3": "Partial"
+            "5": "Baseline + EDR + monitoring"
+
+      - id: ISO27001:A.8.2
+        title: "Privileged access rights"
+        weight: 3
+        answerType: scale
+        tags: [iam, privileged-access, pam]
+        question: |
+          Are the allocation and use of privileged access rights
+          restricted and managed under a documented process, including
+          periodic review?
+        purpose: |
+          Privileged accounts are the dominant target for adversaries.
+          Restriction, just-in-time use, and review materially limit
+          their abuse.
+        expectedOutcome:
+          - "Privileged accounts are inventoried."
+          - "Use is restricted (e.g., just-in-time, PAM)."
+          - "Quarterly or more frequent review is performed."
+        howTo:
+          - step: "Inventory privileged accounts"
+          - step: "Restrict use via PAM / just-in-time"
+          - step: "Run quarterly reviews"
+        evidenceExamples:
+          - "Privileged account inventory"
+          - "PAM configuration"
+          - "Review report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No control of privileged access"
+            "3": "Partial"
+            "5": "PAM + reviews"
+
+      - id: ISO27001:A.8.3
+        title: "Information access restriction"
+        weight: 3
+        answerType: scale
+        tags: [access-control, authorization, data]
+        question: |
+          Is access to information and other associated assets
+          restricted in accordance with the established topic-specific
+          policy on access control?
+        purpose: |
+          Over-broad access multiplies the impact of any compromised
+          account. Restriction by policy is what aligns technical
+          access with intent.
+        expectedOutcome:
+          - "Access restrictions reflect the access control policy."
+          - "Default deny is the baseline."
+          - "Exceptions are documented and time-bound."
+        howTo:
+          - step: "Apply default deny baseline"
+          - step: "Reflect policy in technical controls"
+          - step: "Time-bound exceptions"
+        evidenceExamples:
+          - "Access policy"
+          - "Sample technical enforcement"
+          - "Exception register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Broad access"
+            "3": "Restrictions partial"
+            "5": "Restrictions enforced"
+
+      - id: ISO27001:A.8.4
+        title: "Access to source code"
+        weight: 2
+        answerType: scale
+        tags: [access-control, source-code, development]
+        question: |
+          Is read and write access to source code, development tools,
+          and software libraries appropriately managed?
+        purpose: |
+          Source code access enables supply chain compromise and IP
+          loss. Tight management of code and build environments
+          protects both confidentiality and integrity.
+        expectedOutcome:
+          - "Source code access is role-based and reviewed."
+          - "Code repository access is logged."
+          - "Build pipelines enforce policy on commits and reviews."
+        howTo:
+          - step: "Implement role-based access to repos and pipelines"
+          - step: "Log code repository access"
+          - step: "Enforce review and signing on commits"
+        evidenceExamples:
+          - "Repo access policy"
+          - "Repo audit log"
+          - "Pipeline policy"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No code access control"
+            "3": "Access broad"
+            "5": "Access role-based, logged"
+        appliesIf: "organization.develops_software == true"
+
+      - id: ISO27001:A.8.5
+        title: "Secure authentication"
+        weight: 3
+        answerType: scale
+        tags: [iam, authentication, mfa]
+        question: |
+          Are secure authentication technologies and procedures
+          implemented in accordance with the access control policy and
+          risk?
+        purpose: |
+          Weak authentication on internet-exposed and privileged
+          interfaces is the most exploited weakness. Strong methods
+          (MFA, phishing-resistant, machine identity) materially raise
+          the attacker cost.
+        expectedOutcome:
+          - "MFA is enforced for remote and privileged access."
+          - "Phishing-resistant methods are used for high-risk access."
+          - "Authentication failures are logged and alerted."
+        howTo:
+          - step: "Enforce MFA on remote and privileged access"
+          - step: "Prefer phishing-resistant methods for highest risk"
+          - step: "Alert on suspicious authentication patterns"
+        evidenceExamples:
+          - "MFA policy and enforcement report"
+          - "Authentication log review"
+          - "Phishing-resistant configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No MFA"
+            "3": "MFA partial"
+            "5": "MFA enforced + phishing-resistant"
+        crossReferences:
+          - nist-csf-2.0:PR.AA-03
+
+      - id: ISO27001:A.8.6
+        title: "Capacity management"
+        weight: 2
+        answerType: scale
+        tags: [availability, capacity, performance]
+        question: |
+          Are the use of resources monitored and adjusted in line with
+          current and expected capacity requirements?
+        purpose: |
+          Capacity exhaustion mimics denial of service. Forward-looking
+          capacity management keeps availability inside committed
+          ranges.
+        expectedOutcome:
+          - "Capacity targets per critical service are documented."
+          - "Capacity is monitored against thresholds."
+          - "Action is taken before exhaustion."
+        howTo:
+          - step: "Document capacity targets per critical service"
+          - step: "Monitor capacity with thresholds"
+          - step: "Act on threshold breaches in advance"
+        evidenceExamples:
+          - "Capacity plan"
+          - "Capacity dashboard"
+          - "Scaling action record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No capacity management"
+            "3": "Monitored, not acted on"
+            "5": "Planned and acted on"
+
+      - id: ISO27001:A.8.7
+        title: "Protection against malware"
+        weight: 3
+        answerType: scale
+        tags: [endpoint, malware, anti-malware, edr]
+        question: |
+          Is protection against malware implemented and supported by
+          appropriate user awareness?
+        purpose: |
+          Malware remains a dominant initial-access and impact vector.
+          Layered defenses (technical plus awareness) materially reduce
+          successful execution.
+        expectedOutcome:
+          - "Anti-malware / EDR is deployed across in-scope endpoints."
+          - "Signatures and detection content are kept current."
+          - "User awareness supports the technical controls."
+        howTo:
+          - step: "Deploy anti-malware / EDR"
+          - step: "Keep detection content current"
+          - step: "Support with user awareness"
+        evidenceExamples:
+          - "EDR coverage report"
+          - "Update / signature status"
+          - "Awareness campaign record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No protection"
+            "3": "Partial coverage"
+            "5": "Full coverage + awareness"
+
+      - id: ISO27001:A.8.8
+        title: "Management of technical vulnerabilities"
+        weight: 3
+        answerType: scale
+        tags: [vulnerability, patching, scanning]
+        question: |
+          Is information about technical vulnerabilities of information
+          systems in use obtained, the organization's exposure
+          evaluated, and appropriate measures taken in a timely manner?
+        purpose: |
+          The window between vulnerability disclosure and exploitation
+          continues to shrink. A disciplined vulnerability management
+          process is what keeps the window manageable.
+        expectedOutcome:
+          - "Scanning runs on a defined cadence."
+          - "Vulnerabilities are validated, prioritized, and tracked."
+          - "Patching SLAs by severity are met."
+        howTo:
+          - step: "Run regular vulnerability scans"
+          - step: "Validate and prioritize findings"
+          - step: "Track patching against SLAs"
+        evidenceExamples:
+          - "Scan reports"
+          - "Vulnerability register"
+          - "SLA compliance report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No vuln management"
+            "3": "Scanning, no SLA"
+            "5": "SLAs met"
+        crossReferences:
+          - nist-csf-2.0:ID.RA-01
+
+      - id: ISO27001:A.8.9
+        title: "Configuration management"
+        weight: 3
+        answerType: scale
+        tags: [configuration, hardening, drift]
+        question: |
+          Are configurations of hardware, software, services, and
+          networks established, documented, implemented, monitored, and
+          reviewed?
+        purpose: |
+          Drift from secure configuration produces silent vulnerability.
+          Configuration management restores the link between policy
+          and operational reality.
+        expectedOutcome:
+          - "Secure baselines exist per platform."
+          - "Drift is detected and remediated."
+          - "Configuration changes follow change control."
+        howTo:
+          - step: "Define secure baselines per platform"
+          - step: "Detect drift continuously"
+          - step: "Channel changes through change control"
+        evidenceExamples:
+          - "Baseline definitions"
+          - "Drift report"
+          - "Change ticket"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No baselines"
+            "3": "Baselines, no drift detection"
+            "5": "Baselines + detection + control"
+        crossReferences:
+          - nist-csf-2.0:PR.PS-01
+
+      - id: ISO27001:A.8.10
+        title: "Information deletion"
+        weight: 2
+        answerType: scale
+        tags: [data, deletion, retention]
+        question: |
+          Is information stored in information systems, devices, or
+          storage media deleted when no longer required?
+        purpose: |
+          Excess retention multiplies the impact of a breach and may
+          violate privacy obligations. Deletion at end-of-need is both
+          a privacy and a security control.
+        expectedOutcome:
+          - "Retention periods are defined per data type."
+          - "Deletion is performed at end-of-retention."
+          - "Deletion is verifiable."
+        howTo:
+          - step: "Define retention periods per data type"
+          - step: "Automate deletion at end-of-retention where possible"
+          - step: "Maintain deletion evidence"
+        evidenceExamples:
+          - "Retention schedule"
+          - "Deletion job log"
+          - "Deletion certificate"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No deletion practice"
+            "3": "Deletion ad hoc"
+            "5": "Deletion scheduled and verified"
+
+      - id: ISO27001:A.8.11
+        title: "Data masking"
+        weight: 2
+        answerType: scale
+        tags: [data, masking, privacy, pseudonymization]
+        question: |
+          Is data masking used in accordance with the access control
+          policy and applicable business and regulatory requirements,
+          taking into account applicable legislation?
+        purpose: |
+          Masking and pseudonymization let business processes continue
+          without exposing the original data. They reduce both breach
+          impact and privacy obligations in many contexts.
+        expectedOutcome:
+          - "Masking / pseudonymization standards are defined."
+          - "Applied to non-production environments where appropriate."
+          - "Reversibility is controlled."
+        howTo:
+          - step: "Define masking / pseudonymization standards"
+          - step: "Apply to non-production environments"
+          - step: "Control reversibility"
+        evidenceExamples:
+          - "Masking policy"
+          - "Sample masked dataset"
+          - "Reversibility access control"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No masking"
+            "3": "Masking partial"
+            "5": "Masking enforced"
+        appliesIf: "data.contains_pii == true"
+
+      - id: ISO27001:A.8.12
+        title: "Data leakage prevention"
+        weight: 3
+        answerType: scale
+        tags: [data, dlp, exfiltration, monitoring]
+        question: |
+          Are data leakage prevention measures applied to systems,
+          networks, and any other devices that process, store, or
+          transmit sensitive information?
+        purpose: |
+          Egress is where breaches become incidents. DLP capabilities,
+          even at policy level, reduce both accidental and deliberate
+          exfiltration.
+        expectedOutcome:
+          - "DLP policy / rules are defined."
+          - "DLP is enforced on key egress channels."
+          - "Alerts are triaged."
+        howTo:
+          - step: "Define DLP policy / rules per data type"
+          - step: "Enforce on email, web, and endpoint where supported"
+          - step: "Triage alerts"
+        evidenceExamples:
+          - "DLP policy"
+          - "DLP enforcement coverage"
+          - "Alert triage log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No DLP"
+            "3": "Monitor only"
+            "5": "Enforce and triage"
+
+      - id: ISO27001:A.8.13
+        title: "Information backup"
+        weight: 3
+        answerType: scale
+        tags: [backup, recovery, ransomware]
+        question: |
+          Are backup copies of information, software, and systems
+          maintained, regularly tested, and protected in accordance with
+          the agreed topic-specific policy on backup?
+        purpose: |
+          Backups are the strongest control against ransomware and
+          destructive incidents. Untested or unprotected backups have a
+          high rate of silent failure when needed.
+        expectedOutcome:
+          - "Backups follow a documented policy aligned to RPO / RTO."
+          - "At least one offline or immutable copy exists."
+          - "Restore tests are performed and documented."
+        howTo:
+          - step: "Apply backup policy aligned to RPO/RTO"
+          - step: "Maintain offline / immutable copy"
+          - step: "Test restores and document"
+        evidenceExamples:
+          - "Backup policy"
+          - "Restore test report"
+          - "Backup access audit"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No backups"
+            "3": "Backups untested"
+            "5": "Backups tested + immutable copy"
+        crossReferences:
+          - nist-csf-2.0:PR.DS-11
+
+      - id: ISO27001:A.8.14
+        title: "Redundancy of information processing facilities"
+        weight: 2
+        answerType: scale
+        tags: [availability, redundancy, dr]
+        question: |
+          Are information processing facilities implemented with
+          redundancy sufficient to meet availability requirements?
+        purpose: |
+          Availability commitments rest on the ability of the
+          underlying facilities to absorb single component failures.
+          Redundancy converts that ability from theory to practice.
+        expectedOutcome:
+          - "Critical services have documented redundancy."
+          - "Failover is tested periodically."
+          - "Single points of failure are tracked."
+        howTo:
+          - step: "Document redundancy per critical service"
+          - step: "Test failover periodically"
+          - step: "Track and reduce single points of failure"
+        evidenceExamples:
+          - "Redundancy design"
+          - "Failover test report"
+          - "SPOF register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No redundancy"
+            "3": "Redundancy untested"
+            "5": "Redundancy tested"
+
+      - id: ISO27001:A.8.15
+        title: "Logging"
+        weight: 3
+        answerType: scale
+        tags: [logging, monitoring, siem]
+        question: |
+          Are logs that record activities, exceptions, faults, and
+          other relevant events produced, stored, protected, and
+          analyzed?
+        purpose: |
+          Logs are the basis for detection, investigation, and
+          accountability. Centralized, retained, and integrity-protected
+          logs make all three possible.
+        expectedOutcome:
+          - "Logging requirements per system class are defined."
+          - "Logs are centralized with defined retention."
+          - "Log integrity is protected."
+        howTo:
+          - step: "Define what to log per system class"
+          - step: "Forward to a central, retained store"
+          - step: "Protect log integrity"
+        evidenceExamples:
+          - "Logging requirements document"
+          - "SIEM ingestion report"
+          - "Integrity protection design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No central logging"
+            "3": "Partial centralization"
+            "5": "Central + retained + integrity"
+        crossReferences:
+          - nist-csf-2.0:PR.PS-04
+
+      - id: ISO27001:A.8.16
+        title: "Monitoring activities"
+        weight: 3
+        answerType: scale
+        tags: [monitoring, soc, detection]
+        question: |
+          Are networks, systems, and applications monitored for
+          anomalous behavior, and are appropriate actions taken to
+          evaluate potential information security incidents?
+        purpose: |
+          Logs without monitoring are passive. Active monitoring
+          converts log data into timely detections and response actions.
+        expectedOutcome:
+          - "Detections are defined and deployed across log sources."
+          - "Detections are tuned to reduce noise."
+          - "Actions on detections are tracked."
+        howTo:
+          - step: "Build detections across log sources"
+          - step: "Tune detections regularly"
+          - step: "Track actions taken"
+        evidenceExamples:
+          - "Detection rule export"
+          - "Tuning log"
+          - "Action tracker"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Monitoring untuned"
+            "5": "Monitoring tuned and actioned"
+        crossReferences:
+          - nist-csf-2.0:DE.CM-01
+
+      - id: ISO27001:A.8.17
+        title: "Clock synchronization"
+        weight: 1
+        answerType: scale
+        tags: [logging, time, ntp]
+        question: |
+          Are the clocks of information processing systems synchronized
+          to approved time sources?
+        purpose: |
+          Inconsistent clocks make incident reconstruction unreliable
+          and undermine the evidentiary value of logs.
+        expectedOutcome:
+          - "Approved time sources are defined."
+          - "Systems sync to those sources."
+          - "Drift is monitored."
+        howTo:
+          - step: "Define approved time sources"
+          - step: "Configure systems to sync"
+          - step: "Monitor for drift"
+        evidenceExamples:
+          - "NTP / time source policy"
+          - "Drift monitoring report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 12
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No sync"
+            "3": "Sync without monitoring"
+            "5": "Sync and monitored"
+
+      - id: ISO27001:A.8.18
+        title: "Use of privileged utility programs"
+        weight: 2
+        answerType: scale
+        tags: [endpoint, utilities, privileged-access]
+        question: |
+          Is the use of utility programs that might be capable of
+          overriding system and application controls restricted and
+          tightly controlled?
+        purpose: |
+          Privileged utilities can bypass downstream controls. Their
+          uncontrolled presence makes the rest of the configuration
+          unreliable.
+        expectedOutcome:
+          - "Privileged utilities are inventoried."
+          - "Use is restricted and logged."
+          - "Removal is enforced where unnecessary."
+        howTo:
+          - step: "Inventory privileged utilities"
+          - step: "Restrict use; log invocations"
+          - step: "Remove where unnecessary"
+        evidenceExamples:
+          - "Utility inventory"
+          - "Use log"
+          - "Removal record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Free use"
+            "3": "Partial control"
+            "5": "Controlled, logged"
+
+      - id: ISO27001:A.8.19
+        title: "Installation of software on operational systems"
+        weight: 2
+        answerType: scale
+        tags: [change-management, software, allowlisting]
+        question: |
+          Are procedures and measures implemented to securely manage
+          software installation on operational systems?
+        purpose: |
+          Unmanaged software installation introduces both vulnerability
+          and untrusted code. Controlled installation paths keep the
+          attack surface measurable.
+        expectedOutcome:
+          - "Only approved software can be installed on operational systems."
+          - "Installation goes through change control."
+          - "Drift is detected."
+        howTo:
+          - step: "Restrict installation to approved software"
+          - step: "Require change control for installs"
+          - step: "Detect drift"
+        evidenceExamples:
+          - "Approved software list"
+          - "Change records for installs"
+          - "Drift report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Free installation"
+            "3": "Partial control"
+            "5": "Approved-only, drift detected"
+
+      - id: ISO27001:A.8.20
+        title: "Networks security"
+        weight: 3
+        answerType: scale
+        tags: [network, segmentation, firewall]
+        question: |
+          Are networks and network devices secured, managed, and
+          controlled to protect information in systems and applications?
+        purpose: |
+          Network design is what limits blast radius. Sound design and
+          managed devices prevent flat-network amplification of any
+          single compromise.
+        expectedOutcome:
+          - "Network segmentation is implemented based on trust zones."
+          - "Network device configurations follow baselines."
+          - "Network changes follow change control."
+        howTo:
+          - step: "Segment networks by trust zone"
+          - step: "Baseline network device configurations"
+          - step: "Channel network changes through change control"
+        evidenceExamples:
+          - "Network design"
+          - "Device baseline configuration"
+          - "Change record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Flat network"
+            "3": "Segmentation partial"
+            "5": "Segmentation + baselines + control"
+        crossReferences:
+          - nist-csf-2.0:PR.IR-01
+
+      - id: ISO27001:A.8.21
+        title: "Security of network services"
+        weight: 2
+        answerType: scale
+        tags: [network, services, supplier]
+        question: |
+          Are security mechanisms, service levels, and requirements of
+          network services identified, implemented, and monitored?
+        purpose: |
+          Network services delivered by providers are part of the trust
+          boundary. Requirements and monitoring make the assurance
+          provided by those services tangible.
+        expectedOutcome:
+          - "Required security mechanisms for network services are documented."
+          - "Service levels include security requirements."
+          - "Delivery is monitored."
+        howTo:
+          - step: "Document required security mechanisms"
+          - step: "Include security in service levels"
+          - step: "Monitor delivery"
+        evidenceExamples:
+          - "Service requirement document"
+          - "SLA with security clauses"
+          - "Monitoring report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No requirements"
+            "3": "Requirements partial"
+            "5": "Requirements + monitoring"
+
+      - id: ISO27001:A.8.22
+        title: "Segregation of networks"
+        weight: 2
+        answerType: scale
+        tags: [network, segmentation, zoning]
+        question: |
+          Are groups of information services, users, and information
+          systems segregated in the organization's networks?
+        purpose: |
+          Segregation limits both lateral movement and accidental
+          cross-environment exposure. Specific zoning is a core part of
+          modern network design.
+        expectedOutcome:
+          - "Network zones are defined and enforced."
+          - "Inter-zone flows are explicit."
+          - "Reviews keep zoning current."
+        howTo:
+          - step: "Define and enforce network zones"
+          - step: "Make inter-zone flows explicit"
+          - step: "Review zoning periodically"
+        evidenceExamples:
+          - "Zoning design"
+          - "Inter-zone flow matrix"
+          - "Review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No segregation"
+            "3": "Partial"
+            "5": "Zoned and reviewed"
+
+      - id: ISO27001:A.8.23
+        title: "Web filtering"
+        weight: 2
+        answerType: scale
+        tags: [web, filtering, egress]
+        question: |
+          Is access to external websites managed to reduce exposure to
+          malicious content?
+        purpose: |
+          Outbound web is a frequent malware delivery and exfiltration
+          channel. Filtering reduces exposure to both well-known
+          malicious destinations and inappropriate categories.
+        expectedOutcome:
+          - "Web filtering is enforced for managed devices."
+          - "Categories and known-bad are blocked."
+          - "Exceptions are managed."
+        howTo:
+          - step: "Enforce web filtering on managed devices"
+          - step: "Block known-bad and risky categories"
+          - step: "Manage exceptions"
+        evidenceExamples:
+          - "Filtering policy"
+          - "Block category list"
+          - "Exception register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No filtering"
+            "3": "Filtering inconsistent"
+            "5": "Filtering enforced, exceptions managed"
+
+      - id: ISO27001:A.8.24
+        title: "Use of cryptography"
+        weight: 3
+        answerType: scale
+        tags: [cryptography, encryption, key-management]
+        question: |
+          Are rules for the effective use of cryptography, including
+          cryptographic key management, defined and implemented?
+        purpose: |
+          Cryptography is among the most powerful and most-misused
+          control areas. Documented rules and key management make it
+          consistent and auditable.
+        expectedOutcome:
+          - "Cryptographic standards (algorithms, key sizes) are defined."
+          - "Keys are managed under documented processes."
+          - "Cryptographic use is reviewed periodically."
+        howTo:
+          - step: "Define cryptographic standards"
+          - step: "Manage keys with KMS / HSM"
+          - step: "Review use periodically"
+        evidenceExamples:
+          - "Cryptography standard"
+          - "Key management process"
+          - "Cryptographic inventory"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No crypto standards"
+            "3": "Standards, weak KM"
+            "5": "Standards + key management"
+        crossReferences:
+          - nist-csf-2.0:PR.DS-01
+          - nist-csf-2.0:PR.DS-02
+
+      - id: ISO27001:A.8.25
+        title: "Secure development life cycle"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, secure-development, devsecops]
+        question: |
+          Are rules for the secure development of software and systems
+          established and applied?
+        purpose: |
+          Security retrofitted post-build is the most expensive option.
+          A documented secure SDLC catches design and implementation
+          issues at the cheapest stage.
+        expectedOutcome:
+          - "Secure SDLC rules are documented and applied."
+          - "Security activities exist per lifecycle stage."
+          - "Compliance with rules is monitored."
+        howTo:
+          - step: "Document secure SDLC per lifecycle stage"
+          - step: "Embed security activities into the SDLC"
+          - step: "Monitor compliance"
+        evidenceExamples:
+          - "Secure SDLC policy"
+          - "Stage-gate checklist"
+          - "Compliance report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No secure SDLC"
+            "3": "Partial"
+            "5": "Embedded and monitored"
+        crossReferences:
+          - nist-csf-2.0:PR.PS-06
+        appliesIf: "organization.develops_software == true"
+
+      - id: ISO27001:A.8.26
+        title: "Application security requirements"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, requirements, application-security]
+        question: |
+          Are information security requirements identified, specified,
+          and approved when developing or acquiring applications?
+        purpose: |
+          Applications shipped without explicit security requirements
+          tend to omit them. Capturing requirements early aligns
+          implementation with intent.
+        expectedOutcome:
+          - "Security requirements are part of application requirements."
+          - "Acquired applications include security requirements."
+          - "Requirements are verified before release."
+        howTo:
+          - step: "Include security requirements in application backlogs"
+          - step: "Add to procurement / acquisition templates"
+          - step: "Verify requirements before release"
+        evidenceExamples:
+          - "Requirement template"
+          - "Procurement security clause"
+          - "Release verification record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No security requirements"
+            "3": "Partial"
+            "5": "Required and verified"
+
+      - id: ISO27001:A.8.27
+        title: "Secure system architecture and engineering principles"
+        weight: 2
+        answerType: scale
+        tags: [architecture, engineering, principles]
+        question: |
+          Are secure system architecture and engineering principles
+          established, documented, maintained, and applied to any
+          information system development activities?
+        purpose: |
+          Engineering principles guide hundreds of small decisions per
+          project. Documented principles bake security into routine
+          design without continuous review burden.
+        expectedOutcome:
+          - "Engineering principles are documented."
+          - "Principles are referenced in design reviews."
+          - "Principles are kept current."
+        howTo:
+          - step: "Document engineering principles"
+          - step: "Reference in design reviews"
+          - step: "Maintain principles over time"
+        evidenceExamples:
+          - "Engineering principles document"
+          - "Design review record citing principles"
+          - "Update history"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No principles"
+            "3": "Principles unused"
+            "5": "Principles applied"
+
+      - id: ISO27001:A.8.28
+        title: "Secure coding"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, secure-coding, sast]
+        question: |
+          Are secure coding principles applied to software development?
+        purpose: |
+          The majority of application vulnerabilities trace back to a
+          small set of well-known coding mistakes. Secure coding
+          practice plus automated checking blocks most at source.
+        expectedOutcome:
+          - "Secure coding standards are defined and used."
+          - "SAST runs in pipelines."
+          - "Findings are triaged and fixed under SLA."
+        howTo:
+          - step: "Adopt secure coding standards"
+          - step: "Run SAST in CI"
+          - step: "Triage and fix findings under SLA"
+        evidenceExamples:
+          - "Secure coding standard"
+          - "SAST results"
+          - "Fix SLA report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No secure coding"
+            "3": "Standards, no SAST"
+            "5": "Standards + SAST + SLA"
+        appliesIf: "organization.develops_software == true"
+
+      - id: ISO27001:A.8.29
+        title: "Security testing in development and acceptance"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, testing, dast, sca]
+        question: |
+          Are security testing processes defined and implemented in the
+          development life cycle?
+        purpose: |
+          Tests catch what design and code review miss. A defined
+          testing process across stages provides defense in depth at
+          the build layer.
+        expectedOutcome:
+          - "Security testing types are defined per stage (SAST, DAST, SCA, pentest)."
+          - "Tests run on a defined cadence."
+          - "Findings are triaged and tracked."
+        howTo:
+          - step: "Define security testing types per stage"
+          - step: "Run on defined cadence"
+          - step: "Triage and track findings"
+        evidenceExamples:
+          - "Security test plan"
+          - "Test results"
+          - "Findings tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No security testing"
+            "3": "Partial"
+            "5": "Defined and tracked"
+        appliesIf: "organization.develops_software == true"
+
+      - id: ISO27001:A.8.30
+        title: "Outsourced development"
+        weight: 2
+        answerType: scale
+        tags: [supplier, sdlc, outsourcing]
+        question: |
+          Is outsourced development directed, monitored, and reviewed
+          to ensure security requirements are met?
+        purpose: |
+          Outsourced developers often inherit privileged access without
+          inheriting governance. Explicit direction and review aligns
+          the relationship to the organization's security expectations.
+        expectedOutcome:
+          - "Security requirements are part of outsourced contracts."
+          - "Deliverables are reviewed against security requirements."
+          - "Access by outsourced parties is controlled."
+        howTo:
+          - step: "Include security requirements in outsourced contracts"
+          - step: "Review deliverables against requirements"
+          - step: "Control outsourced access"
+        evidenceExamples:
+          - "Contract clauses"
+          - "Review record"
+          - "Access control configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No outsourced controls"
+            "3": "Partial"
+            "5": "Directed and reviewed"
+        appliesIf: "organization.uses_outsourced_development == true"
+
+      - id: ISO27001:A.8.31
+        title: "Separation of development, test and production environments"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, environments, separation]
+        question: |
+          Are development, testing, and production environments
+          separated and secured?
+        purpose: |
+          Shared environments allow test data, configuration, and code
+          to cross-contaminate production. Separation is the simplest
+          defense against entire classes of incidents.
+        expectedOutcome:
+          - "Environments are separated technically and procedurally."
+          - "Data flow rules between environments are documented."
+          - "Access boundaries are enforced."
+        howTo:
+          - step: "Separate environments technically and procedurally"
+          - step: "Define inter-environment data flow rules"
+          - step: "Enforce access boundaries"
+        evidenceExamples:
+          - "Environment separation design"
+          - "Inter-environment data rule"
+          - "Access boundary configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Shared environments"
+            "3": "Partial separation"
+            "5": "Full separation"
+        appliesIf: "organization.develops_software == true"
+
+      - id: ISO27001:A.8.32
+        title: "Change management"
+        weight: 3
+        answerType: scale
+        tags: [change-management, governance]
+        question: |
+          Are changes to information processing facilities and
+          information systems subject to change management procedures?
+        purpose: |
+          Changes cause more outages and incidents than any other
+          activity. Change management is the discipline that prevents
+          rushed or unreviewed changes from producing avoidable harm.
+        expectedOutcome:
+          - "Change management procedure is documented and used."
+          - "Risk and security assessment is part of change records."
+          - "Emergency changes follow a defined path."
+        howTo:
+          - step: "Document change management"
+          - step: "Require risk and security assessment"
+          - step: "Define emergency change path"
+        evidenceExamples:
+          - "Change management procedure"
+          - "Change ticket sample"
+          - "Emergency change record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No change management"
+            "3": "Inconsistent"
+            "5": "Procedure followed, emergency path defined"
+
+      - id: ISO27001:A.8.33
+        title: "Test information"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, test-data, privacy]
+        question: |
+          Is test information appropriately selected, protected, and
+          managed?
+        purpose: |
+          Production data used as test data multiplies exposure and is
+          a common privacy failure mode. Managed test information
+          preserves test value without the risk.
+        expectedOutcome:
+          - "Test data sources are documented."
+          - "Production data in test is restricted or masked."
+          - "Access to test data is controlled."
+        howTo:
+          - step: "Document test data sources"
+          - step: "Restrict / mask production data in test"
+          - step: "Control access to test data"
+        evidenceExamples:
+          - "Test data policy"
+          - "Masking record"
+          - "Access control configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Prod data in test, uncontrolled"
+            "3": "Partial control"
+            "5": "Restricted and masked"
+        appliesIf: "organization.develops_software == true"
+
+      - id: ISO27001:A.8.34
+        title: "Protection of information systems during audit testing"
+        weight: 1
+        answerType: scale
+        tags: [audit, testing, change-management]
+        question: |
+          Are audit tests and other assurance activities involving
+          operational systems planned and agreed between the tester and
+          appropriate management to avoid disruption?
+        purpose: |
+          Uncoordinated testing on production systems causes outages
+          and damages the audit relationship. Coordination preserves
+          both stability and audit value.
+        expectedOutcome:
+          - "Audit test plans are agreed before execution."
+          - "Production tests have rollback / impact plans."
+          - "Test outcomes are documented."
+        howTo:
+          - step: "Agree audit test plans before execution"
+          - step: "Plan for rollback / impact"
+          - step: "Document outcomes"
+        evidenceExamples:
+          - "Agreed audit test plan"
+          - "Rollback / impact plan"
+          - "Test outcome record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Uncoordinated testing"
+            "3": "Partial coordination"
+            "5": "Coordinated and documented"

@@ -1,0 +1,646 @@
+framework:
+  schemaVersion: 1
+  key: eu.ai-act.2024
+  name: "EU AI Act (Regulation 2024/1689)"
+  shortName: "EU AI Act"
+  version: "2024/1689"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "AI Governance Lead"
+    - "Product Owner"
+    - "Compliance Officer"
+    - "Legal Counsel"
+    - "Auditor"
+  estimatedDurationMinutes: 240
+  description: |
+    Regulation (EU) 2024/1689 (the AI Act) is the EU's risk-based
+    regulation for AI systems and general-purpose AI models. It
+    prohibits certain practices, sets requirements for high-risk AI
+    systems, imposes transparency duties, and creates a layered
+    enforcement regime including market surveillance and the AI Board.
+
+    This YAML covers the principal obligations of the AI Act as
+    audit-readiness controls grouped into Prohibited Practices,
+    High-Risk Systems Requirements, Provider / Deployer Obligations,
+    Transparency, and General-Purpose AI Models.
+  scopeNote: |
+    In scope: principal articles relevant to providers and deployers
+    of AI systems and providers of GPAI models (Art. 5, 8-22, 26, 43,
+    50, 51-55, 72-73).
+
+    Out of scope: obligations on notifying authorities, notified
+    bodies, the AI Board and its committees; market surveillance
+    powers; sector-specific Union acts referenced by the AI Act; the
+    AI Pact (voluntary).
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Regulation (EU) 2024/1689 is published in the Official Journal
+      of the European Union. EU law text is not subject to copyright in
+      most jurisdictions. Article content has been paraphrased into
+      audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure breaches a prohibition (Art. 5) or a non-negotiable
+    high-risk requirement (Art. 8-15); potential fines up to 7 % of
+    global turnover.
+  high: |
+    Material gap in a documented obligation without compensating
+    measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate market-access
+    impact.
+
+controlMappings:
+  - source: eu.ai-act:HR-01
+    target: nist.ai.rmf:GOVERN-01
+    type: related
+  - source: eu.ai-act:HR-02
+    target: nist.ai.rmf:MAP-01
+    type: related
+  - source: eu.ai-act:HR-04
+    target: nist.ai.rmf:MEASURE-02
+    type: related
+  - source: eu.ai-act:HR-07
+    target: nist-csf-2.0:GV.SC-01
+    type: related
+
+domains:
+  - id: prohibitions
+    name: "Prohibited AI Practices (Art. 5)"
+    description: |
+      AI practices that are prohibited under Art. 5 (e.g., subliminal
+      manipulation, exploitation of vulnerabilities, social scoring by
+      public authorities, untargeted facial image scraping, emotion
+      inference in workplace and education, biometric categorisation
+      based on sensitive attributes, real-time remote biometric
+      identification in public spaces with exceptions).
+    controls:
+      - id: eu.ai-act:PROH-01
+        title: "Screen for prohibited AI practices"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, prohibitions, compliance]
+        question: |
+          Does the organization screen new and existing AI systems
+          against the prohibitions in Art. 5 and document the outcome?
+        purpose: |
+          Deploying or providing a prohibited system is the highest-
+          fine category. Active screening prevents accidental breach.
+        expectedOutcome:
+          - "Screening process exists for new AI systems."
+          - "Existing inventory has been screened."
+          - "Decisions and any opt-outs are documented."
+        howTo:
+          - step: "Build a screening process for new AI systems"
+          - step: "Screen the existing AI inventory"
+          - step: "Document decisions and any exclusions"
+        evidenceExamples:
+          - "Screening procedure"
+          - "Inventory screening record"
+          - "Decision log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No screening"
+            "3": "Screening informal"
+            "5": "Screening documented"
+
+  - id: high-risk
+    name: "Requirements for High-Risk AI Systems (Art. 8-15)"
+    description: |
+      Requirements applicable to AI systems classified as high-risk
+      under Annex III or as safety components in products covered by
+      Annex I.
+    controls:
+      - id: eu.ai-act:HR-01
+        title: "Risk management system (Art. 9)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, high-risk, risk-management]
+        question: |
+          Is a risk management system established, implemented,
+          documented, and maintained for high-risk AI systems?
+        purpose: |
+          Art. 9 places risk management as the spine of high-risk AI
+          conformity. It must be continuous, not one-off.
+        expectedOutcome:
+          - "Risk management process documented."
+          - "Risks identified and mitigated continuously."
+          - "Residual risk accepted and recorded."
+        howTo:
+          - step: "Document the risk management process"
+          - step: "Identify and mitigate risks continuously"
+          - step: "Accept and record residual risk"
+        evidenceExamples:
+          - "Risk management process"
+          - "Risk register"
+          - "Residual risk acceptance"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No RM"
+            "3": "RM partial"
+            "5": "RM continuous"
+        crossReferences:
+          - nist.ai.rmf:GOVERN-01
+
+      - id: eu.ai-act:HR-02
+        title: "Data and data governance (Art. 10)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, high-risk, data, training]
+        question: |
+          Are training, validation, and testing datasets subject to
+          data governance practices that ensure relevance, representa-
+          tiveness, accuracy, and freedom from bias to the extent
+          possible?
+        purpose: |
+          Data quality drives model quality. Art. 10 makes data
+          governance explicit and inspectable.
+        expectedOutcome:
+          - "Data governance documented."
+          - "Dataset properties evaluated."
+          - "Bias evaluated and mitigated."
+        howTo:
+          - step: "Document data governance"
+          - step: "Evaluate dataset properties"
+          - step: "Evaluate and mitigate bias"
+        evidenceExamples:
+          - "Data governance policy"
+          - "Dataset evaluation"
+          - "Bias evaluation"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No governance"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - nist.ai.rmf:MAP-01
+
+      - id: eu.ai-act:HR-03
+        title: "Technical documentation (Art. 11)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, high-risk, documentation]
+        question: |
+          Is technical documentation drawn up for high-risk AI systems
+          before they are placed on the market or put into service,
+          covering the items in Annex IV?
+        purpose: |
+          Technical documentation is the basis for conformity
+          assessment and post-market surveillance.
+        expectedOutcome:
+          - "Technical documentation aligns with Annex IV."
+          - "Documentation is current."
+          - "Documentation is retained for at least 10 years."
+        howTo:
+          - step: "Develop technical documentation per Annex IV"
+          - step: "Keep documentation current"
+          - step: "Retain per Art. 18"
+        evidenceExamples:
+          - "Technical documentation"
+          - "Update record"
+          - "Retention configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No documentation"
+            "3": "Partial"
+            "5": "Annex IV complete"
+
+      - id: eu.ai-act:HR-04
+        title: "Record-keeping (Art. 12)"
+        weight: 2
+        answerType: scale
+        tags: [ai-act, high-risk, logging, records]
+        question: |
+          Does the high-risk AI system automatically record events
+          (logs) over its lifetime, with logs retained appropriately?
+        purpose: |
+          Logging enables traceability of operation and incident
+          investigation. Art. 12 makes it explicit.
+        expectedOutcome:
+          - "Logging is automatic in operation."
+          - "Log content meets Art. 12 expectations."
+          - "Logs are retained per regulation."
+        howTo:
+          - step: "Enable automatic logging in operation"
+          - step: "Configure log content per Art. 12"
+          - step: "Retain logs per regulation"
+        evidenceExamples:
+          - "Logging design"
+          - "Log content schema"
+          - "Retention configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No logging"
+            "3": "Logs partial"
+            "5": "Logs complete + retained"
+        crossReferences:
+          - nist.ai.rmf:MEASURE-02
+
+      - id: eu.ai-act:HR-05
+        title: "Transparency and information to deployers (Art. 13)"
+        weight: 2
+        answerType: scale
+        tags: [ai-act, high-risk, transparency, deployer]
+        question: |
+          Are deployers provided with sufficient information about the
+          AI system (instructions for use) to enable interpretation of
+          output and informed use?
+        purpose: |
+          Deployers cannot use AI safely without information.
+          Provider-to-deployer transparency is non-negotiable.
+        expectedOutcome:
+          - "Instructions for use cover Art. 13 elements."
+          - "Information is accessible to deployers."
+          - "Updates are communicated."
+        howTo:
+          - step: "Produce instructions for use covering Art. 13"
+          - step: "Make accessible to deployers"
+          - step: "Communicate updates"
+        evidenceExamples:
+          - "Instructions for use"
+          - "Distribution evidence"
+          - "Update notification"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No information"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: eu.ai-act:HR-06
+        title: "Human oversight (Art. 14)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, high-risk, human-oversight, governance]
+        question: |
+          Is the high-risk AI system designed and developed to be
+          effectively overseen by natural persons during use?
+        purpose: |
+          Human oversight is the failsafe. Art. 14 requires it as
+          designed-in capability, not just a policy aspiration.
+        expectedOutcome:
+          - "Oversight measures are designed into the system."
+          - "Oversight personnel are trained."
+          - "Oversight effectiveness is reviewed."
+        howTo:
+          - step: "Design oversight measures into the system"
+          - step: "Train oversight personnel"
+          - step: "Review effectiveness"
+        evidenceExamples:
+          - "Oversight design"
+          - "Training record"
+          - "Effectiveness review"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No oversight"
+            "3": "Oversight nominal"
+            "5": "Oversight designed + trained"
+
+      - id: eu.ai-act:HR-07
+        title: "Accuracy, robustness, cybersecurity (Art. 15)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, high-risk, accuracy, robustness, cybersecurity]
+        question: |
+          Are high-risk AI systems designed and developed to achieve
+          appropriate levels of accuracy, robustness, and cybersecurity
+          throughout their lifecycle?
+        purpose: |
+          Art. 15 bundles the three non-functional pillars that
+          determine real-world AI safety.
+        expectedOutcome:
+          - "Accuracy metrics are documented and monitored."
+          - "Robustness measures (fallback, redundancy) in place."
+          - "Cybersecurity (adversarial, poisoning) addressed."
+        howTo:
+          - step: "Document and monitor accuracy"
+          - step: "Apply robustness measures"
+          - step: "Address AI-specific cybersecurity"
+        evidenceExamples:
+          - "Accuracy report"
+          - "Robustness design"
+          - "AI security assessment"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not addressed"
+            "3": "Partial"
+            "5": "All three pillars"
+        crossReferences:
+          - nist-csf-2.0:GV.SC-01
+
+  - id: provider-deployer
+    name: "Provider and Deployer Obligations"
+    description: |
+      Provider obligations (Art. 16-22) and deployer obligations
+      (Art. 26) for high-risk AI systems.
+    controls:
+      - id: eu.ai-act:PD-01
+        title: "Quality management system for providers (Art. 17)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, provider, qms]
+        question: |
+          Has the provider of a high-risk AI system implemented a
+          quality management system covering the Art. 17 elements?
+        purpose: |
+          QMS is the operational discipline of being a provider. It
+          is the basis for sustained compliance.
+        expectedOutcome:
+          - "QMS is documented and operational."
+          - "Art. 17 elements are covered."
+          - "QMS is reviewed periodically."
+        howTo:
+          - step: "Implement QMS covering Art. 17"
+          - step: "Review periodically"
+          - step: "Adapt to product changes"
+        evidenceExamples:
+          - "QMS documentation"
+          - "Review record"
+          - "Adaptation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No QMS"
+            "3": "Partial"
+            "5": "Comprehensive"
+        appliesIf: "organization.role == 'provider'"
+
+      - id: eu.ai-act:PD-02
+        title: "Conformity assessment and CE marking (Art. 43)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, conformity, ce-marking]
+        question: |
+          Are high-risk AI systems subject to the applicable conformity
+          assessment procedure, including CE marking before placing on
+          the market?
+        purpose: |
+          CE marking and conformity assessment are the gates to lawful
+          market placement.
+        expectedOutcome:
+          - "Conformity procedure identified per system."
+          - "Conformity assessment completed and documented."
+          - "CE marking applied where applicable."
+        howTo:
+          - step: "Identify conformity procedure"
+          - step: "Complete and document the assessment"
+          - step: "Apply CE marking"
+        evidenceExamples:
+          - "Assessment record"
+          - "Declaration of conformity"
+          - "CE marking evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not assessed"
+            "3": "Partial"
+            "5": "Assessed + CE"
+        appliesIf: "organization.role == 'provider'"
+
+      - id: eu.ai-act:PD-03
+        title: "Post-market monitoring and serious incident reporting (Art. 72-73)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, post-market, incident-reporting]
+        question: |
+          Is post-market monitoring of high-risk AI systems performed,
+          and are serious incidents reported to the relevant market
+          surveillance authority within Art. 73 timelines?
+        purpose: |
+          Post-market monitoring detects real-world drift. Reporting
+          ensures cross-organization learning.
+        expectedOutcome:
+          - "Post-market monitoring is operational."
+          - "Incident reporting process is rehearsed."
+          - "Reports comply with Art. 73 timelines."
+        howTo:
+          - step: "Operate post-market monitoring"
+          - step: "Rehearse incident reporting"
+          - step: "Comply with Art. 73 timelines"
+        evidenceExamples:
+          - "Monitoring system"
+          - "Reporting process"
+          - "Rehearsal record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Partial"
+            "5": "Monitoring + rehearsed reporting"
+
+      - id: eu.ai-act:PD-04
+        title: "Deployer obligations (Art. 26)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, deployer, oversight]
+        question: |
+          Do deployers of high-risk AI systems comply with Art. 26
+          obligations, including following instructions for use,
+          monitoring operation, ensuring input data is appropriate,
+          and ensuring human oversight?
+        purpose: |
+          Deployers are the second line of defense. Art. 26 ensures
+          provider safeguards are not undone in use.
+        expectedOutcome:
+          - "Instructions for use are followed."
+          - "Operation is monitored."
+          - "Human oversight is enacted."
+        howTo:
+          - step: "Follow instructions for use"
+          - step: "Monitor operation"
+          - step: "Enact human oversight"
+        evidenceExamples:
+          - "Deployment procedure"
+          - "Monitoring evidence"
+          - "Oversight record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Deployer ignores"
+            "3": "Partial"
+            "5": "Full compliance"
+        appliesIf: "organization.role == 'deployer'"
+
+      - id: eu.ai-act:PD-05
+        title: "Fundamental rights impact assessment (Art. 27)"
+        weight: 2
+        answerType: scale
+        tags: [ai-act, deployer, fria, rights]
+        question: |
+          Where required, do deployers perform a fundamental rights
+          impact assessment before deploying a high-risk AI system?
+        purpose: |
+          FRIA is the deployer-side counterpart to a DPIA, addressing
+          rights and freedoms beyond data protection.
+        expectedOutcome:
+          - "FRIA triggers are identified."
+          - "FRIA is performed before deployment."
+          - "FRIA outcomes inform safeguards."
+        howTo:
+          - step: "Identify FRIA triggers"
+          - step: "Perform FRIA before deployment"
+          - step: "Use FRIA to inform safeguards"
+        evidenceExamples:
+          - "FRIA trigger criteria"
+          - "FRIA record"
+          - "Safeguard log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No FRIA"
+            "3": "FRIA informal"
+            "5": "FRIA + safeguards"
+        appliesIf: "organization.role == 'deployer' AND ai.high_risk == true"
+
+  - id: transparency
+    name: "Transparency Obligations (Art. 50)"
+    description: |
+      Transparency obligations for certain AI systems (e.g.,
+      interaction with humans, emotion recognition, biometric
+      categorisation, generation of synthetic content).
+    controls:
+      - id: eu.ai-act:TR-01
+        title: "Transparency to natural persons"
+        weight: 2
+        answerType: scale
+        tags: [ai-act, transparency, synthetic-content, deepfake]
+        question: |
+          Where applicable, are users informed that they are
+          interacting with an AI system, and is generated or
+          manipulated content (e.g., deepfakes) marked as artificial?
+        purpose: |
+          Transparency about AI interaction and synthetic content is a
+          baseline trust requirement.
+        expectedOutcome:
+          - "Interaction disclosure is in place."
+          - "Synthetic content is marked."
+          - "Exceptions are documented."
+        howTo:
+          - step: "Disclose AI interaction"
+          - step: "Mark synthetic content"
+          - step: "Document exceptions"
+        evidenceExamples:
+          - "Disclosure UI evidence"
+          - "Marking implementation"
+          - "Exception record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No disclosure"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+  - id: gpai
+    name: "General-Purpose AI Models (Art. 51-55)"
+    description: |
+      Obligations on providers of general-purpose AI models, including
+      those with systemic risk.
+    controls:
+      - id: eu.ai-act:GPAI-01
+        title: "GPAI provider obligations (Art. 53-55)"
+        weight: 3
+        answerType: scale
+        tags: [ai-act, gpai, foundation-model]
+        question: |
+          Do providers of general-purpose AI models comply with the
+          Art. 53-55 obligations, including technical documentation,
+          information to downstream providers, copyright policy, and
+          training-data summary?
+        purpose: |
+          GPAI obligations transfer assurance and risk information
+          down the AI value chain.
+        expectedOutcome:
+          - "GPAI technical documentation exists."
+          - "Information for downstream providers is published."
+          - "Copyright policy and training-data summary are published."
+        howTo:
+          - step: "Maintain GPAI technical documentation"
+          - step: "Publish information for downstream providers"
+          - step: "Publish copyright policy and training-data summary"
+        evidenceExamples:
+          - "GPAI technical documentation"
+          - "Downstream information package"
+          - "Copyright policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No GPAI documentation"
+            "3": "Partial"
+            "5": "Comprehensive"
+        appliesIf: "organization.role == 'gpai_provider'"

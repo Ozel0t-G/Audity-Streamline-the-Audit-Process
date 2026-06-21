@@ -1,0 +1,635 @@
+framework:
+  schemaVersion: 1
+  key: no.sikkerhetsloven.2018
+  name: "Norwegian Security Act (Sikkerhetsloven) 2018"
+  shortName: "Sikkerhetsloven"
+  version: "2018-06-01-24"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "Security Manager"
+    - "CISO"
+    - "Compliance Officer"
+    - "Top Management"
+  estimatedDurationMinutes: 240
+  description: |
+    The Norwegian Security Act (Lov om nasjonal sikkerhet, LOV-2018-06-01-24),
+    in force since 1 January 2019, sets the legal basis for protecting
+    Norway's national security interests. It is supplemented by the
+    Enterprise Security Regulation (virksomhetsikkerhetsforskriften),
+    the Information Security Regulation (informasjonssikkerhetsforskriften),
+    the Object and Infrastructure Security Regulation, and the Personnel
+    Security Regulation.
+
+    This YAML translates the operational obligations placed on entities
+    by the Act and its regulations into audit-readiness controls grouped
+    into Governance, Risk and Documentation, Personnel Security,
+    Information Security, Object and Infrastructure Security, and
+    Reporting.
+  scopeNote: |
+    In scope: obligations on entities subject to the Security Act
+    (virksomheter) arising from the Act and its supplementing
+    regulations. This includes risk assessment, documentation,
+    personnel security clearance, information security for classified
+    information, object/infrastructure security, and reporting of
+    security incidents to NSM.
+
+    Out of scope: obligations on public authorities (Kongen i statsråd,
+    departments, NSM in its supervisory role); detailed clearance
+    procedures (handled separately by the clearance authority); the
+    Investment Screening provisions (Chapter 10) other than as a
+    reporting obligation.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Norwegian acts and regulations are public domain in Norway under
+      Section 9 of the Norwegian Copyright Act. Provisions of the Act
+      and regulations have been paraphrased into audit-readiness
+      language and are not reproduced verbatim.
+
+severityRubric:
+  critical: |
+    Failure exposes classified information, breaches a NSM reporting
+    duty, or could harm fundamental national security interests under
+    Section 1-1.
+  high: |
+    Material gap in a duty of care under Chapter 4; likely to surface
+    in NSM supervisory review.
+  medium: |
+    Partial implementation of a duty; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate national security
+    impact.
+
+controlMappings:
+  - source: no.sikkerhetsloven:GOV-01
+    target: nist-csf-2.0:GV.RR-01
+    type: covers
+  - source: no.sikkerhetsloven:RISK-01
+    target: iso27001:Clause-6.1.2
+    type: covers
+  - source: no.sikkerhetsloven:INFO-01
+    target: iso27001:A.5.12
+    type: covers
+  - source: no.sikkerhetsloven:RPT-01
+    target: nist-csf-2.0:RS.CO-02
+    type: covers
+
+domains:
+  - id: governance
+    name: "Governance and Accountability"
+    description: |
+      Duties of the entity's top management to take responsibility for
+      security and to organize the security work.
+    controls:
+      - id: no.sikkerhetsloven:GOV-01
+        title: "Top management accountability for security"
+        weight: 3
+        answerType: scale
+        tags: [governance, top-management, accountability]
+        question: |
+          Does the entity's top management (virksomhetens leder)
+          formally take responsibility for preventive security work
+          and oversee its implementation as required by Section 4-1?
+        purpose: |
+          Section 4-1 places explicit responsibility on the entity's
+          top management. Documented ownership is the basis for both
+          internal accountability and supervisory inquiries by NSM.
+        expectedOutcome:
+          - "Top management has formally accepted security responsibility."
+          - "Security is on the management agenda at defined intervals."
+          - "Accountability is reflected in role descriptions."
+        howTo:
+          - step: "Document top management security responsibility"
+          - step: "Schedule recurring security agenda items"
+          - step: "Reflect accountability in role descriptions"
+        evidenceExamples:
+          - "Management commitment statement"
+          - "Board / management minutes"
+          - "Role description"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No top-level ownership"
+            "3": "Ownership informal"
+            "5": "Ownership documented and active"
+        crossReferences:
+          - nist-csf-2.0:GV.RR-01
+
+      - id: no.sikkerhetsloven:GOV-02
+        title: "Security organization and resourcing"
+        weight: 2
+        answerType: scale
+        tags: [governance, organization, resources]
+        question: |
+          Has the entity established an appropriate security
+          organization with defined roles, authority, and resources to
+          carry out its duties under the Act?
+        purpose: |
+          A duty of care without organizational capacity is unfulfilled.
+          The Act assumes both responsibility and the means to act on it.
+        expectedOutcome:
+          - "Security organization is documented."
+          - "Roles include security manager (sikkerhetsleder) and substitutes."
+          - "Resources match the security workload."
+        howTo:
+          - step: "Document the security organization"
+          - step: "Name a security manager and substitute"
+          - step: "Allocate adequate resources"
+        evidenceExamples:
+          - "Security organization chart"
+          - "Security manager appointment"
+          - "Resource plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No security organization"
+            "3": "Organization informal"
+            "5": "Organization documented and resourced"
+
+  - id: risk-and-documentation
+    name: "Risk Assessment and Documentation"
+    description: |
+      Section 4-2 duty to assess security risks and to maintain
+      documentation that allows assessment of compliance.
+    controls:
+      - id: no.sikkerhetsloven:RISK-01
+        title: "Security risk assessment"
+        weight: 3
+        answerType: scale
+        tags: [risk-assessment, documentation]
+        question: |
+          Does the entity perform and regularly update a security risk
+          assessment covering threats, vulnerabilities, and assets
+          relevant to national security interests it handles?
+        purpose: |
+          Section 4-2 requires an explicit risk assessment as a
+          precondition for proportionate measures. Without it, both
+          measures and supervision lack a defensible basis.
+        expectedOutcome:
+          - "Documented risk assessment exists and is current."
+          - "Assessment covers threats, vulnerabilities, and assets."
+          - "Updates are triggered by material change."
+        howTo:
+          - step: "Document a risk assessment per the Act's scope"
+          - step: "Update on a defined cadence and on material change"
+          - step: "Use the assessment to justify measures"
+        evidenceExamples:
+          - "Risk assessment report"
+          - "Update log"
+          - "Measure justification trace"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessment"
+            "3": "Assessment outdated"
+            "5": "Current and used"
+        crossReferences:
+          - iso27001:Clause-6.1.2
+
+      - id: no.sikkerhetsloven:DOC-01
+        title: "Security documentation and traceability"
+        weight: 2
+        answerType: scale
+        tags: [documentation, traceability]
+        question: |
+          Does the entity maintain documentation of its security
+          measures and decisions sufficient for NSM supervisory
+          review and for internal continuity?
+        purpose: |
+          Documentation makes the security program inspectable and
+          survivable across personnel changes.
+        expectedOutcome:
+          - "Documentation set covers measures, decisions, and incidents."
+          - "Documentation is stored with access controls."
+          - "Retention matches Act / regulation requirements."
+        howTo:
+          - step: "Maintain a structured documentation set"
+          - step: "Apply access controls"
+          - step: "Retain per Act / regulation"
+        evidenceExamples:
+          - "Documentation index"
+          - "Access control configuration"
+          - "Retention schedule"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No documentation set"
+            "3": "Set partial"
+            "5": "Set complete and retained"
+
+  - id: personnel
+    name: "Personnel Security"
+    description: |
+      Duties around personnel security clearance (sikkerhetsklarering),
+      authorization (autorisasjon), and ongoing personnel security
+      management.
+    controls:
+      - id: no.sikkerhetsloven:PERS-01
+        title: "Personnel security clearance management"
+        weight: 3
+        answerType: scale
+        tags: [personnel, clearance, autorisasjon]
+        question: |
+          Are personnel handling classified information cleared at the
+          appropriate level by the clearance authority and authorized
+          by the entity before access is granted?
+        purpose: |
+          Personnel security clearance is the gating control for access
+          to classified information. Authorization is the entity's own
+          act and cannot be skipped.
+        expectedOutcome:
+          - "Roles requiring clearance are identified."
+          - "Clearance and authorization are completed before access."
+          - "Records are maintained under confidentiality."
+        howTo:
+          - step: "Identify roles requiring clearance"
+          - step: "Coordinate clearance and grant authorization"
+          - step: "Maintain confidential records"
+        evidenceExamples:
+          - "Role-clearance mapping"
+          - "Sample authorization record (redacted)"
+          - "Confidentiality controls"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No clearance process"
+            "3": "Process inconsistent"
+            "5": "Process formal and enforced"
+        appliesIf: "entity.handles_classified == true"
+
+      - id: no.sikkerhetsloven:PERS-02
+        title: "Ongoing personnel security"
+        weight: 2
+        answerType: scale
+        tags: [personnel, monitoring, hr]
+        question: |
+          Does the entity manage ongoing personnel security throughout
+          employment, including changes in role, breach reporting, and
+          revocation of authorization on departure?
+        purpose: |
+          Personnel security is a continuous duty. Lifecycle gaps,
+          especially on departure, account for many real-world breaches.
+        expectedOutcome:
+          - "Joiner / mover / leaver process covers authorization."
+          - "Reporting duties on personal change are defined."
+          - "Authorization is revoked on departure."
+        howTo:
+          - step: "Couple authorization to joiner / mover / leaver"
+          - step: "Define personal change reporting duties"
+          - step: "Revoke authorization on departure"
+        evidenceExamples:
+          - "JML process"
+          - "Reporting duty briefing"
+          - "Revocation record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No lifecycle"
+            "3": "Partial lifecycle"
+            "5": "Full lifecycle"
+
+  - id: information-security
+    name: "Information Security for Classified Information"
+    description: |
+      Duties under the Information Security Regulation
+      (informasjonssikkerhetsforskriften) for handling classified
+      information.
+    controls:
+      - id: no.sikkerhetsloven:INFO-01
+        title: "Classification and marking of information"
+        weight: 3
+        answerType: scale
+        tags: [information-security, classification, marking]
+        question: |
+          Is information identified and marked at the appropriate
+          security grade (BEGRENSET / KONFIDENSIELT / HEMMELIG /
+          STRENGT HEMMELIG) at the point of creation?
+        purpose: |
+          Without correct classification, downstream handling is
+          unreliable. Marking at creation makes the grade visible at
+          the point of use.
+        expectedOutcome:
+          - "Classification scheme is documented and applied."
+          - "Marking conventions are used consistently."
+          - "Mis-classifications are corrected promptly."
+        howTo:
+          - step: "Document classification scheme aligned to the Act"
+          - step: "Apply marking at creation"
+          - step: "Correct mis-classifications"
+        evidenceExamples:
+          - "Classification scheme document"
+          - "Marking convention"
+          - "Correction log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No classification"
+            "3": "Inconsistent"
+            "5": "Consistent and corrected"
+        crossReferences:
+          - iso27001:A.5.12
+        appliesIf: "entity.handles_classified == true"
+
+      - id: no.sikkerhetsloven:INFO-02
+        title: "Handling, storage and transfer of classified information"
+        weight: 3
+        answerType: scale
+        tags: [information-security, handling, transfer, storage]
+        question: |
+          Are handling, storage, and transfer of classified information
+          performed in accordance with the Information Security
+          Regulation, including approved systems and channels?
+        purpose: |
+          Misuse of approved channels and systems is the most common
+          cause of classified information leakage.
+        expectedOutcome:
+          - "Approved storage and transfer methods are documented."
+          - "Personnel use approved methods only."
+          - "Deviations escalate immediately."
+        howTo:
+          - step: "Document approved methods"
+          - step: "Train personnel on approved methods"
+          - step: "Escalate deviations"
+        evidenceExamples:
+          - "Approved method list"
+          - "Training record"
+          - "Deviation escalation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No approved methods"
+            "3": "Methods used inconsistently"
+            "5": "Methods enforced"
+        appliesIf: "entity.handles_classified == true"
+
+      - id: no.sikkerhetsloven:INFO-03
+        title: "Information systems approval"
+        weight: 3
+        answerType: scale
+        tags: [information-security, system-approval, certification]
+        question: |
+          Are information systems used to process classified information
+          approved (godkjent) in accordance with the regulation prior
+          to processing?
+        purpose: |
+          System approval is the gating control for processing classified
+          information electronically. Unapproved systems break the
+          entire classification regime.
+        expectedOutcome:
+          - "Systems handling classified information are approved."
+          - "Approvals are documented and current."
+          - "Re-approval is triggered by material change."
+        howTo:
+          - step: "Identify systems handling classified information"
+          - step: "Obtain and document approvals"
+          - step: "Trigger re-approval on material change"
+        evidenceExamples:
+          - "System approval document"
+          - "Re-approval log"
+          - "Change-driven re-approval"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Unapproved systems used"
+            "3": "Approvals outdated"
+            "5": "Approvals current"
+        appliesIf: "entity.handles_classified == true"
+
+  - id: object-infrastructure
+    name: "Object and Infrastructure Security"
+    description: |
+      Duties relating to the protection of objects and infrastructure
+      designated under the Object and Infrastructure Security
+      Regulation.
+    controls:
+      - id: no.sikkerhetsloven:OBJ-01
+        title: "Identification of objects and infrastructure"
+        weight: 2
+        answerType: scale
+        tags: [object-security, infrastructure, identification]
+        question: |
+          Has the entity identified objects and infrastructure of
+          relevance to national security interests under its control
+          and documented their classification?
+        purpose: |
+          Identification is the precondition for proportionate object
+          protection. Misidentification creates both over- and
+          under-protection.
+        expectedOutcome:
+          - "Inventory of in-scope objects / infrastructure exists."
+          - "Classification per object is documented."
+          - "Inventory is current."
+        howTo:
+          - step: "Inventory in-scope objects and infrastructure"
+          - step: "Apply classification per object"
+          - step: "Maintain currency"
+        evidenceExamples:
+          - "Object inventory"
+          - "Classification record"
+          - "Update log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Inventory partial"
+            "5": "Inventory current and classified"
+        appliesIf: "entity.has_classified_objects == true"
+
+      - id: no.sikkerhetsloven:OBJ-02
+        title: "Protection of objects and infrastructure"
+        weight: 3
+        answerType: scale
+        tags: [object-security, physical-security, infrastructure]
+        question: |
+          Are protective measures for designated objects and
+          infrastructure implemented commensurate with their
+          classification?
+        purpose: |
+          Object protection is intentionally tiered by classification.
+          Uniform treatment wastes effort on low-risk objects and
+          under-treats critical ones.
+        expectedOutcome:
+          - "Protection measures match classification tier."
+          - "Compensating controls are documented for gaps."
+          - "Measures are verified periodically."
+        howTo:
+          - step: "Apply protection measures by tier"
+          - step: "Document compensating controls"
+          - step: "Verify measures periodically"
+        evidenceExamples:
+          - "Protection plan per tier"
+          - "Compensating control record"
+          - "Verification report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No protection"
+            "3": "Protection partial"
+            "5": "Tiered protection verified"
+        appliesIf: "entity.has_classified_objects == true"
+
+  - id: reporting-and-supervision
+    name: "Reporting and Supervision"
+    description: |
+      Duties to report security incidents and to respond to NSM
+      supervisory measures.
+    controls:
+      - id: no.sikkerhetsloven:RPT-01
+        title: "Reporting security incidents to NSM"
+        weight: 3
+        answerType: scale
+        tags: [reporting, regulatory, nsm, incident]
+        question: |
+          Does the entity report security incidents that may affect
+          national security interests to the National Security Authority
+          (NSM) without undue delay?
+        purpose: |
+          Reporting is the bridge between local response and national
+          coordination. Delayed reporting limits NSM's ability to
+          prevent escalation.
+        expectedOutcome:
+          - "Reporting criteria, channel, and contacts are documented."
+          - "Contacts at NSM are validated."
+          - "Reporting is rehearsed."
+        howTo:
+          - step: "Document reporting criteria and channel"
+          - step: "Validate NSM contacts"
+          - step: "Rehearse reporting"
+        evidenceExamples:
+          - "Reporting procedure"
+          - "Contact validation log"
+          - "Rehearsal record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No reporting procedure"
+            "3": "Procedure exists, untested"
+            "5": "Procedure rehearsed"
+        crossReferences:
+          - nist-csf-2.0:RS.CO-02
+
+      - id: no.sikkerhetsloven:RPT-02
+        title: "Notification of changes affecting national security"
+        weight: 2
+        answerType: scale
+        tags: [reporting, regulatory, change-management]
+        question: |
+          Does the entity notify the relevant authority of acquisitions,
+          investments, or other changes that may affect protected
+          national security interests where such notification is
+          required under the Act?
+        purpose: |
+          Chapter 10 of the Act introduces investment screening duties.
+          Missing notifications can delay or invalidate transactions.
+        expectedOutcome:
+          - "Trigger criteria for notification are documented."
+          - "Notification path is established."
+          - "Decisions are recorded."
+        howTo:
+          - step: "Document trigger criteria"
+          - step: "Establish notification path"
+          - step: "Record decisions"
+        evidenceExamples:
+          - "Trigger criteria"
+          - "Notification path"
+          - "Decision record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No criteria"
+            "3": "Criteria partial"
+            "5": "Criteria documented and applied"
+        appliesIf: "entity.subject_to_investment_screening == true"
+
+      - id: no.sikkerhetsloven:SUP-01
+        title: "Readiness for NSM supervisory measures"
+        weight: 2
+        answerType: scale
+        tags: [supervision, audit, nsm]
+        question: |
+          Is the entity prepared to respond to NSM supervisory measures,
+          including requests for documentation and on-site inspections?
+        purpose: |
+          The capacity to produce evidence on demand differs from the
+          existence of that evidence. Both must be in place.
+        expectedOutcome:
+          - "Evidence catalog mapped to Act / regulations exists."
+          - "Inspection response procedure is documented."
+          - "Procedure is exercised periodically."
+        howTo:
+          - step: "Catalog evidence per Act / regulation"
+          - step: "Document inspection response procedure"
+          - step: "Exercise periodically"
+        evidenceExamples:
+          - "Evidence catalog"
+          - "Inspection response procedure"
+          - "Exercise log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No readiness"
+            "3": "Readiness partial"
+            "5": "Readiness exercised"

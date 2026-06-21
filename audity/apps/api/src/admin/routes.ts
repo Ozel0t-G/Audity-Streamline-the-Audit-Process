@@ -6,6 +6,14 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrf, requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { syncFrameworkYamlFiles } from "../frameworks/yamlImporter.js";
+import { generatePassword, validateUserPassword, PASSWORD_POLICY_DESCRIPTION } from "../auth/passwordPolicy.js";
+import {
+  EMAIL_TOPICS,
+  listSubscriptions,
+  publishEmailTopic,
+  upsertSubscription,
+  type EmailTopicId
+} from "../notifications/emailTopics.js";
 import { createLlmProvider, estimateCostCents, type EnrichInput } from "../llm/provider.js";
 import {
   loadLlmConfigInternal,
@@ -92,7 +100,7 @@ const inviteSchema = z.object({
   email: z.string().email(),
   name: z.string().trim().min(1),
   role: z.string().trim().min(1),
-  password: z.string().min(8)
+  password: z.string().min(16).optional()
 });
 
 const userUpdateSchema = z.object({
@@ -354,6 +362,40 @@ function eventHash(row: {
 }
 
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
+  app.get(
+    "/api/admin/system-info",
+    { preHandler: requireAdminPermission("settings.manage") },
+    async () => {
+      const os = await import("node:os");
+      const nics = os.networkInterfaces();
+      const addresses: Array<{ iface: string; family: string; address: string; internal: boolean }> = [];
+      for (const [name, infos] of Object.entries(nics)) {
+        for (const info of infos ?? []) {
+          if (info.internal) continue;
+          addresses.push({ iface: name, family: info.family, address: info.address, internal: info.internal });
+        }
+      }
+      const memory = {
+        totalMb: Math.round(os.totalmem() / 1024 / 1024),
+        freeMb: Math.round(os.freemem() / 1024 / 1024),
+        usedPct: Math.round(((os.totalmem() - os.freemem()) / os.totalmem()) * 100)
+      };
+      return {
+        hostname: os.hostname(),
+        platform: os.platform(),
+        release: os.release(),
+        arch: os.arch(),
+        nodeVersion: process.version,
+        uptimeSeconds: Math.round(process.uptime()),
+        publicUrl: process.env.AUDITY_PUBLIC_URL ?? null,
+        loadAverage: os.loadavg().map((value) => Math.round(value * 100) / 100),
+        cpuCount: os.cpus().length,
+        memory,
+        networkAddresses: addresses
+      };
+    }
+  );
+
   app.get(
     "/api/admin/system-settings",
     { preHandler: requireAdminPermission("settings.manage") },
@@ -1078,7 +1120,23 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       if (!role.rows[0]) {
         return reply.code(400).send({ code: "ROLE_NOT_FOUND", message: "Role not found" });
       }
-      const passwordHash = await argon2.hash(body.password, { type: argon2.argon2id });
+      let plaintextPassword: string;
+      let generated = false;
+      if (body.password) {
+        const policy = validateUserPassword(body.password);
+        if (!policy.ok) {
+          return reply.code(400).send({
+            code: "PASSWORD_POLICY",
+            message: `Password does not meet policy: ${policy.reasons.join(", ")}.`,
+            policy: PASSWORD_POLICY_DESCRIPTION
+          });
+        }
+        plaintextPassword = body.password;
+      } else {
+        plaintextPassword = generatePassword(24);
+        generated = true;
+      }
+      const passwordHash = await argon2.hash(plaintextPassword, { type: argon2.argon2id });
       const id = randomUUID();
       const result = await pool.query(
         `insert into users (id, email, name, password_hash, role_id)
@@ -1092,9 +1150,42 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         entityType: "user",
         entityId: id,
         before: null,
-        after: { ...result.rows[0], role: body.role }
+        after: { ...result.rows[0], role: body.role, password_generated: generated }
       });
-      return reply.code(201).send({ user: { ...result.rows[0], role: body.role } });
+      return reply.code(201).send({
+        user: { ...result.rows[0], role: body.role },
+        oneTimePassword: plaintextPassword,
+        passwordGenerated: generated
+      });
+    }
+  );
+
+  app.post<{ Params: { id: string } }>(
+    "/api/admin/users/:id/reset-password",
+    { preHandler: requireAdminCsrfPermission("roles.manage") },
+    async (request, reply) => {
+      const target = await pool.query<{ id: string; email: string }>(
+        "select id, email from users where id = $1",
+        [request.params.id]
+      );
+      if (!target.rows[0]) {
+        return reply.code(404).send({ code: "NOT_FOUND", message: "User not found" });
+      }
+      const newPassword = generatePassword(24);
+      const passwordHash = await argon2.hash(newPassword, { type: argon2.argon2id });
+      await pool.query(
+        "update users set password_hash = $1, updated_at = now() where id = $2",
+        [passwordHash, request.params.id]
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "user.password.reset",
+        entityType: "user",
+        entityId: request.params.id,
+        before: null,
+        after: { email: target.rows[0].email, by_admin: true }
+      });
+      return { oneTimePassword: newPassword };
     }
   );
 
@@ -1178,6 +1269,58 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         after: after.rows[0]
       });
       return { user: after.rows[0] };
+    }
+  );
+
+  // ----- Email subscriptions -----
+  app.get(
+    "/api/admin/email-subscriptions",
+    { preHandler: requireAdminPermission("email.manage") },
+    async () => {
+      const subscriptions = await listSubscriptions();
+      return {
+        topics: EMAIL_TOPICS,
+        subscriptions: subscriptions.map((row) => ({
+          topic: row.topic,
+          roles: row.roles ?? [],
+          extraEmails: row.extra_emails ?? [],
+          enabled: row.enabled,
+          updatedAt: row.updated_at
+        }))
+      };
+    }
+  );
+
+  const emailSubscriptionSchema = z.object({
+    topic: z.string().min(1),
+    roles: z.array(z.string().min(1)).max(20),
+    extraEmails: z.array(z.string().email()).max(50),
+    enabled: z.boolean()
+  });
+
+  app.put(
+    "/api/admin/email-subscriptions",
+    { preHandler: requireAdminCsrfPermission("email.manage") },
+    async (request, reply) => {
+      const body = validateBody(emailSubscriptionSchema, request.body, reply);
+      if (!body) return;
+      if (!EMAIL_TOPICS.some((topic) => topic.id === body.topic)) {
+        return reply.code(400).send({ code: "UNKNOWN_TOPIC", message: `Unknown email topic '${body.topic}'.` });
+      }
+      await upsertSubscription(
+        body.topic as EmailTopicId,
+        { roles: body.roles, extraEmails: body.extraEmails, enabled: body.enabled },
+        request.user!.sub
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "email.subscription.updated",
+        entityType: "email_subscription",
+        entityId: body.topic,
+        before: null,
+        after: { roles: body.roles, extraEmails: body.extraEmails, enabled: body.enabled }
+      });
+      return { ok: true };
     }
   );
 
@@ -1464,6 +1607,20 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         entityId: record.id,
         before: null,
         after: { yaml_path: result.path }
+      });
+      void publishEmailTopic({
+        topic: "framework.imported",
+        subject: `[Audity] Framework "${record.framework_name ?? record.framework_key ?? "—"}" published`,
+        text: [
+          `A new framework has been published in Audity.`,
+          ``,
+          `Name:    ${record.framework_name ?? "—"}`,
+          `Key:     ${record.framework_key ?? "—"}`,
+          `Version: ${record.framework_version ?? "—"}`,
+          `Source:  user-uploaded CSV (${record.source_filename})`,
+          `By:      ${request.user!.email ?? request.user!.sub}`,
+          `File:    ${result.path}`
+        ].join("\n")
       });
       return { ok: true, path: result.path };
     }

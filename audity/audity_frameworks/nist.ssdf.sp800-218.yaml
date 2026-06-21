@@ -1,0 +1,719 @@
+framework:
+  schemaVersion: 1
+  key: nist.ssdf.sp800-218
+  name: "NIST Secure Software Development Framework (SP 800-218)"
+  shortName: "NIST SSDF"
+  version: "1.1"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Application Security Lead"
+    - "Engineering Director"
+    - "DevSecOps Engineer"
+    - "Auditor"
+  estimatedDurationMinutes: 240
+  description: |
+    NIST SP 800-218, the Secure Software Development Framework (SSDF)
+    v1.1, defines a core set of high-level secure software development
+    practices that can be integrated into any SDLC. SSDF is the
+    secure-development reference cited by US Executive Order 14028 and
+    the OMB self-attestation form for federal software acquisition.
+
+    This YAML covers all 18 practices of SSDF organized into the four
+    practice groups (Prepare the Organization, Protect the Software,
+    Produce Well-Secured Software, Respond to Vulnerabilities).
+  scopeNote: |
+    In scope: all 4 practice groups and 18 practices of SSDF v1.1,
+    structured as one control per practice.
+
+    Out of scope: the per-practice Tasks; the SSDF Profile for
+    AI-generated code (separate document); SP 800-204 microservices
+    guidance; the SSVC vulnerability prioritization scheme.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NIST SP 800-218 is published by the U.S. National Institute of
+      Standards and Technology and is in the public domain. Practice
+      content has been paraphrased into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a Prepare-the-Organization practice unimplemented;
+    foundational SDLC gap.
+  high: |
+    Material gap in a Protect / Produce / Respond practice without
+    compensating measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: nist.ssdf:PO-01
+    target: iso27001:A.5.1
+    type: related
+  - source: nist.ssdf:PS-01
+    target: iso27001:A.8.4
+    type: covers
+  - source: nist.ssdf:PW-04
+    target: iso27001:A.8.28
+    type: covers
+  - source: nist.ssdf:RV-01
+    target: iso27001:A.8.8
+    type: covers
+
+domains:
+  - id: prepare-the-organization
+    name: "Prepare the Organization (PO)"
+    description: |
+      Practices ensuring people, processes, and technology are
+      prepared at the organizational level to perform secure software
+      development.
+    controls:
+      - id: nist.ssdf:PO-01
+        title: "Define security requirements for software development"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, requirements, policy]
+        question: |
+          Are security requirements for software development defined,
+          documented, and maintained at the organizational level?
+        purpose: |
+          Without documented security requirements, development teams
+          make ad hoc decisions that fail consistency.
+        expectedOutcome:
+          - "Security requirements are documented per platform / technology."
+          - "Requirements are accessible to development teams."
+          - "Requirements are reviewed periodically."
+        howTo:
+          - step: "Document security requirements per platform"
+          - step: "Publish to development teams"
+          - step: "Review periodically"
+        evidenceExamples:
+          - "Requirements catalog"
+          - "Publication evidence"
+          - "Review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No requirements"
+            "3": "Partial"
+            "5": "Documented + published"
+        crossReferences:
+          - iso27001:A.5.1
+
+      - id: nist.ssdf:PO-02
+        title: "Implement roles and responsibilities"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, roles, accountability]
+        question: |
+          Are roles and responsibilities for SSDF practices defined,
+          assigned, and supported with training?
+        purpose: |
+          Practices without owners are unevenly applied. Documented
+          roles fix accountability.
+        expectedOutcome:
+          - "SSDF roles are defined and assigned."
+          - "Training supports each role."
+          - "Hand-offs between roles are clear."
+        howTo:
+          - step: "Define and assign SSDF roles"
+          - step: "Provide role-specific training"
+          - step: "Clarify hand-offs"
+        evidenceExamples:
+          - "Role definitions"
+          - "Training records"
+          - "Hand-off documentation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Roles unclear"
+            "3": "Partial"
+            "5": "Defined + trained"
+
+      - id: nist.ssdf:PO-03
+        title: "Implement supporting toolchains"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, tooling, automation]
+        question: |
+          Are toolchains supporting secure software development
+          (source control, build, test, deployment) implemented,
+          integrated, and secured?
+        purpose: |
+          Tools that automate secure practices are the most reliable
+          way to keep them consistent at scale.
+        expectedOutcome:
+          - "Toolchain inventory exists."
+          - "Tools are integrated and secured."
+          - "Tool changes follow change control."
+        howTo:
+          - step: "Inventory toolchain"
+          - step: "Integrate and secure tools"
+          - step: "Apply change control to tool changes"
+        evidenceExamples:
+          - "Toolchain inventory"
+          - "Integration configuration"
+          - "Tool change record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Tools ad hoc"
+            "3": "Partial"
+            "5": "Inventoried + secured"
+
+      - id: nist.ssdf:PO-04
+        title: "Define and use criteria for software security checks"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, criteria, gates]
+        question: |
+          Are criteria for software security checks at SDLC gates
+          defined and applied consistently?
+        purpose: |
+          Gates without criteria become rubber stamps. Defined criteria
+          make gates meaningful.
+        expectedOutcome:
+          - "Gate criteria are documented."
+          - "Criteria applied consistently."
+          - "Exceptions documented."
+        howTo:
+          - step: "Document gate criteria"
+          - step: "Apply consistently"
+          - step: "Document exceptions"
+        evidenceExamples:
+          - "Gate criteria"
+          - "Gate application evidence"
+          - "Exception register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No criteria"
+            "3": "Inconsistent"
+            "5": "Documented + applied"
+
+      - id: nist.ssdf:PO-05
+        title: "Implement and maintain secure environments"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, environments, secrets, hardening]
+        question: |
+          Are environments used for software development (dev, build,
+          test, deployment) implemented and maintained securely,
+          including secrets management and access controls?
+        purpose: |
+          Development environments are often soft targets that hold
+          source code, secrets, and pipeline credentials.
+        expectedOutcome:
+          - "Environments are hardened."
+          - "Secrets are managed via vault."
+          - "Access controls are enforced."
+        howTo:
+          - step: "Harden development environments"
+          - step: "Manage secrets via vault"
+          - step: "Enforce access controls"
+        evidenceExamples:
+          - "Hardening baseline"
+          - "Vault configuration"
+          - "Access control configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Soft environments"
+            "3": "Partial"
+            "5": "Hardened + vault + access"
+
+  - id: protect-the-software
+    name: "Protect the Software (PS)"
+    description: |
+      Practices for protecting all components of software from
+      tampering and unauthorized access.
+    controls:
+      - id: nist.ssdf:PS-01
+        title: "Protect all forms of code from unauthorized access and tampering"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, source-code, repository, access]
+        question: |
+          Is access to source code, configuration, and build artifacts
+          restricted and protected from tampering?
+        purpose: |
+          Code access is the gateway to supply chain compromise.
+          Restriction and tamper protection are foundational.
+        expectedOutcome:
+          - "Repository access is role-based and reviewed."
+          - "Commit signing or verification is in place."
+          - "Tamper detection is configured."
+        howTo:
+          - step: "Restrict and review repository access"
+          - step: "Sign or verify commits"
+          - step: "Configure tamper detection"
+        evidenceExamples:
+          - "Access policy"
+          - "Signing configuration"
+          - "Tamper detection log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Open access"
+            "3": "Partial"
+            "5": "Access + signing + detection"
+        crossReferences:
+          - iso27001:A.8.4
+
+      - id: nist.ssdf:PS-02
+        title: "Provide a mechanism for verifying software release integrity"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, integrity, signing, sbom]
+        question: |
+          Is a mechanism provided for users and downstream consumers
+          to verify the integrity of software releases (signatures,
+          hashes, SBOMs)?
+        purpose: |
+          Without verification, downstream consumers cannot detect
+          tampered releases. Signing is the standard mechanism.
+        expectedOutcome:
+          - "Releases are signed or hashed."
+          - "Verification documentation is published."
+          - "SBOM is provided where relevant."
+        howTo:
+          - step: "Sign or hash releases"
+          - step: "Publish verification documentation"
+          - step: "Provide SBOM"
+        evidenceExamples:
+          - "Signing configuration"
+          - "Verification documentation"
+          - "SBOM export"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No verification"
+            "3": "Hash only"
+            "5": "Signed + documented + SBOM"
+
+      - id: nist.ssdf:PS-03
+        title: "Archive and protect each software release"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, archive, retention]
+        question: |
+          Are software releases archived and protected to enable
+          future reproduction, verification, and investigation?
+        purpose: |
+          Archives are required for forensic investigation, regulatory
+          inquiries, and reproducing builds.
+        expectedOutcome:
+          - "Releases are archived."
+          - "Archive integrity is protected."
+          - "Retention meets needs."
+        howTo:
+          - step: "Archive releases"
+          - step: "Protect archive integrity"
+          - step: "Retain per needs"
+        evidenceExamples:
+          - "Archive configuration"
+          - "Integrity protection design"
+          - "Retention policy"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No archive"
+            "3": "Archive unprotected"
+            "5": "Archived + protected"
+
+  - id: produce-well-secured-software
+    name: "Produce Well-Secured Software (PW)"
+    description: |
+      Practices to produce well-secured software with minimal
+      vulnerabilities in its releases.
+    controls:
+      - id: nist.ssdf:PW-01
+        title: "Design software to meet security requirements"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, design, threat-modeling]
+        question: |
+          Is software designed to meet security requirements, with
+          design decisions documented and reviewed?
+        purpose: |
+          Security designed in is cheaper than security retrofitted.
+          Design review catches issues at the cheapest stage.
+        expectedOutcome:
+          - "Design captures security decisions."
+          - "Security review of designs occurs."
+          - "Threat modeling informs design."
+        howTo:
+          - step: "Capture security decisions in design"
+          - step: "Review designs for security"
+          - step: "Inform design with threat modeling"
+        evidenceExamples:
+          - "Design document"
+          - "Design review record"
+          - "Threat model"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No security in design"
+            "3": "Partial"
+            "5": "Design + review + threat model"
+
+      - id: nist.ssdf:PW-02
+        title: "Review the software design to verify security requirements"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, review, verification]
+        question: |
+          Is the software design reviewed to verify it meets security
+          requirements and identify risk?
+        purpose: |
+          Independent design review catches issues that the designer
+          may miss.
+        expectedOutcome:
+          - "Design review checklist exists."
+          - "Findings are tracked."
+          - "Review covers security requirements."
+        howTo:
+          - step: "Use a design review checklist"
+          - step: "Track findings"
+          - step: "Cover security requirements"
+        evidenceExamples:
+          - "Review checklist"
+          - "Review record"
+          - "Findings tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No review"
+            "3": "Review informal"
+            "5": "Checklist + tracked"
+
+      - id: nist.ssdf:PW-03
+        title: "Reuse existing well-secured software where feasible"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, reuse, components]
+        question: |
+          Is reuse of pre-vetted, well-secured software encouraged and
+          enabled, rather than reinventing security-sensitive
+          components?
+        purpose: |
+          Reused, vetted components are usually safer than custom
+          code in security-sensitive areas.
+        expectedOutcome:
+          - "Approved components catalog exists."
+          - "Reuse is encouraged in design reviews."
+          - "Catalog is maintained for currency."
+        howTo:
+          - step: "Maintain approved components catalog"
+          - step: "Encourage reuse in design reviews"
+          - step: "Maintain currency"
+        evidenceExamples:
+          - "Components catalog"
+          - "Design review evidence"
+          - "Catalog update log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Reinvention common"
+            "3": "Partial"
+            "5": "Catalog + encouraged"
+
+      - id: nist.ssdf:PW-04
+        title: "Create source code by adhering to secure coding practices"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, secure-coding, sast]
+        question: |
+          Are secure coding practices applied across development,
+          with linters and SAST enforcing baseline rules?
+        purpose: |
+          Secure coding practices block known classes of vulnerability
+          at the source.
+        expectedOutcome:
+          - "Secure coding standards are documented."
+          - "Linters / SAST run in CI."
+          - "Findings are fixed under SLA."
+        howTo:
+          - step: "Adopt secure coding standards"
+          - step: "Run linters / SAST in CI"
+          - step: "Fix findings under SLA"
+        evidenceExamples:
+          - "Secure coding standard"
+          - "SAST results"
+          - "Fix SLA report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No secure coding"
+            "3": "Standards, no SAST"
+            "5": "Standards + SAST + SLA"
+        crossReferences:
+          - iso27001:A.8.28
+
+      - id: nist.ssdf:PW-05
+        title: "Configure compilation, interpreter, and build processes"
+        weight: 2
+        answerType: scale
+        tags: [sdlc, compiler, build]
+        question: |
+          Are compilation, interpreter, and build processes configured
+          to improve executable security (stack protection, ASLR,
+          control-flow integrity)?
+        purpose: |
+          Compiler-level mitigations make exploitation harder for
+          the same code.
+        expectedOutcome:
+          - "Compiler / build hardening is enabled."
+          - "Reproducibility is supported."
+          - "Output is verified."
+        howTo:
+          - step: "Enable compiler / build hardening"
+          - step: "Support reproducible builds"
+          - step: "Verify output"
+        evidenceExamples:
+          - "Build configuration"
+          - "Reproducibility evidence"
+          - "Output verification"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Default config"
+            "3": "Partial hardening"
+            "5": "Hardened + reproducible"
+
+      - id: nist.ssdf:PW-06
+        title: "Review and analyze human-readable code"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, code-review, sast]
+        question: |
+          Is human-readable code reviewed and analyzed for security
+          weaknesses through code review, SAST, and SCA?
+        purpose: |
+          Diverse code analysis catches different weakness classes
+          than dynamic testing.
+        expectedOutcome:
+          - "Code review is mandatory before merge."
+          - "SAST and SCA run in CI."
+          - "Findings are tracked."
+        howTo:
+          - step: "Mandate code review before merge"
+          - step: "Run SAST and SCA in CI"
+          - step: "Track findings"
+        evidenceExamples:
+          - "Review policy"
+          - "SAST / SCA results"
+          - "Findings tracker"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No review"
+            "3": "Review only"
+            "5": "Review + SAST + SCA"
+
+      - id: nist.ssdf:PW-07
+        title: "Test executable code"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, testing, dast, fuzzing]
+        question: |
+          Is executable code tested for security weaknesses through
+          DAST, fuzz testing, or penetration testing?
+        purpose: |
+          Dynamic testing finds runtime issues that static analysis
+          cannot.
+        expectedOutcome:
+          - "DAST runs against pre-production."
+          - "Fuzz testing for parsers / interfaces."
+          - "Pentest performed periodically."
+        howTo:
+          - step: "Run DAST against pre-production"
+          - step: "Fuzz parsers / interfaces"
+          - step: "Pentest periodically"
+        evidenceExamples:
+          - "DAST results"
+          - "Fuzz results"
+          - "Pentest report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No testing"
+            "3": "DAST only"
+            "5": "DAST + fuzz + pentest"
+
+  - id: respond-to-vulnerabilities
+    name: "Respond to Vulnerabilities (RV)"
+    description: |
+      Practices for identifying residual vulnerabilities in software
+      releases and responding to them appropriately.
+    controls:
+      - id: nist.ssdf:RV-01
+        title: "Identify and confirm vulnerabilities on an ongoing basis"
+        weight: 3
+        answerType: scale
+        tags: [vulnerability, disclosure, monitoring]
+        question: |
+          Are vulnerabilities in released software identified and
+          confirmed on an ongoing basis, including from external
+          disclosure channels?
+        purpose: |
+          Released software accumulates known vulnerabilities over
+          time. Identifying them is the first step.
+        expectedOutcome:
+          - "External disclosure channel is monitored."
+          - "Internal scanning identifies vulnerabilities in releases."
+          - "Confirmation triages valid findings."
+        howTo:
+          - step: "Monitor external disclosure channel"
+          - step: "Scan releases internally"
+          - step: "Triage and confirm findings"
+        evidenceExamples:
+          - "Disclosure inbox"
+          - "Scan results"
+          - "Triage log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No identification"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.8
+
+      - id: nist.ssdf:RV-02
+        title: "Assess, prioritize, and remediate vulnerabilities"
+        weight: 3
+        answerType: scale
+        tags: [vulnerability, remediation, patching]
+        question: |
+          Are confirmed vulnerabilities assessed, prioritized, and
+          remediated within defined SLAs?
+        purpose: |
+          Identification without remediation is recognition only.
+          SLAs convert recognition to bounded risk.
+        expectedOutcome:
+          - "Assessment and prioritization process is documented."
+          - "SLAs by severity are defined and met."
+          - "Remediation status is tracked."
+        howTo:
+          - step: "Document assessment / prioritization"
+          - step: "Define and meet SLAs"
+          - step: "Track remediation status"
+        evidenceExamples:
+          - "Assessment process"
+          - "SLA report"
+          - "Remediation tracker"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SLAs"
+            "3": "SLAs slipping"
+            "5": "SLAs met"
+
+      - id: nist.ssdf:RV-03
+        title: "Analyze vulnerabilities to identify root causes"
+        weight: 2
+        answerType: scale
+        tags: [vulnerability, root-cause, prevention]
+        question: |
+          Are vulnerabilities analyzed to identify root causes and
+          patterns, so similar issues can be prevented?
+        purpose: |
+          Root cause analysis converts individual fixes into
+          structural improvement.
+        expectedOutcome:
+          - "RCA is performed for material vulnerabilities."
+          - "Patterns drive prevention."
+          - "Prevention is built into SDLC."
+        howTo:
+          - step: "Perform RCA for material vulnerabilities"
+          - step: "Identify patterns"
+          - step: "Build prevention into SDLC"
+        evidenceExamples:
+          - "RCA reports"
+          - "Pattern analysis"
+          - "SDLC improvement record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No RCA"
+            "3": "RCA informal"
+            "5": "RCA + prevention"

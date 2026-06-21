@@ -159,7 +159,7 @@ export function FrameworkImportReviewPage() {
         body: JSON.stringify({ domainIndex, controlIndex })
       });
       updateControl(domainIndex, controlIndex, result.control);
-      setInfo("Kontrolle neu generiert.");
+      setInfo("Control regenerated.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Regenerate failed");
     } finally {
@@ -186,9 +186,9 @@ export function FrameworkImportReviewPage() {
   async function discard() {
     if (!importId) return;
     const ok = await confirm({
-      title: "Draft verwerfen?",
-      body: "Der Draft wird gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-      confirmLabel: "Verwerfen",
+      title: "Discard draft?",
+      body: "The draft will be deleted. This cannot be undone.",
+      confirmLabel: "Discard",
       destructive: true
     });
     if (!ok) return;
@@ -203,7 +203,7 @@ export function FrameworkImportReviewPage() {
 
   const score = useMemo(() => qualityScore(draft), [draft]);
 
-  if (!detail) return <div className="text-sm text-audity-muted">Lädt…</div>;
+  if (!detail) return <div className="text-sm text-audity-muted">Loading…</div>;
 
   if (detail.status === "extracting" || detail.status === "enriching") {
     const pct = detail.totalControls === 0 ? 0 : Math.round((detail.enrichedControls / detail.totalControls) * 100);
@@ -229,7 +229,7 @@ export function FrameworkImportReviewPage() {
       <>
         <div className="audity-page-header">
           <p className="audity-page-kicker">Framework Import</p>
-          <h1 className="audity-page-title">Import fehlgeschlagen</h1>
+          <h1 className="audity-page-title">Import failed</h1>
         </div>
         <div className="audity-card max-w-xl border-audity-error">
           <p className="text-sm text-audity-error">{detail.errorMessage}</p>
@@ -254,7 +254,7 @@ export function FrameworkImportReviewPage() {
           >
             ↻ Retry
           </button>
-          <Link className="audity-btn-secondary" to="/admin/frameworks">Zurück</Link>
+          <Link className="audity-btn-secondary" to="/admin/frameworks">Back</Link>
         </div>
       </>
     );
@@ -265,10 +265,10 @@ export function FrameworkImportReviewPage() {
       <>
         <div className="audity-page-header">
           <p className="audity-page-kicker">Framework Import</p>
-          <h1 className="audity-page-title">Bereits commited</h1>
+          <h1 className="audity-page-title">Already committed</h1>
         </div>
-        <p className="text-sm text-audity-secondary">Datei: {detail.committedYamlPath}</p>
-        <Link className="audity-btn-secondary mt-3" to="/admin/frameworks">Zur Library</Link>
+        <p className="text-sm text-audity-secondary">File: {detail.committedYamlPath}</p>
+        <Link className="audity-btn-secondary mt-3" to="/admin/frameworks">Open library</Link>
       </>
     );
   }
@@ -366,12 +366,12 @@ export function FrameworkImportReviewPage() {
                               </button>
                               {detail.llmProvider && detail.llmProvider !== "none" ? (
                                 <button type="button" className="audity-btn-ghost audity-btn-sm" disabled={regenerating === ckey} onClick={() => regenerateControl(domainIndex, controlIndex)}>
-                                  {regenerating === ckey ? "Generiert…" : "♻ Re-generate"}
+                                  {regenerating === ckey ? "Generating…" : "♻ Re-generate"}
                                 </button>
                               ) : null}
                             </div>
                             <span className="text-xs text-audity-muted">
-                              {pendingPersist.has(ckey) ? "Auto-Save ausstehend…" : "✓ Synchronisiert"}
+                              {pendingPersist.has(ckey) ? "Saving…" : "✓ Saved"}
                             </span>
                           </div>
                         </div>
@@ -436,7 +436,7 @@ function HowToField({ values, onChange }: { values: Array<{ step: string; detail
           <div key={index} className="rounded-audity border border-audity-border bg-audity-panelAlt/50 p-2">
             <input
               className="audity-input"
-              placeholder="Schritt"
+              placeholder="Step"
               value={entry.step}
               onChange={(event) => {
                 const next = [...values];
@@ -455,10 +455,10 @@ function HowToField({ values, onChange }: { values: Array<{ step: string; detail
                 onChange(next);
               }}
             />
-            <button type="button" className="audity-btn-ghost audity-btn-sm mt-1" onClick={() => onChange(values.filter((_, i) => i !== index))}>Entfernen</button>
+            <button type="button" className="audity-btn-ghost audity-btn-sm mt-1" onClick={() => onChange(values.filter((_, i) => i !== index))}>Remove</button>
           </div>
         ))}
-        <button type="button" className="audity-btn-ghost audity-btn-sm" onClick={() => onChange([...values, { step: "" }])}>+ Schritt</button>
+        <button type="button" className="audity-btn-ghost audity-btn-sm" onClick={() => onChange([...values, { step: "" }])}>+ Add step</button>
       </div>
     </div>
   );

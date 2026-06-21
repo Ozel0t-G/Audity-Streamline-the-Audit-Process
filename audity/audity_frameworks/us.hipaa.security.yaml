@@ -1,0 +1,761 @@
+framework:
+  schemaVersion: 1
+  key: us.hipaa.security
+  name: "HIPAA Security Rule (45 CFR Part 164 Subpart C)"
+  shortName: "HIPAA Security"
+  version: "Current as of 2026"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "HIPAA Privacy / Security Officer"
+    - "CISO"
+    - "Compliance Officer"
+    - "Healthcare IT Lead"
+  estimatedDurationMinutes: 240
+  description: |
+    The HIPAA Security Rule, codified at 45 CFR Part 164 Subpart C,
+    sets U.S. federal standards for the protection of electronic
+    protected health information (ePHI). It applies to covered
+    entities (health plans, health care clearinghouses, healthcare
+    providers that conduct electronic transactions) and business
+    associates that handle ePHI on their behalf.
+
+    This YAML covers the 22 standards of the Security Rule as
+    audit-readiness controls grouped into Administrative, Physical,
+    Technical, Organizational, and Policy / Procedure safeguards.
+  scopeNote: |
+    In scope: the 22 standards across the five subdivisions of
+    Subpart C (Administrative Safeguards §164.308, Physical Safeguards
+    §164.310, Technical Safeguards §164.312, Organizational
+    Requirements §164.314, Policies and Procedures §164.316).
+
+    Out of scope: the HIPAA Privacy Rule (Subpart E) and Breach
+    Notification Rule (Subpart D) - these are sister rules; HITECH
+    Act provisions; OCR enforcement guidance; per-state law overlays.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      45 CFR Part 164 is U.S. federal regulation and is in the public
+      domain. Standard content has been paraphrased into audit-
+      readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a required standard unimplemented; exposes ePHI
+    and would attract OCR enforcement.
+  high: |
+    Material gap in an addressable standard without documented
+    rationale.
+  medium: |
+    Partial implementation; remediable in the normal improvement
+    cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: us.hipaa.security:AS-RA
+    target: iso27001:Clause-6.1.2
+    type: covers
+  - source: us.hipaa.security:AS-WS
+    target: iso27001:A.5.15
+    type: covers
+  - source: us.hipaa.security:AS-IR
+    target: iso27001:A.5.24
+    type: covers
+  - source: us.hipaa.security:TS-AC
+    target: iso27001:A.5.15
+    type: covers
+  - source: us.hipaa.security:TS-TM
+    target: iso27001:A.8.24
+    type: related
+
+domains:
+  - id: administrative
+    name: "Administrative Safeguards (§164.308)"
+    description: |
+      Management of security through processes, policies, and people.
+    controls:
+      - id: us.hipaa.security:AS-SP
+        title: "Security Management Process (§164.308(a)(1))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, governance, isms]
+        question: |
+          Has the covered entity implemented a security management
+          process to prevent, detect, contain, and correct security
+          violations affecting ePHI?
+        purpose: |
+          The security management process is the umbrella under which
+          the rest of the Rule operates.
+        expectedOutcome:
+          - "Security management process is documented."
+          - "Risk analysis and risk management are performed."
+          - "Sanction policy and information system activity review are in place."
+        howTo:
+          - step: "Document the security management process"
+          - step: "Perform risk analysis and risk management"
+          - step: "Maintain sanction policy and activity review"
+        evidenceExamples:
+          - "Security management process document"
+          - "Risk analysis report"
+          - "Sanction policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 72
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Partial"
+            "5": "Documented and operating"
+
+      - id: us.hipaa.security:AS-RA
+        title: "Risk Analysis and Management (§164.308(a)(1)(ii)(A)/(B))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, risk-analysis, risk-management]
+        question: |
+          Has a thorough and accurate risk analysis been conducted to
+          identify potential risks and vulnerabilities to ePHI, with
+          documented risk management measures?
+        purpose: |
+          Risk analysis is required and is the most-cited deficiency
+          in OCR enforcement actions.
+        expectedOutcome:
+          - "Documented risk analysis exists."
+          - "Risk management measures are implemented."
+          - "Updates follow material change."
+        howTo:
+          - step: "Conduct documented risk analysis"
+          - step: "Implement risk management measures"
+          - step: "Update on material change"
+        evidenceExamples:
+          - "Risk analysis report"
+          - "Risk management plan"
+          - "Update log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 72
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No analysis"
+            "3": "Outdated"
+            "5": "Current + managed"
+        crossReferences:
+          - iso27001:Clause-6.1.2
+
+      - id: us.hipaa.security:AS-WS
+        title: "Workforce Security (§164.308(a)(3))"
+        weight: 2
+        answerType: scale
+        tags: [hipaa, workforce, hr, access]
+        question: |
+          Are workforce members' access to ePHI authorized,
+          supervised, and terminated appropriately?
+        purpose: |
+          Workforce access lifecycle is the basis for ePHI protection.
+        expectedOutcome:
+          - "Authorization is documented."
+          - "Supervision procedures exist."
+          - "Termination revokes access promptly."
+        howTo:
+          - step: "Document authorization"
+          - step: "Implement supervision procedures"
+          - step: "Revoke access on termination"
+        evidenceExamples:
+          - "Authorization records"
+          - "Supervision procedures"
+          - "Termination checklist"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Uncontrolled"
+            "3": "Partial"
+            "5": "Authorized + revoked"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: us.hipaa.security:AS-IAM
+        title: "Information Access Management (§164.308(a)(4))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, access-control, authorization]
+        question: |
+          Are policies for authorizing access to ePHI implemented,
+          including isolation of healthcare clearinghouses if
+          applicable?
+        purpose: |
+          Access management defines who can see ePHI under which
+          circumstances.
+        expectedOutcome:
+          - "Access policy is documented."
+          - "Authorization process is followed."
+          - "Modifications are governed."
+        howTo:
+          - step: "Document access policy"
+          - step: "Follow authorization process"
+          - step: "Govern modifications"
+        evidenceExamples:
+          - "Access policy"
+          - "Authorization records"
+          - "Modification log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Open access"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: us.hipaa.security:AS-TR
+        title: "Security Awareness and Training (§164.308(a)(5))"
+        weight: 2
+        answerType: scale
+        tags: [hipaa, training, awareness]
+        question: |
+          Are workforce members trained in security awareness and
+          updated regularly, including topics such as malicious
+          software, login monitoring, and password management?
+        purpose: |
+          Workforce training is required and reduces avoidable
+          incidents.
+        expectedOutcome:
+          - "Training delivered to all workforce members."
+          - "Refreshers occur periodically."
+          - "Topics covered match the Rule."
+        howTo:
+          - step: "Deliver training to workforce"
+          - step: "Provide periodic refreshers"
+          - step: "Cover required topics"
+        evidenceExamples:
+          - "Training materials"
+          - "Completion records"
+          - "Refresh schedule"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Partial"
+            "5": "Delivered + refreshed"
+
+      - id: us.hipaa.security:AS-IR
+        title: "Security Incident Procedures (§164.308(a)(6))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, incident-response]
+        question: |
+          Are security incidents identified and responded to, with
+          documented procedures and outcomes?
+        purpose: |
+          The Rule explicitly requires incident response procedures.
+          They underpin breach notification too.
+        expectedOutcome:
+          - "Incident procedures documented."
+          - "Incidents are identified and responded to."
+          - "Outcomes are documented."
+        howTo:
+          - step: "Document incident procedures"
+          - step: "Identify and respond to incidents"
+          - step: "Document outcomes"
+        evidenceExamples:
+          - "IR procedures"
+          - "Incident log"
+          - "Outcome documentation"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 72
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No procedures"
+            "3": "Procedures untested"
+            "5": "Procedures used + documented"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: us.hipaa.security:AS-CP
+        title: "Contingency Plan (§164.308(a)(7))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, continuity, backup, dr]
+        question: |
+          Has a contingency plan (data backup, disaster recovery,
+          emergency mode operation) been implemented for systems
+          containing ePHI?
+        purpose: |
+          ePHI availability is part of HIPAA's three-pillar
+          definition of security.
+        expectedOutcome:
+          - "Backup plan exists and is tested."
+          - "DR plan exists."
+          - "Emergency mode plan exists."
+        howTo:
+          - step: "Maintain backup plan and test"
+          - step: "Maintain DR plan"
+          - step: "Maintain emergency mode plan"
+        evidenceExamples:
+          - "Backup test report"
+          - "DR plan"
+          - "Emergency mode plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plan"
+            "3": "Plan untested"
+            "5": "Plan tested + comprehensive"
+
+      - id: us.hipaa.security:AS-EV
+        title: "Evaluation (§164.308(a)(8))"
+        weight: 2
+        answerType: scale
+        tags: [hipaa, evaluation, audit]
+        question: |
+          Is a periodic technical and nontechnical evaluation performed
+          to determine the extent to which security policies and
+          procedures meet HIPAA requirements?
+        purpose: |
+          Periodic evaluation is required and underpins ongoing
+          conformity.
+        expectedOutcome:
+          - "Evaluation cadence is defined and met."
+          - "Findings drive improvement."
+          - "Evaluations are documented."
+        howTo:
+          - step: "Define and meet evaluation cadence"
+          - step: "Drive improvement from findings"
+          - step: "Document evaluations"
+        evidenceExamples:
+          - "Evaluation plan"
+          - "Findings register"
+          - "Documentation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 72
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No evaluation"
+            "3": "Irregular"
+            "5": "Periodic + acted on"
+
+      - id: us.hipaa.security:AS-BA
+        title: "Business Associate Contracts (§164.308(b))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, baa, business-associate]
+        question: |
+          Are business associate agreements (BAAs) in place with all
+          business associates that handle ePHI?
+        purpose: |
+          Sharing ePHI without a BAA breaches the Rule directly.
+        expectedOutcome:
+          - "BAA template is current."
+          - "Each business associate has executed BAA."
+          - "BAAs are reviewed periodically."
+        howTo:
+          - step: "Maintain BAA template"
+          - step: "Execute BAAs with all business associates"
+          - step: "Review BAAs periodically"
+        evidenceExamples:
+          - "BAA template"
+          - "Executed BAAs"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 72
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No BAAs"
+            "3": "BAAs partial"
+            "5": "BAAs complete"
+
+  - id: physical
+    name: "Physical Safeguards (§164.310)"
+    description: |
+      Physical access to ePHI systems and media.
+    controls:
+      - id: us.hipaa.security:PS-FA
+        title: "Facility Access Controls (§164.310(a))"
+        weight: 2
+        answerType: scale
+        tags: [hipaa, physical-security, facilities]
+        question: |
+          Are physical access to facilities containing ePHI controlled
+          and recorded, including contingency operations?
+        purpose: |
+          Physical access bypasses logical controls. The Rule
+          requires explicit facility access management.
+        expectedOutcome:
+          - "Access policy in place."
+          - "Records of access are kept."
+          - "Maintenance access governed."
+        howTo:
+          - step: "Implement access policy"
+          - step: "Keep access records"
+          - step: "Govern maintenance access"
+        evidenceExamples:
+          - "Access policy"
+          - "Access logs"
+          - "Maintenance access record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Controlled + logged"
+        appliesIf: "facility.onPremises == true"
+
+      - id: us.hipaa.security:PS-WS
+        title: "Workstation Use and Security (§164.310(b)/(c))"
+        weight: 2
+        answerType: scale
+        tags: [hipaa, workstation, endpoint]
+        question: |
+          Are workstation use and security policies in place to
+          protect workstations that access ePHI?
+        purpose: |
+          Workstation policies prevent inadvertent exposure of ePHI
+          at endpoints.
+        expectedOutcome:
+          - "Workstation use policy is in place."
+          - "Workstation security controls applied."
+          - "Compliance monitored."
+        howTo:
+          - step: "Implement workstation use policy"
+          - step: "Apply workstation security controls"
+          - step: "Monitor compliance"
+        evidenceExamples:
+          - "Workstation policy"
+          - "Hardening baseline"
+          - "Compliance report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: us.hipaa.security:PS-DM
+        title: "Device and Media Controls (§164.310(d))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, media, devices, disposal]
+        question: |
+          Are devices and media containing ePHI managed through their
+          lifecycle, including disposal, media re-use, accountability,
+          and backup?
+        purpose: |
+          Media containing ePHI is high-impact when mishandled.
+          Lifecycle control is required.
+        expectedOutcome:
+          - "Lifecycle policy in place."
+          - "Sanitization verified."
+          - "Accountability tracking."
+        howTo:
+          - step: "Implement lifecycle policy"
+          - step: "Verify sanitization"
+          - step: "Track accountability"
+        evidenceExamples:
+          - "Lifecycle policy"
+          - "Sanitization certificate"
+          - "Media inventory"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Uncontrolled"
+            "3": "Partial"
+            "5": "Lifecycle + verified"
+
+  - id: technical
+    name: "Technical Safeguards (§164.312)"
+    description: |
+      Technical controls protecting ePHI.
+    controls:
+      - id: us.hipaa.security:TS-AC
+        title: "Access Control (§164.312(a))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, access-control, technical]
+        question: |
+          Are technical access controls (unique user identification,
+          emergency access, automatic logoff, encryption / decryption)
+          implemented for systems containing ePHI?
+        purpose: |
+          Technical access control is the system-level enforcement of
+          the access policy.
+        expectedOutcome:
+          - "Unique user IDs are enforced."
+          - "Emergency access procedure exists."
+          - "Automatic logoff is configured."
+        howTo:
+          - step: "Enforce unique user IDs"
+          - step: "Document emergency access procedure"
+          - step: "Configure automatic logoff"
+        evidenceExamples:
+          - "Unique ID policy"
+          - "Emergency access procedure"
+          - "Logoff configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: us.hipaa.security:TS-AU
+        title: "Audit Controls (§164.312(b))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, audit, logging]
+        question: |
+          Are hardware, software, or procedural mechanisms in place
+          to record and examine activity in systems containing ePHI?
+        purpose: |
+          Audit controls underpin both detection and accountability.
+        expectedOutcome:
+          - "Audit logging is configured."
+          - "Logs are reviewed."
+          - "Retention meets needs."
+        howTo:
+          - step: "Configure audit logging"
+          - step: "Review logs"
+          - step: "Retain per needs"
+        evidenceExamples:
+          - "Logging configuration"
+          - "Review record"
+          - "Retention policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No logs"
+            "3": "Logs, no review"
+            "5": "Logs + reviewed"
+
+      - id: us.hipaa.security:TS-IN
+        title: "Integrity (§164.312(c))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, integrity, ephi]
+        question: |
+          Are mechanisms in place to authenticate that ePHI has not
+          been altered or destroyed in an unauthorized manner?
+        purpose: |
+          Integrity is one of HIPAA's three pillars; its loss can
+          affect patient care.
+        expectedOutcome:
+          - "Integrity controls applied to ePHI."
+          - "Mechanisms documented."
+          - "Anomalies detected."
+        howTo:
+          - step: "Apply integrity controls"
+          - step: "Document mechanisms"
+          - step: "Detect anomalies"
+        evidenceExamples:
+          - "Integrity mechanism"
+          - "Documentation"
+          - "Anomaly detection"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No integrity"
+            "3": "Partial"
+            "5": "Controlled + detected"
+
+      - id: us.hipaa.security:TS-PE
+        title: "Person or Entity Authentication (§164.312(d))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, authentication]
+        question: |
+          Are persons and entities accessing ePHI authenticated through
+          procedures verifying that the requester is what they claim
+          to be?
+        purpose: |
+          Authentication is the foundation of access decisions for
+          ePHI.
+        expectedOutcome:
+          - "Authentication is enforced for ePHI access."
+          - "MFA is in use for remote / privileged access."
+          - "Failed attempts are alerted."
+        howTo:
+          - step: "Enforce authentication"
+          - step: "Use MFA for remote / privileged access"
+          - step: "Alert on failed attempts"
+        evidenceExamples:
+          - "Authentication policy"
+          - "MFA configuration"
+          - "Alert configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "No MFA"
+            "5": "Authenticated + MFA + alerted"
+
+      - id: us.hipaa.security:TS-TM
+        title: "Transmission Security (§164.312(e))"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, transmission, encryption, integrity]
+        question: |
+          Are transmission integrity and encryption controls in place
+          for ePHI transmitted over electronic communications networks?
+        purpose: |
+          Transmission of ePHI over networks is a leading source of
+          breaches when unprotected.
+        expectedOutcome:
+          - "Transmission encryption is enforced."
+          - "Integrity controls in place."
+          - "Standards are documented."
+        howTo:
+          - step: "Enforce transmission encryption"
+          - step: "Apply integrity controls"
+          - step: "Document standards"
+        evidenceExamples:
+          - "TLS configuration"
+          - "Integrity mechanism"
+          - "Standards document"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plaintext"
+            "3": "Partial"
+            "5": "Encrypted + integrity"
+        crossReferences:
+          - iso27001:A.8.24
+
+  - id: organizational-and-policy
+    name: "Organizational Requirements and Policies / Procedures (§164.314 / 316)"
+    description: |
+      Business associate / group health plan requirements and the
+      policies, procedures, and documentation safeguard.
+    controls:
+      - id: us.hipaa.security:OR-BA
+        title: "Business Associate / Subcontractor Requirements (§164.314)"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, business-associate, subcontractor]
+        question: |
+          Do contracts with business associates and subcontractors
+          meet the requirements of §164.314, including security
+          requirements, incident reporting, and termination?
+        purpose: |
+          Contractual safeguards make the Security Rule enforceable
+          throughout the supply chain.
+        expectedOutcome:
+          - "BA contracts meet §164.314."
+          - "Subcontractor obligations flowed down."
+          - "Termination procedures defined."
+        howTo:
+          - step: "Align contracts with §164.314"
+          - step: "Flow down to subcontractors"
+          - step: "Define termination procedures"
+        evidenceExamples:
+          - "Contract clauses"
+          - "Flow-down evidence"
+          - "Termination procedure"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 72
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No requirements"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: us.hipaa.security:PP-DOC
+        title: "Policies, Procedures, and Documentation (§164.316)"
+        weight: 3
+        answerType: scale
+        tags: [hipaa, policy, documentation, retention]
+        question: |
+          Are policies and procedures documented in written form,
+          made available, updated as needed, and retained for at
+          least six years?
+        purpose: |
+          §164.316 requires explicit documentation and a six-year
+          retention period.
+        expectedOutcome:
+          - "Policies and procedures are documented."
+          - "Documentation is accessible."
+          - "Six-year retention is enforced."
+        howTo:
+          - step: "Document policies and procedures"
+          - step: "Make documentation accessible"
+          - step: "Enforce six-year retention"
+        evidenceExamples:
+          - "Policy library"
+          - "Distribution method"
+          - "Retention configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 72
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policies"
+            "3": "Documented, no retention"
+            "5": "Documented + retained"

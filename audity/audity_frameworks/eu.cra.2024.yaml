@@ -1,0 +1,597 @@
+framework:
+  schemaVersion: 1
+  key: eu.cra.2024
+  name: "EU Cyber Resilience Act (Regulation 2024/2847)"
+  shortName: "EU CRA"
+  version: "2024/2847"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Product Security Lead"
+    - "Compliance Officer"
+    - "Auditor"
+    - "Hardware / Firmware Engineer"
+    - "Manufacturer Representative"
+  estimatedDurationMinutes: 240
+  description: |
+    Regulation (EU) 2024/2847 (the Cyber Resilience Act, CRA) imposes
+    cybersecurity requirements on products with digital elements
+    placed on the EU market. CRA covers essential cybersecurity
+    requirements for products, vulnerability handling, and obligations
+    on manufacturers, importers, and distributors.
+
+    This YAML covers the principal obligations of the CRA as
+    audit-readiness controls grouped into Essential Product
+    Requirements, Vulnerability Handling, Conformity and CE Marking,
+    Reporting, and Lifecycle Obligations.
+  scopeNote: |
+    In scope: principal obligations on manufacturers, importers, and
+    distributors arising from the CRA, Annex I (essential
+    requirements), Annex V (technical documentation), and Art. 14
+    (reporting).
+
+    Out of scope: obligations on market surveillance authorities and
+    ENISA; detailed conformity assessment module procedures (referenced
+    but not enumerated); the implementing acts that specify important
+    and critical product categories.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Regulation (EU) 2024/2847 is published in the Official Journal
+      of the European Union. EU law text is not subject to copyright in
+      most jurisdictions. Article and annex content has been
+      paraphrased into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure violates an essential requirement (Annex I) or a 24/72-hour
+    reporting deadline; potential fines up to 2.5 % of global turnover
+    and market withdrawal.
+  high: |
+    Material gap in vulnerability handling or technical documentation
+    without compensating measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate market access
+    impact.
+
+controlMappings:
+  - source: eu.cra:EPR-01
+    target: iso27001:A.8.9
+    type: related
+  - source: eu.cra:EPR-02
+    target: iso27001:A.8.25
+    type: covers
+  - source: eu.cra:VH-01
+    target: iso27001:A.8.8
+    type: covers
+  - source: eu.cra:VH-03
+    target: nist-csf-2.0:ID.RA-08
+    type: covers
+  - source: eu.cra:RPT-01
+    target: nist-csf-2.0:RS.CO-02
+    type: covers
+
+domains:
+  - id: essential-product-requirements
+    name: "Essential Product Requirements (Annex I Part I)"
+    description: |
+      Cybersecurity requirements applicable to products with digital
+      elements placed on the EU market.
+    controls:
+      - id: eu.cra:EPR-01
+        title: "Secure by design and by default"
+        weight: 3
+        answerType: scale
+        tags: [cra, secure-by-design, secure-by-default]
+        question: |
+          Are products with digital elements designed, developed, and
+          produced in such a way that they ensure an appropriate level
+          of cybersecurity based on the risks, with secure
+          configuration by default?
+        purpose: |
+          Secure-by-design and secure-by-default address the bulk of
+          downstream vulnerabilities at the cheapest stage.
+        expectedOutcome:
+          - "Risk-based design documented."
+          - "Default configuration is secure."
+          - "User-modifiable secrets are not pre-set with shared values."
+        howTo:
+          - step: "Document risk-based design"
+          - step: "Default to secure configuration"
+          - step: "Avoid shared pre-set secrets"
+        evidenceExamples:
+          - "Design risk assessment"
+          - "Default configuration"
+          - "Secret-management policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Unsafe defaults"
+            "3": "Partial"
+            "5": "Secure by design + default"
+
+      - id: eu.cra:EPR-02
+        title: "Protection from unauthorized access (Annex I)"
+        weight: 3
+        answerType: scale
+        tags: [cra, access-control, authentication]
+        question: |
+          Does the product protect against unauthorized access through
+          appropriate authentication, identity, and access management?
+        purpose: |
+          Authentication and access control on products is the gating
+          mechanism for downstream use.
+        expectedOutcome:
+          - "Authentication is required for sensitive functions."
+          - "Access controls scale with feature sensitivity."
+          - "Brute-force protection is in place."
+        howTo:
+          - step: "Require authentication for sensitive functions"
+          - step: "Scale access controls with sensitivity"
+          - step: "Protect against brute force"
+        evidenceExamples:
+          - "Authentication design"
+          - "Access control matrix"
+          - "Brute-force protection"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No access control"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.25
+
+      - id: eu.cra:EPR-03
+        title: "Confidentiality and integrity of data"
+        weight: 3
+        answerType: scale
+        tags: [cra, data-protection, encryption, integrity]
+        question: |
+          Does the product protect the confidentiality and integrity of
+          data (in transit and at rest where applicable), including
+          through state-of-the-art encryption?
+        purpose: |
+          Data confidentiality and integrity are essential properties
+          for any product handling user data.
+        expectedOutcome:
+          - "Encryption protects sensitive data."
+          - "Integrity is verifiable."
+          - "Cryptographic choices are documented."
+        howTo:
+          - step: "Apply encryption to sensitive data"
+          - step: "Provide integrity verification"
+          - step: "Document cryptographic choices"
+        evidenceExamples:
+          - "Encryption design"
+          - "Integrity mechanism"
+          - "Cryptographic standard"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plaintext"
+            "3": "Partial"
+            "5": "Encrypted + integrity"
+
+      - id: eu.cra:EPR-04
+        title: "Minimisation of attack surface"
+        weight: 2
+        answerType: scale
+        tags: [cra, attack-surface, hardening]
+        question: |
+          Are products designed and produced to minimize the attack
+          surface, including external interfaces?
+        purpose: |
+          Minimal attack surface reduces both the number of bugs and
+          the cost of mitigation.
+        expectedOutcome:
+          - "Unused features are disabled or absent."
+          - "External interfaces are documented."
+          - "Reduction is recorded in design history."
+        howTo:
+          - step: "Disable or remove unused features"
+          - step: "Document external interfaces"
+          - step: "Record reduction in design history"
+        evidenceExamples:
+          - "Feature flag policy"
+          - "Interface inventory"
+          - "Design history"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Broad surface"
+            "3": "Partial"
+            "5": "Minimised"
+
+      - id: eu.cra:EPR-05
+        title: "Resilience and limitation of impact"
+        weight: 3
+        answerType: scale
+        tags: [cra, resilience, availability]
+        question: |
+          Is the product designed to provide resilience and to limit
+          the impact of incidents (e.g., availability, recovery,
+          containment)?
+        purpose: |
+          Resilient products survive incidents instead of amplifying
+          them across the supply chain.
+        expectedOutcome:
+          - "Failure modes are designed for graceful degradation."
+          - "Recovery capability is built in."
+          - "Resilience is tested."
+        howTo:
+          - step: "Design failure modes for graceful degradation"
+          - step: "Build in recovery capability"
+          - step: "Test resilience"
+        evidenceExamples:
+          - "Failure mode analysis"
+          - "Recovery design"
+          - "Resilience test report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not resilient"
+            "3": "Designed, untested"
+            "5": "Designed + tested"
+
+      - id: eu.cra:EPR-06
+        title: "Security update mechanism"
+        weight: 3
+        answerType: scale
+        tags: [cra, updates, patching]
+        question: |
+          Does the product provide a secure mechanism for deploying
+          security updates, with updates available for the support
+          period?
+        purpose: |
+          Without a secure update mechanism, no other safeguard can be
+          maintained. Updates are the practical implementation of
+          ongoing security.
+        expectedOutcome:
+          - "Update mechanism authenticates updates."
+          - "Updates are available for the support period."
+          - "Update process is documented for users."
+        howTo:
+          - step: "Authenticate updates"
+          - step: "Maintain update availability for the support period"
+          - step: "Document update process for users"
+        evidenceExamples:
+          - "Update mechanism design"
+          - "Support period statement"
+          - "User documentation"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No updates"
+            "3": "Updates ad hoc"
+            "5": "Authenticated + sustained"
+
+  - id: vulnerability-handling
+    name: "Vulnerability Handling Requirements (Annex I Part II)"
+    description: |
+      Requirements for the handling of vulnerabilities throughout the
+      product lifecycle.
+    controls:
+      - id: eu.cra:VH-01
+        title: "Vulnerability identification and documentation"
+        weight: 3
+        answerType: scale
+        tags: [cra, vulnerability, sbom]
+        question: |
+          Does the manufacturer identify and document vulnerabilities
+          and components in the product, including an SBOM?
+        purpose: |
+          Component-level visibility is the basis for vulnerability
+          response in the supply chain.
+        expectedOutcome:
+          - "SBOM is maintained."
+          - "Vulnerabilities tied to components are tracked."
+          - "Disclosure information is current."
+        howTo:
+          - step: "Maintain SBOM"
+          - step: "Track vulnerabilities tied to components"
+          - step: "Keep disclosure information current"
+        evidenceExamples:
+          - "SBOM export"
+          - "Vulnerability register"
+          - "Disclosure log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No tracking"
+            "3": "Partial"
+            "5": "SBOM + tracking"
+        crossReferences:
+          - iso27001:A.8.8
+
+      - id: eu.cra:VH-02
+        title: "Vulnerability remediation without delay"
+        weight: 3
+        answerType: scale
+        tags: [cra, patching, slas]
+        question: |
+          Are vulnerabilities in the product remediated without delay
+          and updates made available free of charge?
+        purpose: |
+          The CRA requires timely remediation. Charging for security
+          updates is not permitted.
+        expectedOutcome:
+          - "Remediation SLAs are defined."
+          - "Updates are released free of charge."
+          - "Remediation status is tracked."
+        howTo:
+          - step: "Define remediation SLAs"
+          - step: "Release updates free of charge"
+          - step: "Track remediation status"
+        evidenceExamples:
+          - "SLA policy"
+          - "Update releases"
+          - "Tracking report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Slow / paid"
+            "3": "Partial"
+            "5": "SLAs met + free"
+
+      - id: eu.cra:VH-03
+        title: "Coordinated vulnerability disclosure"
+        weight: 3
+        answerType: scale
+        tags: [cra, disclosure, security-txt]
+        question: |
+          Does the manufacturer have a coordinated vulnerability
+          disclosure process and a publicly available contact for
+          reporting vulnerabilities?
+        purpose: |
+          Disclosure paths must exist for researchers and customers.
+          The CRA makes this a baseline requirement.
+        expectedOutcome:
+          - "Disclosure policy is published."
+          - "Contact channel is monitored."
+          - "Acknowledgement is timely."
+        howTo:
+          - step: "Publish disclosure policy"
+          - step: "Monitor contact channel"
+          - step: "Acknowledge timely"
+        evidenceExamples:
+          - "Disclosure policy"
+          - "Channel reference"
+          - "Acknowledgement sample"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No CVD"
+            "3": "CVD informal"
+            "5": "Policy + monitored"
+        crossReferences:
+          - nist-csf-2.0:ID.RA-08
+
+      - id: eu.cra:VH-04
+        title: "Security advisories"
+        weight: 2
+        answerType: scale
+        tags: [cra, advisories, communication]
+        question: |
+          Are security advisories produced and published for each
+          vulnerability remediated, with information enabling users
+          to take action?
+        purpose: |
+          Advisories convert internal remediation into actionable
+          information for users.
+        expectedOutcome:
+          - "Advisories published per vulnerability."
+          - "Advisories include CVE / CVSS / actions."
+          - "Distribution channels reach users."
+        howTo:
+          - step: "Publish advisories per vulnerability"
+          - step: "Include CVE / CVSS / actions"
+          - step: "Distribute via channels that reach users"
+        evidenceExamples:
+          - "Advisory library"
+          - "Sample advisory"
+          - "Distribution channel"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No advisories"
+            "3": "Inconsistent"
+            "5": "Per-vuln + distributed"
+
+  - id: conformity-and-marking
+    name: "Conformity Assessment and CE Marking"
+    description: |
+      Conformity assessment, declaration of conformity, and CE marking
+      obligations.
+    controls:
+      - id: eu.cra:CONF-01
+        title: "Conformity assessment and CE marking"
+        weight: 3
+        answerType: scale
+        tags: [cra, conformity, ce-marking]
+        question: |
+          Has the product undergone the applicable conformity
+          assessment procedure with declaration of conformity and CE
+          marking?
+        purpose: |
+          CE marking is the gate to lawful EU market placement.
+        expectedOutcome:
+          - "Conformity procedure is identified per product."
+          - "Declaration of conformity is signed."
+          - "CE marking is applied."
+        howTo:
+          - step: "Identify the conformity procedure"
+          - step: "Sign declaration of conformity"
+          - step: "Apply CE marking"
+        evidenceExamples:
+          - "Conformity record"
+          - "Declaration of conformity"
+          - "CE marking evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessment"
+            "3": "Partial"
+            "5": "Assessment + CE"
+
+      - id: eu.cra:CONF-02
+        title: "Technical documentation (Annex VII)"
+        weight: 3
+        answerType: scale
+        tags: [cra, documentation, annex-vii]
+        question: |
+          Is technical documentation drawn up and kept for at least 10
+          years covering the elements specified in Annex VII?
+        purpose: |
+          Technical documentation is the basis for conformity and
+          post-market surveillance.
+        expectedOutcome:
+          - "Technical documentation aligns with Annex VII."
+          - "Documentation is current."
+          - "Documentation is retained for 10 years."
+        howTo:
+          - step: "Develop documentation per Annex VII"
+          - step: "Maintain currency"
+          - step: "Retain for 10 years"
+        evidenceExamples:
+          - "Technical file"
+          - "Update record"
+          - "Retention configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 120
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No technical file"
+            "3": "Partial"
+            "5": "Complete + retained"
+
+  - id: reporting
+    name: "Reporting Obligations (Art. 14)"
+    description: |
+      Reporting of actively exploited vulnerabilities and severe
+      incidents to ENISA / CSIRTs.
+    controls:
+      - id: eu.cra:RPT-01
+        title: "Reporting of actively exploited vulnerabilities (24/72 h)"
+        weight: 3
+        answerType: scale
+        tags: [cra, reporting, vulnerability, exploited]
+        question: |
+          Can the manufacturer submit an early warning of an actively
+          exploited vulnerability within 24 hours and a follow-up
+          notification within 72 hours per Art. 14?
+        purpose: |
+          The 24-hour deadline is the most visible compliance test of
+          the CRA. Missing it is high-visibility.
+        expectedOutcome:
+          - "Process for early warning is documented and rehearsed."
+          - "72-hour notification is rehearsed."
+          - "Contacts to ENISA / CSIRT are validated."
+        howTo:
+          - step: "Document and rehearse early warning process"
+          - step: "Rehearse 72-hour notification"
+          - step: "Validate ENISA / CSIRT contacts"
+        evidenceExamples:
+          - "Reporting workflow"
+          - "Rehearsal record"
+          - "Contact validation log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process rehearsed"
+        crossReferences:
+          - nist-csf-2.0:RS.CO-02
+
+      - id: eu.cra:RPT-02
+        title: "Reporting of severe incidents"
+        weight: 3
+        answerType: scale
+        tags: [cra, reporting, incident]
+        question: |
+          Can the manufacturer report severe incidents having an impact
+          on the security of the product to ENISA / CSIRT per the
+          timelines of Art. 14?
+        purpose: |
+          Severe incident reporting parallels actively-exploited
+          vulnerability reporting and is equally non-negotiable.
+        expectedOutcome:
+          - "Severity criteria are documented."
+          - "Reporting process is rehearsed."
+          - "Logs of past reports are retained."
+        howTo:
+          - step: "Document severity criteria"
+          - step: "Rehearse reporting"
+          - step: "Retain logs of past reports"
+        evidenceExamples:
+          - "Severity criteria"
+          - "Rehearsal record"
+          - "Report log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process rehearsed"

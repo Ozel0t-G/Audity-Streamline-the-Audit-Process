@@ -1,0 +1,1330 @@
+framework:
+  schemaVersion: 1
+  key: cisa.cpg.1.0.1
+  name: "CISA Cross-Sector Cybersecurity Performance Goals 1.0.1"
+  shortName: "CISA CPGs"
+  version: "1.0.1"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "CISO"
+    - "Security Operations"
+    - "Small / Mid-Size Org Lead"
+  estimatedDurationMinutes: 240
+  description: |
+    The CISA Cross-Sector Cybersecurity Performance Goals (CPGs) are a
+    prioritized subset of cybersecurity practices that critical
+    infrastructure owners and operators can implement to meaningfully
+    reduce the likelihood and impact of known risks and adversary
+    techniques. CPGs are voluntary and were designed by the U.S.
+    Cybersecurity and Infrastructure Security Agency to provide a clear
+    starting point for organizations of all sizes and maturity levels.
+
+    This YAML covers all 38 CPGs grouped into eight categories. Each
+    goal includes cost, complexity, and impact considerations as
+    published by CISA.
+  scopeNote: |
+    In scope: all 38 CPGs across the eight categories (Account
+    Security, Device Security, Data Security, Governance and Training,
+    Vulnerability Management, Supply Chain / Third Party, Response and
+    Recovery, Other) structured as one control per CPG.
+
+    Out of scope: sector-specific CPG profiles published separately by
+    CISA; the per-goal MITRE ATT&CK mappings (referenced but not
+    enumerated); the CPG self-assessment toolkit.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      The CISA Cross-Sector Cybersecurity Performance Goals are
+      published by the U.S. Cybersecurity and Infrastructure Security
+      Agency and are in the public domain. CPG titles and content have
+      been paraphrased into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a high-impact / low-cost CPG unimplemented; a
+    fundamental hygiene gap.
+  high: |
+    Material gap in a CPG without compensating controls.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: cisa.cpg:ACC-03
+    target: iso27001:A.8.5
+    type: covers
+  - source: cisa.cpg:DEV-01
+    target: iso27001:A.5.9
+    type: covers
+  - source: cisa.cpg:DEV-02
+    target: iso27001:A.8.8
+    type: covers
+  - source: cisa.cpg:DAT-01
+    target: iso27001:A.8.13
+    type: covers
+  - source: cisa.cpg:VUL-01
+    target: iso27001:A.8.8
+    type: covers
+  - source: cisa.cpg:REC-02
+    target: iso27001:A.5.24
+    type: covers
+
+domains:
+  - id: account-security
+    name: "1. Account Security"
+    description: |
+      Goals related to authentication, password management, and
+      protection of credentials.
+    controls:
+      - id: cisa.cpg:ACC-01
+        title: "Detection of Unsuccessful (Automated) Login Attempts"
+        weight: 2
+        answerType: scale
+        tags: [authentication, detection, brute-force]
+        question: |
+          Are unsuccessful and automated login attempts detected,
+          alerted on, and acted upon?
+        purpose: |
+          Failed login bursts are an early indicator of credential
+          attack. Detection enables containment before success.
+        expectedOutcome:
+          - "Failed login thresholds trigger alerts."
+          - "Account lockout or throttling is in place."
+          - "Alerts are reviewed."
+        howTo:
+          - step: "Configure failed login alerting"
+          - step: "Apply lockout or throttling"
+          - step: "Review alerts"
+        evidenceExamples:
+          - "Alert rule"
+          - "Lockout policy"
+          - "Alert review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No detection"
+            "3": "Detection, no action"
+            "5": "Detection + action"
+
+      - id: cisa.cpg:ACC-02
+        title: "Changing Default Passwords"
+        weight: 3
+        answerType: scale
+        tags: [authentication, defaults, configuration]
+        question: |
+          Are default passwords changed on all systems and devices
+          before deployment to production?
+        purpose: |
+          Default passwords are catalogued and targeted. Changing them
+          eliminates one of the lowest-effort attack paths.
+        expectedOutcome:
+          - "Default-change is part of deployment."
+          - "Inventory checks confirm absence of defaults."
+          - "Exceptions are documented."
+        howTo:
+          - step: "Require default-change at deployment"
+          - step: "Run periodic checks for defaults"
+          - step: "Document any exceptions"
+        evidenceExamples:
+          - "Deployment standard"
+          - "Default-check scan results"
+          - "Exception register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Defaults remain"
+            "3": "Partial"
+            "5": "Defaults removed and checked"
+
+      - id: cisa.cpg:ACC-03
+        title: "Phishing-Resistant Multi-Factor Authentication"
+        weight: 3
+        answerType: scale
+        tags: [authentication, mfa, phishing-resistant]
+        question: |
+          Is phishing-resistant MFA (e.g., FIDO2 / WebAuthn) deployed
+          for IT and OT accounts that touch critical systems?
+        purpose: |
+          Phishing-resistant MFA defeats real-time relay attacks that
+          bypass code-based MFA. It is the gold standard for high-risk
+          accounts.
+        expectedOutcome:
+          - "Privileged and remote-access accounts use phishing-resistant MFA."
+          - "Roadmap exists for broader rollout."
+          - "Exceptions are time-bound."
+        howTo:
+          - step: "Deploy phishing-resistant MFA for privileged / remote access"
+          - step: "Roadmap broader rollout"
+          - step: "Time-bound exceptions"
+        evidenceExamples:
+          - "MFA enforcement report"
+          - "Rollout roadmap"
+          - "Exception register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No MFA"
+            "3": "Code-based MFA"
+            "5": "Phishing-resistant MFA"
+        crossReferences:
+          - iso27001:A.8.5
+
+      - id: cisa.cpg:ACC-04
+        title: "Minimum Password Strength"
+        weight: 2
+        answerType: scale
+        tags: [authentication, passwords, policy]
+        question: |
+          Is a minimum password strength standard (length, complexity,
+          breach checks) enforced organization-wide?
+        purpose: |
+          Weak passwords remain a common compromise vector. A modern
+          standard (length-first, breach-checked) addresses both
+          attacks and usability.
+        expectedOutcome:
+          - "Length and complexity standard is enforced."
+          - "Breach password check is in place."
+          - "Standard is reviewed periodically."
+        howTo:
+          - step: "Enforce length / complexity standard"
+          - step: "Check against breach corpora"
+          - step: "Review standard periodically"
+        evidenceExamples:
+          - "Password policy"
+          - "Breach-check configuration"
+          - "Standard review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No standard"
+            "3": "Standard, no enforcement"
+            "5": "Enforced + breach-checked"
+
+      - id: cisa.cpg:ACC-05
+        title: "Separating User and Privileged Accounts"
+        weight: 3
+        answerType: scale
+        tags: [iam, privileged-access, separation]
+        question: |
+          Are user accounts separate from privileged accounts, with
+          privileged work performed only from privileged accounts?
+        purpose: |
+          Mixing daily and privileged use multiplies the blast radius
+          of routine compromise. Separation is foundational.
+        expectedOutcome:
+          - "Separate privileged accounts exist for in-scope roles."
+          - "Privileged work happens only from privileged accounts."
+          - "Monitoring detects mixed use."
+        howTo:
+          - step: "Create separate privileged accounts"
+          - step: "Require privileged work from privileged accounts"
+          - step: "Detect mixed use"
+        evidenceExamples:
+          - "Privileged account inventory"
+          - "Use policy"
+          - "Monitoring evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Mixed accounts"
+            "3": "Partial separation"
+            "5": "Separation enforced"
+
+      - id: cisa.cpg:ACC-06
+        title: "Revoking Credentials for Departing Employees"
+        weight: 3
+        answerType: scale
+        tags: [iam, leavers, offboarding]
+        question: |
+          Are credentials of departing personnel revoked within a
+          defined SLA after departure?
+        purpose: |
+          Active credentials of former personnel are a common breach
+          vector. SLA-driven revocation closes that path.
+        expectedOutcome:
+          - "Leaver process triggers credential revocation."
+          - "Revocation SLA is defined and met."
+          - "Audit verifies revocation."
+        howTo:
+          - step: "Couple leaver process to credential revocation"
+          - step: "Define and meet SLA"
+          - step: "Audit revocation"
+        evidenceExamples:
+          - "Leaver process"
+          - "SLA metric"
+          - "Audit report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No revocation"
+            "3": "Revocation slow"
+            "5": "SLA met + audited"
+
+      - id: cisa.cpg:ACC-07
+        title: "Unique Credentials"
+        weight: 2
+        answerType: scale
+        tags: [iam, credentials, sharing]
+        question: |
+          Are unique credentials issued per user, system, or service,
+          with shared credentials avoided where technically possible?
+        purpose: |
+          Shared credentials break accountability and amplify
+          credential abuse. Uniqueness is a baseline expectation.
+        expectedOutcome:
+          - "Unique credentials are the default."
+          - "Shared accounts have documented justification."
+          - "Inventory of shared accounts is reviewed."
+        howTo:
+          - step: "Issue unique credentials by default"
+          - step: "Justify and document shared accounts"
+          - step: "Review shared account inventory"
+        evidenceExamples:
+          - "Uniqueness policy"
+          - "Shared account register"
+          - "Review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Shared everywhere"
+            "3": "Mixed"
+            "5": "Unique + justified shared"
+
+  - id: device-security
+    name: "2. Device Security"
+    description: |
+      Goals related to asset and configuration management of devices.
+    controls:
+      - id: cisa.cpg:DEV-01
+        title: "Hardware and Software Asset Inventory"
+        weight: 3
+        answerType: scale
+        tags: [asset-management, inventory, devices]
+        question: |
+          Is an inventory of hardware and software assets maintained
+          and reconciled against discovery?
+        purpose: |
+          You cannot defend what you do not know exists. Inventory is
+          the precondition for patching and incident scoping.
+        expectedOutcome:
+          - "Hardware and software inventory is maintained."
+          - "Reconciliation against discovery runs."
+          - "Unknowns are investigated."
+        howTo:
+          - step: "Maintain HW / SW inventory"
+          - step: "Reconcile against discovery"
+          - step: "Investigate unknowns"
+        evidenceExamples:
+          - "Inventory extract"
+          - "Reconciliation report"
+          - "Investigation log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Inventory partial"
+            "5": "Reconciled and investigated"
+        crossReferences:
+          - iso27001:A.5.9
+
+      - id: cisa.cpg:DEV-02
+        title: "Mitigating Known Vulnerabilities"
+        weight: 3
+        answerType: scale
+        tags: [vulnerability, patching, kev]
+        question: |
+          Are known exploited vulnerabilities (CISA KEV) and
+          high-severity findings mitigated under defined SLAs?
+        purpose: |
+          KEV-listed vulnerabilities are actively exploited.
+          Time-to-mitigate directly drives breach probability.
+        expectedOutcome:
+          - "KEV is monitored and triggers expedited remediation."
+          - "High-severity SLAs are defined and met."
+          - "Compensating controls are documented when SLAs slip."
+        howTo:
+          - step: "Monitor CISA KEV"
+          - step: "Define and meet high-severity SLAs"
+          - step: "Document compensating controls"
+        evidenceExamples:
+          - "KEV monitoring evidence"
+          - "SLA compliance report"
+          - "Compensating control record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No mitigation"
+            "3": "Slow"
+            "5": "KEV + SLAs met"
+        crossReferences:
+          - iso27001:A.8.8
+
+      - id: cisa.cpg:DEV-03
+        title: "Document Device Configurations"
+        weight: 2
+        answerType: scale
+        tags: [configuration, baseline, documentation]
+        question: |
+          Are device configurations documented and maintained as
+          known-good baselines?
+        purpose: |
+          Without documented baselines, drift is undetectable. The
+          baseline is the reference point for everything that follows.
+        expectedOutcome:
+          - "Baselines are documented per device class."
+          - "Baselines are versioned."
+          - "Deviation is detected."
+        howTo:
+          - step: "Document baselines per device class"
+          - step: "Version baselines"
+          - step: "Detect deviations"
+        evidenceExamples:
+          - "Baseline documents"
+          - "Version history"
+          - "Drift report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No baselines"
+            "3": "Partial"
+            "5": "Baselines + drift detection"
+
+      - id: cisa.cpg:DEV-04
+        title: "No Exploitable Services on the Internet"
+        weight: 3
+        answerType: scale
+        tags: [attack-surface, exposure, internet]
+        question: |
+          Are services known to be exploitable (e.g., SMB, RDP, Telnet,
+          unauthenticated databases) prevented from being exposed to
+          the public internet?
+        purpose: |
+          Exposed risky services are routinely discovered and exploited
+          in hours. Preventing exposure is the cheapest control.
+        expectedOutcome:
+          - "Public exposure is monitored continuously."
+          - "Risky services are blocked or remediated."
+          - "Exceptions are time-bound."
+        howTo:
+          - step: "Monitor public exposure"
+          - step: "Block or remediate risky services"
+          - step: "Time-bound exceptions"
+        evidenceExamples:
+          - "Exposure scan report"
+          - "Remediation log"
+          - "Exception register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Exposed"
+            "3": "Some exposure"
+            "5": "Monitored + remediated"
+
+      - id: cisa.cpg:DEV-05
+        title: "Limit OT Connections to Public Internet"
+        weight: 3
+        answerType: scale
+        tags: [ot, segmentation, internet]
+        question: |
+          Are OT systems not directly reachable from the public
+          internet without controlled intermediaries?
+        purpose: |
+          Direct OT exposure has produced major incidents. Removing
+          direct reachability is non-negotiable in industrial contexts.
+        expectedOutcome:
+          - "OT systems are not directly reachable from the internet."
+          - "Intermediaries (jump hosts, gateways) are hardened."
+          - "Connectivity is documented and reviewed."
+        howTo:
+          - step: "Remove direct OT-to-internet connectivity"
+          - step: "Harden intermediaries"
+          - step: "Document and review connectivity"
+        evidenceExamples:
+          - "Network design"
+          - "Hardened gateway configuration"
+          - "Connectivity review"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Direct exposure"
+            "3": "Partial"
+            "5": "Indirect + hardened"
+        appliesIf: "organization.has_ot == true"
+
+      - id: cisa.cpg:DEV-06
+        title: "Third-Party Validation of Cybersecurity Control Effectiveness"
+        weight: 2
+        answerType: scale
+        tags: [assurance, testing, pentest]
+        question: |
+          Is the effectiveness of cybersecurity controls periodically
+          validated by qualified third parties (e.g., penetration
+          testing)?
+        purpose: |
+          Self-assessment alone misses blind spots. Independent
+          validation provides assurance that defenses work in
+          practice.
+        expectedOutcome:
+          - "Independent validation is scheduled."
+          - "Findings are tracked to closure."
+          - "Validation scope evolves over time."
+        howTo:
+          - step: "Schedule independent validation"
+          - step: "Track findings to closure"
+          - step: "Evolve scope over time"
+        evidenceExamples:
+          - "Validation report"
+          - "Findings tracker"
+          - "Scope evolution record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No validation"
+            "3": "Validation, no follow-up"
+            "5": "Validation + remediation"
+
+      - id: cisa.cpg:DEV-07
+        title: "Disable Macros by Default"
+        weight: 2
+        answerType: scale
+        tags: [endpoint, office, macros]
+        question: |
+          Are Office and similar macros disabled by default with
+          enable-by-policy paths only?
+        purpose: |
+          Macro abuse is a recurring initial-access path. Disable-by-
+          default removes the default attack surface.
+        expectedOutcome:
+          - "Macros disabled by default in office suites."
+          - "Enablement is policy-controlled."
+          - "Risky macros are signed or blocked."
+        howTo:
+          - step: "Set macros to disabled by default"
+          - step: "Govern enablement by policy"
+          - step: "Sign or block risky macros"
+        evidenceExamples:
+          - "Office policy configuration"
+          - "Signing policy"
+          - "Exception list"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Macros open"
+            "3": "Partial"
+            "5": "Disabled + governed"
+
+  - id: data-security
+    name: "3. Data Security"
+    description: |
+      Goals related to backups, log collection, integrity, and email
+      security.
+    controls:
+      - id: cisa.cpg:DAT-01
+        title: "Log Collection"
+        weight: 3
+        answerType: scale
+        tags: [logging, monitoring, siem]
+        question: |
+          Are security-relevant logs from in-scope systems collected
+          centrally and retained?
+        purpose: |
+          Without central log collection, detection and investigation
+          are not feasible. CPGs identify this as foundational.
+        expectedOutcome:
+          - "Critical logs are forwarded centrally."
+          - "Retention meets investigation needs."
+          - "Integrity is preserved."
+        howTo:
+          - step: "Forward critical logs centrally"
+          - step: "Retain per investigation needs"
+          - step: "Preserve integrity"
+        evidenceExamples:
+          - "Logging coverage report"
+          - "Retention configuration"
+          - "Integrity protection"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No central logs"
+            "3": "Partial"
+            "5": "Central + retained + integrity"
+
+      - id: cisa.cpg:DAT-02
+        title: "Secure Backup of Critical Data"
+        weight: 3
+        answerType: scale
+        tags: [backup, recovery, ransomware]
+        question: |
+          Are backups of critical data created, protected, and
+          regularly tested for restore?
+        purpose: |
+          Backups are the strongest control against destructive
+          incidents. Untested backups have a high silent failure rate.
+        expectedOutcome:
+          - "Backups are taken on a defined cadence."
+          - "Offline / immutable copy is maintained."
+          - "Restore tests are documented."
+        howTo:
+          - step: "Define backup cadence"
+          - step: "Maintain offline / immutable copy"
+          - step: "Test restores"
+        evidenceExamples:
+          - "Backup schedule"
+          - "Backup protection design"
+          - "Restore test report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No backup"
+            "3": "Untested"
+            "5": "Tested + protected"
+        crossReferences:
+          - iso27001:A.8.13
+
+      - id: cisa.cpg:DAT-03
+        title: "Secure Sensitive Data"
+        weight: 3
+        answerType: scale
+        tags: [data, encryption, sensitive-data]
+        question: |
+          Is sensitive data encrypted at rest and in transit with
+          documented standards?
+        purpose: |
+          Encryption converts contained breaches into non-events for
+          regulated data; it is a fundamental CPG.
+        expectedOutcome:
+          - "Sensitive data encrypted at rest."
+          - "Transit encryption is enforced."
+          - "Standards are documented."
+        howTo:
+          - step: "Encrypt sensitive data at rest"
+          - step: "Enforce transit encryption"
+          - step: "Document standards"
+        evidenceExamples:
+          - "Encryption policy"
+          - "TLS configuration"
+          - "At-rest encryption design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plaintext"
+            "3": "Partial encryption"
+            "5": "Both directions covered"
+
+      - id: cisa.cpg:DAT-04
+        title: "Email Security (DMARC, SPF, DKIM, anti-phish)"
+        weight: 2
+        answerType: scale
+        tags: [email, dmarc, dkim, spf, phishing]
+        question: |
+          Are email authentication (SPF / DKIM / DMARC) and anti-phish
+          protections deployed on the organization's domains?
+        purpose: |
+          Domain spoofing and phishing remain dominant attack paths.
+          Email authentication blocks the cheapest attacks.
+        expectedOutcome:
+          - "SPF / DKIM / DMARC are deployed."
+          - "DMARC is at p=quarantine or p=reject."
+          - "Anti-phish filtering is in place."
+        howTo:
+          - step: "Deploy SPF / DKIM / DMARC"
+          - step: "Move DMARC to quarantine / reject"
+          - step: "Deploy anti-phish filtering"
+        evidenceExamples:
+          - "DNS records"
+          - "DMARC reports"
+          - "Anti-phish configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not deployed"
+            "3": "p=none"
+            "5": "p=reject + filtering"
+
+  - id: governance-and-training
+    name: "4. Governance and Training"
+    description: |
+      Governance, training, and accountability goals.
+    controls:
+      - id: cisa.cpg:GOV-01
+        title: "Organizational Cybersecurity Leadership"
+        weight: 2
+        answerType: scale
+        tags: [governance, leadership, accountability]
+        question: |
+          Is there a single senior leader accountable for cybersecurity
+          across the organization?
+        purpose: |
+          Distributed accountability dilutes decision-making. A single
+          senior owner makes the program governable.
+        expectedOutcome:
+          - "A senior leader is named for cybersecurity."
+          - "Role is documented with authority and reporting."
+          - "Role participates in executive forums."
+        howTo:
+          - step: "Name a senior cybersecurity leader"
+          - step: "Document authority and reporting"
+          - step: "Participate in executive forums"
+        evidenceExamples:
+          - "Role description"
+          - "Organization chart"
+          - "Executive forum agenda"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Distributed"
+            "3": "Named, weak authority"
+            "5": "Named + authoritative"
+
+      - id: cisa.cpg:GOV-02
+        title: "Basic Cybersecurity Training"
+        weight: 2
+        answerType: scale
+        tags: [training, awareness]
+        question: |
+          Are personnel given basic cybersecurity training (phishing,
+          passwords, reporting) on a recurring basis?
+        purpose: |
+          User behavior accounts for a large share of incidents.
+          Regular training reduces the rate of avoidable mistakes.
+        expectedOutcome:
+          - "Training is delivered to all personnel annually."
+          - "Completion is tracked."
+          - "Effectiveness is measured (e.g., phishing simulations)."
+        howTo:
+          - step: "Deliver annual training"
+          - step: "Track completion"
+          - step: "Measure effectiveness"
+        evidenceExamples:
+          - "Training records"
+          - "Completion tracker"
+          - "Phishing simulation results"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Training low completion"
+            "5": "Training + effectiveness"
+
+      - id: cisa.cpg:GOV-03
+        title: "OT Cybersecurity Training"
+        weight: 2
+        answerType: scale
+        tags: [training, ot, ics]
+        question: |
+          Are personnel with OT responsibilities given role-specific
+          OT cybersecurity training?
+        purpose: |
+          OT environments have specific safety and security
+          considerations. Generic training does not cover them.
+        expectedOutcome:
+          - "Role-specific OT training is delivered."
+          - "Completion is tracked."
+          - "Refreshers are scheduled."
+        howTo:
+          - step: "Deliver role-specific OT training"
+          - step: "Track completion"
+          - step: "Schedule refreshers"
+        evidenceExamples:
+          - "OT training material"
+          - "Completion record"
+          - "Refresh schedule"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No OT training"
+            "3": "Generic only"
+            "5": "OT-specific + refreshed"
+        appliesIf: "organization.has_ot == true"
+
+      - id: cisa.cpg:GOV-04
+        title: "Strategic Cybersecurity Planning"
+        weight: 2
+        answerType: scale
+        tags: [governance, strategy, planning]
+        question: |
+          Does the organization maintain a strategic cybersecurity plan
+          aligned with business priorities and risk appetite?
+        purpose: |
+          Strategy converts capability into outcomes. Programs without
+          strategy default to reactive operations.
+        expectedOutcome:
+          - "Strategic plan is documented and approved."
+          - "Plan aligns with business priorities."
+          - "Progress is measured."
+        howTo:
+          - step: "Document and approve the strategic plan"
+          - step: "Align with business priorities"
+          - step: "Measure progress"
+        evidenceExamples:
+          - "Strategic plan"
+          - "Alignment record"
+          - "Progress metrics"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No strategy"
+            "3": "Strategy not measured"
+            "5": "Strategy + measured"
+
+      - id: cisa.cpg:GOV-05
+        title: "Improve IT/OT Cybersecurity Relationships"
+        weight: 2
+        answerType: scale
+        tags: [governance, ot, it, integration]
+        question: |
+          Are relationships between IT and OT cybersecurity functions
+          documented, with shared processes and escalation?
+        purpose: |
+          IT and OT operate under different assumptions but share
+          threats. Documented relationships avoid incidents falling
+          between functions.
+        expectedOutcome:
+          - "IT-OT relationships are documented."
+          - "Shared processes (incident, change) exist."
+          - "Cross-function exercises run."
+        howTo:
+          - step: "Document IT-OT relationships"
+          - step: "Establish shared processes"
+          - step: "Run cross-function exercises"
+        evidenceExamples:
+          - "Relationship document"
+          - "Shared process"
+          - "Exercise report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Disconnected"
+            "3": "Some interaction"
+            "5": "Documented + exercised"
+        appliesIf: "organization.has_ot == true"
+
+  - id: vulnerability-management
+    name: "5. Vulnerability Management"
+    description: |
+      Goals for identifying and managing vulnerabilities and
+      disclosures.
+    controls:
+      - id: cisa.cpg:VUL-01
+        title: "Vulnerability Disclosure / Reporting"
+        weight: 2
+        answerType: scale
+        tags: [vulnerability, disclosure, reporting]
+        question: |
+          Is a vulnerability disclosure policy and process published,
+          with a clear channel for reporting?
+        purpose: |
+          Researchers and customers need a documented channel.
+          Without one, disclosures go public.
+        expectedOutcome:
+          - "Vulnerability disclosure policy is published."
+          - "Reporting channel is monitored."
+          - "Reporters receive acknowledgement."
+        howTo:
+          - step: "Publish disclosure policy"
+          - step: "Monitor reporting channel"
+          - step: "Acknowledge reporters"
+        evidenceExamples:
+          - "Disclosure policy"
+          - "Reporting channel reference"
+          - "Acknowledgement sample"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No channel"
+            "3": "Channel, no SLA"
+            "5": "Channel + SLA + acknowledgement"
+
+      - id: cisa.cpg:VUL-02
+        title: "Deploy Security.txt File"
+        weight: 1
+        answerType: scale
+        tags: [vulnerability, disclosure, transparency]
+        question: |
+          Is a security.txt file deployed on the organization's web
+          domains pointing to the disclosure channel?
+        purpose: |
+          security.txt is the established convention for
+          machine-readable disclosure channel discovery.
+        expectedOutcome:
+          - "security.txt is deployed on primary domains."
+          - "Contents are current."
+          - "Links are valid."
+        howTo:
+          - step: "Deploy security.txt on primary domains"
+          - step: "Keep contents current"
+          - step: "Validate links periodically"
+        evidenceExamples:
+          - "security.txt URL"
+          - "Content review"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not deployed"
+            "3": "Outdated"
+            "5": "Deployed + current"
+
+      - id: cisa.cpg:VUL-03
+        title: "Patch Management"
+        weight: 3
+        answerType: scale
+        tags: [vulnerability, patching, slas]
+        question: |
+          Are software and firmware patches applied within defined
+          SLAs proportional to severity?
+        purpose: |
+          The interval between disclosure and exploitation has
+          collapsed. SLA-driven patching keeps the window manageable.
+        expectedOutcome:
+          - "Patching SLAs are defined by severity."
+          - "Compliance is measured."
+          - "Emergency patching path exists."
+        howTo:
+          - step: "Define patching SLAs by severity"
+          - step: "Measure compliance"
+          - step: "Maintain emergency patching path"
+        evidenceExamples:
+          - "Patching policy"
+          - "SLA compliance report"
+          - "Emergency patch record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No patching"
+            "3": "Patching no SLA"
+            "5": "SLAs met"
+
+      - id: cisa.cpg:VUL-04
+        title: "Reducing Internet Exposure"
+        weight: 3
+        answerType: scale
+        tags: [attack-surface, exposure, asset-exposure]
+        question: |
+          Is the organization's internet-facing attack surface
+          continuously monitored and reduced where possible?
+        purpose: |
+          Reducing exposed surface removes attacker options before they
+          can be exploited.
+        expectedOutcome:
+          - "Attack surface is continuously monitored."
+          - "Exposure reduction is tracked."
+          - "Risky exposure is remediated."
+        howTo:
+          - step: "Monitor attack surface continuously"
+          - step: "Track exposure reduction"
+          - step: "Remediate risky exposure"
+        evidenceExamples:
+          - "EASM tool output"
+          - "Reduction tracker"
+          - "Remediation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not monitored"
+            "3": "Monitored, not reduced"
+            "5": "Monitored + reduced"
+
+      - id: cisa.cpg:VUL-05
+        title: "Limit OT Connections to Internet"
+        weight: 3
+        answerType: scale
+        tags: [ot, exposure, segmentation]
+        question: |
+          Are OT systems segmented from internet-connected systems,
+          with limited and controlled crossing points?
+        purpose: |
+          OT systems exposed to the internet have caused major
+          incidents. Segmentation is the basic protection.
+        expectedOutcome:
+          - "OT and IT are segmented."
+          - "Crossing points are documented and hardened."
+          - "Periodic review confirms segmentation."
+        howTo:
+          - step: "Segment OT from internet-connected IT"
+          - step: "Document and harden crossing points"
+          - step: "Review periodically"
+        evidenceExamples:
+          - "Segmentation design"
+          - "Crossing point inventory"
+          - "Review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Flat"
+            "3": "Partial"
+            "5": "Segmented + reviewed"
+        appliesIf: "organization.has_ot == true"
+
+  - id: supply-chain
+    name: "6. Supply Chain / Third Party"
+    description: |
+      Goals for managing vendor and supplier cybersecurity.
+    controls:
+      - id: cisa.cpg:SC-01
+        title: "Vendor / Supplier Cybersecurity Requirements"
+        weight: 3
+        answerType: scale
+        tags: [supplier, contracts, requirements]
+        question: |
+          Are cybersecurity requirements specified in vendor and
+          supplier agreements?
+        purpose: |
+          Without contractual requirements, suppliers cannot be held
+          accountable for security failures.
+        expectedOutcome:
+          - "Standard cybersecurity clauses exist."
+          - "Clauses are included in vendor agreements."
+          - "Deviations are documented."
+        howTo:
+          - step: "Maintain standard cybersecurity clauses"
+          - step: "Include in vendor agreements"
+          - step: "Document deviations"
+        evidenceExamples:
+          - "Clause library"
+          - "Sample agreement"
+          - "Deviation register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No clauses"
+            "3": "Clauses sometimes"
+            "5": "Clauses always"
+
+      - id: cisa.cpg:SC-02
+        title: "Supply Chain Incident Reporting"
+        weight: 2
+        answerType: scale
+        tags: [supplier, incident, reporting]
+        question: |
+          Do vendor / supplier agreements require timely reporting of
+          cybersecurity incidents that affect the organization?
+        purpose: |
+          Suppliers often discover incidents first. Contract-bound
+          reporting shortens the detection chain.
+        expectedOutcome:
+          - "Incident reporting clauses exist."
+          - "Reporting timelines are explicit."
+          - "Reports are tracked."
+        howTo:
+          - step: "Add incident reporting clauses"
+          - step: "Set explicit timelines"
+          - step: "Track supplier reports"
+        evidenceExamples:
+          - "Reporting clause"
+          - "Supplier incident log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No clause"
+            "3": "Clause vague"
+            "5": "Clause + tracking"
+
+  - id: response-and-recovery
+    name: "7. Response and Recovery"
+    description: |
+      Goals for incident response and recovery planning.
+    controls:
+      - id: cisa.cpg:REC-01
+        title: "Incident Response Plans"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, plan, runbook]
+        question: |
+          Is an incident response plan documented, current, and
+          accessible to relevant personnel?
+        purpose: |
+          Improvised response is consistently worse than planned
+          response. A current plan is the difference.
+        expectedOutcome:
+          - "IR plan is documented and current."
+          - "Plan is accessible to responders."
+          - "Plan covers detection, response, recovery."
+        howTo:
+          - step: "Document IR plan"
+          - step: "Make accessible to responders"
+          - step: "Cover detection, response, recovery"
+        evidenceExamples:
+          - "IR plan"
+          - "Accessibility evidence"
+          - "Plan review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plan"
+            "3": "Plan outdated"
+            "5": "Plan current and accessible"
+
+      - id: cisa.cpg:REC-02
+        title: "Incident Reporting to CISA"
+        weight: 2
+        answerType: scale
+        tags: [incident, reporting, regulatory]
+        question: |
+          Where applicable, are significant incidents reported to CISA
+          per CIRCIA or sector requirements?
+        purpose: |
+          Reporting to CISA enables national-level coordination and
+          shared defense.
+        expectedOutcome:
+          - "Reporting criteria are documented."
+          - "Reporting channel is validated."
+          - "Reporting is rehearsed."
+        howTo:
+          - step: "Document reporting criteria"
+          - step: "Validate CISA reporting channel"
+          - step: "Rehearse reporting"
+        evidenceExamples:
+          - "Reporting criteria"
+          - "Channel validation"
+          - "Rehearsal record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process rehearsed"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: cisa.cpg:REC-03
+        title: "Incident Planning and Preparedness"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, exercise, preparedness]
+        question: |
+          Are incident response and recovery plans regularly exercised
+          with stakeholders?
+        purpose: |
+          Plans rehearsed in calm conditions become usable in stressed
+          conditions. Without exercise, plans are aspirational.
+        expectedOutcome:
+          - "Exercises are scheduled (at least annual)."
+          - "Stakeholders participate."
+          - "Lessons drive improvement."
+        howTo:
+          - step: "Schedule annual (or more frequent) exercises"
+          - step: "Include relevant stakeholders"
+          - step: "Convert lessons to improvements"
+        evidenceExamples:
+          - "Exercise schedule"
+          - "Exercise report"
+          - "Improvement tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No exercises"
+            "3": "Exercises, no follow-up"
+            "5": "Exercises + improvements"
+
+  - id: other
+    name: "8. Other"
+    description: |
+      Goals not covered by the other categories: network segmentation,
+      network monitoring, and detection.
+    controls:
+      - id: cisa.cpg:OTH-01
+        title: "Network Segmentation"
+        weight: 3
+        answerType: scale
+        tags: [network, segmentation, isolation]
+        question: |
+          Are networks segmented into trust zones such that critical
+          systems are isolated from less trusted systems?
+        purpose: |
+          Flat networks amplify any compromise. Segmentation is the
+          systemic defense against lateral movement.
+        expectedOutcome:
+          - "Segmentation isolates critical systems."
+          - "Inter-zone flows are explicit."
+          - "Reviews keep segmentation current."
+        howTo:
+          - step: "Segment critical systems from less trusted ones"
+          - step: "Make inter-zone flows explicit"
+          - step: "Review segmentation periodically"
+        evidenceExamples:
+          - "Segmentation design"
+          - "Inter-zone flow matrix"
+          - "Review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Flat"
+            "3": "Partial"
+            "5": "Segmented + reviewed"
+
+      - id: cisa.cpg:OTH-02
+        title: "Detection of Relevant Threats and TTPs"
+        weight: 3
+        answerType: scale
+        tags: [detection, threat-intel, ttp]
+        question: |
+          Does the organization detect relevant threats and tactics,
+          techniques, and procedures (TTPs) against in-scope systems?
+        purpose: |
+          Generic detection misses adversary tradecraft. Aligning
+          detection with relevant TTPs increases catch rate.
+        expectedOutcome:
+          - "Detection coverage is aligned to relevant TTPs."
+          - "Detection content is tuned."
+          - "Threat intelligence feeds detection."
+        howTo:
+          - step: "Align detection with relevant TTPs"
+          - step: "Tune detection content"
+          - step: "Feed threat intel into detection"
+        evidenceExamples:
+          - "Detection coverage map"
+          - "Tuning log"
+          - "Intel-driven detection rule"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Generic detection"
+            "3": "Partial"
+            "5": "TTP-aligned + intel-driven"

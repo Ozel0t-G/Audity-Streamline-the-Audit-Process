@@ -1,0 +1,582 @@
+framework:
+  schemaVersion: 1
+  key: mitre.attack.enterprise
+  name: "MITRE ATT&CK Enterprise - Detection and Mitigation Coverage Audit"
+  shortName: "MITRE ATT&CK"
+  version: "v15+"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Detection Engineer"
+    - "Threat Intelligence Lead"
+    - "SOC Lead"
+    - "Red / Purple Team Lead"
+    - "Auditor"
+  estimatedDurationMinutes: 240
+  description: |
+    MITRE ATT&CK is a publicly available knowledge base of adversary
+    tactics, techniques, and procedures (TTPs) based on observed
+    real-world attacks. It is not a control framework, but it is
+    widely used as the structure for assessing detection and
+    mitigation coverage.
+
+    This YAML adapts ATT&CK Enterprise's 14 tactics into an
+    audit-readiness framework that asks, for each tactic, "Does the
+    program have meaningful detection and mitigation coverage?". The
+    underlying techniques and sub-techniques are referenced but not
+    enumerated.
+  scopeNote: |
+    In scope: all 14 ATT&CK Enterprise tactics (Reconnaissance through
+    Impact), structured as one audit-control per tactic. Each control
+    asks about coverage rather than implementation of the tactic
+    itself.
+
+    Out of scope: the hundreds of techniques and sub-techniques as
+    separate controls; ATT&CK for Mobile, ICS, and Cloud as separate
+    matrices (Cloud is integrated into Enterprise); ATT&CK Navigator
+    layer files; per-Group / Software pages.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      MITRE ATT&CK is published by MITRE under the ATT&CK Terms of
+      Use. Tactic content has been paraphrased into audit-readiness
+      English. ATT&CK attribution should accompany operational use.
+
+severityRubric:
+  critical: |
+    No detection or mitigation coverage for a tactic that adversaries
+    relevant to the organization are known to use.
+  high: |
+    Material gap in tactic coverage with no compensating monitoring.
+  medium: |
+    Partial coverage; remediable through detection engineering.
+  low: |
+    Documentation gap; coverage exists but not mapped.
+
+controlMappings:
+  - source: mitre.attack:TA0001
+    target: nist-csf-2.0:DE.AE-02
+    type: related
+  - source: mitre.attack:TA0006
+    target: iso27001:A.8.5
+    type: related
+  - source: mitre.attack:TA0008
+    target: iso27001:A.8.20
+    type: related
+  - source: mitre.attack:TA0011
+    target: iso27001:A.8.16
+    type: related
+
+domains:
+  - id: pre-attack
+    name: "Pre-Attack and Initial Access"
+    description: |
+      Tactics covering adversary reconnaissance and capability
+      acquisition, plus the initial access phase.
+    controls:
+      - id: mitre.attack:TA0043
+        title: "Reconnaissance Coverage"
+        weight: 2
+        answerType: scale
+        tags: [attack, reconnaissance, intelligence]
+        question: |
+          Does the program have visibility into reconnaissance against
+          the organization (external asset monitoring, threat
+          intelligence on targeting)?
+        purpose: |
+          Reconnaissance is the earliest warning signal. Visibility
+          here enables proactive defense.
+        expectedOutcome:
+          - "External attack surface monitoring is in place."
+          - "Threat intelligence covers targeting."
+          - "Findings inform proactive defense."
+        howTo:
+          - step: "Monitor external attack surface"
+          - step: "Consume targeting threat intelligence"
+          - step: "Inform proactive defense"
+        evidenceExamples:
+          - "EASM tool"
+          - "Targeting intel"
+          - "Defense adjustment record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Coverage + acted on"
+
+      - id: mitre.attack:TA0042
+        title: "Resource Development Coverage"
+        weight: 1
+        answerType: scale
+        tags: [attack, resource-development, infrastructure]
+        question: |
+          Does the program have visibility into adversary
+          infrastructure (look-alike domains, fake personas, leaked
+          credentials targeting the organization)?
+        purpose: |
+          Adversary infrastructure preparation precedes attack.
+          Detection here is early warning.
+        expectedOutcome:
+          - "Look-alike domain monitoring in place."
+          - "Credential leak monitoring active."
+          - "Findings feed takedown / hardening."
+        howTo:
+          - step: "Monitor look-alike domains"
+          - step: "Monitor credential leaks"
+          - step: "Feed findings to takedown / hardening"
+        evidenceExamples:
+          - "Domain monitoring"
+          - "Leak monitoring service"
+          - "Takedown record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Coverage + takedown"
+
+      - id: mitre.attack:TA0001
+        title: "Initial Access Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, initial-access, phishing, exploit]
+        question: |
+          Does the program detect and mitigate common initial-access
+          techniques (phishing, exploit-public-facing, valid accounts,
+          supply chain compromise)?
+        purpose: |
+          Initial access is where adversaries enter. Coverage here
+          stops most attacks before they progress.
+        expectedOutcome:
+          - "Phishing detection / blocking in place."
+          - "External vulnerability management is current."
+          - "Account compromise detection in place."
+        howTo:
+          - step: "Deploy phishing detection / blocking"
+          - step: "Maintain external vulnerability management"
+          - step: "Detect account compromise"
+        evidenceExamples:
+          - "Phishing tool configuration"
+          - "External VM coverage"
+          - "Account compromise detection"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - nist-csf-2.0:DE.AE-02
+
+  - id: post-compromise
+    name: "Post-Compromise Activity"
+    description: |
+      Tactics covering execution, persistence, escalation, evasion,
+      credential access, discovery, lateral movement, collection,
+      command and control.
+    controls:
+      - id: mitre.attack:TA0002
+        title: "Execution Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, execution, edr, allowlisting]
+        question: |
+          Does the program detect and prevent unauthorized code
+          execution (scripts, binaries, LOLBins)?
+        purpose: |
+          Execution is where adversary code runs. Prevention here
+          collapses many attack chains.
+        expectedOutcome:
+          - "EDR / behavioral detection in place."
+          - "Allowlisting where feasible."
+          - "Script execution restricted."
+        howTo:
+          - step: "Deploy EDR / behavioral detection"
+          - step: "Use allowlisting where feasible"
+          - step: "Restrict script execution"
+        evidenceExamples:
+          - "EDR coverage"
+          - "Allowlist configuration"
+          - "Script policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: mitre.attack:TA0003
+        title: "Persistence Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, persistence, foothold]
+        question: |
+          Does the program detect persistence techniques (autoruns,
+          scheduled tasks, account manipulation, BIOS / firmware)?
+        purpose: |
+          Persistence is the difference between contained and
+          recurring incidents. Detection prevents reinfection.
+        expectedOutcome:
+          - "Persistence detection content is in place."
+          - "Common persistence locations are monitored."
+          - "Incident response sweeps for persistence."
+        howTo:
+          - step: "Build persistence detection content"
+          - step: "Monitor common persistence locations"
+          - step: "Sweep for persistence in IR"
+        evidenceExamples:
+          - "Persistence detection rules"
+          - "Monitoring coverage"
+          - "IR sweep evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: mitre.attack:TA0004
+        title: "Privilege Escalation Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, privilege-escalation, lpe]
+        question: |
+          Does the program detect and limit privilege escalation
+          (kernel exploits, token manipulation, abuse of elevation
+          control mechanisms)?
+        purpose: |
+          Escalation converts a user-level foothold into a domain-
+          impact incident.
+        expectedOutcome:
+          - "EDR detects common escalation techniques."
+          - "Endpoint hardening limits escalation surface."
+          - "Privileged actions are monitored."
+        howTo:
+          - step: "Detect escalation in EDR"
+          - step: "Harden endpoint to limit escalation surface"
+          - step: "Monitor privileged actions"
+        evidenceExamples:
+          - "EDR rules"
+          - "Hardening baseline"
+          - "Privileged action monitoring"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: mitre.attack:TA0005
+        title: "Defense Evasion Coverage"
+        weight: 2
+        answerType: scale
+        tags: [attack, defense-evasion]
+        question: |
+          Does the program detect adversary attempts to evade defenses
+          (disabling tools, log tampering, masquerading, obfuscation)?
+        purpose: |
+          Evasion attempts are direct indicators of post-compromise
+          activity. Their detection raises the cost to the adversary.
+        expectedOutcome:
+          - "Detection covers tool disabling and log tampering."
+          - "Anomaly detection on file naming / locations."
+          - "Tamper protection on security tools."
+        howTo:
+          - step: "Detect tool disabling and log tampering"
+          - step: "Detect anomalous file naming / locations"
+          - step: "Enable tamper protection on security tools"
+        evidenceExamples:
+          - "Detection rules"
+          - "Anomaly model"
+          - "Tamper protection configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: mitre.attack:TA0006
+        title: "Credential Access Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, credential-access, brute-force, kerberos]
+        question: |
+          Does the program detect credential access techniques (brute
+          force, credential dumping, Kerberoasting, AS-REP roasting)?
+        purpose: |
+          Credentials gathered enable lateral movement. Detection here
+          shortens the chain.
+        expectedOutcome:
+          - "Authentication anomalies are detected."
+          - "Kerberos abuse detection in place."
+          - "LSASS / credential dump detection in place."
+        howTo:
+          - step: "Detect authentication anomalies"
+          - step: "Detect Kerberos abuse"
+          - step: "Detect LSASS / credential dumps"
+        evidenceExamples:
+          - "Authentication anomaly detection"
+          - "Kerberos detection rules"
+          - "LSASS protection / detection"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.5
+
+      - id: mitre.attack:TA0007
+        title: "Discovery Coverage"
+        weight: 2
+        answerType: scale
+        tags: [attack, discovery, enumeration]
+        question: |
+          Does the program detect discovery activity (network / host
+          enumeration, AD enumeration, service discovery)?
+        purpose: |
+          Discovery precedes lateral movement. Detection here gives
+          time to respond before impact.
+        expectedOutcome:
+          - "Enumeration patterns are detected."
+          - "AD / cloud enumeration detection in place."
+          - "Detection content is tuned."
+        howTo:
+          - step: "Detect enumeration patterns"
+          - step: "Cover AD / cloud enumeration"
+          - step: "Tune detection content"
+        evidenceExamples:
+          - "Detection rules"
+          - "AD detection coverage"
+          - "Tuning log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: mitre.attack:TA0008
+        title: "Lateral Movement Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, lateral-movement, segmentation]
+        question: |
+          Does the program detect and limit lateral movement (remote
+          services, internal spear-phishing, pass-the-hash /
+          pass-the-ticket)?
+        purpose: |
+          Limiting lateral movement contains incidents. Detection
+          there shortens dwell time.
+        expectedOutcome:
+          - "Network segmentation limits lateral movement."
+          - "Lateral movement detection in place."
+          - "Privileged access is monitored."
+        howTo:
+          - step: "Segment networks to limit lateral movement"
+          - step: "Detect lateral movement"
+          - step: "Monitor privileged access"
+        evidenceExamples:
+          - "Segmentation design"
+          - "Lateral movement detection rules"
+          - "Privileged monitoring"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.20
+
+      - id: mitre.attack:TA0009
+        title: "Collection Coverage"
+        weight: 2
+        answerType: scale
+        tags: [attack, collection, staging]
+        question: |
+          Does the program detect adversary data collection (archive
+          collected data, screen capture, keystroke logging)?
+        purpose: |
+          Collection precedes exfiltration. Detection here surfaces
+          intent before data leaves.
+        expectedOutcome:
+          - "Detection of staging activity in place."
+          - "Keystroke logging / screen capture detection."
+          - "Anomalous archive creation detection."
+        howTo:
+          - step: "Detect staging activity"
+          - step: "Detect keystroke logging / screen capture"
+          - step: "Detect anomalous archive creation"
+        evidenceExamples:
+          - "Staging detection"
+          - "Keystroke / screen detection"
+          - "Archive anomaly detection"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: mitre.attack:TA0011
+        title: "Command and Control Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, c2, beaconing, dns]
+        question: |
+          Does the program detect command-and-control activity
+          (beaconing, DNS tunneling, application-layer C2)?
+        purpose: |
+          C2 is the lifeline of post-compromise activity. Detection
+          interrupts the chain.
+        expectedOutcome:
+          - "Beaconing detection in place."
+          - "DNS tunneling detection in place."
+          - "Application-layer C2 detection."
+        howTo:
+          - step: "Detect beaconing"
+          - step: "Detect DNS tunneling"
+          - step: "Detect application-layer C2"
+        evidenceExamples:
+          - "Beaconing detection rules"
+          - "DNS detection rules"
+          - "App-layer C2 detection"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.16
+
+  - id: terminal-tactics
+    name: "Terminal Tactics"
+    description: |
+      Tactics covering the end goals of attacks: exfiltration and
+      impact.
+    controls:
+      - id: mitre.attack:TA0010
+        title: "Exfiltration Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, exfiltration, dlp, egress]
+        question: |
+          Does the program detect and prevent data exfiltration
+          (over alternative protocols, web services, physical media)?
+        purpose: |
+          Exfiltration is where breaches become incidents. Detection
+          shortens reporting timelines.
+        expectedOutcome:
+          - "Egress monitoring is in place."
+          - "DLP enforced on key channels."
+          - "Alternative protocol exfiltration detected."
+        howTo:
+          - step: "Monitor egress"
+          - step: "Enforce DLP on key channels"
+          - step: "Detect alternative protocol exfiltration"
+        evidenceExamples:
+          - "Egress monitoring"
+          - "DLP configuration"
+          - "Detection rules"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: mitre.attack:TA0040
+        title: "Impact Coverage"
+        weight: 3
+        answerType: scale
+        tags: [attack, impact, ransomware, destruction]
+        question: |
+          Does the program detect and limit impact (data encryption /
+          ransomware, data destruction, service disruption,
+          defacement)?
+        purpose: |
+          Impact is the adversary's end goal. Detection shortens
+          response and limits the damage scope.
+        expectedOutcome:
+          - "Mass file modification detected (ransomware behavior)."
+          - "Backup destruction detected."
+          - "Service-disruption detection in place."
+        howTo:
+          - step: "Detect mass file modification"
+          - step: "Detect backup destruction"
+          - step: "Detect service disruption"
+        evidenceExamples:
+          - "Ransomware behavior detection"
+          - "Backup destruction detection"
+          - "Service disruption monitoring"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No coverage"
+            "3": "Partial"
+            "5": "Comprehensive"

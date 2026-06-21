@@ -107,18 +107,20 @@ export async function createSession(user: AuthUser): Promise<{
   };
 }
 
-export async function authenticateWithPassword(
+export type AuthFailureReason = "no_user" | "disabled" | "wrong_password";
+export type AuthOutcome =
+  | { ok: true; user: AuthUser }
+  | { ok: false; reason: AuthFailureReason; userId?: string };
+
+export async function authenticateWithPasswordDetailed(
   email: string,
   password: string
-): Promise<AuthUser | null> {
+): Promise<AuthOutcome> {
   const row = await getUserByEmail(email);
-  if (!row || row.status !== "active") {
-    return null;
-  }
+  if (!row) return { ok: false, reason: "no_user" };
+  if (row.status !== "active") return { ok: false, reason: "disabled", userId: row.id };
   const valid = await argon2.verify(row.password_hash, password);
-  if (!valid) {
-    return null;
-  }
+  if (!valid) return { ok: false, reason: "wrong_password", userId: row.id };
   const user: AuthUser = {
     id: row.id,
     email: row.email,
@@ -127,7 +129,15 @@ export async function authenticateWithPassword(
     permissions: row.permissions,
     alphaAcceptedAt: row.alphaAcceptedAt
   };
-  return user;
+  return { ok: true, user };
+}
+
+export async function authenticateWithPassword(
+  email: string,
+  password: string
+): Promise<AuthUser | null> {
+  const outcome = await authenticateWithPasswordDetailed(email, password);
+  return outcome.ok ? outcome.user : null;
 }
 
 export async function loginWithPassword(

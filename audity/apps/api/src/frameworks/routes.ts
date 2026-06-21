@@ -518,6 +518,36 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           suggestions: Array.isArray(reportMapping.suggestions)
             ? reportMapping.suggestions.filter((value): value is string => typeof value === "string")
             : [],
+          // v1 authoring-guide hint blocks (Why this matters / Soll-Bild / How To)
+          purpose: typeof row.audity_objective === "string" && row.audity_objective.length > 0
+            ? row.audity_objective
+            : null,
+          expectedOutcome: Array.isArray(reportMapping.expectedOutcome)
+            ? reportMapping.expectedOutcome.filter((value): value is string => typeof value === "string")
+            : [],
+          howTo: Array.isArray(reportMapping.howTo)
+            ? reportMapping.howTo
+                .map((entry) => {
+                  if (typeof entry === "string") return { step: entry };
+                  if (entry && typeof entry === "object") {
+                    const obj = entry as Record<string, unknown>;
+                    return {
+                      step: typeof obj.step === "string" ? obj.step : "",
+                      details: typeof obj.details === "string" ? obj.details : undefined
+                    };
+                  }
+                  return { step: "" };
+                })
+                .filter((entry) => entry.step.length > 0)
+            : [],
+          crossReferences: Array.isArray(reportMapping.crossReferences)
+            ? reportMapping.crossReferences.filter((value): value is string => typeof value === "string")
+            : [],
+          quickAnswers:
+            reportMapping.quickAnswers && typeof reportMapping.quickAnswers === "object"
+              ? (reportMapping.quickAnswers as Record<string, string>)
+              : {},
+          answerType: typeof reportMapping.answerType === "string" ? reportMapping.answerType : "scale",
           reportMapping,
           defaultWeight: Number(row.default_weight ?? 1),
           readinessPassCondition: row.readiness_pass_condition,

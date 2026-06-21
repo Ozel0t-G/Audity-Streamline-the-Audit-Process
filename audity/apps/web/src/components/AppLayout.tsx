@@ -215,9 +215,8 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <Link to="/dashboard" className="flex items-center gap-2 text-audity-text hover:opacity-90">
+        <Link to="/dashboard" className="flex items-center text-audity-text hover:opacity-90">
           <BrandMark />
-          <span className="text-sm font-semibold tracking-tight">Audity</span>
         </Link>
         <button
           type="button"
@@ -444,6 +443,9 @@ function AppLayoutInner() {
           <NavLink className={navClass} to="/customers/shared">
             <NavIcon name="shared" /> {t("Shared Customers")}
           </NavLink>
+          <NavLink className={navClass} to="/customers/archive">
+            <NavIcon name="archive" /> {t("Archive")}
+          </NavLink>
           {customerContext.customerLabel ? (
             <>
               <div className="mt-5 rounded-audity-md border border-audity-border bg-audity-panelAlt/60 p-2">
@@ -482,13 +484,14 @@ function AppLayoutInner() {
   );
 }
 
-function NavIcon({ name }: { name: "dashboard" | "customers" | "shared" | "question" | "audit" | "risk" | "reports" | "users" | "frameworks" | "activity" | "audit-log" | "system" | "connector" | "branding" | "email" | "workbench" | "backup" | "manual" }) {
+function NavIcon({ name }: { name: "dashboard" | "customers" | "shared" | "archive" | "question" | "audit" | "risk" | "reports" | "users" | "frameworks" | "activity" | "audit-log" | "system" | "connector" | "branding" | "email" | "workbench" | "backup" | "manual" }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
   return (
     <svg className="h-4 w-4 shrink-0 text-current opacity-80" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
       {name === "dashboard" ? <><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></> : null}
       {name === "customers" ? <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></> : null}
       {name === "shared" ? <><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" /></> : null}
+      {name === "archive" ? <><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" /><line x1="10" y1="13" x2="14" y2="13" /></> : null}
       {name === "question" ? <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.5-1.5 1-1.5 1.7" /><line x1="12" y1="17" x2="12" y2="17" /></> : null}
       {name === "audit" ? <><path d="M9 11l3 3 7-7" /><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11" /></> : null}
       {name === "risk" ? <><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12" y2="17" /></> : null}
@@ -556,7 +559,7 @@ function Shell({
       ) : null}
       <div className="grid min-h-[calc(100vh-48px)] grid-cols-1 lg:grid-cols-[224px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[248px_minmax(0,1fr)]">
         <aside
-          className={`fixed inset-y-[48px] left-0 z-40 w-64 border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4 transition-transform lg:static lg:inset-auto lg:w-auto lg:translate-x-0 ${mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+          className={`fixed inset-y-[48px] left-0 z-40 w-64 overflow-y-auto border-r border-audity-border bg-audity-sidebar p-3 2xl:p-4 transition-transform lg:sticky lg:top-12 lg:inset-auto lg:h-[calc(100vh-48px)] lg:w-auto lg:translate-x-0 ${mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
           aria-label={navAriaLabel}
         >
           {sidebar}
@@ -612,6 +615,7 @@ function AdminLayoutInner() {
             {can("email.manage") ? <NavLink className={navClass} to="/admin/email"><NavIcon name="email" /> {t("Email Settings")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/workbench"><NavIcon name="workbench" /> {t("Workbench")}</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup"><NavIcon name="backup" /> {t("Backup")}</NavLink> : null}
+            {can("archive.approve") ? <NavLink className={navClass} to="/admin/archive"><NavIcon name="archive" /> {t("Archive")}</NavLink> : null}
             <NavLink className={navClass} to="/manual"><NavIcon name="manual" /> {t("Manual")}</NavLink>
           </nav>
           <Link

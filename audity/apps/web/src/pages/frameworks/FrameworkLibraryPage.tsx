@@ -59,7 +59,7 @@ function FrameworkImportPanel() {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
     });
     if (!response.ok) {
-      setError("Template-Download fehlgeschlagen.");
+      setError("Template download failed.");
       return;
     }
     const blob = await response.blob();
@@ -76,7 +76,7 @@ function FrameworkImportPanel() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!csvFile) {
-      setError("Bitte eine CSV-Datei auswählen.");
+      setError("Please select a CSV file.");
       return;
     }
     setError("");
@@ -99,13 +99,13 @@ function FrameworkImportPanel() {
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        throw new Error(body?.message ?? `Upload fehlgeschlagen: ${response.status}`);
+        throw new Error(body?.message ?? `Upload failed: ${response.status}`);
       }
       reset();
       setUploadOpen(false);
       await loadImports();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload fehlgeschlagen");
+      setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -120,46 +120,46 @@ function FrameworkImportPanel() {
         <div>
           <h2 className="audity-section-title">Framework Import</h2>
           <p className="mt-1 text-xs text-audity-secondary">
-            CSV einer lizenzierten Framework-Vorlage hochladen — die App generiert daraus eine YAML im selben Schema wie die ausgelieferten Frameworks.
+            Upload a CSV of a licensed framework.
           </p>
         </div>
         <div className="flex gap-2">
           <button type="button" className="audity-btn-secondary audity-btn-sm" onClick={() => void downloadTemplate()}>Download CSV Template</button>
           <button type="button" className="audity-btn-primary audity-btn-sm" onClick={() => setUploadOpen((open) => !open)}>
-            {uploadOpen ? "Abbrechen" : "+ CSV hochladen"}
+            {uploadOpen ? "Abbrechen" : "+ Upload CSV"}
           </button>
         </div>
       </div>
       {uploadOpen ? (
         <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={submit}>
           <div>
-            <label className="audity-label">Framework Key (eindeutig)</label>
+            <label className="audity-label">Framework key (unique)</label>
             <input className="audity-input" value={frameworkKey} placeholder="iso27001.licensed.2026" onChange={(event) => setFrameworkKey(event.target.value)} required />
           </div>
           <div>
             <label className="audity-label">Framework Name</label>
-            <input className="audity-input" value={frameworkName} placeholder="ISO 27001 (lizenziert)" onChange={(event) => setFrameworkName(event.target.value)} required />
+            <input className="audity-input" value={frameworkName} placeholder="ISO 27001 (licensed)" onChange={(event) => setFrameworkName(event.target.value)} required />
           </div>
           <div>
             <label className="audity-label">Version</label>
             <input className="audity-input" value={frameworkVersion} onChange={(event) => setFrameworkVersion(event.target.value)} required />
           </div>
           <div>
-            <label className="audity-label">Sprache</label>
+            <label className="audity-label">Language</label>
             <select className="audity-input" value={language} onChange={(event) => setLanguage(event.target.value as "de" | "en")}>
               <option value="de">de</option>
               <option value="en">en</option>
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="audity-label">CSV-Datei</label>
+            <label className="audity-label">CSV file</label>
             <input className="audity-input" type="file" accept=".csv,text/csv" onChange={(event) => setCsvFile(event.target.files?.[0] ?? null)} required />
           </div>
           {error ? <div className="sm:col-span-2 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           <div className="sm:col-span-2 flex justify-end gap-2">
-            <button type="button" className="audity-btn-ghost audity-btn-sm" onClick={() => { reset(); setUploadOpen(false); }}>Abbrechen</button>
+            <button type="button" className="audity-btn-ghost audity-btn-sm" onClick={() => { reset(); setUploadOpen(false); }}>Cancel</button>
             <button type="submit" className="audity-btn-primary audity-btn-sm" disabled={uploading}>
-              {uploading ? "Lädt hoch…" : "Upload starten"}
+              {uploading ? "Uploading…" : "Start upload"}
             </button>
           </div>
         </form>
@@ -167,7 +167,7 @@ function FrameworkImportPanel() {
 
       {activeImports.length > 0 ? (
         <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-audity-muted">In Arbeit</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-audity-muted">In progress</p>
           <div className="mt-2 space-y-2">
             {activeImports.map((entry) => {
               const pct = entry.totalControls === 0 ? 0 : Math.round((entry.enrichedControls / entry.totalControls) * 100);
@@ -341,10 +341,6 @@ export function FrameworkLibraryPage() {
             <h1 className="audity-page-title">Framework Library</h1>
           </div>
           <FrameworkImportPanel />
-          <div className="mb-4 rounded-audity border border-audity-warning bg-audity-warning/10 p-3 text-sm text-audity-secondary">
-            {selected?.disclaimer ??
-              "Framework catalogs are loaded from YAML files and synced automatically. User-imported or license-restricted frameworks require your own license confirmation."}
-          </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           {success ? <div className="mb-4 rounded-audity border border-audity-success bg-audity-success/10 px-3 py-2 text-sm text-audity-success">{success}</div> : null}
           <div className="grid min-w-0 gap-3 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_300px]">
@@ -362,17 +358,12 @@ export function FrameworkLibraryPage() {
                   >
                     <div className="flex min-w-0 items-center justify-between gap-3">
                       <p className="min-w-0 truncate text-sm font-semibold text-audity-text">{framework.shortName ?? framework.name}</p>
-                      <span className={`shrink-0 rounded-audity border px-2 py-1 text-xs font-semibold ${badgeClass(framework.statusLabel)}`}>
-                        {framework.statusLabel ?? "User License Required"}
-                      </span>
                     </div>
                     <p className="mt-1 line-clamp-2 text-xs text-audity-secondary">{framework.name} {framework.version}</p>
                     <div className="mt-2 flex items-center gap-1.5 text-xs text-audity-muted">
                       <span>{framework.controlCount} controls</span>
                       {framework.sourceKind === "user_uploaded" ? (
                         <span className="rounded-audity border border-audity-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-audity-primary">User</span>
-                      ) : framework.sourceKind === "legacy" ? (
-                        <span className="rounded-audity border border-audity-borderStrong px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-audity-muted">Legacy</span>
                       ) : (
                         <span className="rounded-audity border border-audity-success/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-audity-success">Shipped</span>
                       )}
@@ -432,12 +423,12 @@ export function FrameworkLibraryPage() {
                 {importForm.format === "yaml" ? "YAML" : "CSV"}
                 <textarea className="mt-2 min-h-40 w-full rounded-audity border border-audity-border bg-audity-page px-3 py-2 font-mono text-xs normal-case text-audity-text outline-none focus:border-audity-primary" value={importForm.format === "yaml" ? importForm.yaml : importForm.csv} onChange={(event) => setImportForm({ ...importForm, [importForm.format]: event.target.value })} />
               </label>
-              <label className="mb-4 flex items-start gap-2 text-sm text-audity-secondary">
-                <input className="mt-1" type="checkbox" checked={importForm.publishToTenant} onChange={(event) => setImportForm({ ...importForm, publishToTenant: event.target.checked })} />
+              <label className="mb-4 flex items-start gap-3 text-sm text-audity-secondary">
+                <input className="mt-0.5 h-4 w-4 shrink-0" type="checkbox" checked={importForm.publishToTenant} onChange={(event) => setImportForm({ ...importForm, publishToTenant: event.target.checked })} />
                 <span>Make this framework available in all active customer scopes.</span>
               </label>
-              <label className="mb-4 flex items-start gap-2 text-sm text-audity-secondary">
-                <input className="mt-1" type="checkbox" checked={importForm.licenseConfirmed} onChange={(event) => setImportForm({ ...importForm, licenseConfirmed: event.target.checked })} />
+              <label className="mb-4 flex items-start gap-3 text-sm text-audity-secondary">
+                <input className="mt-0.5 h-4 w-4 shrink-0" type="checkbox" checked={importForm.licenseConfirmed} onChange={(event) => setImportForm({ ...importForm, licenseConfirmed: event.target.checked })} />
                 <span>I confirm that I have the rights or license required to publish and use this framework tenant-wide.</span>
               </label>
               <button className="audity-btn-primary">

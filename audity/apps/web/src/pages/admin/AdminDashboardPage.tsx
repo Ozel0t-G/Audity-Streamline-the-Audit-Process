@@ -241,6 +241,10 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [systemMonitor, setSystemMonitor] = useState<DashboardSystem | null>(null);
   const [systemRange, setSystemRange] = useState<DashboardRange>("24h");
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [emailTestRecipient, setEmailTestRecipient] = useState("");
+  const [emailTesting, setEmailTesting] = useState(false);
+  const [emailTestResult, setEmailTestResult] = useState<{ ok: boolean; latencyMs: number; message: string } | null>(null);
   const [updateJob, setUpdateJob] = useState<UpdateJob | null>(null);
   const [updateVersion, setUpdateVersion] = useState("");
   const [backupJobs, setBackupJobs] = useState<BackupJob[]>([]);
@@ -265,6 +269,8 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [restorePrecheck, setRestorePrecheck] = useState<Record<string, unknown> | null>(null);
   const [restoreConfirmation, setRestoreConfirmation] = useState("");
   const [error, setError] = useState("");
+  const [oneTimePassword, setOneTimePassword] = useState<{ email: string; password: string; action: string } | null>(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
 
   async function fetchWithFreshAuth(path: string, init: RequestInit = {}) {
     const send = (token: string | null, csrf: string | null) => {
@@ -443,15 +449,34 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     event.preventDefault();
     setError("");
     try {
-      await api("/api/admin/users/invite", {
+      const payload = { ...inviteForm };
+      // Always let the backend generate a 24-char password; the form password
+      // field is ignored on submit so admins can't accidentally use a weak one.
+      delete (payload as Record<string, unknown>).password;
+      const result = await api<{ oneTimePassword: string; user: { email: string } }>("/api/admin/users/invite", {
         method: "POST",
-        body: JSON.stringify(inviteForm)
+        body: JSON.stringify(payload)
       });
+      setOneTimePassword({ email: result.user.email, password: result.oneTimePassword, action: "Invitation" });
       setInviteForm({ ...inviteForm, email: "", name: "" });
       await loadUsers();
       await loadActivity();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invite failed");
+    }
+  }
+
+  async function resetUserPassword(user: AdminUser) {
+    setError("");
+    try {
+      const result = await api<{ oneTimePassword: string }>(`/api/admin/users/${user.id}/reset-password`, {
+        method: "POST",
+        body: JSON.stringify({})
+      });
+      setOneTimePassword({ email: user.email, password: result.oneTimePassword, action: "Password reset" });
+      await loadActivity();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Password reset failed");
     }
   }
 
@@ -538,6 +563,22 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     await loadEmail();
   }
 
+  async function sendTestEmail() {
+    setEmailTestResult(null);
+    setEmailTesting(true);
+    try {
+      const result = await api<{ ok: boolean; latencyMs: number; message?: string }>("/api/admin/email-settings/test", {
+        method: "POST",
+        body: JSON.stringify({ recipient: emailTestRecipient })
+      });
+      setEmailTestResult({ ok: result.ok ?? true, latencyMs: result.latencyMs, message: result.message ?? `Test email sent to ${emailTestRecipient}.` });
+    } catch (err) {
+      setEmailTestResult({ ok: false, latencyMs: 0, message: err instanceof Error ? err.message : "Test failed" });
+    } finally {
+      setEmailTesting(false);
+    }
+  }
+
   async function saveSystemSettings(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -554,6 +595,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
 
   async function checkUpdates() {
     setError("");
+    setCheckingUpdates(true);
     try {
       const payload = await api<{ update: UpdateStatus; job: UpdateJob | null }>("/api/admin/updates/check", {
         method: "POST"
@@ -563,6 +605,8 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
       if (payload.update.latestVersion) setUpdateVersion(payload.update.latestVersion);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Update check failed");
+    } finally {
+      setCheckingUpdates(false);
     }
   }
 
@@ -866,7 +910,26 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                         <p className="text-sm font-semibold">{user.email}</p>
                         <p className="text-xs text-audity-muted">{user.name} · {user.status}</p>
                       </div>
-                      {can("users.disable") ? <button className="audity-btn-secondary border-audity-error px-2 py-1 text-xs text-audity-error" onClick={() => void updateUser(user, { status: "disabled" })}>Disable</button> : null}
+                      <div className="flex items-center gap-2">
+                        {can("roles.manage") ? (
+                          <button
+                            type="button"
+                            className="audity-btn-secondary audity-btn-sm"
+                            onClick={() => void resetUserPassword(user)}
+                          >
+                            Reset password
+                          </button>
+                        ) : null}
+                        {can("users.disable") && user.status !== "disabled" ? (
+                          <button
+                            type="button"
+                            className="audity-btn-secondary audity-btn-sm border-audity-error text-audity-error"
+                            onClick={() => void updateUser(user, { status: "disabled" })}
+                          >
+                            Disable
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                     {can("roles.manage") ? <select className="audity-input bg-audity-panel" value={user.role} onChange={(event) => void updateUser(user, { role: event.target.value })}>
                       {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
@@ -878,28 +941,74 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           </div>
           ) : null}
           {section === "branding" ? (
-            <section className="max-w-3xl rounded-audity border border-audity-border bg-audity-panel p-4">
-              <form className="mb-4 flex flex-wrap items-center gap-3" onSubmit={(event) => void uploadLogo(event)}>
-                <input name="logo" type="file" accept="image/png,image/jpeg" className="text-sm text-audity-secondary" />
-                <button className="audity-btn-secondary">Upload logo</button>
-                {branding.logoFileName ? <span className="text-sm text-audity-secondary">{branding.logoFileName}</span> : null}
-              </form>
-              <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveBranding(event)}>
-                {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
-                  <label key={key} className="text-xs font-medium text-audity-secondary">
-                    {key}
-                    <input type="color" className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
-                  </label>
-                ))}
-                {(["headerText", "footerText", "confidentialityLabel", "watermark"] as const).map((key) => (
-                  <label key={key} className="text-xs font-medium text-audity-secondary">
-                    {key}
-                    <input className="mt-2 audity-input" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
-                  </label>
-                ))}
-                <button className="audity-btn-primary">Save branding</button>
-              </form>
-            </section>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <section className="audity-card">
+                <form className="mb-4 flex flex-wrap items-center gap-3" onSubmit={(event) => void uploadLogo(event)}>
+                  <input name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml" className="text-sm text-audity-secondary" />
+                  <button className="audity-btn-secondary">Upload logo</button>
+                  {branding.logoFileName ? <span className="text-sm text-audity-secondary">{branding.logoFileName}</span> : null}
+                </form>
+                <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveBranding(event)}>
+                  {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
+                    <label key={key} className="text-xs font-medium text-audity-secondary">
+                      {key}
+                      <input type="color" className="mt-2 h-9 w-full rounded-audity border border-audity-border bg-audity-page" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
+                    </label>
+                  ))}
+                  {(["headerText", "footerText", "confidentialityLabel", "watermark"] as const).map((key) => (
+                    <label key={key} className="text-xs font-medium text-audity-secondary">
+                      {key}
+                      <input className="mt-2 audity-input" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
+                    </label>
+                  ))}
+                  <div className="md:col-span-2">
+                    <button className="audity-btn-primary">Save branding</button>
+                  </div>
+                </form>
+              </section>
+              <aside className="audity-card h-fit">
+                <h3 className="audity-section-title text-sm">Where this shows up</h3>
+                <ul className="mt-3 space-y-3 text-xs text-audity-secondary">
+                  <li>
+                    <p className="font-semibold text-audity-text">Logo</p>
+                    <p>Login screen, top-bar (replaces the wordmark), generated PDF reports, secure report download page, email templates.</p>
+                  </li>
+                  <li>
+                    <p className="font-semibold text-audity-text">Primary color</p>
+                    <p>Main accent — buttons, active navigation, link underlines, progress bars, focus rings.</p>
+                  </li>
+                  <li>
+                    <p className="font-semibold text-audity-text">Secondary color</p>
+                    <p>Section dividers and chart secondary series in dashboards and reports.</p>
+                  </li>
+                  <li>
+                    <p className="font-semibold text-audity-text">Accent color</p>
+                    <p>Highlight badges and the user-uploaded customer pill in the top bar.</p>
+                  </li>
+                  <li>
+                    <p className="font-semibold text-audity-text">Header / footer text</p>
+                    <p>Top and bottom rows of every generated PDF report, plus the secure download landing page.</p>
+                  </li>
+                  <li>
+                    <p className="font-semibold text-audity-text">Confidentiality label</p>
+                    <p>Appears as a red ribbon on report cover pages and as a footer tag on each page.</p>
+                  </li>
+                  <li>
+                    <p className="font-semibold text-audity-text">Watermark</p>
+                    <p>Semi-transparent diagonal text rendered behind PDF report content (e.g. "Confidential — Draft").</p>
+                  </li>
+                </ul>
+                <div className="mt-4 rounded-audity-md border border-audity-border bg-audity-page p-3">
+                  <p className="text-xs font-semibold text-audity-text">Live preview</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="inline-block h-6 w-6 rounded-audity" style={{ background: branding.primaryColor }} />
+                    <span className="inline-block h-6 w-6 rounded-audity" style={{ background: branding.secondaryColor }} />
+                    <span className="inline-block h-6 w-6 rounded-audity" style={{ background: branding.accentColor }} />
+                  </div>
+                  <p className="mt-2 text-[11px] text-audity-muted break-all">{branding.headerText || "—"}</p>
+                </div>
+              </aside>
+            </div>
           ) : null}
           {section === "email" ? (
             <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -917,7 +1026,37 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                   </label>
                   <button className="audity-btn-primary">Save email settings</button>
                 </form>
+                <div className="mt-5 border-t border-audity-border pt-4">
+                  <h3 className="audity-section-title text-sm">Test connection</h3>
+                  <p className="mt-1 text-xs text-audity-secondary">
+                    Audity will connect to your SMTP server, verify the handshake and send one short test email.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                      type="email"
+                      className="audity-input max-w-xs"
+                      placeholder="recipient@example.com"
+                      value={emailTestRecipient}
+                      onChange={(event) => setEmailTestRecipient(event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="audity-btn-secondary audity-btn-sm"
+                      disabled={emailTesting || !emailTestRecipient}
+                      onClick={() => void sendTestEmail()}
+                    >
+                      {emailTesting ? "Sending test…" : "Send test email"}
+                    </button>
+                  </div>
+                  {emailTestResult ? (
+                    <div className={`mt-3 rounded-audity border px-3 py-2 text-sm ${emailTestResult.ok ? "border-audity-success bg-audity-success/10 text-audity-success" : "border-audity-error bg-audity-error/10 text-audity-error"}`}>
+                      <p className="font-semibold">{emailTestResult.ok ? "✓ Test succeeded" : "✗ Test failed"}{emailTestResult.latencyMs ? ` (${emailTestResult.latencyMs} ms)` : ""}</p>
+                      <p className="mt-1 text-xs">{emailTestResult.message}</p>
+                    </div>
+                  ) : null}
+                </div>
               </section>
+              <EmailSubscriptionsCard />
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">Delivery Log</h2>
                 <div className="space-y-2">
@@ -935,6 +1074,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           ) : null}
           {section === "system" ? (
             <div className="grid gap-3">
+              <ServerStatusCard />
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-audity-border pb-3">
                   <div>
@@ -978,8 +1118,21 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       />
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" className="audity-btn-secondary" onClick={() => void checkUpdates()}>
-                        Check
+                      <button
+                        type="button"
+                        className="audity-btn-secondary"
+                        disabled={checkingUpdates}
+                        onClick={() => void checkUpdates()}
+                      >
+                        {checkingUpdates ? (
+                          <>
+                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                              <circle cx="12" cy="12" r="9" strokeOpacity="0.25" />
+                              <path d="M21 12a9 9 0 0 0-9-9" />
+                            </svg>
+                            Checking for updates…
+                          </>
+                        ) : "Check for updates"}
                       </button>
                       <button
                         type="button"
@@ -1233,6 +1386,336 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               </section>
             </div>
           ) : null}
+          <div data-marker="otp-modal-anchor" hidden />
+          {oneTimePassword ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+              <div className="audity-card max-w-md w-full shadow-audity-raised">
+                <h2 className="text-lg font-semibold text-audity-text">{oneTimePassword.action} — copy now</h2>
+                <p className="mt-2 text-sm text-audity-secondary">
+                  The one-time password for <strong>{oneTimePassword.email}</strong> is shown below.
+                  It will <strong>never be shown again</strong>. Copy and deliver it via a secure channel.
+                </p>
+                <div className="mt-4 rounded-audity border border-audity-borderStrong bg-audity-panelAlt p-3 font-mono text-sm break-all select-all">
+                  {oneTimePassword.password}
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    className="audity-btn-soft"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(oneTimePassword.password);
+                        setCopiedPassword(true);
+                        window.setTimeout(() => setCopiedPassword(false), 2000);
+                      } catch {
+                        setError("Copy to clipboard failed — please select the password manually.");
+                      }
+                    }}
+                  >
+                    {copiedPassword ? "✓ Copied" : "Copy to clipboard"}
+                  </button>
+                  <button
+                    type="button"
+                    className="audity-btn-primary"
+                    onClick={() => { setOneTimePassword(null); setCopiedPassword(false); }}
+                  >
+                    I've saved it
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
     </>
+  );
+}
+
+type SystemInfo = {
+  hostname: string;
+  platform: string;
+  release: string;
+  arch: string;
+  nodeVersion: string;
+  uptimeSeconds: number;
+  publicUrl: string | null;
+  loadAverage: number[];
+  cpuCount: number;
+  memory: { totalMb: number; freeMb: number; usedPct: number };
+  networkAddresses: Array<{ iface: string; family: string; address: string; internal: boolean }>;
+};
+
+type RecoveryFingerprintInfo = {
+  fingerprint: string;
+  fingerprintShort: string;
+  setupAt: string;
+  acknowledgedAt: string | null;
+};
+
+function ServerStatusCard() {
+  const api = useApi();
+  const [info, setInfo] = useState<SystemInfo | null>(null);
+  const [fingerprint, setFingerprint] = useState<RecoveryFingerprintInfo | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const payload = await api<SystemInfo>("/api/admin/system-info");
+        if (!cancelled) setInfo(payload);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load");
+      }
+      try {
+        const fp = await api<RecoveryFingerprintInfo>("/api/auth/recovery-phrase/fingerprint");
+        if (!cancelled) setFingerprint(fp);
+      } catch {
+        /* fingerprint is best-effort */
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 10000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [api]);
+
+  if (error) {
+    return <div className="audity-card text-sm text-audity-error">Server info unavailable: {error}</div>;
+  }
+  if (!info) {
+    return <div className="audity-card text-sm text-audity-muted">Loading server status…</div>;
+  }
+
+  const uptime = (() => {
+    const s = info.uptimeSeconds;
+    const days = Math.floor(s / 86400);
+    const hrs = Math.floor((s % 86400) / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    if (days) return `${days}d ${hrs}h ${mins}m`;
+    if (hrs) return `${hrs}h ${mins}m`;
+    return `${mins}m`;
+  })();
+
+  return (
+    <section className="audity-card">
+      <h2 className="audity-section-title">Server status</h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <InfoMetric label="Hostname" value={info.hostname} />
+        <InfoMetric label="Public URL" value={info.publicUrl ?? "—"} />
+        <InfoMetric label="Uptime" value={uptime} />
+        <InfoMetric label="Platform" value={`${info.platform} ${info.release} · ${info.arch}`} />
+        <InfoMetric label="Node" value={info.nodeVersion} />
+        <InfoMetric label="CPU cores" value={String(info.cpuCount)} />
+        <InfoMetric label="Load average" value={info.loadAverage.join(" / ")} />
+        <InfoMetric label="Memory" value={`${info.memory.usedPct}% of ${(info.memory.totalMb / 1024).toFixed(1)} GB`} />
+      </div>
+      <div className="mt-4">
+        <p className="audity-label">Network interfaces</p>
+        <div className="mt-1 space-y-1 text-sm">
+          {info.networkAddresses.length === 0 ? (
+            <p className="text-audity-muted">No external interfaces detected.</p>
+          ) : (
+            info.networkAddresses.map((nic) => (
+              <div key={`${nic.iface}-${nic.address}`} className="flex items-center gap-3 rounded-audity border border-audity-border bg-audity-page px-3 py-2 font-mono text-xs">
+                <span className="text-audity-muted">{nic.iface}</span>
+                <span className="text-audity-secondary">{nic.family}</span>
+                <span className="font-semibold text-audity-text">{nic.address}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      {fingerprint ? (
+        <div className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="audity-label">Encryption-key fingerprint</p>
+              <p className="mt-1 font-mono text-sm text-audity-text">{fingerprint.fingerprintShort}</p>
+            </div>
+            <div className="text-right text-xs">
+              {fingerprint.acknowledgedAt ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-audity-success/30 bg-audity-success/10 px-2 py-0.5 text-audity-success">
+                  Phrase acknowledged
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full border border-audity-warning/30 bg-audity-warning/10 px-2 py-0.5 text-audity-warning">
+                  Phrase not yet saved
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-audity-secondary">
+            Compare this fingerprint against the one you stored with your recovery phrase to confirm the
+            instance is still using the same encryption key. Run{" "}
+            <code className="font-mono text-xs">docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js</code>{" "}
+            on the host to re-display the full phrase.
+          </p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+type EmailTopic = {
+  id: string;
+  label: string;
+  description: string;
+  defaultRoles: string[];
+  variables: string[];
+};
+type EmailSubscription = {
+  topic: string;
+  roles: string[];
+  extraEmails: string[];
+  enabled: boolean;
+  updatedAt: string;
+};
+
+const KNOWN_ROLES = ["Instance Admin", "Tenant Admin", "Assessment Manager", "Auditor", "Reviewer", "Viewer"];
+
+function EmailSubscriptionsCard() {
+  const api = useApi();
+  const [topics, setTopics] = useState<EmailTopic[]>([]);
+  const [subs, setSubs] = useState<Record<string, EmailSubscription>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    void api<{ topics: EmailTopic[]; subscriptions: EmailSubscription[] }>("/api/admin/email-subscriptions")
+      .then((payload) => {
+        if (cancelled) return;
+        setTopics(payload.topics);
+        const map: Record<string, EmailSubscription> = {};
+        for (const sub of payload.subscriptions) map[sub.topic] = sub;
+        setSubs(map);
+      })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load"); });
+    return () => { cancelled = true; };
+  }, [api]);
+
+  function update(topicId: string, patch: Partial<EmailSubscription>) {
+    setSubs((current) => ({ ...current, [topicId]: { ...current[topicId], ...patch, topic: topicId } as EmailSubscription }));
+  }
+
+  async function save(topicId: string) {
+    setSavingId(topicId);
+    setError("");
+    try {
+      const sub = subs[topicId];
+      await api("/api/admin/email-subscriptions", {
+        method: "PUT",
+        body: JSON.stringify({
+          topic: topicId,
+          roles: sub.roles,
+          extraEmails: sub.extraEmails,
+          enabled: sub.enabled
+        })
+      });
+      setSavedId(topicId);
+      window.setTimeout(() => setSavedId(null), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  if (topics.length === 0 && !error) {
+    return <div className="audity-card text-sm text-audity-muted">Loading email subscriptions…</div>;
+  }
+
+  return (
+    <section className="audity-card">
+      <h2 className="audity-section-title">Notification routing</h2>
+      <p className="mt-1 text-xs text-audity-secondary">
+        Pick which user groups receive an email when a specific event happens in Audity.
+        Members of a role get an email if they are active and have a valid address.
+        Extra recipients are arbitrary email addresses that don't need a user account.
+      </p>
+      {error ? <div className="mt-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
+      <div className="mt-4 space-y-3">
+        {topics.map((topic) => {
+          const sub = subs[topic.id];
+          if (!sub) return null;
+          return (
+            <div key={topic.id} className="rounded-audity-md border border-audity-border bg-audity-page p-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-audity-text">{topic.label}</p>
+                  <p className="mt-0.5 text-xs text-audity-secondary">{topic.description}</p>
+                </div>
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={sub.enabled}
+                    onChange={(event) => update(topic.id, { enabled: event.target.checked })}
+                  />
+                  Enabled
+                </label>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="audity-label">Roles</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {KNOWN_ROLES.map((role) => {
+                      const active = sub.roles.includes(role);
+                      return (
+                        <button
+                          key={role}
+                          type="button"
+                          className={`rounded-full border px-2.5 py-0.5 text-xs ${active ? "border-audity-primary bg-audity-primaryActive/40 text-audity-primary" : "border-audity-border bg-audity-page text-audity-secondary hover:border-audity-borderStrong"}`}
+                          onClick={() => update(topic.id, {
+                            roles: active ? sub.roles.filter((r) => r !== role) : [...sub.roles, role]
+                          })}
+                        >
+                          {role}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <p className="audity-label">Extra recipients (one per line)</p>
+                  <textarea
+                    className="audity-input"
+                    rows={2}
+                    value={sub.extraEmails.join("\n")}
+                    onChange={(event) => update(topic.id, {
+                      extraEmails: event.target.value.split(/\n/).map((line) => line.trim()).filter(Boolean)
+                    })}
+                    placeholder="security@example.com"
+                  />
+                </div>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <p className="text-[11px] text-audity-muted">
+                  Variables available in template: {topic.variables.length ? topic.variables.join(", ") : "—"}
+                </p>
+                <div className="flex items-center gap-2">
+                  {savedId === topic.id ? <span className="text-xs text-audity-success">✓ Saved</span> : null}
+                  <button
+                    type="button"
+                    className="audity-btn-soft audity-btn-sm"
+                    disabled={savingId === topic.id}
+                    onClick={() => void save(topic.id)}
+                  >
+                    {savingId === topic.id ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function InfoMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-audity-md border border-audity-border bg-audity-page px-3 py-2">
+      <p className="text-xs text-audity-muted">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-audity-text break-all">{value}</p>
+    </div>
   );
 }

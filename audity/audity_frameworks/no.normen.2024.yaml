@@ -1,0 +1,797 @@
+framework:
+  schemaVersion: 1
+  key: no.normen.2024
+  name: "Normen - Norwegian Health and Care Sector Information Security and Privacy Norm"
+  shortName: "Normen"
+  version: "6.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "DPO"
+    - "CISO in health sector"
+    - "Quality Manager"
+    - "Top Management"
+  estimatedDurationMinutes: 300
+  description: |
+    Normen (Norm for informasjonssikkerhet og personvern i helse- og
+    omsorgstjenesten) is the cross-sector norm for information security
+    and privacy in the Norwegian health and care services, published by
+    Direktoratet for e-helse. Adherence to Normen is contractual for
+    actors connected to the Norwegian Health Network (Norsk helsenett).
+
+    This YAML covers the principal duties of Normen as audit-readiness
+    controls grouped into Governance, Risk and Conformity, Privacy and
+    Patient Rights, Information Security, Healthcare-Specific Duties,
+    Suppliers and Cooperation, and Incident Handling.
+  scopeNote: |
+    In scope: principal duties from Normen for actors in health and
+    care delivery. The control set is structured around the
+    Normen-defined responsibility model (Dataansvarlig / Databehandler
+    in the GDPR sense) and the healthcare-specific duties for patient
+    record systems and inter-actor cooperation.
+
+    Out of scope: detailed sector-specific operational guidance,
+    sub-norms (faktaark, veiledere) published alongside Normen, and
+    obligations on Direktoratet for e-helse or Norsk helsenett as
+    infrastructure provider.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Normen is published by Direktoratet for e-helse and made openly
+      available to actors in the Norwegian health sector. Norm wording
+      has been paraphrased into audit-readiness English and is not
+      reproduced verbatim.
+
+severityRubric:
+  critical: |
+    Failure exposes patient data or breaches the GDPR / Personal Health
+    Data Filing System Act with notification consequences.
+  high: |
+    Material gap in a Normen duty without compensating controls.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate patient safety or
+    privacy impact.
+
+controlMappings:
+  - source: no.normen:GOV-01
+    target: nist-csf-2.0:GV.RR-01
+    type: covers
+  - source: no.normen:PRIV-01
+    target: iso27001:A.5.34
+    type: covers
+  - source: no.normen:RISK-01
+    target: iso27001:Clause-6.1.2
+    type: covers
+  - source: no.normen:INC-01
+    target: nist-csf-2.0:RS.CO-02
+    type: covers
+  - source: no.normen:SUP-01
+    target: iso27001:A.5.20
+    type: covers
+
+domains:
+  - id: governance
+    name: "Governance and Accountability"
+    description: |
+      Duties of top management for information security and privacy,
+      organization of responsibility, and demonstration of accountability.
+    controls:
+      - id: no.normen:GOV-01
+        title: "Top management responsibility for security and privacy"
+        weight: 3
+        answerType: scale
+        tags: [governance, top-management, accountability]
+        question: |
+          Has the entity's top management formally taken responsibility
+          for information security and privacy and organized the work
+          accordingly?
+        purpose: |
+          Normen requires demonstrable top management accountability,
+          aligned with both GDPR Art. 5(2) (accountability) and
+          Norwegian sectoral expectations.
+        expectedOutcome:
+          - "Top management has documented its responsibility."
+          - "Security and privacy are on the management agenda."
+          - "Accountability is reflected in role descriptions."
+        howTo:
+          - step: "Document top management responsibility"
+          - step: "Schedule recurring agenda items"
+          - step: "Reflect accountability in role descriptions"
+        evidenceExamples:
+          - "Management commitment statement"
+          - "Board / management minutes"
+          - "Role description"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No accountability"
+            "3": "Informal"
+            "5": "Documented and active"
+        crossReferences:
+          - nist-csf-2.0:GV.RR-01
+
+      - id: no.normen:GOV-02
+        title: "Organization of information security and privacy roles"
+        weight: 2
+        answerType: scale
+        tags: [governance, organization, roles, dpo]
+        question: |
+          Are roles for information security and privacy clearly
+          organized, including the data protection officer (DPO,
+          personvernombud) where required?
+        purpose: |
+          Sectoral expectation is for explicit named roles. Many
+          healthcare entities are required by law to appoint a DPO.
+        expectedOutcome:
+          - "Security and privacy roles are named and documented."
+          - "DPO is appointed and registered where required."
+          - "Substitutes are named."
+        howTo:
+          - step: "Name security and privacy roles"
+          - step: "Appoint and register DPO where required"
+          - step: "Name substitutes"
+        evidenceExamples:
+          - "Role map"
+          - "DPO appointment letter"
+          - "Substitute designation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Roles unclear"
+            "3": "Partial"
+            "5": "Roles defined and registered"
+
+      - id: no.normen:GOV-03
+        title: "Information security and privacy policy"
+        weight: 3
+        answerType: scale
+        tags: [governance, policy, isms]
+        question: |
+          Does the entity have an approved and communicated information
+          security and privacy policy reflecting Normen and applicable
+          legislation?
+        purpose: |
+          The policy is the cornerstone that operationalizes Normen
+          duties for the entity and gives staff a binding framework.
+        expectedOutcome:
+          - "Approved policy exists, current and communicated."
+          - "Policy maps to Normen duties and GDPR."
+          - "Policy is reviewed periodically."
+        howTo:
+          - step: "Approve and maintain the policy"
+          - step: "Map policy to Normen duties and GDPR"
+          - step: "Review on a defined cadence"
+        evidenceExamples:
+          - "Policy document"
+          - "Normen / GDPR mapping"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy"
+            "3": "Policy outdated"
+            "5": "Policy current and mapped"
+
+  - id: risk-and-conformity
+    name: "Risk Management and Conformity Assessment"
+    description: |
+      Duties to perform risk assessments and self-assessments of
+      conformity with Normen.
+    controls:
+      - id: no.normen:RISK-01
+        title: "Risk assessment for information security and privacy"
+        weight: 3
+        answerType: scale
+        tags: [risk-assessment, privacy, dpia]
+        question: |
+          Does the entity perform regular risk assessments for
+          information security and privacy, including DPIAs where
+          processing requires it under GDPR Art. 35?
+        purpose: |
+          Risk assessment is a recurring Normen duty. DPIAs are required
+          for high-risk processing, of which there is much in healthcare.
+        expectedOutcome:
+          - "Risk assessments are performed periodically."
+          - "DPIAs are conducted where required."
+          - "Outcomes inform treatment plans."
+        howTo:
+          - step: "Schedule and perform risk assessments"
+          - step: "Conduct DPIAs for high-risk processing"
+          - step: "Drive treatment plans from outcomes"
+        evidenceExamples:
+          - "Risk assessment report"
+          - "DPIA record"
+          - "Treatment plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessments"
+            "3": "Assessments outdated"
+            "5": "Assessments current + DPIAs"
+        crossReferences:
+          - iso27001:Clause-6.1.2
+
+      - id: no.normen:RISK-02
+        title: "Self-assessment of conformity with Normen"
+        weight: 2
+        answerType: scale
+        tags: [conformity, self-assessment, normen]
+        question: |
+          Does the entity periodically assess its conformity with
+          Normen and document findings?
+        purpose: |
+          Self-assessment against Normen is the basis for the entity's
+          declaration of conformity to Norsk helsenett and for internal
+          improvement.
+        expectedOutcome:
+          - "Conformity self-assessment is scheduled."
+          - "Gaps are documented and remediated."
+          - "Declaration of conformity is current."
+        howTo:
+          - step: "Schedule conformity self-assessment"
+          - step: "Document gaps and remediate"
+          - step: "Maintain declaration of conformity"
+        evidenceExamples:
+          - "Self-assessment report"
+          - "Gap remediation plan"
+          - "Declaration of conformity"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No self-assessment"
+            "3": "Performed irregularly"
+            "5": "Performed and acted on"
+
+  - id: privacy-and-patient-rights
+    name: "Privacy and Patient Rights"
+    description: |
+      Duties relating to lawful processing of personal health data and
+      to the rights of patients (registered persons).
+    controls:
+      - id: no.normen:PRIV-01
+        title: "Lawful basis and processing records"
+        weight: 3
+        answerType: scale
+        tags: [privacy, gdpr, lawful-basis, ropa]
+        question: |
+          Is each processing activity supported by a lawful basis and
+          recorded in a processing register (RoPA) under GDPR Art. 30?
+        purpose: |
+          Processing without a documented lawful basis is non-compliant
+          by default. The RoPA provides the evidence trail.
+        expectedOutcome:
+          - "RoPA is current and complete."
+          - "Lawful basis is documented per processing activity."
+          - "Updates follow material changes."
+        howTo:
+          - step: "Maintain a current RoPA"
+          - step: "Document lawful basis per activity"
+          - step: "Update on material changes"
+        evidenceExamples:
+          - "RoPA extract"
+          - "Lawful basis register"
+          - "Update log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No RoPA"
+            "3": "RoPA partial"
+            "5": "RoPA current and complete"
+        crossReferences:
+          - iso27001:A.5.34
+
+      - id: no.normen:PRIV-02
+        title: "Rights of registered persons (patients)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, patient-rights, subject-rights]
+        question: |
+          Are processes in place to respond to patient rights requests
+          (access, correction, restriction, objection, portability)
+          within statutory deadlines?
+        purpose: |
+          Patient rights are statutory. Failure to respond on time is
+          a typical complaint vector to Datatilsynet.
+        expectedOutcome:
+          - "Process for rights requests is documented."
+          - "Statutory deadlines are tracked."
+          - "Responses are logged."
+        howTo:
+          - step: "Document the rights request process"
+          - step: "Track deadlines per request"
+          - step: "Log responses"
+        evidenceExamples:
+          - "Rights request process"
+          - "Request tracker"
+          - "Response log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process inconsistent"
+            "5": "Process within deadlines"
+
+      - id: no.normen:PRIV-03
+        title: "Information duty toward patients"
+        weight: 2
+        answerType: scale
+        tags: [privacy, information-duty, transparency]
+        question: |
+          Are patients provided with the information required by GDPR
+          Art. 13 / 14 in a clear and accessible form?
+        purpose: |
+          Transparency is a foundation principle of GDPR. Healthcare
+          settings raise the bar because of consent and vulnerability
+          considerations.
+        expectedOutcome:
+          - "Privacy notices cover Art. 13 / 14 content."
+          - "Notices are accessible (language, format)."
+          - "Updates follow material change."
+        howTo:
+          - step: "Maintain privacy notices per processing context"
+          - step: "Ensure accessibility"
+          - step: "Update on material change"
+        evidenceExamples:
+          - "Privacy notice library"
+          - "Accessibility check"
+          - "Update record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No notices"
+            "3": "Notices outdated"
+            "5": "Notices accessible and current"
+
+  - id: information-security
+    name: "Information Security"
+    description: |
+      Core information security duties: access control, logging,
+      auditing access to patient records, secure transfer, and
+      cryptography.
+    controls:
+      - id: no.normen:SEC-01
+        title: "Access control to patient information"
+        weight: 3
+        answerType: scale
+        tags: [access-control, patient-record, least-privilege]
+        question: |
+          Is access to patient information restricted on a need-to-know
+          basis, supported by role-based access control and aligned with
+          the patient's treatment relationship?
+        purpose: |
+          Unrestricted access to patient records is the single largest
+          privacy risk in healthcare. Treatment-relationship-based access
+          is the Norwegian sectoral expectation.
+        expectedOutcome:
+          - "Access is role-based and need-to-know."
+          - "Access decisions consider treatment relationship."
+          - "Periodic reviews remove unnecessary access."
+        howTo:
+          - step: "Implement role-based access control"
+          - step: "Tie access to treatment relationship where applicable"
+          - step: "Review periodically"
+        evidenceExamples:
+          - "Access policy"
+          - "Role-access mapping"
+          - "Access review report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Broad access"
+            "3": "Partial restriction"
+            "5": "Need-to-know enforced"
+
+      - id: no.normen:SEC-02
+        title: "Logging of access to patient records"
+        weight: 3
+        answerType: scale
+        tags: [logging, audit, patient-record, monitoring]
+        question: |
+          Is access to patient records logged and the logs reviewed
+          regularly to detect unauthorized access?
+        purpose: |
+          Logging access to patient records is required by Norwegian
+          health legislation. Reviews convert logs from forensic
+          artefacts into active controls.
+        expectedOutcome:
+          - "All access to patient records is logged."
+          - "Logs are protected and retained."
+          - "Reviews detect anomalies."
+        howTo:
+          - step: "Log all access to patient records"
+          - step: "Protect and retain logs"
+          - step: "Review logs for anomalies"
+        evidenceExamples:
+          - "Logging configuration"
+          - "Review report"
+          - "Anomaly investigation"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No logging"
+            "3": "Logging, no review"
+            "5": "Logging + review"
+
+      - id: no.normen:SEC-03
+        title: "Authentication of healthcare personnel"
+        weight: 3
+        answerType: scale
+        tags: [authentication, mfa, iam, helse-id]
+        question: |
+          Are healthcare personnel authenticated using strong methods
+          (e.g., HelseID, MFA) appropriate to the sensitivity of access?
+        purpose: |
+          Weak authentication on access to patient data is a regulatory
+          failure mode. Norwegian sector context expects strong / federated
+          identity.
+        expectedOutcome:
+          - "Strong authentication is enforced for clinical systems."
+          - "Federated identity (e.g., HelseID) is used where applicable."
+          - "Authentication anomalies are alerted."
+        howTo:
+          - step: "Enforce strong authentication for clinical systems"
+          - step: "Use federated identity where applicable"
+          - step: "Alert on authentication anomalies"
+        evidenceExamples:
+          - "Authentication policy"
+          - "Federated identity configuration"
+          - "Authentication anomaly alerts"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak authentication"
+            "3": "MFA partial"
+            "5": "Strong / federated authentication"
+
+      - id: no.normen:SEC-04
+        title: "Secure transfer of patient information"
+        weight: 3
+        answerType: scale
+        tags: [data-transfer, encryption, helsenett]
+        question: |
+          Is patient information transferred securely, including the
+          use of approved networks (e.g., Norsk helsenett) and
+          encryption where applicable?
+        purpose: |
+          Insecure transfer routinely surfaces in Datatilsynet decisions.
+          Approved networks and encryption are the basic safeguards.
+        expectedOutcome:
+          - "Approved transfer methods are documented."
+          - "Encryption is applied to relevant channels."
+          - "Personnel use only approved methods."
+        howTo:
+          - step: "Document approved transfer methods"
+          - step: "Apply encryption to relevant channels"
+          - step: "Train personnel on approved methods"
+        evidenceExamples:
+          - "Transfer policy"
+          - "Encryption configuration"
+          - "Training record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Insecure transfers"
+            "3": "Partial encryption"
+            "5": "Approved + encrypted"
+
+  - id: healthcare-specific
+    name: "Healthcare-Specific Duties"
+    description: |
+      Duties specific to electronic patient record (EPJ) systems,
+      patient safety, and cooperation between healthcare actors.
+    controls:
+      - id: no.normen:HC-01
+        title: "Electronic patient record (EPJ) integrity"
+        weight: 3
+        answerType: scale
+        tags: [healthcare, epj, integrity, patient-safety]
+        question: |
+          Is the integrity of the electronic patient record (EPJ)
+          assured through controls covering creation, modification, and
+          deletion of records?
+        purpose: |
+          Patient safety depends on EPJ integrity. Tampered or lost
+          records can directly cause harm.
+        expectedOutcome:
+          - "EPJ integrity controls are documented."
+          - "Modifications are auditable."
+          - "Deletion is governed by legal retention."
+        howTo:
+          - step: "Document EPJ integrity controls"
+          - step: "Audit modifications"
+          - step: "Govern deletion by retention rules"
+        evidenceExamples:
+          - "EPJ integrity design"
+          - "Modification audit log"
+          - "Retention rule"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No integrity controls"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: no.normen:HC-02
+        title: "Cooperation between healthcare actors"
+        weight: 2
+        answerType: scale
+        tags: [healthcare, cooperation, data-sharing]
+        question: |
+          When patient information is shared between healthcare actors,
+          are the sharing arrangements documented, lawful, and
+          technically secured?
+        purpose: |
+          Inter-actor sharing is common in healthcare and often
+          inadequately governed. Documented arrangements clarify
+          accountability.
+        expectedOutcome:
+          - "Sharing arrangements are documented and lawful."
+          - "Technical security covers shared data."
+          - "Logging covers shared access."
+        howTo:
+          - step: "Document sharing arrangements"
+          - step: "Apply technical security to shared data"
+          - step: "Log shared access"
+        evidenceExamples:
+          - "Sharing agreement"
+          - "Technical security design"
+          - "Sharing access log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Sharing uncontrolled"
+            "3": "Partial control"
+            "5": "Documented + secured"
+
+  - id: suppliers
+    name: "Suppliers and Data Processors"
+    description: |
+      Duties relating to data processors (databehandlere) and other
+      suppliers handling patient data on behalf of the entity.
+    controls:
+      - id: no.normen:SUP-01
+        title: "Data processor agreements"
+        weight: 3
+        answerType: scale
+        tags: [supplier, data-processor, gdpr, dpa]
+        question: |
+          Are data processor agreements (databehandleravtaler) in place
+          with all suppliers processing personal data on behalf of the
+          entity?
+        purpose: |
+          GDPR Art. 28 requires a documented DPA per processor.
+          Missing DPAs are a high-visibility Datatilsynet finding.
+        expectedOutcome:
+          - "DPA template is current and used."
+          - "Each processor has an executed DPA."
+          - "DPAs are reviewed periodically."
+        howTo:
+          - step: "Maintain a current DPA template"
+          - step: "Execute DPAs with all processors"
+          - step: "Review DPAs periodically"
+        evidenceExamples:
+          - "DPA template"
+          - "Processor register with executed DPAs"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No DPAs"
+            "3": "DPAs partial"
+            "5": "DPAs complete and reviewed"
+        crossReferences:
+          - iso27001:A.5.20
+
+      - id: no.normen:SUP-02
+        title: "Oversight of data processors"
+        weight: 2
+        answerType: scale
+        tags: [supplier, oversight, monitoring]
+        question: |
+          Does the entity maintain oversight of its data processors,
+          including audit rights and periodic monitoring?
+        purpose: |
+          DPAs without oversight are inert. Periodic monitoring is what
+          gives the entity assurance about its processors.
+        expectedOutcome:
+          - "Audit rights are exercised."
+          - "Processor monitoring is periodic."
+          - "Findings drive contractual or operational action."
+        howTo:
+          - step: "Exercise audit rights"
+          - step: "Monitor processors periodically"
+          - step: "Act on findings"
+        evidenceExamples:
+          - "Audit report"
+          - "Monitoring record"
+          - "Action log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No oversight"
+            "3": "Oversight irregular"
+            "5": "Oversight periodic and acted on"
+
+      - id: no.normen:SUP-03
+        title: "Cross-border transfers"
+        weight: 2
+        answerType: scale
+        tags: [privacy, transfer, third-country]
+        question: |
+          Are transfers of personal data to third countries assessed
+          and supported by appropriate transfer mechanisms under GDPR
+          Chapter V?
+        purpose: |
+          Cross-border transfers are scrutinized closely. Without
+          appropriate mechanisms (adequacy decision, SCCs with TIA),
+          transfers are unlawful.
+        expectedOutcome:
+          - "Third-country transfers are identified."
+          - "Appropriate transfer mechanisms are in place."
+          - "Transfer impact assessments are performed."
+        howTo:
+          - step: "Identify third-country transfers"
+          - step: "Apply appropriate transfer mechanisms"
+          - step: "Perform transfer impact assessments"
+        evidenceExamples:
+          - "Transfer inventory"
+          - "Executed SCCs"
+          - "Transfer impact assessment"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not assessed"
+            "3": "Partial"
+            "5": "Assessed and mechanisms in place"
+
+  - id: incident
+    name: "Incident Handling and Breach Notification"
+    description: |
+      Duties for incident handling and for notifying Datatilsynet and
+      affected patients of personal data breaches.
+    controls:
+      - id: no.normen:INC-01
+        title: "Personal data breach notification"
+        weight: 3
+        answerType: scale
+        tags: [privacy, breach, notification, gdpr]
+        question: |
+          Can the entity notify Datatilsynet of a personal data breach
+          within 72 hours and the affected patients without undue delay,
+          where required?
+        purpose: |
+          GDPR Art. 33-34 set explicit timelines. Missing them is a
+          high-impact compliance failure.
+        expectedOutcome:
+          - "Notification process is documented and rehearsed."
+          - "Templates for Datatilsynet notification exist."
+          - "Patient notification path exists."
+        howTo:
+          - step: "Document and rehearse notification process"
+          - step: "Maintain Datatilsynet templates"
+          - step: "Establish patient notification path"
+        evidenceExamples:
+          - "Notification process"
+          - "Datatilsynet template"
+          - "Rehearsal record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process rehearsed"
+        crossReferences:
+          - nist-csf-2.0:RS.CO-02
+
+      - id: no.normen:INC-02
+        title: "Incident handling capability"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, soc, plan]
+        question: |
+          Does the entity have a documented incident handling capability
+          covering detection, response, recovery, and learning?
+        purpose: |
+          Incident handling underpins both regulatory notification and
+          patient safety. Plans rehearsed are plans that work.
+        expectedOutcome:
+          - "IR plan exists and is exercised."
+          - "Roles and authorities are clear."
+          - "Lessons learned drive improvements."
+        howTo:
+          - step: "Document IR plan"
+          - step: "Exercise the plan annually"
+          - step: "Convert lessons to improvements"
+        evidenceExamples:
+          - "IR plan"
+          - "Exercise report"
+          - "Improvement tracker"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plan"
+            "3": "Plan untested"
+            "5": "Plan exercised, improvements tracked"

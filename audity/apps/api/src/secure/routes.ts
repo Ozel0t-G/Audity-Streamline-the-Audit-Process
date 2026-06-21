@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { unzipSync, zipSync } from "fflate";
+import nodemailer from "nodemailer";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
@@ -275,6 +276,53 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
         ]
       );
       return { emailSettings: mapEmailSettings(result.rows[0]) };
+    }
+  );
+
+  app.post<{ Body: { recipient?: string } }>(
+    "/api/admin/email-settings/test",
+    { preHandler: requireCsrfPermission("email.manage") },
+    async (request, reply) => {
+      const recipient = request.body?.recipient?.trim();
+      if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+        return reply.code(400).send({ code: "INVALID_RECIPIENT", message: "Please provide a recipient email address." });
+      }
+      const row = await pool.query("select * from email_settings order by updated_at desc limit 1");
+      const settings = row.rows[0];
+      if (!settings?.smtp_host) {
+        return reply.code(400).send({ code: "NOT_CONFIGURED", message: "SMTP host is not configured yet." });
+      }
+      const password = settings.smtp_password_encrypted ? decryptText(settings.smtp_password_encrypted) : undefined;
+      const startedAt = Date.now();
+      try {
+        const transporter = nodemailer.createTransport({
+          host: settings.smtp_host,
+          port: settings.smtp_port,
+          secure: settings.smtp_port === 465,
+          requireTLS: settings.smtp_tls && settings.smtp_port !== 465,
+          auth: settings.smtp_user ? { user: settings.smtp_user, pass: password } : undefined,
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 15000
+        });
+        await transporter.verify();
+        await transporter.sendMail({
+          from: settings.sender || settings.smtp_user || `audity@${settings.smtp_host}`,
+          to: recipient,
+          subject: "Audity SMTP connection test",
+          text: "This is a verification message from Audity. If you received it, your SMTP configuration works.",
+          html: "<p>This is a verification message from <strong>Audity</strong>. If you received it, your SMTP configuration works.</p>"
+        });
+        return { ok: true, latencyMs: Date.now() - startedAt };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return reply.code(502).send({
+          code: "SMTP_FAILED",
+          message: `SMTP test failed: ${message.slice(0, 300)}`,
+          ok: false,
+          latencyMs: Date.now() - startedAt
+        });
+      }
     }
   );
 

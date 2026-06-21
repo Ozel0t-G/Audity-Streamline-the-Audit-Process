@@ -17,7 +17,7 @@ export type Framework = {
   officialControlCatalogueIncluded?: boolean;
   licensedContentImportSupported?: boolean;
   redistributionNote?: string | null;
-  sourceKind?: "shipped" | "user_uploaded" | "legacy";
+  sourceKind?: "shipped" | "user_uploaded";
   controlCount: number;
 };
 
@@ -85,6 +85,13 @@ export type GuidedQuestion = {
   evidenceExamples: string[];
   mappings: QuestionMapping[];
   suggestions?: string[];
+  // v1 authoring-guide hint blocks
+  purpose?: string | null;
+  expectedOutcome?: string[];
+  howTo?: Array<{ step: string; details?: string | null }>;
+  crossReferences?: string[];
+  quickAnswers?: Record<string, string>;
+  answerType?: string;
   answer: QuestionAnswer | null;
 };
 

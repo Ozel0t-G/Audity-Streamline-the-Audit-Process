@@ -1,0 +1,680 @@
+framework:
+  schemaVersion: 1
+  key: eu.gdpr.2016
+  name: "EU General Data Protection Regulation (2016/679)"
+  shortName: "GDPR"
+  version: "2016/679"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "DPO"
+    - "Compliance Officer"
+    - "Legal Counsel"
+    - "CISO"
+    - "Auditor"
+  estimatedDurationMinutes: 240
+  description: |
+    Regulation (EU) 2016/679 (the General Data Protection Regulation,
+    GDPR) is the EU's comprehensive data protection regulation
+    governing the processing of personal data of individuals in the
+    Union. It applies extraterritorially to controllers and processors
+    that offer goods or services to, or monitor, EU data subjects.
+
+    This YAML covers the principal obligations of GDPR as audit-
+    readiness controls grouped into Principles and Lawfulness,
+    Data Subject Rights, Controller and Processor Obligations,
+    Security and Breaches, and International Transfers.
+  scopeNote: |
+    In scope: principal articles establishing controller / processor
+    obligations and individual rights (Art. 5, 6, 9, 13, 14, 15-22,
+    24, 25, 28, 30, 32, 33, 34, 35, 37-39, 44-49).
+
+    Out of scope: obligations of supervisory authorities; cooperation
+    and consistency mechanism between authorities; sector-specific
+    Union and Member State derogations; certifications and codes of
+    conduct (Art. 40-43).
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Regulation (EU) 2016/679 is published in the Official Journal of
+      the European Union. EU law text is not subject to copyright in
+      most jurisdictions. Article content has been paraphrased into
+      audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure breaches a non-negotiable GDPR duty (lawful basis,
+    breach notification within 72h, security of processing); potential
+    Art. 83 fines up to 4 % of global turnover.
+  high: |
+    Material gap in a documented duty without compensating measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate impact on data
+    subjects.
+
+controlMappings:
+  - source: eu.gdpr:PRIN-01
+    target: iso27001:A.5.34
+    type: covers
+  - source: eu.gdpr:CONT-03
+    target: iso27001:A.5.34
+    type: related
+  - source: eu.gdpr:CONT-04
+    target: iso27001:A.5.20
+    type: covers
+  - source: eu.gdpr:SEC-01
+    target: iso27001:A.8.24
+    type: related
+  - source: eu.gdpr:SEC-02
+    target: iso27001:A.5.24
+    type: covers
+
+domains:
+  - id: principles-and-lawfulness
+    name: "Principles and Lawfulness"
+    description: |
+      Art. 5 (principles), Art. 6 (lawfulness), Art. 9 (special
+      categories), Art. 25 (privacy by design and by default).
+    controls:
+      - id: eu.gdpr:PRIN-01
+        title: "Principles of processing (Art. 5)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, principles, accountability]
+        question: |
+          Is processing of personal data carried out in accordance with
+          the principles of lawfulness, fairness, transparency, purpose
+          limitation, data minimization, accuracy, storage limitation,
+          integrity and confidentiality, and accountability?
+        purpose: |
+          The seven principles are the umbrella under which all GDPR
+          obligations sit. Conformity is the basis for every other
+          decision.
+        expectedOutcome:
+          - "Principles are reflected in policy and process."
+          - "Compliance with principles is demonstrable."
+          - "Accountability records exist (Art. 5(2))."
+        howTo:
+          - step: "Reflect principles in policy and process"
+          - step: "Make compliance demonstrable"
+          - step: "Maintain accountability records"
+        evidenceExamples:
+          - "Privacy policy"
+          - "Process documentation"
+          - "Accountability records"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Principles ignored"
+            "3": "Partial"
+            "5": "Reflected and demonstrable"
+
+      - id: eu.gdpr:PRIN-02
+        title: "Lawfulness of processing (Art. 6)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, lawfulness, basis]
+        question: |
+          Is each processing activity supported by a documented lawful
+          basis from Art. 6 (consent, contract, legal obligation, vital
+          interest, public task, legitimate interest)?
+        purpose: |
+          Processing without a documented lawful basis is unlawful by
+          default. The basis must be both correct and recorded.
+        expectedOutcome:
+          - "Lawful basis is documented per processing activity."
+          - "Legitimate interest assessments are recorded."
+          - "Consent management exists where applicable."
+        howTo:
+          - step: "Document lawful basis per activity"
+          - step: "Record LIAs"
+          - step: "Operate consent management"
+        evidenceExamples:
+          - "Lawful basis register"
+          - "LIA records"
+          - "Consent management evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No basis"
+            "3": "Basis informal"
+            "5": "Documented per activity"
+
+      - id: eu.gdpr:PRIN-03
+        title: "Special category data (Art. 9 / 10)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, special-categories, sensitive]
+        question: |
+          Where special category data (Art. 9) or criminal conviction
+          data (Art. 10) is processed, are the additional conditions
+          met and documented?
+        purpose: |
+          Special categories carry stricter conditions. Processing
+          without an Art. 9(2) basis is unlawful.
+        expectedOutcome:
+          - "Special-category processing is identified."
+          - "Art. 9(2) basis is documented."
+          - "Additional safeguards are in place."
+        howTo:
+          - step: "Identify special-category processing"
+          - step: "Document Art. 9(2) basis"
+          - step: "Apply additional safeguards"
+        evidenceExamples:
+          - "Special-category inventory"
+          - "Art. 9(2) basis records"
+          - "Safeguard documentation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not assessed"
+            "3": "Basis informal"
+            "5": "Documented + safeguards"
+        appliesIf: "data.contains_special_categories == true"
+
+      - id: eu.gdpr:PRIN-04
+        title: "Data protection by design and by default (Art. 25)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, design, by-design, by-default]
+        question: |
+          Are appropriate technical and organizational measures
+          implemented to ensure data protection by design and by
+          default in processing systems?
+        purpose: |
+          Privacy by design embeds protection at the cheapest stage.
+          Privacy by default limits collection without user effort.
+        expectedOutcome:
+          - "Privacy considered in design phase."
+          - "Defaults minimize data collected."
+          - "Implementation is reviewable."
+        howTo:
+          - step: "Embed privacy in design phase"
+          - step: "Set privacy-protective defaults"
+          - step: "Make implementation reviewable"
+        evidenceExamples:
+          - "Design review checklist"
+          - "Default configuration"
+          - "Privacy review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not considered"
+            "3": "Considered ad hoc"
+            "5": "Systematic"
+
+  - id: data-subject-rights
+    name: "Data Subject Rights and Information Duties"
+    description: |
+      Art. 13-14 (information duties), Art. 15-22 (data subject
+      rights including access, rectification, erasure, restriction,
+      portability, objection, automated decision-making).
+    controls:
+      - id: eu.gdpr:DSR-01
+        title: "Information duties (Art. 13 / 14)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, transparency, information-duty]
+        question: |
+          Are data subjects provided with information required by
+          Art. 13 (collection from the subject) and Art. 14 (collection
+          from third parties) in a clear and accessible form?
+        purpose: |
+          Transparency is foundational. Missing or unclear notices
+          undermine the lawful basis itself.
+        expectedOutcome:
+          - "Privacy notices cover Art. 13 / 14 content."
+          - "Notices are accessible and timely."
+          - "Updates follow material change."
+        howTo:
+          - step: "Maintain privacy notices covering Art. 13 / 14"
+          - step: "Ensure accessibility and timeliness"
+          - step: "Update on material change"
+        evidenceExamples:
+          - "Privacy notice library"
+          - "Accessibility check"
+          - "Update record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No notices"
+            "3": "Notices outdated"
+            "5": "Notices accessible and current"
+
+      - id: eu.gdpr:DSR-02
+        title: "Rights of access, rectification, erasure (Art. 15-17)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, subject-rights, access, erasure]
+        question: |
+          Are processes in place to respond to requests for access,
+          rectification, and erasure within statutory deadlines?
+        purpose: |
+          These are the most-exercised subject rights. Timely response
+          is required and frequently audited.
+        expectedOutcome:
+          - "Process documented for each right."
+          - "Statutory deadlines tracked."
+          - "Responses logged."
+        howTo:
+          - step: "Document the process per right"
+          - step: "Track deadlines"
+          - step: "Log responses"
+        evidenceExamples:
+          - "Process documents"
+          - "Request tracker"
+          - "Response log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process inconsistent"
+            "5": "Process within deadlines"
+
+      - id: eu.gdpr:DSR-03
+        title: "Restriction, portability, objection (Art. 18-21)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, subject-rights, portability, objection]
+        question: |
+          Are processes in place to respond to requests for restriction
+          of processing, data portability, and objection within
+          statutory deadlines?
+        purpose: |
+          These rights are less frequent but carry the same statutory
+          deadlines and Art. 83 exposure.
+        expectedOutcome:
+          - "Process documented per right."
+          - "Technical capabilities support portability."
+          - "Objection decisions are recorded."
+        howTo:
+          - step: "Document the process per right"
+          - step: "Build technical portability"
+          - step: "Record objection decisions"
+        evidenceExamples:
+          - "Process document"
+          - "Portability tool"
+          - "Objection decision record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process partial"
+            "5": "Process complete"
+
+      - id: eu.gdpr:DSR-04
+        title: "Automated decision-making (Art. 22)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, automated-decision, profiling, ai]
+        question: |
+          Where decisions are based solely on automated processing
+          producing legal or similarly significant effects, are
+          Art. 22 safeguards (information, contestation, human
+          intervention) in place?
+        purpose: |
+          Automated decision-making at scale carries distinctive
+          risks. Art. 22 places specific obligations on it.
+        expectedOutcome:
+          - "Automated decisions are identified."
+          - "Art. 22 information is provided."
+          - "Human intervention and contestation are supported."
+        howTo:
+          - step: "Identify automated decisions"
+          - step: "Provide Art. 22 information"
+          - step: "Support human intervention / contestation"
+        evidenceExamples:
+          - "Automated decision inventory"
+          - "Art. 22 notice"
+          - "Intervention process"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not assessed"
+            "3": "Partial"
+            "5": "Comprehensive"
+        appliesIf: "processing.uses_automated_decisions == true"
+
+  - id: controller-processor
+    name: "Controller and Processor Obligations"
+    description: |
+      Art. 24 (controller responsibility), Art. 28 (processors),
+      Art. 30 (records of processing), Art. 37-39 (DPO).
+    controls:
+      - id: eu.gdpr:CONT-01
+        title: "Responsibility of the controller (Art. 24)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, controller, accountability]
+        question: |
+          Has the controller implemented appropriate technical and
+          organizational measures to ensure and demonstrate that
+          processing is performed in accordance with GDPR?
+        purpose: |
+          Art. 24 imposes the accountability obligation. It is the
+          umbrella under which all other duties become enforceable.
+        expectedOutcome:
+          - "TOMs documented and applied."
+          - "Compliance with GDPR is demonstrable."
+          - "Measures reviewed and updated."
+        howTo:
+          - step: "Document and apply TOMs"
+          - step: "Make compliance demonstrable"
+          - step: "Review and update measures"
+        evidenceExamples:
+          - "TOM documentation"
+          - "Compliance evidence"
+          - "Review record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No TOMs"
+            "3": "Partial"
+            "5": "Comprehensive + reviewed"
+
+      - id: eu.gdpr:CONT-02
+        title: "Records of processing (Art. 30)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, ropa, records]
+        question: |
+          Are records of processing activities (RoPA) maintained as
+          required by Art. 30 for both controller and processor roles?
+        purpose: |
+          RoPA is the evidence trail for accountability and the basis
+          for supervisory review.
+        expectedOutcome:
+          - "RoPA is current and complete."
+          - "Controller and processor records exist where applicable."
+          - "Updates follow material change."
+        howTo:
+          - step: "Maintain current RoPA"
+          - step: "Cover controller and processor roles"
+          - step: "Update on material change"
+        evidenceExamples:
+          - "RoPA extract"
+          - "Update log"
+          - "Material change record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No RoPA"
+            "3": "RoPA partial"
+            "5": "RoPA current"
+
+      - id: eu.gdpr:CONT-03
+        title: "Data Protection Officer (Art. 37-39)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, dpo, governance]
+        question: |
+          Where required, is a Data Protection Officer designated,
+          notified to the supervisory authority, and supported in
+          performing the Art. 39 tasks independently?
+        purpose: |
+          A non-functional DPO breaches Art. 38(3). Independence and
+          resources must be genuine.
+        expectedOutcome:
+          - "DPO designated and notified to the authority."
+          - "DPO has resources and independence."
+          - "DPO performs Art. 39 tasks."
+        howTo:
+          - step: "Designate and notify the DPO"
+          - step: "Provide resources and independence"
+          - step: "Support Art. 39 tasks"
+        evidenceExamples:
+          - "DPO appointment"
+          - "Notification to authority"
+          - "DPO activity record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No DPO"
+            "3": "DPO without resources"
+            "5": "DPO with independence"
+        crossReferences:
+          - iso27001:A.5.34
+
+      - id: eu.gdpr:CONT-04
+        title: "Processors and data processing agreements (Art. 28)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, processor, dpa, contracts]
+        question: |
+          Are processors engaged only after due diligence and bound by
+          data processing agreements compliant with Art. 28?
+        purpose: |
+          Processors without DPAs create joint exposure. Art. 28 DPAs
+          are non-negotiable.
+        expectedOutcome:
+          - "Standard DPA template aligned with Art. 28 (3)."
+          - "DPA executed with each processor."
+          - "Due diligence is performed."
+        howTo:
+          - step: "Maintain Art. 28-compliant DPA template"
+          - step: "Execute DPAs with all processors"
+          - step: "Perform due diligence"
+        evidenceExamples:
+          - "DPA template"
+          - "Executed DPAs"
+          - "Due diligence record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No DPAs"
+            "3": "Partial"
+            "5": "Complete + DD"
+        crossReferences:
+          - iso27001:A.5.20
+
+      - id: eu.gdpr:CONT-05
+        title: "Data protection impact assessment (Art. 35)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, dpia, risk-assessment]
+        question: |
+          Are DPIAs performed where processing is likely to result in
+          a high risk to rights and freedoms, with consultation of the
+          supervisory authority where residual risk remains high?
+        purpose: |
+          DPIA is the structured risk assessment for high-risk
+          processing. Missing DPIAs are a recurring finding.
+        expectedOutcome:
+          - "DPIA triggers are documented."
+          - "DPIAs are performed for high-risk processing."
+          - "Authority consultation is performed where required."
+        howTo:
+          - step: "Document DPIA triggers"
+          - step: "Perform DPIAs for high-risk processing"
+          - step: "Consult authority where required"
+        evidenceExamples:
+          - "DPIA trigger criteria"
+          - "DPIA record"
+          - "Authority consultation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No DPIAs"
+            "3": "DPIAs inconsistent"
+            "5": "DPIAs + consultation"
+
+  - id: security-and-breaches
+    name: "Security of Processing and Breach Notification"
+    description: |
+      Art. 32 (security of processing), Art. 33 / 34 (breach
+      notification).
+    controls:
+      - id: eu.gdpr:SEC-01
+        title: "Security of processing (Art. 32)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, security, tom, encryption]
+        question: |
+          Are appropriate technical and organizational measures
+          implemented to ensure a level of security appropriate to the
+          risk (encryption, integrity, availability, resilience,
+          testing)?
+        purpose: |
+          Art. 32 is the technical/organizational backbone of GDPR.
+          Many breach findings cite it.
+        expectedOutcome:
+          - "Encryption and pseudonymization where appropriate."
+          - "Integrity, availability, resilience measures in place."
+          - "Effectiveness regularly tested."
+        howTo:
+          - step: "Apply encryption / pseudonymization where appropriate"
+          - step: "Maintain integrity / availability / resilience measures"
+          - step: "Test effectiveness"
+        evidenceExamples:
+          - "Encryption design"
+          - "Resilience design"
+          - "Test report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak security"
+            "3": "Partial"
+            "5": "Comprehensive + tested"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: eu.gdpr:SEC-02
+        title: "Notification of personal data breach (Art. 33 / 34)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, breach, notification, incident]
+        question: |
+          Can the controller notify the supervisory authority within
+          72 hours and affected data subjects without undue delay
+          where required?
+        purpose: |
+          The 72-hour deadline is non-negotiable. Missing it is a
+          recurring source of fines.
+        expectedOutcome:
+          - "Breach notification process is documented and rehearsed."
+          - "Authority and subject notification templates exist."
+          - "Notification logs are maintained."
+        howTo:
+          - step: "Document and rehearse the notification process"
+          - step: "Maintain templates"
+          - step: "Log notifications"
+        evidenceExamples:
+          - "Notification process"
+          - "Template library"
+          - "Notification log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process rehearsed"
+        crossReferences:
+          - iso27001:A.5.24
+
+  - id: international-transfers
+    name: "International Transfers"
+    description: |
+      Art. 44-49 transfers of personal data to third countries or
+      international organizations.
+    controls:
+      - id: eu.gdpr:INT-01
+        title: "Lawful transfer mechanism (Art. 44-49)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, transfer, third-country, scc, tia]
+        question: |
+          Are transfers of personal data to third countries supported
+          by an appropriate transfer mechanism (adequacy decision,
+          SCCs with TIA, BCRs, or a derogation)?
+        purpose: |
+          Cross-border transfers without an appropriate mechanism are
+          unlawful. Schrems II raised the bar significantly.
+        expectedOutcome:
+          - "Third-country transfers are identified."
+          - "Appropriate mechanism is in place per transfer."
+          - "TIAs are performed where required."
+        howTo:
+          - step: "Identify third-country transfers"
+          - step: "Apply appropriate mechanism per transfer"
+          - step: "Perform TIAs where required"
+        evidenceExamples:
+          - "Transfer inventory"
+          - "Executed SCCs / BCRs"
+          - "TIA record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not addressed"
+            "3": "Partial"
+            "5": "Mechanism + TIA"
+        appliesIf: "processing.has_third_country_transfers == true"

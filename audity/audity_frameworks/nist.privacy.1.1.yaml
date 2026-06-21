@@ -1,0 +1,722 @@
+framework:
+  schemaVersion: 1
+  key: nist.privacy.1.1
+  name: "NIST Privacy Framework 1.1"
+  shortName: "NIST Privacy Framework"
+  version: "1.1"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "DPO"
+    - "Privacy Officer"
+    - "CISO"
+    - "Compliance Officer"
+    - "Auditor"
+  estimatedDurationMinutes: 240
+  description: |
+    NIST Privacy Framework 1.1 is a voluntary tool that helps
+    organizations identify and manage privacy risk. It mirrors the
+    structure of NIST CSF and provides a common language for managing
+    privacy risk across the organization and with partners.
+
+    This YAML covers the 18 categories of NIST Privacy Framework 1.1
+    grouped into the five functions (IDENTIFY-P, GOVERN-P, CONTROL-P,
+    COMMUNICATE-P, PROTECT-P).
+  scopeNote: |
+    In scope: all 5 functions and 18 categories of NIST Privacy
+    Framework 1.1, structured as one control per category.
+
+    Out of scope: the per-category subcategories as separate controls;
+    the Implementation Tiers; the Profiles methodology; specific
+    mappings to GDPR, CPRA, or other regulations.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NIST Privacy Framework is published by the U.S. National
+      Institute of Standards and Technology and is in the public
+      domain. Function and category content has been paraphrased into
+      audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a foundational privacy category unimplemented;
+    likely regulatory or contractual exposure.
+  high: |
+    Material gap in a category without compensating measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: nist.privacy:GV.P
+    target: nist-csf-2.0:GV.RM-01
+    type: related
+  - source: nist.privacy:ID.IM-P
+    target: iso27001:A.5.34
+    type: related
+  - source: nist.privacy:PR.AC-P
+    target: iso27001:A.5.15
+    type: covers
+  - source: nist.privacy:PR.DS-P
+    target: iso27001:A.8.24
+    type: covers
+
+domains:
+  - id: identify
+    name: "IDENTIFY-P"
+    description: |
+      Develop the organizational understanding to manage privacy risk
+      for individuals arising from data processing.
+    controls:
+      - id: nist.privacy:ID.IM-P
+        title: "Inventory and Mapping (ID.IM-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, inventory, mapping, data]
+        question: |
+          Are the organization's data processing activities,
+          information flows, and data assets inventoried and mapped?
+        purpose: |
+          A current data inventory is the foundation of privacy risk
+          management. Without it, rights and obligations are
+          unaddressable.
+        expectedOutcome:
+          - "Data inventory exists per processing activity."
+          - "Information flows are mapped."
+          - "Updates follow material change."
+        howTo:
+          - step: "Maintain inventory per processing activity"
+          - step: "Map information flows"
+          - step: "Update on material change"
+        evidenceExamples:
+          - "Data inventory"
+          - "Flow map"
+          - "Update log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Partial"
+            "5": "Inventory + flows + current"
+        crossReferences:
+          - iso27001:A.5.34
+
+      - id: nist.privacy:ID.BE-P
+        title: "Business Environment (ID.BE-P)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, business-environment, mission]
+        question: |
+          Is the organization's role in data processing ecosystems
+          understood and used to inform privacy decisions?
+        purpose: |
+          Privacy responsibilities depend on role (controller,
+          processor, joint controller, recipient). Misclassification
+          drives wrong obligations.
+        expectedOutcome:
+          - "Role per processing activity is documented."
+          - "Ecosystem dependencies are identified."
+          - "Roles inform contractual structures."
+        howTo:
+          - step: "Document role per processing activity"
+          - step: "Identify ecosystem dependencies"
+          - step: "Use roles to inform contracts"
+        evidenceExamples:
+          - "Role inventory"
+          - "Ecosystem map"
+          - "Contract structure"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Role unclear"
+            "3": "Partial"
+            "5": "Documented + used"
+
+      - id: nist.privacy:ID.RA-P
+        title: "Risk Assessment (ID.RA-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, risk-assessment, pia, dpia]
+        question: |
+          Are privacy risks identified and assessed for processing
+          activities through privacy impact assessments or equivalent?
+        purpose: |
+          Privacy risk assessment surfaces likely harms to individuals
+          before they manifest.
+        expectedOutcome:
+          - "PIA / DPIA methodology is documented."
+          - "Assessments performed for in-scope activities."
+          - "Findings drive treatment."
+        howTo:
+          - step: "Document PIA / DPIA methodology"
+          - step: "Perform for in-scope activities"
+          - step: "Treat findings"
+        evidenceExamples:
+          - "Methodology"
+          - "PIA / DPIA records"
+          - "Treatment log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessments"
+            "3": "Partial"
+            "5": "Methodology + applied"
+
+      - id: nist.privacy:ID.DE-P
+        title: "Data Processing Ecosystem Risk Management (ID.DE-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, ecosystem, supplier, third-party]
+        question: |
+          Are privacy risks associated with data processing partners
+          (processors, recipients) identified and managed?
+        purpose: |
+          Data sent to partners carries privacy obligations with it.
+          Partner risk is part of organizational privacy risk.
+        expectedOutcome:
+          - "Partner inventory exists."
+          - "Risk per partner is assessed."
+          - "Contractual safeguards are in place."
+        howTo:
+          - step: "Maintain partner inventory"
+          - step: "Assess risk per partner"
+          - step: "Embed contractual safeguards"
+        evidenceExamples:
+          - "Partner inventory"
+          - "Risk assessments"
+          - "Contractual clauses"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No partner program"
+            "3": "Partial"
+            "5": "Inventory + assessment + contracts"
+
+  - id: govern
+    name: "GOVERN-P"
+    description: |
+      Develop and implement the organizational governance structure
+      to enable an ongoing understanding of the organization's
+      privacy risk management priorities.
+    controls:
+      - id: nist.privacy:GV.PO-P
+        title: "Governance Policies, Processes, and Procedures (GV.PO-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, governance, policy]
+        question: |
+          Are privacy governance policies, processes, and procedures
+          documented, communicated, and reviewed?
+        purpose: |
+          Privacy governance is the binding instrument for the program.
+        expectedOutcome:
+          - "Privacy policy is approved and current."
+          - "Procedures support policy."
+          - "Review cadence is met."
+        howTo:
+          - step: "Approve and maintain privacy policy"
+          - step: "Author procedures"
+          - step: "Review on cadence"
+        evidenceExamples:
+          - "Privacy policy"
+          - "Procedure library"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy"
+            "3": "Outdated"
+            "5": "Current + applied"
+
+      - id: nist.privacy:GV.RM-P
+        title: "Risk Management Strategy (GV.RM-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, risk-management, strategy]
+        question: |
+          Is a privacy risk management strategy documented and used to
+          guide privacy risk decisions?
+        purpose: |
+          A strategy makes risk-acceptance and prioritization decisions
+          consistent across the organization.
+        expectedOutcome:
+          - "Risk management strategy is documented."
+          - "Strategy is used in risk decisions."
+          - "Strategy is reviewed periodically."
+        howTo:
+          - step: "Document risk management strategy"
+          - step: "Use in decisions"
+          - step: "Review periodically"
+        evidenceExamples:
+          - "Strategy document"
+          - "Risk decision records"
+          - "Review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No strategy"
+            "3": "Strategy unused"
+            "5": "Strategy + used"
+
+      - id: nist.privacy:GV.AT-P
+        title: "Awareness and Training (GV.AT-P)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, awareness, training]
+        question: |
+          Are personnel given appropriate privacy awareness and
+          role-based training?
+        purpose: |
+          Privacy outcomes depend heavily on personnel behavior.
+          Training reduces avoidable mistakes.
+        expectedOutcome:
+          - "Annual privacy training delivered."
+          - "Role-based content for high-risk roles."
+          - "Effectiveness measured."
+        howTo:
+          - step: "Deliver annual privacy training"
+          - step: "Build role-based content"
+          - step: "Measure effectiveness"
+        evidenceExamples:
+          - "Training records"
+          - "Role-based curriculum"
+          - "Effectiveness metric"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Generic only"
+            "5": "Tiered + measured"
+
+      - id: nist.privacy:GV.MT-P
+        title: "Monitoring and Review (GV.MT-P)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, monitoring, review]
+        question: |
+          Are privacy risk management activities monitored, reviewed,
+          and used to inform improvement?
+        purpose: |
+          Monitoring keeps the program responsive to evolving risks
+          and outcomes.
+        expectedOutcome:
+          - "Monitoring metrics are defined."
+          - "Reviews are scheduled."
+          - "Findings drive improvement."
+        howTo:
+          - step: "Define monitoring metrics"
+          - step: "Schedule reviews"
+          - step: "Drive improvement"
+        evidenceExamples:
+          - "Metric set"
+          - "Review minutes"
+          - "Improvement plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Metrics unused"
+            "5": "Metrics + reviewed + improving"
+
+  - id: control
+    name: "CONTROL-P"
+    description: |
+      Develop and implement appropriate activities to enable
+      organizations or individuals to manage data with sufficient
+      granularity to manage privacy risks.
+    controls:
+      - id: nist.privacy:CT.PO-P
+        title: "Data Processing Policies, Processes, and Procedures (CT.PO-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, data-processing, policies]
+        question: |
+          Are policies, processes, and procedures for managing data
+          processing documented and applied?
+        purpose: |
+          Documented processes are the operational backbone of
+          privacy compliance.
+        expectedOutcome:
+          - "Data processing policies cover collection through deletion."
+          - "Processes are applied consistently."
+          - "Deviations are documented."
+        howTo:
+          - step: "Document policies covering lifecycle"
+          - step: "Apply processes consistently"
+          - step: "Document deviations"
+        evidenceExamples:
+          - "Policy library"
+          - "Process application evidence"
+          - "Deviation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Ad hoc"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.privacy:CT.DM-P
+        title: "Data Processing Management (CT.DM-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, data-management, lifecycle]
+        question: |
+          Is data managed through its lifecycle (collection, use,
+          retention, disposal) consistent with policy and consent /
+          authorization?
+        purpose: |
+          Lifecycle management ensures that data only persists while
+          there is a basis for it.
+        expectedOutcome:
+          - "Retention is enforced."
+          - "Disposal is verified."
+          - "Consent / authorization status drives processing."
+        howTo:
+          - step: "Enforce retention"
+          - step: "Verify disposal"
+          - step: "Drive processing by consent / authorization status"
+        evidenceExamples:
+          - "Retention configuration"
+          - "Disposal log"
+          - "Consent management evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No lifecycle"
+            "3": "Partial"
+            "5": "Lifecycle enforced"
+
+      - id: nist.privacy:CT.DP-P
+        title: "Disassociated Processing (CT.DP-P)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, deidentification, anonymization]
+        question: |
+          Are techniques such as de-identification, pseudonymization,
+          and aggregation used to minimize privacy risk when full
+          identifiability is not necessary?
+        purpose: |
+          Reducing identifiability reduces both risk and obligation.
+        expectedOutcome:
+          - "De-identification standards exist."
+          - "Applied where appropriate."
+          - "Re-identification risk is managed."
+        howTo:
+          - step: "Document de-identification standards"
+          - step: "Apply where appropriate"
+          - step: "Manage re-identification risk"
+        evidenceExamples:
+          - "De-identification standard"
+          - "Application evidence"
+          - "Risk evaluation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not used"
+            "3": "Used informally"
+            "5": "Standardized + managed"
+
+  - id: communicate
+    name: "COMMUNICATE-P"
+    description: |
+      Develop and implement appropriate activities to enable
+      organizations and individuals to have a reliable understanding
+      about how data are processed and associated privacy risks.
+    controls:
+      - id: nist.privacy:CM.PO-P
+        title: "Communication Policies, Processes, and Procedures (CM.PO-P)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, communication, transparency]
+        question: |
+          Are policies and procedures for communicating privacy
+          information to individuals and other stakeholders documented
+          and applied?
+        purpose: |
+          Communications policy ensures consistent transparency across
+          channels.
+        expectedOutcome:
+          - "Communication policy is documented."
+          - "Channels and timing are defined."
+          - "Communications are reviewed."
+        howTo:
+          - step: "Document communication policy"
+          - step: "Define channels and timing"
+          - step: "Review communications"
+        evidenceExamples:
+          - "Communication policy"
+          - "Channel inventory"
+          - "Review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Ad hoc"
+            "3": "Partial"
+            "5": "Documented + applied"
+
+      - id: nist.privacy:CM.AW-P
+        title: "Data Processing Awareness (CM.AW-P)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, awareness, transparency]
+        question: |
+          Are individuals and other stakeholders aware of how their
+          data is being processed and the privacy risks?
+        purpose: |
+          Awareness underpins informed choice and trust.
+        expectedOutcome:
+          - "Notices are accessible and timely."
+          - "Mechanisms exist for individual inquiry."
+          - "Awareness is measured."
+        howTo:
+          - step: "Make notices accessible and timely"
+          - step: "Provide inquiry mechanisms"
+          - step: "Measure awareness"
+        evidenceExamples:
+          - "Notice library"
+          - "Inquiry mechanism"
+          - "Awareness metric"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No awareness"
+            "3": "Partial"
+            "5": "Notices + measured"
+
+  - id: protect
+    name: "PROTECT-P"
+    description: |
+      Develop and implement appropriate data processing safeguards.
+    controls:
+      - id: nist.privacy:PR.PO-P
+        title: "Data Protection Policies, Processes, and Procedures (PR.PO-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, protection, policies]
+        question: |
+          Are data protection policies, processes, and procedures
+          documented and applied?
+        purpose: |
+          Documented protection processes are the operational backbone
+          of privacy safeguards.
+        expectedOutcome:
+          - "Protection policies cover lifecycle."
+          - "Processes are applied consistently."
+          - "Compliance is monitored."
+        howTo:
+          - step: "Document protection policies"
+          - step: "Apply consistently"
+          - step: "Monitor compliance"
+        evidenceExamples:
+          - "Policy library"
+          - "Application evidence"
+          - "Compliance report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Ad hoc"
+            "3": "Partial"
+            "5": "Documented + applied"
+
+      - id: nist.privacy:PR.AC-P
+        title: "Identity Management, Authentication, and Access Control (PR.AC-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, iam, authentication, access-control]
+        question: |
+          Are identity, authentication, and access controls applied to
+          data processing systems consistent with privacy risk?
+        purpose: |
+          Access control is the gating mechanism for privacy
+          enforcement.
+        expectedOutcome:
+          - "Access is least-privilege."
+          - "MFA is enforced for sensitive systems."
+          - "Reviews are performed."
+        howTo:
+          - step: "Apply least-privilege access"
+          - step: "Enforce MFA for sensitive systems"
+          - step: "Perform reviews"
+        evidenceExamples:
+          - "Access model"
+          - "MFA enforcement report"
+          - "Review report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: nist.privacy:PR.DS-P
+        title: "Data Security (PR.DS-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, data, encryption, security]
+        question: |
+          Are data security measures (encryption, integrity controls,
+          backups) appropriate to privacy risk?
+        purpose: |
+          Data security underpins the confidentiality, integrity, and
+          availability that privacy depends on.
+        expectedOutcome:
+          - "Encryption protects data at rest and in transit."
+          - "Integrity controls are in place."
+          - "Backups support recovery."
+        howTo:
+          - step: "Encrypt data at rest and in transit"
+          - step: "Apply integrity controls"
+          - step: "Maintain recovery backups"
+        evidenceExamples:
+          - "Encryption configuration"
+          - "Integrity mechanism"
+          - "Backup test report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: nist.privacy:PR.MA-P
+        title: "Maintenance (PR.MA-P)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, maintenance, change]
+        question: |
+          Are maintenance and repair of systems processing personal
+          data performed in line with policy, with logging and access
+          controls?
+        purpose: |
+          Maintenance touches privileged interfaces and personal data.
+          Control of maintenance limits leakage paths.
+        expectedOutcome:
+          - "Authorized maintenance personnel and tools."
+          - "Maintenance logged."
+          - "Privacy impact considered."
+        howTo:
+          - step: "Authorize personnel and tools"
+          - step: "Log maintenance"
+          - step: "Consider privacy impact"
+        evidenceExamples:
+          - "Maintenance policy"
+          - "Maintenance log"
+          - "Privacy review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Uncontrolled"
+            "3": "Partial"
+            "5": "Authorized + logged + reviewed"
+
+      - id: nist.privacy:PR.PT-P
+        title: "Protective Technology (PR.PT-P)"
+        weight: 3
+        answerType: scale
+        tags: [privacy, technology, controls]
+        question: |
+          Are technical controls (audit logs, removable media,
+          communications protection, system / information integrity)
+          managed to protect personal data?
+        purpose: |
+          Technical controls translate policy into enforcement at
+          system level.
+        expectedOutcome:
+          - "Audit logs cover access to personal data."
+          - "Communications protection in place."
+          - "System integrity is verified."
+        howTo:
+          - step: "Configure audit logs"
+          - step: "Protect communications"
+          - step: "Verify system integrity"
+        evidenceExamples:
+          - "Logging configuration"
+          - "Communication protection design"
+          - "Integrity verification"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"

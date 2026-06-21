@@ -1,9 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { useCustomerContext } from "../../components/CustomerContextProvider";
-import { MultiCombobox, PageSkeleton, type ComboOption } from "../../components/ui";
+import { MultiCombobox, PageSkeleton, Slideover, useConfirm, useToast, type ComboOption } from "../../components/ui";
 import type { Assessment, AssessmentScope, Customer } from "./types";
 
 type FrameworkOption = { id: string; name: string; shortName: string | null };
@@ -84,10 +84,18 @@ export function CustomerDetailPage() {
     criticality: "Medium"
   });
   const [error, setError] = useState("");
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  const [archiveSubmitting, setArchiveSubmitting] = useState(false);
+  const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const selectedAssessment = assessments.find((assessment) => assessment.id === selectedAssessmentId);
   const currentUserId = user?.id ?? user?.sub;
   const canManageAccess = Boolean(customer && (user?.role === "Instance Admin" || user?.role === "Tenant Admin" || customer.createdByUserId === currentUserId));
+  const canArchive = Boolean(user?.permissions?.includes("customer.archive"));
+  const isArchived = Boolean(customer?.archivedAt);
 
   async function load() {
     if (!id) return;
@@ -259,10 +267,44 @@ export function CustomerDetailPage() {
 
   return (
     <>
-          <div className="audity-page-header">
-            <p className="audity-page-kicker">Customer Detail</p>
-            <h1 className="audity-page-title">{customer.name}</h1>
-            <p className="audity-page-copy">{customer.industry} · {customer.businessCriticality}</p>
+          <div className="audity-page-header flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="audity-page-kicker">Customer Detail</p>
+              <h1 className="audity-page-title">{customer.name}</h1>
+              <p className="audity-page-copy">{customer.industry} · {customer.businessCriticality}</p>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              {isArchived ? (
+                <div className="rounded-audity border border-audity-warning/40 bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
+                  <div className="font-semibold">Archived customer (read-only)</div>
+                  <div className="mt-0.5">
+                    on {customer.archivedAt ? new Date(customer.archivedAt).toLocaleString() : "—"}
+                  </div>
+                  {customer.archiveReason ? (
+                    <div className="mt-0.5 italic">Reason: {customer.archiveReason}</div>
+                  ) : null}
+                </div>
+              ) : null}
+              {!isArchived && canArchive ? (
+                <button
+                  className="audity-btn-secondary text-xs"
+                  onClick={() => {
+                    setArchiveReason("");
+                    setArchiveOpen(true);
+                  }}
+                >
+                  Archive customer
+                </button>
+              ) : null}
+              {isArchived ? (
+                <button
+                  className="audity-btn-secondary text-xs"
+                  onClick={() => navigate("/customers/archive")}
+                >
+                  Request restore
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="mb-4 flex flex-wrap gap-2">
             {workflow.map(([label, locked], index) => (
@@ -485,6 +527,68 @@ export function CustomerDetailPage() {
               </form>
             </div>
           ) : null}
+          <Slideover
+            title={`Archive customer: ${customer?.name ?? ""}`}
+            open={archiveOpen}
+            onClose={() => setArchiveOpen(false)}
+          >
+            <p className="mb-3 text-sm text-audity-secondary">
+              Archiving locks this customer as read-only. Evidence and report blobs move to the
+              archive volume and become unavailable until an Instance Admin approves a restore.
+            </p>
+            <label className="mb-2 block text-xs font-medium text-audity-secondary">
+              Reason for archive
+            </label>
+            <textarea
+              className="audity-input min-h-[7rem]"
+              value={archiveReason}
+              onChange={(event) => setArchiveReason(event.target.value)}
+              minLength={3}
+              maxLength={500}
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                className="audity-btn-secondary"
+                type="button"
+                onClick={() => setArchiveOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="audity-btn-primary"
+                type="button"
+                disabled={archiveSubmitting || archiveReason.trim().length < 3}
+                onClick={async () => {
+                  if (!customer) return;
+                  const ok = await confirm({
+                    title: `Archive ${customer.name}?`,
+                    body:
+                      "This will move evidence + reports to the archive volume and lock the customer as read-only.",
+                    confirmLabel: "Archive",
+                    cancelLabel: "Cancel",
+                    destructive: true
+                  });
+                  if (!ok) return;
+                  setArchiveSubmitting(true);
+                  try {
+                    await api(`/api/customers/${customer.id}/archive`, {
+                      method: "POST",
+                      body: JSON.stringify({ reason: archiveReason })
+                    });
+                    toast.success("Customer archived. Evidence has moved to the archive volume.");
+                    setArchiveOpen(false);
+                    navigate("/customers");
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Archive failed");
+                  } finally {
+                    setArchiveSubmitting(false);
+                  }
+                }}
+              >
+                {archiveSubmitting ? "Archiving…" : "Archive"}
+              </button>
+            </div>
+          </Slideover>
     </>
   );
 }

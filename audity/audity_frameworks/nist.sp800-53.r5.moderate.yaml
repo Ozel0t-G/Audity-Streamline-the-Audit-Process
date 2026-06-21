@@ -1,0 +1,833 @@
+framework:
+  schemaVersion: 1
+  key: nist.sp800-53.r5.moderate
+  name: "NIST SP 800-53 Rev. 5 - Moderate Baseline (Family-Level View)"
+  shortName: "NIST 800-53 Rev. 5"
+  version: "Rev. 5 (Moderate Baseline)"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "Compliance Officer"
+    - "Security Architect"
+    - "FedRAMP Lead"
+  estimatedDurationMinutes: 480
+  description: |
+    NIST Special Publication 800-53 Rev. 5, "Security and Privacy
+    Controls for Information Systems and Organizations", is the U.S.
+    federal catalog of security and privacy controls. It is the basis
+    of FedRAMP, FISMA, and several state and sector frameworks.
+
+    This YAML covers the 20 control families of SP 800-53 Rev. 5 as
+    audit-readiness controls, scoped to the Moderate Baseline of NIST
+    SP 800-53B. The roughly 287 individual control identifiers of the
+    Moderate Baseline are summarized at family level; teams using
+    SP 800-53 for an Authority to Operate (ATO) must work at the
+    control-identifier level.
+  scopeNote: |
+    In scope: all 20 control families of SP 800-53 Rev. 5 (AC, AT, AU,
+    CA, CM, CP, IA, IR, MA, MP, PE, PL, PM, PS, PT, RA, SA, SC, SI, SR)
+    as one control per family. The Moderate Baseline of SP 800-53B
+    informs the scoring and expectations within each family.
+
+    Out of scope: the approximately 287 individual control identifiers
+    of the Moderate Baseline as separate controls; the Low and High
+    baselines; control enhancements; control parameters / assignments;
+    SP 800-53A assessment procedures; FedRAMP-specific tailoring.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NIST SP 800-53 Rev. 5 is published by the U.S. National Institute
+      of Standards and Technology and is in the public domain in the
+      United States. Family and control content has been paraphrased
+      into audit-readiness language and is not reproduced verbatim.
+
+severityRubric:
+  critical: |
+    Failure leaves a Moderate Baseline family substantially
+    unimplemented; would block FedRAMP / FISMA ATO.
+  high: |
+    Material gap in a family without compensating controls.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: nist.sp800-53.r5:AC
+    target: iso27001:A.5.15
+    type: covers
+  - source: nist.sp800-53.r5:AT
+    target: iso27001:A.6.3
+    type: covers
+  - source: nist.sp800-53.r5:AU
+    target: iso27001:A.8.15
+    type: covers
+  - source: nist.sp800-53.r5:CM
+    target: iso27001:A.8.9
+    type: covers
+  - source: nist.sp800-53.r5:CP
+    target: iso27001:A.5.29
+    type: covers
+  - source: nist.sp800-53.r5:IA
+    target: iso27001:A.8.5
+    type: covers
+  - source: nist.sp800-53.r5:IR
+    target: iso27001:A.5.24
+    type: covers
+  - source: nist.sp800-53.r5:PE
+    target: iso27001:A.7.1
+    type: covers
+  - source: nist.sp800-53.r5:RA
+    target: iso27001:A.8.8
+    type: covers
+  - source: nist.sp800-53.r5:SA
+    target: iso27001:A.8.25
+    type: covers
+  - source: nist.sp800-53.r5:SC
+    target: iso27001:A.8.24
+    type: covers
+  - source: nist.sp800-53.r5:SR
+    target: iso27001:A.5.19
+    type: covers
+
+domains:
+  - id: technical
+    name: "Technical Controls"
+    description: |
+      Families implemented primarily through technical safeguards.
+    controls:
+      - id: nist.sp800-53.r5:AC
+        title: "Access Control (AC)"
+        weight: 3
+        answerType: scale
+        tags: [access-control, iam, authorization, least-privilege]
+        question: |
+          Does the organization manage logical access through documented
+          policy and procedures, account management, least privilege,
+          separation of duties, session controls, and remote access
+          safeguards?
+        purpose: |
+          AC underpins the integrity of every other control. Weak
+          access control nullifies confidentiality and integrity
+          assurances.
+        expectedOutcome:
+          - "Access control policy and procedures are current."
+          - "Accounts are managed across the lifecycle."
+          - "Least privilege and SoD are enforced and reviewed."
+        howTo:
+          - step: "Maintain AC policy and procedures"
+          - step: "Manage account lifecycle"
+          - step: "Enforce least privilege and SoD; review periodically"
+        evidenceExamples:
+          - "AC policy"
+          - "Account inventory and review"
+          - "SoD matrix"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "AC ad hoc"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: nist.sp800-53.r5:AU
+        title: "Audit and Accountability (AU)"
+        weight: 3
+        answerType: scale
+        tags: [logging, audit, accountability, siem]
+        question: |
+          Are audit events identified, generated, retained, protected,
+          and reviewed in accordance with documented policy?
+        purpose: |
+          AU is what makes accountability operational. Logs are also
+          the substrate for detection and investigation.
+        expectedOutcome:
+          - "Audit event catalog is documented."
+          - "Logs are centralized, retained, and protected."
+          - "Reviews and alerts surface anomalies."
+        howTo:
+          - step: "Document the audit event catalog"
+          - step: "Centralize, retain, and protect logs"
+          - step: "Review and alert on anomalies"
+        evidenceExamples:
+          - "AU policy"
+          - "Central log store configuration"
+          - "Review / alert evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No logs"
+            "3": "Logs, no review"
+            "5": "Central + reviewed + protected"
+        crossReferences:
+          - iso27001:A.8.15
+
+      - id: nist.sp800-53.r5:CM
+        title: "Configuration Management (CM)"
+        weight: 3
+        answerType: scale
+        tags: [configuration, hardening, baseline, drift]
+        question: |
+          Are baseline configurations established, components inventoried,
+          changes controlled, and configuration settings managed in
+          accordance with policy?
+        purpose: |
+          Configuration drift produces silent vulnerability. CM is what
+          keeps the security baseline credible over time.
+        expectedOutcome:
+          - "Baselines exist per platform."
+          - "Component inventory is current."
+          - "Changes follow change management."
+        howTo:
+          - step: "Establish baselines per platform"
+          - step: "Maintain component inventory"
+          - step: "Apply change management"
+        evidenceExamples:
+          - "Baseline definitions"
+          - "Component inventory"
+          - "Change records"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No CM"
+            "3": "Partial"
+            "5": "Baselines + inventory + change"
+        crossReferences:
+          - iso27001:A.8.9
+
+      - id: nist.sp800-53.r5:IA
+        title: "Identification and Authentication (IA)"
+        weight: 3
+        answerType: scale
+        tags: [iam, authentication, mfa, identity]
+        question: |
+          Are users, devices, and processes uniquely identified and
+          authenticated with mechanisms appropriate to risk, including
+          MFA where required?
+        purpose: |
+          IA is the entry control on which the rest of the security
+          architecture depends. Weak IA breaks the chain.
+        expectedOutcome:
+          - "Unique identification is enforced."
+          - "MFA is enforced for privileged and remote access."
+          - "Authenticator management policies are applied."
+        howTo:
+          - step: "Enforce unique identification"
+          - step: "Enforce MFA on privileged / remote access"
+          - step: "Apply authenticator management policy"
+        evidenceExamples:
+          - "Unique ID policy"
+          - "MFA enforcement report"
+          - "Authenticator policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Shared accounts"
+            "3": "No MFA"
+            "5": "Unique ID + MFA + policy"
+        crossReferences:
+          - iso27001:A.8.5
+
+      - id: nist.sp800-53.r5:SC
+        title: "System and Communications Protection (SC)"
+        weight: 3
+        answerType: scale
+        tags: [network, cryptography, boundary, communications]
+        question: |
+          Are system and communications protections (boundary protection,
+          cryptography, denial-of-service protection, transmission
+          confidentiality / integrity) implemented and maintained?
+        purpose: |
+          SC covers the technical safeguards on system and network
+          boundaries. Its breadth requires consistent attention.
+        expectedOutcome:
+          - "Boundary protections are designed and enforced."
+          - "Cryptography is applied per policy."
+          - "Transmission protections are enforced."
+        howTo:
+          - step: "Design and enforce boundary protections"
+          - step: "Apply cryptography per policy"
+          - step: "Enforce transmission protections"
+        evidenceExamples:
+          - "Boundary design"
+          - "Cryptography policy"
+          - "Transmission protection configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SC"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: nist.sp800-53.r5:SI
+        title: "System and Information Integrity (SI)"
+        weight: 3
+        answerType: scale
+        tags: [integrity, vulnerability, malware, monitoring]
+        question: |
+          Does the organization identify, report, and correct flaws;
+          protect against malicious code; and monitor system integrity?
+        purpose: |
+          SI converts known vulnerability data and attack signals into
+          remediation and detection actions.
+        expectedOutcome:
+          - "Flaw remediation is managed under SLA."
+          - "Malicious code protections are deployed."
+          - "Information system monitoring is in place."
+        howTo:
+          - step: "Manage flaw remediation under SLA"
+          - step: "Deploy malicious code protections"
+          - step: "Monitor information system integrity"
+        evidenceExamples:
+          - "Flaw remediation tracker"
+          - "Malware protection coverage"
+          - "Monitoring evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak SI"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.sp800-53.r5:MA
+        title: "Maintenance (MA)"
+        weight: 2
+        answerType: scale
+        tags: [maintenance, change, supervision]
+        question: |
+          Is system maintenance performed by authorized personnel,
+          using approved tools, with documented controls over local
+          and non-local maintenance?
+        purpose: |
+          Maintenance touches privileged interfaces. Uncontrolled
+          maintenance is a frequent path to incident.
+        expectedOutcome:
+          - "Maintenance policy authorizes personnel and tools."
+          - "Non-local maintenance is monitored."
+          - "Maintenance is logged."
+        howTo:
+          - step: "Authorize personnel and tools"
+          - step: "Monitor non-local maintenance"
+          - step: "Log maintenance"
+        evidenceExamples:
+          - "MA policy"
+          - "Non-local maintenance log"
+          - "Maintenance record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No MA control"
+            "3": "Partial"
+            "5": "Authorized + monitored + logged"
+
+      - id: nist.sp800-53.r5:MP
+        title: "Media Protection (MP)"
+        weight: 2
+        answerType: scale
+        tags: [media, sanitization, transport]
+        question: |
+          Are digital and non-digital media protected through marking,
+          storage, transport, and sanitization controls?
+        purpose: |
+          Media leaves controlled environments more often than
+          equipment. Lifecycle protection prevents data leakage.
+        expectedOutcome:
+          - "Media handling policy aligns to classification."
+          - "Transport is controlled."
+          - "Sanitization is verified."
+        howTo:
+          - step: "Align handling with classification"
+          - step: "Control transport"
+          - step: "Verify sanitization"
+        evidenceExamples:
+          - "Media policy"
+          - "Transport record"
+          - "Sanitization certificate"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak MP"
+            "3": "Partial"
+            "5": "Lifecycle covered"
+
+  - id: operational
+    name: "Operational Controls"
+    description: |
+      Families implemented primarily through operational processes and
+      personnel actions.
+    controls:
+      - id: nist.sp800-53.r5:AT
+        title: "Awareness and Training (AT)"
+        weight: 2
+        answerType: scale
+        tags: [awareness, training, skills]
+        question: |
+          Are personnel provided with security awareness and role-based
+          training appropriate to their responsibilities?
+        purpose: |
+          People are part of the control surface. Training reduces
+          policy violations and phishing success.
+        expectedOutcome:
+          - "Annual security awareness is delivered."
+          - "Role-based training exists for security-significant roles."
+          - "Completion is tracked."
+        howTo:
+          - step: "Deliver annual security awareness"
+          - step: "Provide role-based training for security roles"
+          - step: "Track completion"
+        evidenceExamples:
+          - "Curriculum"
+          - "Completion records"
+          - "Role-based training plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No program"
+            "3": "Generic only"
+            "5": "Tiered + tracked"
+        crossReferences:
+          - iso27001:A.6.3
+
+      - id: nist.sp800-53.r5:CP
+        title: "Contingency Planning (CP)"
+        weight: 3
+        answerType: scale
+        tags: [continuity, backup, dr, exercise]
+        question: |
+          Has the organization developed, tested, and maintained
+          contingency plans (BCP, DRP, ISCP) for in-scope systems?
+        purpose: |
+          Contingency planning converts availability commitments into
+          tested capability. Untested plans fail in real disruption.
+        expectedOutcome:
+          - "Contingency plans cover in-scope systems."
+          - "Plans are tested annually."
+          - "Backups are protected and verified."
+        howTo:
+          - step: "Develop contingency plans for in-scope systems"
+          - step: "Test annually"
+          - step: "Protect and verify backups"
+        evidenceExamples:
+          - "ISCP"
+          - "Test report"
+          - "Backup verification report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No CP"
+            "3": "Plans untested"
+            "5": "Plans tested + backups"
+        crossReferences:
+          - iso27001:A.5.29
+
+      - id: nist.sp800-53.r5:IR
+        title: "Incident Response (IR)"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, plan, reporting]
+        question: |
+          Does the organization establish an operational incident
+          response capability covering preparation, detection, analysis,
+          containment, eradication, recovery, and reporting?
+        purpose: |
+          IR is the lifecycle of containing and learning from incidents.
+          Programs without IR maturity fail visibly under stress.
+        expectedOutcome:
+          - "IR policy and plans are documented."
+          - "Capability is exercised."
+          - "Reporting paths are defined and tested."
+        howTo:
+          - step: "Document IR policy and plans"
+          - step: "Exercise the capability"
+          - step: "Define and test reporting paths"
+        evidenceExamples:
+          - "IR plan"
+          - "Exercise report"
+          - "Reporting test record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No IR"
+            "3": "Plan untested"
+            "5": "Plan exercised"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: nist.sp800-53.r5:PE
+        title: "Physical and Environmental Protection (PE)"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, environmental, facilities]
+        question: |
+          Are facilities and assets protected through physical access
+          control, monitoring, environmental controls, and emergency
+          shutoff procedures?
+        purpose: |
+          Physical and environmental events undermine logical controls.
+          PE provides the baseline assurance.
+        expectedOutcome:
+          - "Physical access tiers are enforced."
+          - "Environmental controls are tested."
+          - "Monitoring covers facilities."
+        howTo:
+          - step: "Enforce physical access tiers"
+          - step: "Test environmental controls"
+          - step: "Monitor facilities"
+        evidenceExamples:
+          - "Access tier policy"
+          - "Environmental test report"
+          - "Monitoring evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak PE"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.7.1
+        appliesIf: "facility.onPremises == true"
+
+      - id: nist.sp800-53.r5:PS
+        title: "Personnel Security (PS)"
+        weight: 2
+        answerType: scale
+        tags: [personnel, screening, hr, agreements]
+        question: |
+          Does the organization manage personnel security through
+          screening, position risk designation, termination procedures,
+          and access agreements?
+        purpose: |
+          Personnel security closes the seams between roles, contracts,
+          and access — a frequent root cause of incidents.
+        expectedOutcome:
+          - "Position risk is designated for in-scope roles."
+          - "Screening matches risk."
+          - "Termination procedures revoke access promptly."
+        howTo:
+          - step: "Designate position risk for roles"
+          - step: "Apply screening per risk"
+          - step: "Execute termination procedures"
+        evidenceExamples:
+          - "Position risk designations"
+          - "Screening policy"
+          - "Termination checklist"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No PS"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+  - id: management
+    name: "Management Controls"
+    description: |
+      Families implemented primarily through governance, planning,
+      and oversight.
+    controls:
+      - id: nist.sp800-53.r5:CA
+        title: "Assessment, Authorization, and Monitoring (CA)"
+        weight: 3
+        answerType: scale
+        tags: [assessment, ato, continuous-monitoring]
+        question: |
+          Are security controls assessed, systems authorized to operate,
+          and continuous monitoring performed under documented
+          processes?
+        purpose: |
+          CA is what binds the rest of the control catalog to formal
+          authorization to operate decisions.
+        expectedOutcome:
+          - "Assessment plans and results are documented."
+          - "Authorization decisions are recorded."
+          - "Continuous monitoring is in place."
+        howTo:
+          - step: "Plan and execute control assessments"
+          - step: "Record authorization decisions"
+          - step: "Operate continuous monitoring"
+        evidenceExamples:
+          - "Assessment plan / report"
+          - "Authorization decision"
+          - "Continuous monitoring evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No CA"
+            "3": "Partial"
+            "5": "Assessed + authorized + monitored"
+
+      - id: nist.sp800-53.r5:PL
+        title: "Planning (PL)"
+        weight: 2
+        answerType: scale
+        tags: [planning, ssp, architecture]
+        question: |
+          Are security and privacy plans (e.g., system security plan,
+          rules of behavior) developed, maintained, and applied?
+        purpose: |
+          Planning artifacts make the control set deliverable. They
+          orient new personnel and demonstrate intent to assessors.
+        expectedOutcome:
+          - "SSP exists and is current."
+          - "Rules of behavior are acknowledged."
+          - "Security architecture is documented."
+        howTo:
+          - step: "Maintain the SSP"
+          - step: "Acknowledge rules of behavior"
+          - step: "Document security architecture"
+        evidenceExamples:
+          - "SSP"
+          - "Rules of behavior"
+          - "Architecture document"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SSP"
+            "3": "SSP outdated"
+            "5": "SSP + RoB + architecture"
+
+      - id: nist.sp800-53.r5:PM
+        title: "Program Management (PM)"
+        weight: 2
+        answerType: scale
+        tags: [program, governance, oversight]
+        question: |
+          Does the organization manage its information security and
+          privacy program through documented strategy, resources,
+          enterprise architecture, and risk management?
+        purpose: |
+          PM is the enterprise wrapper for system-level families. It
+          determines the organizational maturity of the program.
+        expectedOutcome:
+          - "Program strategy and resources are documented."
+          - "Enterprise architecture covers security."
+          - "Risk management is operational."
+        howTo:
+          - step: "Document program strategy and resources"
+          - step: "Embed security in enterprise architecture"
+          - step: "Operate risk management"
+        evidenceExamples:
+          - "Program strategy"
+          - "EA artifact"
+          - "Risk register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No PM"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.sp800-53.r5:RA
+        title: "Risk Assessment (RA)"
+        weight: 3
+        answerType: scale
+        tags: [risk-assessment, vulnerability, categorization]
+        question: |
+          Are risk assessments performed and vulnerabilities identified,
+          categorized, and remediated under documented processes?
+        purpose: |
+          RA drives every prioritization decision. Without current
+          assessments, the rest of the program is guessing.
+        expectedOutcome:
+          - "Risk assessments are documented and current."
+          - "Vulnerabilities are categorized and tracked."
+          - "Risk treatment is planned."
+        howTo:
+          - step: "Perform risk assessments"
+          - step: "Categorize and track vulnerabilities"
+          - step: "Plan risk treatment"
+        evidenceExamples:
+          - "Risk assessment report"
+          - "Vulnerability register"
+          - "Treatment plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No RA"
+            "3": "Partial"
+            "5": "Current + tracked + treated"
+        crossReferences:
+          - iso27001:A.8.8
+
+      - id: nist.sp800-53.r5:SA
+        title: "System and Services Acquisition (SA)"
+        weight: 3
+        answerType: scale
+        tags: [acquisition, sdlc, secure-development]
+        question: |
+          Are security and privacy requirements integrated into the
+          acquisition and development of systems and services?
+        purpose: |
+          Security retrofitted to acquired or developed systems is
+          expensive and incomplete. SA shifts the cost left.
+        expectedOutcome:
+          - "Security requirements are in acquisitions."
+          - "Secure SDLC is documented."
+          - "Acquired systems are validated."
+        howTo:
+          - step: "Include security in acquisitions"
+          - step: "Maintain a secure SDLC"
+          - step: "Validate acquired systems"
+        evidenceExamples:
+          - "Acquisition templates"
+          - "Secure SDLC policy"
+          - "Validation report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SA"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.25
+
+      - id: nist.sp800-53.r5:PT
+        title: "PII Processing and Transparency (PT)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, pii, transparency]
+        question: |
+          Are processing of PII managed under documented authority,
+          purpose specification, and transparency requirements?
+        purpose: |
+          PT is the privacy-control family. It mirrors many GDPR
+          obligations in a federal context.
+        expectedOutcome:
+          - "Authority and purpose are documented per PII processing."
+          - "Privacy notices are published."
+          - "Consent / objection processes operate where required."
+        howTo:
+          - step: "Document authority and purpose"
+          - step: "Publish privacy notices"
+          - step: "Operate consent / objection processes"
+        evidenceExamples:
+          - "Authority documentation"
+          - "Privacy notice"
+          - "Consent management evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No PT"
+            "3": "Partial"
+            "5": "Comprehensive"
+        appliesIf: "data.contains_pii == true"
+
+      - id: nist.sp800-53.r5:SR
+        title: "Supply Chain Risk Management (SR)"
+        weight: 3
+        answerType: scale
+        tags: [supply-chain, third-party, sbom]
+        question: |
+          Does the organization manage supply chain risks for systems
+          and components, including provenance, authenticity, and
+          ongoing assessment?
+        purpose: |
+          SR was elevated to its own family in Rev. 5 because supply
+          chain attacks have become a dominant systemic risk.
+        expectedOutcome:
+          - "Supply chain risk management plan exists."
+          - "Provenance / authenticity is verified."
+          - "Suppliers are assessed and monitored."
+        howTo:
+          - step: "Maintain a supply chain risk management plan"
+          - step: "Verify provenance / authenticity"
+          - step: "Assess and monitor suppliers"
+        evidenceExamples:
+          - "SCRM plan"
+          - "Provenance check"
+          - "Supplier monitoring"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SR"
+            "3": "Partial"
+            "5": "Plan + verification + monitoring"
+        crossReferences:
+          - iso27001:A.5.19

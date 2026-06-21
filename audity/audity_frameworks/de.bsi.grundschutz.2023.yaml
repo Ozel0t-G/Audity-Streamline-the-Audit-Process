@@ -1,0 +1,472 @@
+framework:
+  schemaVersion: 1
+  key: de.bsi.grundschutz.2023
+  name: "BSI IT-Grundschutz Kompendium (Layer-Level View)"
+  shortName: "BSI Grundschutz"
+  version: "Edition 2023"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: bsi_grundschutz
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "ISMS Manager"
+    - "CISO"
+    - "Grundschutz-Berater"
+  estimatedDurationMinutes: 360
+  description: |
+    The BSI IT-Grundschutz Kompendium is the German Federal Office for
+    Information Security's catalogue of modular ISMS building blocks
+    (Bausteine), each containing requirements (Anforderungen) at three
+    tiers: Basis-Anforderungen (B), Standard-Anforderungen (S), and
+    Anforderungen für erhöhten Schutzbedarf (H).
+
+    This YAML covers the 10 BSI Grundschutz Schichten (layers) as
+    audit-readiness controls. The roughly 100 Bausteine and many
+    hundred individual Anforderungen are summarized at Schicht level;
+    a Grundschutz audit or certification uses the underlying Bausteine
+    and Anforderungen directly.
+  scopeNote: |
+    In scope: all 10 Schichten of the IT-Grundschutz Kompendium
+    (ISMS, ORP, CON, OPS, DER, APP, SYS, IND, NET, INF) as one
+    audit-control per Schicht.
+
+    Out of scope: individual Bausteine as separate controls; the
+    hundreds of individual Anforderungen (B / S / H); the Grundschutz
+    profile catalogues; certification audit procedures; cross-references
+    to ISO 27001 mappings published by BSI.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      The BSI IT-Grundschutz Kompendium is published by the German
+      Federal Office for Information Security (Bundesamt für
+      Sicherheit in der Informationstechnik) and made publicly
+      available. Schicht and Baustein content has been paraphrased
+      into audit-readiness English and is not reproduced verbatim.
+
+severityRubric:
+  critical: |
+    Failure leaves Basis-Anforderungen of a Schicht unimplemented;
+    blocks Basis-Absicherung.
+  high: |
+    Material gap in Standard-Anforderungen of a Schicht without
+    compensating measures.
+  medium: |
+    Partial implementation across a Schicht; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: de.bsi.grundschutz:ISMS
+    target: iso27001:A.5.1
+    type: covers
+  - source: de.bsi.grundschutz:ORP
+    target: iso27001:A.6.3
+    type: covers
+  - source: de.bsi.grundschutz:CON
+    target: iso27001:A.8.25
+    type: covers
+  - source: de.bsi.grundschutz:OPS
+    target: iso27001:A.8.9
+    type: covers
+  - source: de.bsi.grundschutz:DER
+    target: iso27001:A.8.16
+    type: covers
+  - source: de.bsi.grundschutz:APP
+    target: iso27001:A.8.25
+    type: covers
+  - source: de.bsi.grundschutz:SYS
+    target: iso27001:A.8.1
+    type: covers
+  - source: de.bsi.grundschutz:NET
+    target: iso27001:A.8.20
+    type: covers
+  - source: de.bsi.grundschutz:INF
+    target: iso27001:A.7.1
+    type: covers
+
+domains:
+  - id: process-layers
+    name: "Process Layers (ISMS, ORP, CON, OPS, DER)"
+    description: |
+      Layers describing the ISMS itself, organization and personnel,
+      concepts and approaches, operations, and detection / response.
+    controls:
+      - id: de.bsi.grundschutz:ISMS
+        title: "ISMS - Security Management"
+        weight: 3
+        answerType: scale
+        tags: [isms, governance, security-management]
+        question: |
+          Is an information security management system established,
+          maintained, and reviewed in line with the ISMS Baustein
+          (ISMS.1)?
+        purpose: |
+          The ISMS is the umbrella under which Grundschutz operates.
+          A weak ISMS undermines the entire framework.
+        expectedOutcome:
+          - "ISMS policy, scope, and objectives are documented."
+          - "Management commitment is documented."
+          - "Management review runs on a defined cadence."
+        howTo:
+          - step: "Document ISMS policy, scope, and objectives"
+          - step: "Document management commitment"
+          - step: "Run management review on cadence"
+        evidenceExamples:
+          - "ISMS policy"
+          - "Management commitment"
+          - "Management review minutes"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No ISMS"
+            "3": "ISMS partial"
+            "5": "ISMS operating"
+        crossReferences:
+          - iso27001:A.5.1
+
+      - id: de.bsi.grundschutz:ORP
+        title: "ORP - Organization and Personnel"
+        weight: 2
+        answerType: scale
+        tags: [governance, organization, personnel, roles]
+        question: |
+          Are organization (ORP.1), personnel (ORP.2), awareness /
+          training (ORP.3), identity / access (ORP.4), and compliance
+          (ORP.5) Bausteine implemented?
+        purpose: |
+          The ORP layer covers the human and organizational foundation
+          of the ISMS.
+        expectedOutcome:
+          - "Roles and responsibilities are documented."
+          - "Personnel security covers JML."
+          - "Awareness, IAM, and compliance are in place."
+        howTo:
+          - step: "Document roles and responsibilities"
+          - step: "Embed personnel security in JML"
+          - step: "Operate awareness, IAM, and compliance"
+        evidenceExamples:
+          - "Roles document"
+          - "Training records"
+          - "IAM configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak ORP"
+            "3": "Partial"
+            "5": "All five Bausteine in place"
+        crossReferences:
+          - iso27001:A.6.3
+
+      - id: de.bsi.grundschutz:CON
+        title: "CON - Concepts and Approaches"
+        weight: 3
+        answerType: scale
+        tags: [concepts, cryptography, software, development]
+        question: |
+          Are concept Bausteine (cryptography, software development,
+          data protection, telework, secure deletion, etc.) implemented
+          appropriate to scope?
+        purpose: |
+          CON covers cross-cutting concepts that underpin operational
+          decisions across the rest of the layers.
+        expectedOutcome:
+          - "Cryptography concept is documented and applied."
+          - "Software development concept aligns with practice."
+          - "Data protection / privacy concept is in place."
+        howTo:
+          - step: "Document and apply a cryptography concept"
+          - step: "Document and apply a software development concept"
+          - step: "Document and apply data protection / privacy concept"
+        evidenceExamples:
+          - "Cryptography concept"
+          - "Software development concept"
+          - "Data protection concept"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No concepts"
+            "3": "Concepts partial"
+            "5": "Concepts applied"
+        crossReferences:
+          - iso27001:A.8.25
+
+      - id: de.bsi.grundschutz:OPS
+        title: "OPS - Operations"
+        weight: 3
+        answerType: scale
+        tags: [operations, change-management, backup, monitoring]
+        question: |
+          Are operations Bausteine (proper IT operations, change
+          management, patching, backup, archiving, monitoring,
+          outsourcing) implemented?
+        purpose: |
+          OPS is the largest Schicht because operations is where most
+          incidents and findings originate. Discipline here is the
+          basis of certification.
+        expectedOutcome:
+          - "Documented operations cover change, patching, backup."
+          - "Monitoring is in place."
+          - "Outsourced operations are governed."
+        howTo:
+          - step: "Document change, patching, backup processes"
+          - step: "Operate monitoring"
+          - step: "Govern outsourced operations"
+        evidenceExamples:
+          - "Operations procedures"
+          - "Backup test report"
+          - "Outsourcing agreement"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Operations ad hoc"
+            "3": "Some processes"
+            "5": "All processes in place"
+        crossReferences:
+          - iso27001:A.8.9
+
+      - id: de.bsi.grundschutz:DER
+        title: "DER - Detection and Response"
+        weight: 3
+        answerType: scale
+        tags: [detection, response, incident-handling, soc]
+        question: |
+          Are Bausteine for detecting events (DER.1), evaluating
+          (DER.2.1), incident handling (DER.2.x), and forensics
+          (DER.4) implemented?
+        purpose: |
+          DER covers the detection and response capability. It
+          determines whether incidents are caught early or surface
+          via third parties.
+        expectedOutcome:
+          - "Detection capability is operational."
+          - "Incident handling process is documented and exercised."
+          - "Forensic readiness is in place."
+        howTo:
+          - step: "Operate detection capability"
+          - step: "Document and exercise incident handling"
+          - step: "Establish forensic readiness"
+        evidenceExamples:
+          - "Detection coverage"
+          - "IR plan and exercise"
+          - "Forensic SOP"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak DER"
+            "3": "Partial"
+            "5": "Detection + response + forensics"
+        crossReferences:
+          - iso27001:A.8.16
+
+  - id: system-layers
+    name: "System Layers (APP, SYS, IND, NET, INF)"
+    description: |
+      Layers describing applications, IT systems, industrial IT,
+      networks and communications, and physical infrastructure.
+    controls:
+      - id: de.bsi.grundschutz:APP
+        title: "APP - Applications"
+        weight: 2
+        answerType: scale
+        tags: [application, sdlc, web, database]
+        question: |
+          Are application Bausteine (web applications, e-mail, office
+          applications, databases, etc.) implemented for in-scope
+          applications?
+        purpose: |
+          APP covers the application layer where most user-facing risk
+          lives. Per-application Bausteine guide proportionate controls.
+        expectedOutcome:
+          - "Bausteine are selected per in-scope application."
+          - "Anforderungen are implemented per Schutzbedarf."
+          - "Deviations are documented and approved."
+        howTo:
+          - step: "Select Bausteine per in-scope application"
+          - step: "Implement Anforderungen per Schutzbedarf"
+          - step: "Document and approve deviations"
+        evidenceExamples:
+          - "Baustein selection record"
+          - "Implementation evidence"
+          - "Deviation register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Bausteine not selected"
+            "3": "Partial"
+            "5": "Selected + implemented"
+        crossReferences:
+          - iso27001:A.8.25
+
+      - id: de.bsi.grundschutz:SYS
+        title: "SYS - IT Systems"
+        weight: 3
+        answerType: scale
+        tags: [system, server, client, mobile]
+        question: |
+          Are IT system Bausteine (servers, clients, mobile devices,
+          virtualization, container, cloud, etc.) implemented for
+          in-scope systems?
+        purpose: |
+          SYS covers the system platforms. It is one of the largest
+          Schichten by Baustein count.
+        expectedOutcome:
+          - "Bausteine are selected per in-scope system class."
+          - "Anforderungen are implemented per Schutzbedarf."
+          - "Deviations are documented and approved."
+        howTo:
+          - step: "Select Bausteine per system class"
+          - step: "Implement Anforderungen per Schutzbedarf"
+          - step: "Document and approve deviations"
+        evidenceExamples:
+          - "Baustein selection record"
+          - "Implementation evidence"
+          - "Deviation register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Bausteine not selected"
+            "3": "Partial"
+            "5": "Selected + implemented"
+        crossReferences:
+          - iso27001:A.8.1
+
+      - id: de.bsi.grundschutz:IND
+        title: "IND - Industrial IT"
+        weight: 2
+        answerType: scale
+        tags: [ot, ics, scada, industrial]
+        question: |
+          Are industrial IT (OT) Bausteine implemented for in-scope
+          industrial control systems, including ICS / SCADA?
+        purpose: |
+          OT environments have different threat models and lifecycles.
+          IND addresses the specifics.
+        expectedOutcome:
+          - "Bausteine selected per in-scope OT environment."
+          - "OT-specific Anforderungen are implemented."
+          - "OT / IT separation is enforced."
+        howTo:
+          - step: "Select Bausteine per OT environment"
+          - step: "Implement OT-specific Anforderungen"
+          - step: "Enforce OT / IT separation"
+        evidenceExamples:
+          - "Baustein selection record"
+          - "OT-specific implementation"
+          - "OT / IT separation design"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "OT unmanaged"
+            "3": "Partial"
+            "5": "Bausteine implemented"
+        appliesIf: "organization.has_ot == true"
+
+      - id: de.bsi.grundschutz:NET
+        title: "NET - Networks and Communications"
+        weight: 3
+        answerType: scale
+        tags: [network, communications, segmentation, wlan]
+        question: |
+          Are network Bausteine (network architecture, network design,
+          firewall, WLAN, VPN, etc.) implemented for in-scope networks?
+        purpose: |
+          NET covers the network layer that holds the rest of the
+          architecture together. Sound design here limits blast
+          radius.
+        expectedOutcome:
+          - "Bausteine are selected per in-scope network area."
+          - "Anforderungen are implemented per Schutzbedarf."
+          - "Deviations are documented and approved."
+        howTo:
+          - step: "Select Bausteine per network area"
+          - step: "Implement Anforderungen per Schutzbedarf"
+          - step: "Document and approve deviations"
+        evidenceExamples:
+          - "Network Baustein selection"
+          - "Implementation evidence"
+          - "Deviation register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Bausteine not selected"
+            "3": "Partial"
+            "5": "Selected + implemented"
+        crossReferences:
+          - iso27001:A.8.20
+
+      - id: de.bsi.grundschutz:INF
+        title: "INF - Infrastructure"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, building, data-center, infrastructure]
+        question: |
+          Are infrastructure Bausteine (buildings, rooms, data centers,
+          working from home, etc.) implemented for in-scope facilities?
+        purpose: |
+          INF covers the physical foundation. Physical compromise
+          undermines all logical Bausteine.
+        expectedOutcome:
+          - "Bausteine are selected per in-scope facility."
+          - "Anforderungen are implemented per Schutzbedarf."
+          - "Deviations are documented and approved."
+        howTo:
+          - step: "Select Bausteine per facility"
+          - step: "Implement Anforderungen per Schutzbedarf"
+          - step: "Document and approve deviations"
+        evidenceExamples:
+          - "Facility Baustein selection"
+          - "Implementation evidence"
+          - "Deviation register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Bausteine not selected"
+            "3": "Partial"
+            "5": "Selected + implemented"
+        crossReferences:
+          - iso27001:A.7.1
+        appliesIf: "facility.onPremises == true"

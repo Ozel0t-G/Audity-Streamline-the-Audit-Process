@@ -475,6 +475,7 @@ export function GuidedQuestionsPage() {
                   ) : null}
                 </form>
 
+                <HintBlocks question={activeQuestion} />
                 <SuggestionsPanel suggestions={suggestions} />
               </div>
             </>
@@ -506,6 +507,142 @@ function FormField({ label, hint, children }: { label: string; hint?: string; ch
       <div className="mt-1.5 normal-case">{children}</div>
       {hint ? <span className="mt-1 block text-[11px] normal-case font-normal text-audity-muted">{hint}</span> : null}
     </label>
+  );
+}
+
+type HintBlocksProps = { question: GuidedQuestion };
+
+const HINT_STATE_STORAGE_KEY = "audity_question_hint_open";
+
+function HintBlocks({ question }: HintBlocksProps) {
+  const purpose = question.purpose?.trim() ?? "";
+  const expected = question.expectedOutcome ?? [];
+  const howTo = question.howTo ?? [];
+  const crossRefs = question.crossReferences ?? [];
+  const hasAny = Boolean(purpose) || expected.length > 0 || howTo.length > 0 || crossRefs.length > 0;
+  const [openState, setOpenState] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return { purpose: true, expected: true, howTo: true, crossRefs: false };
+    try {
+      const raw = window.localStorage.getItem(HINT_STATE_STORAGE_KEY);
+      if (raw) return JSON.parse(raw) as Record<string, boolean>;
+    } catch {
+      // ignore corrupted state
+    }
+    return { purpose: true, expected: true, howTo: true, crossRefs: false };
+  });
+
+  function toggle(key: string) {
+    setOpenState((current) => {
+      const next = { ...current, [key]: !current[key] };
+      try {
+        window.localStorage.setItem(HINT_STATE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // storage may be unavailable in private mode
+      }
+      return next;
+    });
+  }
+
+  if (!hasAny) return null;
+
+  return (
+    <aside className="flex shrink-0 flex-col gap-2">
+      {purpose ? (
+        <HintCard
+          icon="💡"
+          title="Why this matters"
+          open={openState.purpose !== false}
+          onToggle={() => toggle("purpose")}
+        >
+          <p className="whitespace-pre-line text-sm leading-6 text-audity-secondary">{purpose}</p>
+        </HintCard>
+      ) : null}
+      {expected.length > 0 ? (
+        <HintCard
+          icon="✅"
+          title="What good looks like"
+          open={openState.expected !== false}
+          onToggle={() => toggle("expected")}
+        >
+          <ul className="space-y-1.5 text-sm leading-6 text-audity-secondary">
+            {expected.map((item, index) => (
+              <li key={`${item.slice(0, 30)}-${index}`} className="border-l-2 border-audity-success pl-3">{item}</li>
+            ))}
+          </ul>
+        </HintCard>
+      ) : null}
+      {howTo.length > 0 ? (
+        <HintCard
+          icon="📋"
+          title="How to satisfy this"
+          open={openState.howTo !== false}
+          onToggle={() => toggle("howTo")}
+        >
+          <ol className="space-y-2 text-sm leading-6 text-audity-secondary">
+            {howTo.map((entry, index) => (
+              <li key={`${entry.step.slice(0, 30)}-${index}`} className="flex gap-2">
+                <span className="shrink-0 font-semibold text-audity-text">{index + 1}.</span>
+                <div className="min-w-0">
+                  <p className="text-audity-text">{entry.step}</p>
+                  {entry.details ? <p className="mt-0.5 whitespace-pre-line text-xs text-audity-muted">{entry.details}</p> : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </HintCard>
+      ) : null}
+      {crossRefs.length > 0 ? (
+        <HintCard
+          icon="🔗"
+          title="Related controls"
+          open={openState.crossRefs === true}
+          onToggle={() => toggle("crossRefs")}
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {crossRefs.map((ref) => (
+              <span key={ref} className="rounded-full border border-audity-border bg-audity-page px-2 py-0.5 text-xs text-audity-secondary">
+                {ref}
+              </span>
+            ))}
+          </div>
+        </HintCard>
+      ) : null}
+    </aside>
+  );
+}
+
+function HintCard({ icon, title, open, onToggle, children }: {
+  icon: string;
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-audity border border-audity-border bg-audity-panel">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-audity-panelAlt"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="flex items-center gap-2">
+          <span className="text-base" aria-hidden="true">{icon}</span>
+          <span className="text-sm font-semibold text-audity-text">{title}</span>
+        </span>
+        <svg
+          className={`h-4 w-4 text-audity-muted transition-transform ${open ? "rotate-180" : ""}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open ? <div className="border-t border-audity-border px-4 py-3">{children}</div> : null}
+    </section>
   );
 }
 

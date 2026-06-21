@@ -1,0 +1,376 @@
+framework:
+  schemaVersion: 1
+  key: au.acsc.essential8
+  name: "ACSC Essential Eight Maturity Model"
+  shortName: "Essential Eight"
+  version: "2023"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "CISO"
+    - "IT Operations"
+    - "Endpoint Engineer"
+  estimatedDurationMinutes: 180
+  description: |
+    The Essential Eight is a baseline of mitigation strategies
+    published by the Australian Cyber Security Centre (ACSC) of the
+    Australian Signals Directorate. It defines eight prioritized
+    technical strategies that, when implemented as a package,
+    materially reduce the impact of common attacks. Each strategy is
+    accompanied by maturity levels ML0 to ML3.
+
+    This YAML covers all eight strategies as audit-readiness controls
+    with maturity-level expectations reflected in expectedOutcome.
+  scopeNote: |
+    In scope: all eight Essential Eight mitigation strategies, each
+    as one audit-control, with ML0 / ML1 / ML2 / ML3 progression
+    summarized.
+
+    Out of scope: the broader ACSC Strategies to Mitigate Cyber
+    Security Incidents (which contains 37 strategies of which the
+    Essential Eight are a subset); the ACSC Information Security
+    Manual (ISM); per-strategy assessment guides.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      The Essential Eight is published by the Australian Cyber Security
+      Centre and made available for use. Strategy content has been
+      paraphrased into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves an ML1 baseline unmet for an internet-exposed
+    environment.
+  high: |
+    Material gap at ML2 without compensating measures.
+  medium: |
+    Partial ML2 implementation; remediable in the normal improvement
+    cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: au.acsc.essential8:E8-01
+    target: cis.controls.8.1:C-02
+    type: covers
+  - source: au.acsc.essential8:E8-02
+    target: cis.controls.8.1:C-07
+    type: covers
+  - source: au.acsc.essential8:E8-05
+    target: cis.controls.8.1:C-06
+    type: covers
+  - source: au.acsc.essential8:E8-06
+    target: cis.controls.8.1:C-07
+    type: covers
+  - source: au.acsc.essential8:E8-07
+    target: iso27001:A.8.5
+    type: covers
+  - source: au.acsc.essential8:E8-08
+    target: iso27001:A.8.13
+    type: covers
+
+domains:
+  - id: prevent
+    name: "Prevent Attacks"
+    description: |
+      Strategies that prevent execution of malicious code and limit
+      the attack surface.
+    controls:
+      - id: au.acsc.essential8:E8-01
+        title: "Application Control"
+        weight: 3
+        answerType: scale
+        tags: [allowlisting, application-control, endpoint]
+        question: |
+          Is application control (allowlisting) implemented on
+          workstations and servers to prevent execution of unauthorized
+          executables, libraries, scripts, installers, and drivers?
+        purpose: |
+          Allowing arbitrary code to execute defeats most preventative
+          controls. Application control is the strongest single
+          mitigation against malware execution.
+        expectedOutcome:
+          - "Application control prevents unapproved executables on workstations (ML1)."
+          - "Coverage extends to scripts, libraries, drivers (ML2)."
+          - "Rules use cryptographic publisher / hash, allowlist verified (ML3)."
+        howTo:
+          - step: "Enforce application control on workstations"
+          - step: "Extend to scripts, libraries, installers, drivers"
+          - step: "Use publisher / hash; verify allowlist"
+        evidenceExamples:
+          - "Application control policy"
+          - "Coverage report"
+          - "Allowlist verification record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No control"
+            "3": "Monitor mode"
+            "5": "Enforced + verified"
+
+      - id: au.acsc.essential8:E8-02
+        title: "Patch Applications"
+        weight: 3
+        answerType: scale
+        tags: [patching, vulnerability, applications]
+        question: |
+          Are applications patched within strategy-defined SLAs (e.g.,
+          internet-facing within 48 hours for critical vulnerabilities)?
+        purpose: |
+          Time-to-patch directly drives breach probability. The
+          Essential Eight sets specific cadences.
+        expectedOutcome:
+          - "Internet-facing applications patched within 2 weeks / 48 hours for critical (ML1/2)."
+          - "Office, browsers, email, security tools patched on cadence (ML1/2)."
+          - "Auto-patching where possible (ML3)."
+        howTo:
+          - step: "Patch internet-facing applications on aggressive SLA"
+          - step: "Patch office / browsers / email / security tools on cadence"
+          - step: "Automate patching where possible"
+        evidenceExamples:
+          - "Patching SLA policy"
+          - "Patch compliance report"
+          - "Automation configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SLAs"
+            "3": "SLAs slipping"
+            "5": "SLAs met + automated"
+
+      - id: au.acsc.essential8:E8-03
+        title: "Configure Microsoft Office Macro Settings"
+        weight: 2
+        answerType: scale
+        tags: [macros, office, endpoint]
+        question: |
+          Are Microsoft Office macro settings configured to block
+          untrusted macros, with macros from the internet blocked and
+          only signed macros allowed where needed?
+        purpose: |
+          Macros remain a recurring initial-access vector. Specific
+          configuration blocks the cheapest attacks.
+        expectedOutcome:
+          - "Macros from the internet are blocked (ML1)."
+          - "Only signed macros allowed where needed (ML2)."
+          - "Macro use is logged and reviewed (ML3)."
+        howTo:
+          - step: "Block macros from the internet"
+          - step: "Allow only signed macros where needed"
+          - step: "Log and review macro use"
+        evidenceExamples:
+          - "Office policy configuration"
+          - "Signing requirement"
+          - "Macro use log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Macros open"
+            "3": "Some blocking"
+            "5": "Blocked + signed + logged"
+
+      - id: au.acsc.essential8:E8-04
+        title: "User Application Hardening"
+        weight: 2
+        answerType: scale
+        tags: [hardening, browser, java, flash]
+        question: |
+          Are user applications (browsers, PDF readers, Office)
+          hardened to disable risky features (e.g., Flash, Java, ads,
+          object linking) where not required?
+        purpose: |
+          User application features that aren't required are pure
+          attack surface. Hardening removes that surface.
+        expectedOutcome:
+          - "Browsers / PDF readers / Office hardened (ML1)."
+          - "Web advertisements and Java disabled (ML2)."
+          - "Hardening applied via group policy or MDM (ML2/ML3)."
+        howTo:
+          - step: "Harden browsers, PDF readers, Office"
+          - step: "Disable web advertisements / Java"
+          - step: "Apply hardening via central policy"
+        evidenceExamples:
+          - "Hardening baseline"
+          - "Policy / MDM enforcement"
+          - "Audit results"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Default config"
+            "3": "Partial hardening"
+            "5": "Centrally enforced"
+
+  - id: limit
+    name: "Limit Attack Spread"
+    description: |
+      Strategies that limit privilege and attack surface inside the
+      environment.
+    controls:
+      - id: au.acsc.essential8:E8-05
+        title: "Restrict Administrative Privileges"
+        weight: 3
+        answerType: scale
+        tags: [iam, privileged-access, pam]
+        question: |
+          Are administrative privileges restricted, revalidated, and
+          managed separately from user accounts, with privileged
+          accounts not used for daily activities?
+        purpose: |
+          Privileged accounts are the dominant target. Restriction
+          limits both the probability and impact of their abuse.
+        expectedOutcome:
+          - "Privileged accounts are separated from user accounts (ML1)."
+          - "Privileged actions require re-authentication (ML2)."
+          - "Privileged access workstations / jump hosts used (ML3)."
+        howTo:
+          - step: "Separate privileged accounts from user accounts"
+          - step: "Require re-authentication for privileged actions"
+          - step: "Use privileged access workstations / jump hosts"
+        evidenceExamples:
+          - "Privileged account inventory"
+          - "Re-authentication policy"
+          - "PAW / jump host configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Mixed accounts"
+            "3": "Separated, mixed use"
+            "5": "Separated + PAW"
+
+      - id: au.acsc.essential8:E8-06
+        title: "Patch Operating Systems"
+        weight: 3
+        answerType: scale
+        tags: [patching, operating-system]
+        question: |
+          Are operating systems patched within strategy-defined SLAs,
+          and are unsupported OSes removed?
+        purpose: |
+          OS vulnerabilities are universally exploitable when
+          unpatched. Time-to-patch sets the breach window.
+        expectedOutcome:
+          - "Internet-facing OS patched within 2 weeks / 48 hours for critical (ML1/2)."
+          - "Workstation / server OS patched on cadence (ML1/2)."
+          - "Unsupported OSes removed (ML2)."
+        howTo:
+          - step: "Patch internet-facing OS aggressively"
+          - step: "Patch workstation / server OS on cadence"
+          - step: "Remove unsupported OSes"
+        evidenceExamples:
+          - "Patching SLA"
+          - "Compliance report"
+          - "Unsupported OS removal log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No patching"
+            "3": "Slow"
+            "5": "SLAs met + supported only"
+
+  - id: recover
+    name: "Recover Quickly"
+    description: |
+      Strategies that limit the impact of attacks through strong
+      authentication and recovery.
+    controls:
+      - id: au.acsc.essential8:E8-07
+        title: "Multi-Factor Authentication"
+        weight: 3
+        answerType: scale
+        tags: [authentication, mfa, phishing-resistant]
+        question: |
+          Is multi-factor authentication enforced for remote access,
+          privileged users, and internet-facing services, progressing
+          to phishing-resistant methods?
+        purpose: |
+          MFA defeats most credential-only attacks. Phishing-resistant
+          MFA defeats real-time relay attacks too.
+        expectedOutcome:
+          - "MFA for internet-facing services, remote, privileged (ML1)."
+          - "MFA verifier-impersonation-resistant where critical (ML2)."
+          - "Phishing-resistant MFA broadly (ML3)."
+        howTo:
+          - step: "Enforce MFA on internet / remote / privileged access"
+          - step: "Use verifier-impersonation-resistant MFA where critical"
+          - step: "Move to phishing-resistant MFA broadly"
+        evidenceExamples:
+          - "MFA policy"
+          - "Enforcement report"
+          - "Phishing-resistant deployment"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No MFA"
+            "3": "Code-based MFA"
+            "5": "Phishing-resistant MFA"
+        crossReferences:
+          - iso27001:A.8.5
+
+      - id: au.acsc.essential8:E8-08
+        title: "Regular Backups"
+        weight: 3
+        answerType: scale
+        tags: [backup, recovery, ransomware]
+        question: |
+          Are backups performed, retained, and tested in line with
+          business criticality, with protection against tampering?
+        purpose: |
+          Backups are the strongest control against destructive
+          incidents. Untested or unprotected backups fail when needed.
+        expectedOutcome:
+          - "Backups taken on cadence aligned to criticality (ML1)."
+          - "Backups stored offline / immutable (ML2)."
+          - "Restores tested and recovery time validated (ML2/ML3)."
+        howTo:
+          - step: "Take backups on cadence per criticality"
+          - step: "Store offline / immutable"
+          - step: "Test restores and validate recovery time"
+        evidenceExamples:
+          - "Backup policy"
+          - "Backup protection design"
+          - "Restore test report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No backup"
+            "3": "Untested"
+            "5": "Tested + offline/immutable"
+        crossReferences:
+          - iso27001:A.8.13

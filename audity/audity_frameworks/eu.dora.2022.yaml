@@ -1,0 +1,908 @@
+framework:
+  schemaVersion: 1
+  key: eu.dora.2022
+  name: "EU DORA - Digital Operational Resilience Act (2022/2554)"
+  shortName: "DORA"
+  version: "2022/2554"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: nis2
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "CISO"
+    - "ICT Risk Manager"
+    - "Third-Party Risk Manager"
+    - "Management Body"
+  estimatedDurationMinutes: 360
+  description: |
+    Regulation (EU) 2022/2554 (DORA) establishes uniform requirements
+    for the security of network and information systems supporting the
+    business processes of financial entities in the European Union.
+    DORA applies from 17 January 2025.
+
+    This YAML translates DORA's five pillars into audit-readiness
+    controls: ICT risk management (Ch. II), ICT-related incident
+    reporting (Ch. III), digital operational resilience testing (Ch. IV),
+    management of ICT third-party risk (Ch. V), and information-sharing
+    arrangements (Ch. VI).
+  scopeNote: |
+    In scope: Chapters II to VI of Regulation (EU) 2022/2554 as they
+    apply to financial entities. Selected articles are reflected as
+    controls; Regulatory Technical Standards (RTS) and Implementing
+    Technical Standards (ITS) published by the ESAs are referenced
+    but their detailed wording is not reproduced.
+
+    Out of scope: obligations on competent authorities, ESAs, and Lead
+    Overseers; sector-specific application boundaries (CRR/CRD,
+    Solvency II, MiFID II, etc.).
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Regulation (EU) 2022/2554 is published in the Official Journal of
+      the European Union. EU law text is not subject to copyright in
+      most jurisdictions. Article wording has been paraphrased into
+      audit-readiness language.
+
+severityRubric:
+  critical: |
+    Failure exposes the entity to mandatory incident reporting or
+    breaches a Lead Overseer requirement.
+  high: |
+    Material gap in an Article 5-15 risk-management requirement; likely
+    to surface in supervisory review.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate supervisory impact.
+
+controlMappings:
+  - source: eu.dora:RM-04
+    target: nist-csf-2.0:GV.OV-01
+    type: covers
+  - source: eu.dora:RM-05
+    target: iso27001:A.5.9
+    type: covers
+  - source: eu.dora:IR-01
+    target: nist-csf-2.0:DE.AE-08
+    type: covers
+  - source: eu.dora:IR-03
+    target: nist-csf-2.0:RS.CO-02
+    type: covers
+  - source: eu.dora:RT-01
+    target: iso27001:A.8.29
+    type: covers
+  - source: eu.dora:TPR-01
+    target: nist-csf-2.0:GV.SC-04
+    type: covers
+  - source: eu.dora:TPR-02
+    target: iso27001:A.5.20
+    type: covers
+
+domains:
+  - id: risk-management
+    name: "ICT Risk Management (Ch. II)"
+    description: |
+      Internal governance and control framework for ICT risk: management
+      body responsibilities, the ICT risk management framework, asset
+      management, identification, protection, detection, response, and
+      recovery.
+    controls:
+      - id: eu.dora:RM-01
+        title: "Management body responsibility for ICT risk"
+        weight: 3
+        answerType: scale
+        tags: [governance, management-body, accountability]
+        question: |
+          Does the management body of the financial entity bear ultimate
+          responsibility for managing ICT risk and provide active
+          direction and oversight?
+        purpose: |
+          Art. 5 makes the management body explicitly accountable.
+          Without documented direction and oversight, the chain of
+          responsibility for ICT risk is unverifiable.
+        expectedOutcome:
+          - "Management body charter includes ICT risk responsibility."
+          - "Periodic ICT risk reviews are minuted."
+          - "Management body members receive ICT risk training."
+        howTo:
+          - step: "Reflect ICT risk responsibility in the charter"
+          - step: "Schedule periodic ICT risk reviews"
+          - step: "Train management body members"
+        evidenceExamples:
+          - "Charter excerpt"
+          - "Risk review minutes"
+          - "Training record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No board involvement"
+            "3": "Informal involvement"
+            "5": "Documented direction + oversight"
+
+      - id: eu.dora:RM-02
+        title: "ICT risk management framework"
+        weight: 3
+        answerType: scale
+        tags: [risk-management, framework, governance]
+        question: |
+          Has the entity established a comprehensive ICT risk management
+          framework that is documented, regularly reviewed, and approved
+          by the management body?
+        purpose: |
+          Art. 6 requires a documented framework. The framework is the
+          umbrella that gives consistent meaning to all other DORA
+          controls.
+        expectedOutcome:
+          - "ICT risk management framework is documented and approved."
+          - "Framework is reviewed at least annually."
+          - "Material updates are approved by the management body."
+        howTo:
+          - step: "Document the ICT risk management framework"
+          - step: "Obtain management body approval"
+          - step: "Review annually and on material change"
+        evidenceExamples:
+          - "ICT risk management framework document"
+          - "Management body approval record"
+          - "Annual review evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No framework"
+            "3": "Framework outdated"
+            "5": "Approved, reviewed"
+
+      - id: eu.dora:RM-03
+        title: "ICT risk management function"
+        weight: 2
+        answerType: scale
+        tags: [governance, risk-management, organization]
+        question: |
+          Has the entity assigned an ICT risk management function with
+          appropriate independence and authority?
+        purpose: |
+          Art. 6(4) requires a defined function. Without designated
+          ownership, ICT risk management becomes a shared and unowned
+          responsibility.
+        expectedOutcome:
+          - "ICT risk function is designated with terms of reference."
+          - "Function reports to the management body."
+          - "Resources match the function's scope."
+        howTo:
+          - step: "Designate the ICT risk function with terms of reference"
+          - step: "Establish reporting line to management body"
+          - step: "Allocate adequate resources"
+        evidenceExamples:
+          - "Function ToR"
+          - "Reporting line documentation"
+          - "Resource plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No function"
+            "3": "Function exists, weak authority"
+            "5": "Function established and resourced"
+
+      - id: eu.dora:RM-04
+        title: "Audit of the ICT risk management framework"
+        weight: 2
+        answerType: scale
+        tags: [audit, assurance, governance]
+        question: |
+          Is the ICT risk management framework subject to independent
+          internal audit on a regular basis?
+        purpose: |
+          Art. 6(6) requires independent audit. Self-assessment alone
+          provides insufficient assurance to the management body and
+          the supervisor.
+        expectedOutcome:
+          - "Internal audit plan covers the framework on a defined cadence."
+          - "Audit reports are reviewed by the management body."
+          - "Findings are tracked to closure."
+        howTo:
+          - step: "Include framework in the audit plan"
+          - step: "Present audit findings to the management body"
+          - step: "Track findings to closure"
+        evidenceExamples:
+          - "Audit plan"
+          - "Audit report"
+          - "Findings tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No audit"
+            "3": "Audit irregular"
+            "5": "Audit cadenced, tracked"
+        crossReferences:
+          - nist-csf-2.0:GV.OV-01
+
+      - id: eu.dora:RM-05
+        title: "Identification of ICT assets and functions"
+        weight: 3
+        answerType: scale
+        tags: [asset-management, identification, inventory]
+        question: |
+          Are ICT systems, assets, and business functions identified,
+          classified by criticality, and inventoried with up-to-date
+          information on dependencies?
+        purpose: |
+          Art. 8 requires identification and classification. Without
+          this, downstream protection, detection, and response cannot
+          be prioritized.
+        expectedOutcome:
+          - "Inventory of ICT systems and business functions is current."
+          - "Classification reflects criticality."
+          - "Dependencies are documented."
+        howTo:
+          - step: "Maintain inventory of ICT systems and business functions"
+          - step: "Apply criticality classification"
+          - step: "Document dependencies"
+        evidenceExamples:
+          - "Asset inventory"
+          - "Classification scheme"
+          - "Dependency map"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Inventory partial"
+            "5": "Inventory + classification + dependencies"
+        crossReferences:
+          - iso27001:A.5.9
+
+      - id: eu.dora:RM-06
+        title: "Protection and prevention measures"
+        weight: 3
+        answerType: scale
+        tags: [protection, prevention, security-controls]
+        question: |
+          Has the entity implemented appropriate protection and prevention
+          measures, including network segmentation, identity and access
+          management, encryption, secure configuration, and software
+          patching?
+        purpose: |
+          Art. 9 specifies the safeguard categories. Coverage across all
+          categories materially reduces the entity's exposure.
+        expectedOutcome:
+          - "Identity and access management is in place with MFA."
+          - "Network segmentation and encryption are deployed."
+          - "Secure configuration and patching are managed."
+        howTo:
+          - step: "Implement IAM with MFA"
+          - step: "Apply network segmentation and encryption"
+          - step: "Manage secure configuration and patching"
+        evidenceExamples:
+          - "MFA enforcement report"
+          - "Segmentation design"
+          - "Patch compliance report"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Few safeguards"
+            "3": "Partial coverage"
+            "5": "Comprehensive coverage"
+
+      - id: eu.dora:RM-07
+        title: "Detection of anomalous activities"
+        weight: 3
+        answerType: scale
+        tags: [detection, monitoring, soc]
+        question: |
+          Does the entity have mechanisms to detect anomalous activities
+          and ICT-related incidents promptly, including continuous
+          monitoring of ICT systems?
+        purpose: |
+          Art. 10 names detection capability. Time to detect is the
+          single biggest determinant of incident impact.
+        expectedOutcome:
+          - "Continuous monitoring is in place across critical systems."
+          - "Detection content is tuned."
+          - "Alerts are triaged within SLA."
+        howTo:
+          - step: "Deploy monitoring across critical systems"
+          - step: "Tune detection content"
+          - step: "Triage alerts within SLA"
+        evidenceExamples:
+          - "Monitoring coverage report"
+          - "Detection rule export"
+          - "Triage SLA metrics"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Monitoring untuned"
+            "5": "Monitoring tuned and triaged"
+
+      - id: eu.dora:RM-08
+        title: "Response and recovery policies"
+        weight: 3
+        answerType: scale
+        tags: [response, recovery, business-continuity]
+        question: |
+          Has the entity put in place ICT business continuity and ICT
+          response and recovery plans that are documented, tested, and
+          aligned with critical functions?
+        purpose: |
+          Art. 11 requires response and recovery. The credibility of
+          these plans is tested only when they are exercised.
+        expectedOutcome:
+          - "BCM and ICT recovery plans exist for critical functions."
+          - "Plans are tested at least annually."
+          - "Test outcomes drive improvements."
+        howTo:
+          - step: "Document BCM and ICT recovery plans"
+          - step: "Test at least annually"
+          - step: "Implement improvements"
+        evidenceExamples:
+          - "BCM / DR plan"
+          - "Test report"
+          - "Improvement tracker"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plan"
+            "3": "Plan untested"
+            "5": "Plan tested annually"
+
+      - id: eu.dora:RM-09
+        title: "Backup, restoration, and recovery procedures"
+        weight: 3
+        answerType: scale
+        tags: [backup, recovery, ransomware]
+        question: |
+          Has the entity established backup policies and procedures and
+          restoration and recovery procedures with documented RPO and
+          RTO objectives?
+        purpose: |
+          Art. 12 names backup and recovery. Documented and tested
+          procedures determine whether the entity can survive
+          destructive incidents.
+        expectedOutcome:
+          - "Backup policy includes RPO / RTO targets."
+          - "Backups are verified periodically."
+          - "Restore tests are documented."
+        howTo:
+          - step: "Document backup policy with RPO / RTO"
+          - step: "Verify backups periodically"
+          - step: "Test restores and document"
+        evidenceExamples:
+          - "Backup policy"
+          - "Backup verification log"
+          - "Restore test report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No backup"
+            "3": "Backup untested"
+            "5": "Backup tested + RPO/RTO met"
+
+      - id: eu.dora:RM-10
+        title: "Learning and evolution"
+        weight: 2
+        answerType: scale
+        tags: [improvement, learning, threat-intelligence]
+        question: |
+          Does the entity gather information from internal and external
+          sources to improve ICT risk management, including post-incident
+          reviews and threat intelligence?
+        purpose: |
+          Art. 13 names learning. Programs that do not feed back from
+          incidents and intelligence stagnate.
+        expectedOutcome:
+          - "Post-incident reviews are performed and documented."
+          - "Threat intelligence informs detection and risk decisions."
+          - "Lessons learned drive program changes."
+        howTo:
+          - step: "Conduct post-incident reviews"
+          - step: "Subscribe to threat intelligence and integrate"
+          - step: "Convert lessons to program changes"
+        evidenceExamples:
+          - "Post-incident review"
+          - "Threat intel integration"
+          - "Program change record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No learning loop"
+            "3": "Learning partial"
+            "5": "Learning systematic"
+
+      - id: eu.dora:RM-11
+        title: "Communication of incidents and crises"
+        weight: 2
+        answerType: scale
+        tags: [communication, incident, crisis]
+        question: |
+          Has the entity established crisis communication plans for
+          internal staff and external stakeholders, including clients,
+          counterparties, and the public?
+        purpose: |
+          Art. 14 names communication. Silence during a crisis erodes
+          trust as fast as the underlying event.
+        expectedOutcome:
+          - "Crisis communication plans exist for internal and external audiences."
+          - "Pre-approved holding statements exist."
+          - "Plans are rehearsed."
+        howTo:
+          - step: "Document crisis communication plans"
+          - step: "Prepare holding statements"
+          - step: "Rehearse crisis communications"
+        evidenceExamples:
+          - "Crisis communication plan"
+          - "Holding statements"
+          - "Rehearsal record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plan"
+            "3": "Plan untested"
+            "5": "Plan rehearsed"
+
+  - id: incident-reporting
+    name: "ICT-Related Incident Reporting (Ch. III)"
+    description: |
+      Classification, management, and reporting of ICT-related incidents
+      including major incidents, significant cyber threats, and the
+      lifecycle of incident reporting.
+    controls:
+      - id: eu.dora:IR-01
+        title: "Incident classification and major-incident criteria"
+        weight: 3
+        answerType: scale
+        tags: [incident, classification, regulatory]
+        question: |
+          Does the entity classify ICT-related incidents and identify
+          major ICT-related incidents based on the criteria established
+          in DORA and supporting RTS?
+        purpose: |
+          Art. 18 requires classification. Misclassification of major
+          incidents drives both missed reporting and over-reporting.
+        expectedOutcome:
+          - "Classification scheme aligned to DORA / RTS exists."
+          - "Major-incident determination is documented."
+          - "Classification is rehearsed."
+        howTo:
+          - step: "Adopt classification scheme aligned to DORA / RTS"
+          - step: "Document major-incident determination"
+          - step: "Rehearse classification"
+        evidenceExamples:
+          - "Classification scheme"
+          - "Major-incident decision record"
+          - "Rehearsal log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No scheme"
+            "3": "Scheme not rehearsed"
+            "5": "Scheme rehearsed"
+        crossReferences:
+          - nist-csf-2.0:DE.AE-08
+
+      - id: eu.dora:IR-02
+        title: "Incident management process"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, process, soc]
+        question: |
+          Has the entity established and maintained an ICT-related
+          incident management process covering detection, logging,
+          handling, communication, and post-incident review?
+        purpose: |
+          Art. 17 requires an end-to-end process. Gaps along the chain
+          undermine both response and reporting.
+        expectedOutcome:
+          - "End-to-end incident process is documented."
+          - "Roles, runbooks, and tooling support the process."
+          - "Process is exercised."
+        howTo:
+          - step: "Document end-to-end incident process"
+          - step: "Build runbooks and tooling"
+          - step: "Exercise the process"
+        evidenceExamples:
+          - "Process document"
+          - "Runbook library"
+          - "Exercise report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process informal"
+            "5": "Process exercised"
+
+      - id: eu.dora:IR-03
+        title: "Reporting of major ICT-related incidents"
+        weight: 3
+        answerType: scale
+        tags: [regulatory, reporting, major-incident]
+        question: |
+          Can the entity submit initial, intermediate, and final reports
+          of major ICT-related incidents to the competent authority
+          within the deadlines specified by DORA / RTS?
+        purpose: |
+          Art. 19 sets the reporting flow. Missing deadlines or report
+          contents is a high-visibility supervisory failure.
+        expectedOutcome:
+          - "Reporting workflow with deadlines is documented and rehearsed."
+          - "Templates exist for each report stage."
+          - "Contacts to the competent authority are validated."
+        howTo:
+          - step: "Document reporting workflow with deadlines"
+          - step: "Prepare templates for each stage"
+          - step: "Validate competent authority contacts"
+        evidenceExamples:
+          - "Reporting workflow"
+          - "Reporting templates"
+          - "Authority contact log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No workflow"
+            "3": "Workflow untested"
+            "5": "Workflow rehearsed"
+        crossReferences:
+          - nist-csf-2.0:RS.CO-02
+
+      - id: eu.dora:IR-04
+        title: "Reporting of significant cyber threats"
+        weight: 2
+        answerType: scale
+        tags: [regulatory, reporting, cyber-threat]
+        question: |
+          Does the entity, where applicable, notify the competent
+          authority of significant cyber threats that it identifies?
+        purpose: |
+          Art. 19(2) allows voluntary reporting of significant cyber
+          threats. Internal criteria for when to use this option avoid
+          inconsistency.
+        expectedOutcome:
+          - "Criteria for reporting significant cyber threats exist."
+          - "Decisions are documented."
+          - "Reporting channel is validated."
+        howTo:
+          - step: "Define criteria for reporting significant cyber threats"
+          - step: "Document decisions"
+          - step: "Validate reporting channel"
+        evidenceExamples:
+          - "Criteria document"
+          - "Decision log"
+          - "Channel validation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No criteria"
+            "3": "Criteria informal"
+            "5": "Criteria documented and applied"
+
+  - id: resilience-testing
+    name: "Digital Operational Resilience Testing (Ch. IV)"
+    description: |
+      Programme for ICT testing including basic tests and, for
+      significant institutions, threat-led penetration testing (TLPT).
+    controls:
+      - id: eu.dora:RT-01
+        title: "Digital operational resilience testing programme"
+        weight: 3
+        answerType: scale
+        tags: [testing, resilience, assurance]
+        question: |
+          Has the entity established a programme for digital operational
+          resilience testing covering a range of tests proportionate to
+          its size, business, and risk profile?
+        purpose: |
+          Art. 24 requires a testing programme. Untested resilience is
+          an unverified assumption.
+        expectedOutcome:
+          - "Testing programme is documented and approved."
+          - "Tests are scheduled and executed."
+          - "Findings drive remediation."
+        howTo:
+          - step: "Document and approve the testing programme"
+          - step: "Schedule and execute tests"
+          - step: "Remediate findings"
+        evidenceExamples:
+          - "Testing programme"
+          - "Test schedule"
+          - "Remediation tracker"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No programme"
+            "3": "Programme partial"
+            "5": "Programme executed and remediated"
+        crossReferences:
+          - iso27001:A.8.29
+
+      - id: eu.dora:RT-02
+        title: "Threat-led penetration testing (TLPT)"
+        weight: 3
+        answerType: scale
+        tags: [testing, tlpt, red-team]
+        question: |
+          Where required, does the entity perform threat-led penetration
+          testing in accordance with the RTS, using qualified testers
+          and covering critical functions?
+        purpose: |
+          Art. 26-27 require TLPT for significant entities. TLPT is the
+          most rigorous form of resilience testing.
+        expectedOutcome:
+          - "TLPT scope covers critical functions."
+          - "Testers meet qualification requirements."
+          - "Outcomes are reported per RTS."
+        howTo:
+          - step: "Scope TLPT to critical functions"
+          - step: "Engage qualified testers per RTS"
+          - step: "Report outcomes per RTS"
+        evidenceExamples:
+          - "TLPT scope document"
+          - "Tester qualification record"
+          - "TLPT report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not performed"
+            "3": "Performed but not RTS-aligned"
+            "5": "RTS-aligned TLPT executed"
+        appliesIf: "entity.tlpt_in_scope == true"
+
+  - id: third-party-risk
+    name: "Management of ICT Third-Party Risk (Ch. V)"
+    description: |
+      Identification, contractual arrangements, monitoring, and exit
+      strategies for ICT third-party service providers and oversight
+      of critical providers (CTPPs).
+    controls:
+      - id: eu.dora:TPR-01
+        title: "ICT third-party risk strategy and register"
+        weight: 3
+        answerType: scale
+        tags: [third-party, register, vendor]
+        question: |
+          Has the entity adopted a strategy on ICT third-party risk and
+          does it maintain a register of information on contractual
+          arrangements with ICT third-party providers?
+        purpose: |
+          Art. 28 requires a strategy and register. The register is the
+          backbone of supervisory reporting and internal oversight.
+        expectedOutcome:
+          - "ICT third-party risk strategy is approved."
+          - "Register of information is maintained per RTS."
+          - "Critical functions supported by third parties are identified."
+        howTo:
+          - step: "Approve ICT third-party risk strategy"
+          - step: "Maintain register of information per RTS"
+          - step: "Identify critical-function third parties"
+        evidenceExamples:
+          - "Strategy document"
+          - "Register of information"
+          - "Critical-function mapping"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No strategy / register"
+            "3": "Register partial"
+            "5": "Strategy + register complete"
+        crossReferences:
+          - nist-csf-2.0:GV.SC-04
+
+      - id: eu.dora:TPR-02
+        title: "Pre-contractual assessment and contractual provisions"
+        weight: 3
+        answerType: scale
+        tags: [third-party, contracts, due-diligence]
+        question: |
+          Are pre-contractual assessments performed and do contractual
+          arrangements include the mandatory provisions specified in
+          Art. 30 (e.g., service descriptions, audit rights, exit
+          arrangements)?
+        purpose: |
+          Art. 28-30 set explicit pre-contractual and contractual
+          requirements. Missing provisions become enforcement gaps.
+        expectedOutcome:
+          - "Pre-contractual assessment process is documented."
+          - "Mandatory contractual provisions are present."
+          - "Critical-function contracts include extended provisions."
+        howTo:
+          - step: "Document pre-contractual assessment"
+          - step: "Embed mandatory provisions in contracts"
+          - step: "Add extended provisions for critical functions"
+        evidenceExamples:
+          - "Pre-contractual assessment template"
+          - "Standard contract clauses"
+          - "Critical-function clause set"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessment / clauses"
+            "3": "Partial"
+            "5": "Assessment + full clauses"
+        crossReferences:
+          - iso27001:A.5.20
+
+      - id: eu.dora:TPR-03
+        title: "Concentration and substitutability risk"
+        weight: 2
+        answerType: scale
+        tags: [third-party, concentration, substitutability]
+        question: |
+          Does the entity assess concentration risk and the
+          substitutability of ICT third-party providers for critical
+          or important functions?
+        purpose: |
+          Art. 29 names concentration risk. Over-reliance on a single
+          provider is a systemic risk that DORA explicitly targets.
+        expectedOutcome:
+          - "Concentration risk is assessed per critical function."
+          - "Substitutability is analyzed."
+          - "Mitigations are identified."
+        howTo:
+          - step: "Assess concentration per critical function"
+          - step: "Analyze substitutability"
+          - step: "Define mitigations"
+        evidenceExamples:
+          - "Concentration analysis"
+          - "Substitutability assessment"
+          - "Mitigation plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not assessed"
+            "3": "Assessed informally"
+            "5": "Assessed and mitigated"
+
+      - id: eu.dora:TPR-04
+        title: "Ongoing monitoring and exit strategy"
+        weight: 3
+        answerType: scale
+        tags: [third-party, monitoring, exit-strategy]
+        question: |
+          Are ICT third-party providers continuously monitored and are
+          documented exit strategies in place for critical or important
+          functions?
+        purpose: |
+          Art. 28(8) requires exit strategies. They convert lock-in from
+          a hidden risk into a managed one.
+        expectedOutcome:
+          - "Monitoring covers performance and security."
+          - "Exit strategies exist for critical functions."
+          - "Exit strategies are tested."
+        howTo:
+          - step: "Monitor performance and security continuously"
+          - step: "Document exit strategies"
+          - step: "Test exit strategies"
+        evidenceExamples:
+          - "Monitoring dashboard"
+          - "Exit strategy document"
+          - "Exit test record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring / exit"
+            "3": "Monitoring partial"
+            "5": "Monitoring + tested exit"
+
+  - id: information-sharing
+    name: "Information-Sharing Arrangements (Ch. VI)"
+    description: |
+      Voluntary arrangements for sharing cyber threat information and
+      intelligence among financial entities.
+    controls:
+      - id: eu.dora:IS-01
+        title: "Cyber threat information sharing"
+        weight: 1
+        answerType: scale
+        tags: [information-sharing, threat-intelligence, community]
+        question: |
+          Does the entity participate, where appropriate, in
+          information-sharing arrangements for cyber threat information
+          and intelligence with trusted communities?
+        purpose: |
+          Art. 45 enables voluntary information-sharing arrangements
+          with appropriate safeguards.
+        expectedOutcome:
+          - "Participation in sharing arrangements is documented."
+          - "Sharing follows defined rules (e.g., TLP)."
+          - "Received intelligence is integrated."
+        howTo:
+          - step: "Participate in trusted sharing communities"
+          - step: "Apply sharing rules (e.g., TLP)"
+          - step: "Integrate received intelligence"
+        evidenceExamples:
+          - "Membership record"
+          - "Sharing rules document"
+          - "Intelligence integration record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No sharing"
+            "3": "Member, not used"
+            "5": "Member, used, integrated"

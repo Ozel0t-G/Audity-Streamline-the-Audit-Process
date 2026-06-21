@@ -5,6 +5,13 @@ import { BrandMark } from "../components/BrandMark";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
+type RecoveryPhraseResponse = {
+  phrase: string;
+  fingerprint: string;
+  fingerprintShort: string;
+  acknowledgedAt: string | null;
+};
+
 export function SetupPage() {
   const navigate = useNavigate();
   const { csrfToken, setupInitialAdmin } = useAuth();
@@ -17,10 +24,13 @@ export function SetupPage() {
   const [smtpUser, setSmtpUser] = useState("");
   const [smtpPassword, setSmtpPassword] = useState("");
   const [sender, setSender] = useState("");
-  const [step, setStep] = useState<"account" | "optional">("account");
+  const [step, setStep] = useState<"account" | "phrase" | "optional">("account");
   const [strength, setStrength] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [phrase, setPhrase] = useState<string>("");
+  const [phraseFingerprint, setPhraseFingerprint] = useState<string>("");
+  const [phraseConfirmed, setPhraseConfirmed] = useState<boolean>(false);
 
   useEffect(() => {
     fetch(`${apiBaseUrl}/api/auth/setup-status`)
@@ -41,6 +51,19 @@ export function SetupPage() {
     return Math.min(score, 4);
   }
 
+  async function loadRecoveryPhrase() {
+    const response = await fetch(`${apiBaseUrl}/api/auth/recovery-phrase`, {
+      credentials: "include"
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail?.message ?? "Could not load recovery phrase.");
+    }
+    const payload = (await response.json()) as RecoveryPhraseResponse;
+    setPhrase(payload.phrase);
+    setPhraseFingerprint(payload.fingerprintShort);
+  }
+
   async function handleAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -51,9 +74,37 @@ export function SetupPage() {
     setLoading(true);
     try {
       await setupInitialAdmin({ email, name, password });
-      setStep("optional");
+      await loadRecoveryPhrase();
+      setStep("phrase");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Setup failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAcknowledgePhrase() {
+    setError("");
+    if (!phraseConfirmed) {
+      setError("Please confirm that you stored the recovery phrase in a safe place.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+      const response = await fetch(`${apiBaseUrl}/api/auth/recovery-phrase/acknowledge`, {
+        method: "POST",
+        credentials: "include",
+        headers
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail?.message ?? "Acknowledgement failed.");
+      }
+      setStep("optional");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not acknowledge recovery phrase.");
     } finally {
       setLoading(false);
     }
@@ -129,6 +180,76 @@ export function SetupPage() {
               Create admin and continue
             </button>
           </form>
+        ) : step === "phrase" ? (
+          <div className="rounded-audity border border-audity-border bg-audity-panel p-6">
+            <h1 className="mb-2 text-xl font-semibold">Save your recovery phrase</h1>
+            <p className="mb-4 text-sm text-audity-secondary">
+              This phrase encodes the encryption key that protects archives and backups. Without it,
+              encrypted exports cannot be restored after a fresh install. Audity cannot recover it
+              for you — store it in a password manager, printed envelope, or other safe location.
+            </p>
+            <div className="mb-4 rounded-audity border border-audity-warning/40 bg-audity-warning/10 p-4">
+              <ul className="list-inside list-disc space-y-1 text-xs text-audity-warning">
+                <li>Anyone with this phrase can decrypt your archives. Treat it like a master password.</li>
+                <li>Do not store it in the same place as your admin password.</li>
+                <li>You can re-display it any time under Admin → System Monitor.</li>
+              </ul>
+            </div>
+            <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-4 font-mono text-base leading-relaxed text-audity-text">
+              {phrase ? phrase.split("-").map((block, idx) => (
+                <div key={`${idx}-${block}`} className="flex">
+                  <span className="w-8 text-audity-muted">{(idx + 1).toString().padStart(2, " ")}.</span>
+                  <span className="tracking-wider">{block}</span>
+                </div>
+              )) : <span className="text-audity-muted">Loading…</span>}
+            </div>
+            <div className="mb-4 text-xs text-audity-secondary">
+              Fingerprint: <span className="font-mono text-audity-text">{phraseFingerprint}</span>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="audity-btn-secondary"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(phrase);
+                  } catch {
+                    /* ignore clipboard errors */
+                  }
+                }}
+              >
+                Copy phrase
+              </button>
+              <button
+                type="button"
+                className="audity-btn-secondary"
+                onClick={() => window.print()}
+              >
+                Print
+              </button>
+            </div>
+            <label className="mb-4 flex items-start gap-2 text-sm text-audity-text">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={phraseConfirmed}
+                onChange={(event) => setPhraseConfirmed(event.target.checked)}
+              />
+              <span>
+                I have stored this recovery phrase in a safe place outside this server.
+                I understand that without it, encrypted archives cannot be restored.
+              </span>
+            </label>
+            {error ? <p className="mb-3 text-sm text-audity-error">{error}</p> : null}
+            <button
+              type="button"
+              className="w-full audity-btn-primary"
+              disabled={loading || !phraseConfirmed}
+              onClick={handleAcknowledgePhrase}
+            >
+              I saved the phrase — continue
+            </button>
+          </div>
         ) : (
           <form className="rounded-audity border border-audity-border bg-audity-panel p-6" onSubmit={handleOptional}>
             <h1 className="mb-4 text-xl font-semibold">Optional: SMTP &amp; report branding</h1>

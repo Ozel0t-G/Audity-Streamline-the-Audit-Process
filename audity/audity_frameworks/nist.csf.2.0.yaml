@@ -1,0 +1,4049 @@
+framework:
+  schemaVersion: 1
+  key: nist.csf.2.0
+  name: "NIST Cybersecurity Framework 2.0"
+  shortName: "NIST CSF 2.0"
+  version: "2.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: nist_csf
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "Risk Owner"
+    - "CISO"
+    - "IT Management"
+    - "Compliance Officer"
+  estimatedDurationMinutes: 480
+  description: |
+    The NIST Cybersecurity Framework (CSF) 2.0 is a voluntary framework
+    published by the U.S. National Institute of Standards and Technology
+    that helps organizations of any size or sector understand, assess,
+    prioritize, and communicate their cybersecurity efforts. Version 2.0
+    expands the scope beyond critical infrastructure and adds a sixth
+    Function, GOVERN, that addresses cybersecurity governance and
+    enterprise risk management.
+
+    This YAML represents all 106 Subcategories of CSF 2.0 as individual
+    audit-readiness controls grouped into the six Functions. Each control
+    contains an audit question, the purpose of the outcome, expected
+    indicators of implementation, operational guidance, and evidence
+    suggestions for use inside the Audity platform.
+  scopeNote: |
+    In scope: all six Functions (GOVERN, IDENTIFY, PROTECT, DETECT,
+    RESPOND, RECOVER), all 22 Categories, and all 106 Subcategories of
+    NIST CSF 2.0 as defined in NIST CSWP 29.
+
+    Out of scope: sector-specific Community Profiles, the Informative
+    References catalog, Implementation Examples published separately by
+    NIST, and the Tier descriptions. Cross-walks to other frameworks in
+    this file are limited to well-known mappings (ISO/IEC 27001:2022,
+    NIST SP 800-53 Rev. 5) and are advisory only.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NIST CSF 2.0 is published by the U.S. National Institute of Standards
+      and Technology and is not subject to copyright in the United States.
+      Subcategory wording in this file has been paraphrased into audit
+      question form; the original NIST text is not reproduced verbatim.
+
+severityRubric:
+  critical: |
+    Control failure would directly expose regulated data, halt a mission
+    critical service, or trigger a mandatory breach notification.
+  high: |
+    Material breach of policy or absence of a core safeguard with no
+    compensating control; significant risk of operational or reputational
+    impact.
+  medium: |
+    Control is partially implemented or inconsistently applied; residual
+    risk is visible but not acute and can be remediated in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate harm; primarily a
+    housekeeping or completeness issue.
+
+controlMappings:
+  - source: NIST-CSF-2.0:GV.OC-03
+    target: iso27001:A.5.31
+    type: covers
+  - source: NIST-CSF-2.0:GV.PO-01
+    target: iso27001:A.5.1
+    type: covers
+  - source: NIST-CSF-2.0:GV.RR-02
+    target: iso27001:A.5.2
+    type: covers
+  - source: NIST-CSF-2.0:GV.SC-05
+    target: iso27001:A.5.20
+    type: covers
+  - source: NIST-CSF-2.0:ID.AM-01
+    target: iso27001:A.5.9
+    type: covers
+  - source: NIST-CSF-2.0:ID.AM-02
+    target: iso27001:A.5.9
+    type: covers
+  - source: NIST-CSF-2.0:ID.AM-05
+    target: iso27001:A.5.12
+    type: covers
+  - source: NIST-CSF-2.0:ID.RA-01
+    target: iso27001:A.8.8
+    type: covers
+  - source: NIST-CSF-2.0:ID.RA-08
+    target: iso27001:A.6.8
+    type: related
+  - source: NIST-CSF-2.0:PR.AA-01
+    target: iso27001:A.5.16
+    type: covers
+  - source: NIST-CSF-2.0:PR.AA-03
+    target: iso27001:A.8.5
+    type: covers
+  - source: NIST-CSF-2.0:PR.AA-05
+    target: iso27001:A.5.15
+    type: covers
+  - source: NIST-CSF-2.0:PR.AA-06
+    target: iso27001:A.7.2
+    type: covers
+  - source: NIST-CSF-2.0:PR.AT-01
+    target: iso27001:A.6.3
+    type: covers
+  - source: NIST-CSF-2.0:PR.DS-01
+    target: iso27001:A.8.24
+    type: related
+  - source: NIST-CSF-2.0:PR.DS-02
+    target: iso27001:A.8.24
+    type: related
+  - source: NIST-CSF-2.0:PR.DS-11
+    target: iso27001:A.8.13
+    type: covers
+  - source: NIST-CSF-2.0:PR.PS-01
+    target: iso27001:A.8.9
+    type: covers
+  - source: NIST-CSF-2.0:PR.PS-04
+    target: iso27001:A.8.15
+    type: covers
+  - source: NIST-CSF-2.0:PR.PS-06
+    target: iso27001:A.8.25
+    type: covers
+  - source: NIST-CSF-2.0:PR.IR-01
+    target: iso27001:A.8.20
+    type: covers
+  - source: NIST-CSF-2.0:DE.CM-01
+    target: iso27001:A.8.16
+    type: covers
+  - source: NIST-CSF-2.0:DE.AE-08
+    target: iso27001:A.5.25
+    type: covers
+  - source: NIST-CSF-2.0:RS.MA-01
+    target: iso27001:A.5.26
+    type: covers
+  - source: NIST-CSF-2.0:RS.AN-03
+    target: iso27001:A.5.27
+    type: covers
+  - source: NIST-CSF-2.0:RS.CO-02
+    target: iso27001:A.5.5
+    type: related
+  - source: NIST-CSF-2.0:RC.RP-01
+    target: iso27001:A.5.29
+    type: covers
+  - source: NIST-CSF-2.0:RC.RP-03
+    target: iso27001:A.8.13
+    type: covers
+
+domains:
+  - id: govern
+    name: "GOVERN (GV)"
+    description: |
+      The organization's cybersecurity risk management strategy,
+      expectations, and policy are established, communicated, and
+      monitored. GOVERN is cross-cutting and informs the other five
+      Functions.
+    controls:
+      - id: NIST-CSF-2.0:GV.OC-01
+        title: "Organizational mission informs cybersecurity risk management"
+        weight: 2
+        answerType: scale
+        tags: [govern, context, mission, strategy]
+        question: |
+          Is the organizational mission documented in a form that is
+          actively used to scope and prioritize cybersecurity risk
+          management activities?
+        purpose: |
+          Cybersecurity decisions that are disconnected from the mission
+          tend to over-protect non-essential assets and under-protect the
+          ones the organization actually depends on. Linking the mission
+          to risk management ensures resources flow to the right outcomes.
+        expectedOutcome:
+          - "A current mission statement is referenced in the cybersecurity strategy or charter."
+          - "Risk prioritization decisions can be traced back to mission impact."
+          - "Leadership briefings on cyber risk are framed in mission terms."
+        howTo:
+          - step: "Document the organizational mission in the cybersecurity policy"
+          - step: "Reference the mission in risk acceptance and prioritization records"
+          - step: "Review alignment at least annually with executive sponsors"
+        evidenceExamples:
+          - "Approved cybersecurity strategy citing mission"
+          - "Risk register entries with mission-impact rating"
+          - "Minutes of executive risk review referencing the mission"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No mission link in cybersecurity activities"
+            "3": "Mission referenced informally"
+            "5": "Mission drives documented risk prioritization"
+        crossReferences:
+          - iso27001:A.5.1
+        appliesIf: "organization.size >= small"
+
+      - id: NIST-CSF-2.0:GV.OC-02
+        title: "Stakeholder needs and expectations are understood"
+        weight: 2
+        answerType: scale
+        tags: [govern, context, stakeholders]
+        question: |
+          Are internal and external stakeholders, together with their
+          cybersecurity needs and expectations, identified and considered
+          in risk management decisions?
+        purpose: |
+          Stakeholder expectations (customers, regulators, employees,
+          owners) determine what counts as an acceptable outcome. Without
+          a documented view, controls drift toward the operator's
+          convenience rather than the obligations the organization owes.
+        expectedOutcome:
+          - "A documented list of stakeholder groups with their cybersecurity expectations exists."
+          - "The list is reviewed at defined intervals and after major business changes."
+          - "Risk decisions cite affected stakeholders explicitly."
+        howTo:
+          - step: "Map stakeholder groups (customers, regulators, suppliers, staff)"
+          - step: "Capture each group's cybersecurity expectations and obligations"
+          - step: "Feed the result into risk treatment planning"
+        evidenceExamples:
+          - "Stakeholder map or matrix"
+          - "Risk decisions referencing stakeholder impact"
+          - "Customer or regulator commitment register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Stakeholders not identified"
+            "3": "Partial map, not maintained"
+            "5": "Maintained map drives risk decisions"
+        crossReferences:
+          - iso27001:A.5.1
+        appliesIf: "organization.regulated == true OR stakeholders.external > 0"
+
+      - id: NIST-CSF-2.0:GV.OC-03
+        title: "Legal, regulatory, and contractual requirements are managed"
+        weight: 3
+        answerType: scale
+        tags: [govern, compliance, legal, policy]
+        question: |
+          Are cybersecurity-related legal, regulatory, contractual, and
+          privacy obligations identified, tracked, and reflected in the
+          security program?
+        purpose: |
+          Failure to meet a known cybersecurity obligation typically
+          results in fines, contract termination, or notification
+          requirements that dwarf the cost of compliance. A current
+          obligations register is the foundation for demonstrating
+          due care.
+        expectedOutcome:
+          - "A current obligations register lists laws, regulations, and contracts with cybersecurity clauses."
+          - "Each obligation has a named owner and a control mapping."
+          - "Changes in obligations trigger an impact review."
+        howTo:
+          - step: "Maintain a register of obligations with effective dates"
+          - step: "Map each obligation to one or more internal controls"
+          - step: "Review on regulatory changes and contract renewals"
+          - step: "Report compliance status to leadership at least annually"
+        evidenceExamples:
+          - "Legal obligations register"
+          - "Mapping matrix obligation -> control"
+          - "Compliance status report to executive committee"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No register of obligations"
+            "3": "Register exists but is outdated"
+            "5": "Maintained register with owner and control mapping"
+        crossReferences:
+          - iso27001:A.5.31
+          - iso27001:A.5.34
+        appliesIf: "organization.regulated == true"
+
+      - id: NIST-CSF-2.0:GV.OC-04
+        title: "Critical outcomes expected by external stakeholders are understood"
+        weight: 2
+        answerType: scale
+        tags: [govern, context, dependencies]
+        question: |
+          Are the critical objectives, capabilities, and services that
+          external stakeholders depend on identified, documented, and
+          communicated to those who own cybersecurity for them?
+        purpose: |
+          Cybersecurity must protect the outcomes others rely on, not just
+          the infrastructure that produces them. Naming the externally
+          observed outcomes lets the organization defend them explicitly.
+        expectedOutcome:
+          - "A documented list of externally consumed services or outcomes exists."
+          - "Each entry has a service owner and a recovery objective."
+          - "The list is communicated to operational and incident teams."
+        howTo:
+          - step: "Identify externally consumed services and outcomes"
+          - step: "Assign owners and recovery objectives"
+          - step: "Communicate to operational, incident, and continuity teams"
+        evidenceExamples:
+          - "Service catalog with external-facing entries"
+          - "Business impact analysis for external services"
+          - "Communications brief to operations teams"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "External outcomes not catalogued"
+            "3": "Catalog exists but not communicated"
+            "5": "Catalog maintained, owners and RTOs assigned"
+        crossReferences:
+          - iso27001:A.5.30
+
+      - id: NIST-CSF-2.0:GV.OC-05
+        title: "Outcomes the organization depends on are understood"
+        weight: 2
+        answerType: scale
+        tags: [govern, context, dependencies, supply-chain]
+        question: |
+          Are the outcomes, capabilities, and services that the
+          organization itself depends on (suppliers, utilities, platforms)
+          identified, documented, and communicated?
+        purpose: |
+          Outages and compromises propagate from upstream dependencies.
+          Naming them lets the organization plan for failure modes and
+          allocate monitoring and contractual safeguards accordingly.
+        expectedOutcome:
+          - "A current inventory of upstream dependencies exists."
+          - "Each dependency has a criticality rating and an owner."
+          - "Dependency inventory feeds supplier risk and BCM planning."
+        howTo:
+          - step: "Inventory upstream dependencies (cloud, SaaS, telco, utilities)"
+          - step: "Rate each by criticality and impact of loss"
+          - step: "Feed into BCM and third-party risk processes"
+        evidenceExamples:
+          - "Dependency inventory or service map"
+          - "Criticality rating method"
+          - "Linkage to BCM scenarios"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Dependencies not inventoried"
+            "3": "Partial inventory, no criticality rating"
+            "5": "Maintained inventory feeds BCM and TPRM"
+        crossReferences:
+          - iso27001:A.5.30
+
+      - id: NIST-CSF-2.0:GV.RM-01
+        title: "Risk management objectives are established and agreed"
+        weight: 2
+        answerType: scale
+        tags: [govern, risk-management, strategy]
+        question: |
+          Are cybersecurity risk management objectives documented, agreed
+          by relevant stakeholders, and used as the basis for the
+          program's success measurement?
+        purpose: |
+          Without explicit objectives, the program cannot demonstrate
+          progress or justify budget. Documented objectives give the
+          organization a shared definition of done.
+        expectedOutcome:
+          - "Cybersecurity risk objectives are documented and signed off by leadership."
+          - "Objectives are linked to measurable outcomes."
+          - "Objectives are reviewed at least annually."
+        howTo:
+          - step: "Define risk management objectives with leadership"
+          - step: "Express each objective with a measurable indicator"
+          - step: "Review at least annually and after material changes"
+        evidenceExamples:
+          - "Approved risk management objectives document"
+          - "Annual KPI/KRI report against objectives"
+          - "Minutes of objective-setting workshop"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No documented objectives"
+            "3": "Objectives stated but not measured"
+            "5": "Objectives measured and reviewed annually"
+        crossReferences:
+          - iso27001:Clause-6.2
+
+      - id: NIST-CSF-2.0:GV.RM-02
+        title: "Risk appetite and tolerance are established and communicated"
+        weight: 3
+        answerType: scale
+        tags: [govern, risk-appetite, strategy]
+        question: |
+          Are risk appetite and risk tolerance statements documented,
+          approved at the appropriate authority level, and communicated
+          to those who make risk decisions?
+        purpose: |
+          Risk appetite is the boundary that lets operational teams act
+          without escalation. Absent appetite, every decision either
+          escalates or is taken without authority. Both are failure modes.
+        expectedOutcome:
+          - "Appetite and tolerance statements exist and are approved by leadership."
+          - "Statements are quantified where practical (e.g., loss thresholds, downtime)."
+          - "Decision makers can cite them in current risk decisions."
+        howTo:
+          - step: "Draft appetite statements per risk category"
+          - step: "Quantify tolerance thresholds where possible"
+          - step: "Obtain approval at board or equivalent level"
+          - step: "Embed in risk decision templates and training"
+        evidenceExamples:
+          - "Signed risk appetite statement"
+          - "Risk decision records citing tolerance threshold"
+          - "Board minute approving appetite"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No appetite statement"
+            "3": "Qualitative statement, not used in decisions"
+            "5": "Quantified, approved, and applied"
+        crossReferences:
+          - iso27001:Clause-6.1.2
+
+      - id: NIST-CSF-2.0:GV.RM-03
+        title: "Cybersecurity risk is included in enterprise risk management"
+        weight: 2
+        answerType: scale
+        tags: [govern, risk-management, enterprise-risk]
+        question: |
+          Are cybersecurity risks reported and treated within the
+          enterprise risk management (ERM) process rather than only inside
+          the security function?
+        purpose: |
+          Isolated cyber risk processes produce ratings that cannot be
+          compared with other enterprise risks and cannot compete for
+          budget. ERM integration is what turns cyber risk into a board
+          conversation.
+        expectedOutcome:
+          - "Cybersecurity risks appear in the enterprise risk register."
+          - "Ratings use the same methodology as other enterprise risks."
+          - "Reporting cadence into the ERM cycle is defined."
+        howTo:
+          - step: "Adopt the enterprise risk scoring scheme for cyber risks"
+          - step: "Feed top cyber risks into the ERM register on the agreed cadence"
+          - step: "Present at the enterprise risk committee"
+        evidenceExamples:
+          - "Enterprise risk register entries from cyber"
+          - "ERM committee minutes covering cyber"
+          - "Risk scoring guideline reference"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Cyber risk siloed in IT"
+            "3": "Ad-hoc reporting into ERM"
+            "5": "Cyber fully integrated into ERM cycle"
+
+      - id: NIST-CSF-2.0:GV.RM-04
+        title: "Strategic direction for risk response is established"
+        weight: 2
+        answerType: scale
+        tags: [govern, risk-treatment, strategy]
+        question: |
+          Has the organization documented and communicated the strategic
+          direction for responding to cybersecurity risks (accept,
+          mitigate, transfer, avoid)?
+        purpose: |
+          Without an explicit response strategy, risk owners default to
+          mitigate or to accept inconsistently. A documented direction
+          aligns decisions and avoids surprise residual risk.
+        expectedOutcome:
+          - "Response options and their preferred conditions are documented."
+          - "Risk owners reference the strategy when proposing treatments."
+          - "Strategy is reviewed against the threat landscape."
+        howTo:
+          - step: "Document the response options and decision criteria"
+          - step: "Train risk owners and approvers"
+          - step: "Reference the strategy in treatment plans"
+        evidenceExamples:
+          - "Risk response strategy document"
+          - "Treatment plans citing strategy"
+          - "Training records for risk owners"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No documented response strategy"
+            "3": "Strategy documented but not applied"
+            "5": "Strategy documented and consistently applied"
+
+      - id: NIST-CSF-2.0:GV.RM-05
+        title: "Lines of communication for cybersecurity risk are established"
+        weight: 2
+        answerType: scale
+        tags: [govern, communication, supply-chain]
+        question: |
+          Are lines of communication for cybersecurity risk across the
+          organization (including supplier and third-party risk)
+          established, documented, and used?
+        purpose: |
+          Risks that have no path to decision makers stay where they were
+          discovered. Defined communication paths shorten time to
+          response and reduce duplication.
+        expectedOutcome:
+          - "Communication paths for cyber risk are documented (RACI or equivalent)."
+          - "Paths include third parties where relevant."
+          - "Risks travel along the documented paths in practice."
+        howTo:
+          - step: "Map who escalates what, to whom, and within which timeframe"
+          - step: "Include supplier and contractor contacts"
+          - step: "Test the paths in tabletop exercises"
+        evidenceExamples:
+          - "RACI for risk escalation"
+          - "Supplier contact register"
+          - "Tabletop exercise record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No defined paths"
+            "3": "Paths defined but untested"
+            "5": "Paths defined and exercised"
+
+      - id: NIST-CSF-2.0:GV.RM-06
+        title: "Standardized method for risk assessment is established"
+        weight: 2
+        answerType: scale
+        tags: [govern, risk-assessment, methodology]
+        question: |
+          Is a standardized method for calculating, documenting,
+          categorizing, and prioritizing cybersecurity risks established
+          and used across the organization?
+        purpose: |
+          Inconsistent methods produce ratings that cannot be aggregated
+          or compared. A single method allows aggregation, trending, and
+          fair prioritization.
+        expectedOutcome:
+          - "A documented risk assessment methodology is in use."
+          - "Risk records show methodology-consistent fields."
+          - "Methodology is reviewed and updated on a defined cadence."
+        howTo:
+          - step: "Adopt a risk assessment methodology (e.g., qualitative 5x5 or quantitative)"
+          - step: "Document scales, criteria, and aggregation rules"
+          - step: "Train assessors and approvers"
+        evidenceExamples:
+          - "Risk methodology document"
+          - "Risk register with methodology-consistent fields"
+          - "Assessor training material"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No common methodology"
+            "3": "Methodology documented, partially applied"
+            "5": "Methodology consistently applied and reviewed"
+
+      - id: NIST-CSF-2.0:GV.RM-07
+        title: "Strategic opportunities (positive risks) are considered"
+        weight: 1
+        answerType: scale
+        tags: [govern, risk-management, opportunity]
+        question: |
+          Does the organization characterize and consider strategic
+          opportunities (positive risks) within its cybersecurity risk
+          discussions?
+        purpose: |
+          A risk discussion that ignores upside narrows decisions to cost
+          avoidance. Including opportunity makes the trade-offs visible
+          and supports better investment choices.
+        expectedOutcome:
+          - "Opportunities are recorded alongside threats in risk discussions."
+          - "Decision records capture opportunity considerations."
+          - "Opportunity awareness is reflected in strategy reviews."
+        howTo:
+          - step: "Add an opportunity field to the risk register"
+          - step: "Include opportunity in risk briefings"
+          - step: "Review opportunities at strategic planning"
+        evidenceExamples:
+          - "Risk register entries with opportunity field"
+          - "Strategy planning notes referencing opportunity"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Opportunity never considered"
+            "3": "Considered ad hoc"
+            "5": "Opportunity systematically included"
+
+      - id: NIST-CSF-2.0:GV.RR-01
+        title: "Leadership accountability for cybersecurity is established"
+        weight: 3
+        answerType: scale
+        tags: [govern, leadership, accountability, culture]
+        question: |
+          Is organizational leadership formally accountable for
+          cybersecurity risk and does it actively foster a risk-aware,
+          ethical, and continuously improving culture?
+        purpose: |
+          Cybersecurity culture follows the tone set by leadership.
+          Programs without visible executive ownership tend to lose
+          funding and authority during competing priorities.
+        expectedOutcome:
+          - "Executive accountability for cybersecurity is documented (charter, terms of reference)."
+          - "Leadership participates in periodic risk reviews."
+          - "Culture indicators (training, reporting, incident tone) are measured."
+        howTo:
+          - step: "Name the senior leader accountable for cybersecurity"
+          - step: "Define cadence for executive risk briefings"
+          - step: "Measure culture indicators and report annually"
+        evidenceExamples:
+          - "Charter naming accountable executive"
+          - "Executive risk review minutes"
+          - "Culture survey results"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No named executive accountability"
+            "3": "Named but inactive"
+            "5": "Named, active, and measured"
+
+      - id: NIST-CSF-2.0:GV.RR-02
+        title: "Roles, responsibilities, and authorities are established"
+        weight: 3
+        answerType: scale
+        tags: [govern, roles, raci, accountability]
+        question: |
+          Are cybersecurity roles, responsibilities, and authorities
+          documented, communicated, understood, and enforced across the
+          organization?
+        purpose: |
+          When roles are ambiguous, controls fail at the seams. Documented
+          roles reduce handoff errors and let audit trace any decision to
+          an owner.
+        expectedOutcome:
+          - "A RACI or equivalent for cybersecurity functions exists and is current."
+          - "Job descriptions reflect cybersecurity responsibilities."
+          - "Authorities (approve, accept risk, declare incident) are explicit."
+        howTo:
+          - step: "Maintain a RACI for the security program"
+          - step: "Reflect responsibilities in job descriptions and onboarding"
+          - step: "Define approval authorities by risk threshold"
+        evidenceExamples:
+          - "RACI matrix"
+          - "Sample job description with security duties"
+          - "Authority matrix"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No documented roles"
+            "3": "Roles documented but outdated"
+            "5": "Roles current, communicated, enforced"
+        crossReferences:
+          - iso27001:A.5.2
+
+      - id: NIST-CSF-2.0:GV.RR-03
+        title: "Resources are allocated commensurate with strategy"
+        weight: 2
+        answerType: scale
+        tags: [govern, resources, budget]
+        question: |
+          Are people, budget, and tooling resources allocated to
+          cybersecurity in proportion to the documented strategy, roles,
+          and policies?
+        purpose: |
+          A program with policy commitments but no resources is a paper
+          program. Documented resource allocation links strategy to
+          actual execution capacity.
+        expectedOutcome:
+          - "Cybersecurity budget and headcount are documented and approved."
+          - "Resource gaps against strategy are recorded and addressed."
+          - "Resource adequacy is reviewed annually."
+        howTo:
+          - step: "Document cyber FTE, budget, and tooling allocation"
+          - step: "Map allocation against strategic priorities"
+          - step: "Report gaps and remediation plans"
+        evidenceExamples:
+          - "Approved security budget"
+          - "Headcount plan vs. strategy"
+          - "Resource gap report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No resource plan"
+            "3": "Resourced ad hoc"
+            "5": "Documented, reviewed, gaps addressed"
+
+      - id: NIST-CSF-2.0:GV.RR-04
+        title: "Cybersecurity is included in human resources practices"
+        weight: 2
+        answerType: scale
+        tags: [govern, hr, personnel, lifecycle]
+        question: |
+          Are cybersecurity responsibilities embedded into human resources
+          practices throughout the joiner, mover, and leaver lifecycle?
+        purpose: |
+          People are the most volatile element of the security boundary.
+          HR processes that consistently grant, transfer, and revoke
+          obligations prevent the most common access incidents.
+        expectedOutcome:
+          - "Joiner, mover, and leaver processes include security steps."
+          - "Background screening is performed where appropriate."
+          - "Disciplinary process covers security violations."
+        howTo:
+          - step: "Add security steps to joiner/mover/leaver checklists"
+          - step: "Include confidentiality and acceptable use in contracts"
+          - step: "Coordinate access changes with HR system of record"
+        evidenceExamples:
+          - "Joiner-mover-leaver process document"
+          - "Sample employment contract clause"
+          - "Background check policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "HR processes lack security steps"
+            "3": "Partial integration"
+            "5": "Full lifecycle integration"
+        crossReferences:
+          - iso27001:A.6.1
+          - iso27001:A.6.5
+
+      - id: NIST-CSF-2.0:GV.PO-01
+        title: "Policy for managing cybersecurity risks is established"
+        weight: 3
+        answerType: scale
+        tags: [govern, policy, governance]
+        question: |
+          Is a cybersecurity policy that reflects the organizational
+          context, strategy, and priorities established, communicated,
+          and enforced?
+        purpose: |
+          The policy is the legal-style instrument that translates
+          intent into binding requirements. Without an approved policy,
+          enforcement and auditing of expectations are not possible.
+        expectedOutcome:
+          - "A current, approved cybersecurity policy exists."
+          - "Policy is published to all in-scope personnel."
+          - "Compliance with the policy is monitored."
+        howTo:
+          - step: "Draft and approve the policy with executive sign-off"
+          - step: "Publish on an accessible policy portal"
+          - step: "Track acknowledgment and compliance"
+        evidenceExamples:
+          - "Signed policy document"
+          - "Acknowledgment log"
+          - "Compliance monitoring report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy"
+            "3": "Policy exists, not communicated"
+            "5": "Policy published, acknowledged, enforced"
+        crossReferences:
+          - iso27001:A.5.1
+
+      - id: NIST-CSF-2.0:GV.PO-02
+        title: "Policy is reviewed, updated, and enforced"
+        weight: 2
+        answerType: scale
+        tags: [govern, policy, review]
+        question: |
+          Is the cybersecurity policy reviewed and updated on a defined
+          cadence and after material changes in requirements, threats,
+          technology, or organizational mission?
+        purpose: |
+          A stale policy creates compliance theater and rewards bypass
+          behavior. Periodic and event-driven review keeps the policy
+          credible and useful.
+        expectedOutcome:
+          - "Review cadence (e.g., annual) is defined and met."
+          - "Triggers for ad hoc review are documented."
+          - "Change history is preserved."
+        howTo:
+          - step: "Set review cadence and triggers"
+          - step: "Track review cycles in a register"
+          - step: "Communicate updates and re-acknowledge"
+        evidenceExamples:
+          - "Policy review log"
+          - "Change history document"
+          - "Re-acknowledgment record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Policy never reviewed"
+            "3": "Reviewed irregularly"
+            "5": "Reviewed on cadence and on triggers"
+
+      - id: NIST-CSF-2.0:GV.OV-01
+        title: "Risk management strategy outcomes are reviewed"
+        weight: 2
+        answerType: scale
+        tags: [govern, oversight, strategy]
+        question: |
+          Are the outcomes of the cybersecurity risk management strategy
+          reviewed by leadership to inform strategy adjustments?
+        purpose: |
+          Strategy that is not reviewed against outcomes drifts. A formal
+          outcomes review closes the plan-do-check-act loop at the
+          governance level.
+        expectedOutcome:
+          - "Strategy outcomes review is scheduled and minuted."
+          - "Adjustments are recorded and tracked."
+          - "Reviews lead to changes in plans and budgets."
+        howTo:
+          - step: "Schedule annual or semi-annual outcomes reviews"
+          - step: "Prepare an outcomes dashboard"
+          - step: "Document and track adjustments"
+        evidenceExamples:
+          - "Outcomes review minutes"
+          - "Strategy adjustment log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No strategy review"
+            "3": "Reviewed but no adjustments"
+            "5": "Reviewed and used to adjust"
+
+      - id: NIST-CSF-2.0:GV.OV-02
+        title: "Risk management strategy is reviewed and adjusted"
+        weight: 2
+        answerType: scale
+        tags: [govern, oversight, strategy]
+        question: |
+          Is the cybersecurity risk management strategy itself reviewed
+          and adjusted to ensure ongoing coverage of organizational
+          requirements and risks?
+        purpose: |
+          Threats, requirements, and the organization itself evolve.
+          Periodic strategy review prevents accumulation of blind spots.
+        expectedOutcome:
+          - "Strategy review covers requirements, threats, and capability."
+          - "Adjustments are approved at the appropriate level."
+          - "Strategy version history is maintained."
+        howTo:
+          - step: "Map current requirements and threats to strategy"
+          - step: "Identify gaps and propose adjustments"
+          - step: "Obtain approval and version the strategy"
+        evidenceExamples:
+          - "Strategy review report"
+          - "Approved strategy revision"
+          - "Version history"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Strategy not reviewed"
+            "3": "Reviewed without adjustment"
+            "5": "Reviewed and adjusted formally"
+
+      - id: NIST-CSF-2.0:GV.OV-03
+        title: "Risk management performance is evaluated"
+        weight: 2
+        answerType: scale
+        tags: [govern, oversight, kpi, kri]
+        question: |
+          Is organizational cybersecurity risk management performance
+          measured, evaluated, and used to drive adjustments?
+        purpose: |
+          Performance metrics convert opinion into data and let leaders
+          calibrate the program against outcomes rather than activity.
+        expectedOutcome:
+          - "KPI/KRI set is defined and reported."
+          - "Targets and tolerances are set and tracked."
+          - "Underperformance triggers action."
+        howTo:
+          - step: "Define a small set of KPIs and KRIs"
+          - step: "Report regularly with targets and tolerances"
+          - step: "Trigger action plans on misses"
+        evidenceExamples:
+          - "KPI/KRI dashboard"
+          - "Quarterly performance report"
+          - "Action plan from missed target"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No performance metrics"
+            "3": "Metrics reported, not acted on"
+            "5": "Metrics drive adjustments"
+
+      - id: NIST-CSF-2.0:GV.SC-01
+        title: "Supply chain risk management program is established"
+        weight: 3
+        answerType: scale
+        tags: [govern, supply-chain, vendor, policy]
+        question: |
+          Is a cybersecurity supply chain risk management (C-SCRM)
+          program with documented strategy, objectives, policies, and
+          processes established and agreed by stakeholders?
+        purpose: |
+          Supply chain compromises often bypass internal defenses entirely.
+          A formal C-SCRM program brings consistency, ownership, and
+          measurable risk reduction to third-party exposure.
+        expectedOutcome:
+          - "C-SCRM policy and process exist and are approved."
+          - "Program objectives and KPIs are defined."
+          - "Stakeholders (procurement, legal, IT, security) are aligned."
+        howTo:
+          - step: "Define C-SCRM scope, policy, and process"
+          - step: "Align procurement, legal, and security on roles"
+          - step: "Approve and publish the program"
+        evidenceExamples:
+          - "C-SCRM policy"
+          - "Program charter"
+          - "Joint process map procurement-security"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No C-SCRM program"
+            "3": "Informal program"
+            "5": "Documented, approved program"
+
+      - id: NIST-CSF-2.0:GV.SC-02
+        title: "Roles for suppliers, customers, partners are coordinated"
+        weight: 2
+        answerType: scale
+        tags: [govern, supply-chain, roles]
+        question: |
+          Are cybersecurity roles and responsibilities for suppliers,
+          customers, and partners established, communicated, and
+          coordinated internally and externally?
+        purpose: |
+          Misaligned expectations with third parties cause silent gaps.
+          Explicit role allocation reduces dispute time and accelerates
+          response.
+        expectedOutcome:
+          - "Roles allocated to each third-party type are documented."
+          - "Coordination contacts (internal and external) are maintained."
+          - "Communication is rehearsed."
+        howTo:
+          - step: "Document role splits per third-party type"
+          - step: "Maintain coordination contact list"
+          - step: "Exercise coordination in drills"
+        evidenceExamples:
+          - "Role split document"
+          - "Coordination contact list"
+          - "Drill record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Roles not defined"
+            "3": "Defined but unrehearsed"
+            "5": "Defined, communicated, exercised"
+
+      - id: NIST-CSF-2.0:GV.SC-03
+        title: "Supply chain risk is integrated into enterprise processes"
+        weight: 2
+        answerType: scale
+        tags: [govern, supply-chain, enterprise-risk]
+        question: |
+          Is cybersecurity supply chain risk management integrated into
+          enterprise risk management, risk assessment, and improvement
+          processes?
+        purpose: |
+          Siloed C-SCRM produces inventories that nobody uses to make
+          decisions. Integration ensures supplier risk competes for
+          attention with internal risks.
+        expectedOutcome:
+          - "Supplier risks appear in the enterprise risk register."
+          - "C-SCRM informs risk assessments and improvement cycles."
+          - "Improvement actions on supplier risk are tracked."
+        howTo:
+          - step: "Feed top supplier risks into the ERM register"
+          - step: "Include supplier risk in assessment templates"
+          - step: "Track supplier-related improvement actions"
+        evidenceExamples:
+          - "ERM register entries from C-SCRM"
+          - "Assessment template with supplier section"
+          - "Improvement tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "C-SCRM not integrated"
+            "3": "Partially integrated"
+            "5": "Fully integrated and tracked"
+
+      - id: NIST-CSF-2.0:GV.SC-04
+        title: "Suppliers are known and prioritized by criticality"
+        weight: 3
+        answerType: scale
+        tags: [govern, supply-chain, inventory, criticality]
+        question: |
+          Are suppliers identified, inventoried, and prioritized according
+          to their criticality to the organization?
+        purpose: |
+          Equal treatment of all suppliers wastes effort on low-risk
+          vendors and under-treats critical ones. Criticality-based
+          tiering focuses oversight where it matters.
+        expectedOutcome:
+          - "A supplier inventory exists and is current."
+          - "Each supplier has a criticality rating."
+          - "Oversight depth scales with criticality."
+        howTo:
+          - step: "Build and maintain a supplier inventory"
+          - step: "Apply a criticality rating method"
+          - step: "Tier oversight (assurance, contractual, monitoring) by tier"
+        evidenceExamples:
+          - "Supplier register with criticality"
+          - "Rating method document"
+          - "Tiered oversight playbook"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No supplier inventory"
+            "3": "Inventory exists, no tiering"
+            "5": "Inventory tiered and used"
+
+      - id: NIST-CSF-2.0:GV.SC-05
+        title: "Cybersecurity requirements are in supplier contracts"
+        weight: 3
+        answerType: scale
+        tags: [govern, supply-chain, contracts, legal]
+        question: |
+          Are cybersecurity requirements established, prioritized, and
+          integrated into contracts and agreements with suppliers and
+          relevant third parties?
+        purpose: |
+          A contract that omits security requirements gives the
+          organization no legal lever when a supplier underperforms.
+          Embedded clauses make obligations enforceable.
+        expectedOutcome:
+          - "Standard security clauses exist by supplier tier."
+          - "Contracts include incident notification and audit rights."
+          - "Deviation from standard clauses is recorded and approved."
+        howTo:
+          - step: "Develop tiered standard security clauses with legal"
+          - step: "Mandate use in procurement templates"
+          - step: "Track and approve deviations"
+        evidenceExamples:
+          - "Standard contract clause library"
+          - "Procurement template"
+          - "Deviation register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No security clauses"
+            "3": "Clauses exist, not consistently used"
+            "5": "Clauses standardized and enforced"
+        crossReferences:
+          - iso27001:A.5.20
+          - iso27001:A.5.23
+
+      - id: NIST-CSF-2.0:GV.SC-06
+        title: "Due diligence is performed before supplier engagement"
+        weight: 2
+        answerType: scale
+        tags: [govern, supply-chain, due-diligence]
+        question: |
+          Is due diligence performed before entering into formal
+          supplier or third-party relationships to reduce cybersecurity
+          risk?
+        purpose: |
+          Risks discovered after onboarding are expensive to undo. Due
+          diligence shifts discovery to the negotiation phase, when
+          options are still open.
+        expectedOutcome:
+          - "Pre-engagement due diligence is defined and required."
+          - "Findings are recorded and influence the decision."
+          - "Critical findings escalate to risk acceptance or termination."
+        howTo:
+          - step: "Define due diligence steps per supplier tier"
+          - step: "Record findings and decisions"
+          - step: "Escalate critical findings"
+        evidenceExamples:
+          - "Due diligence questionnaire and report"
+          - "Decision record"
+          - "Escalation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No due diligence"
+            "3": "Performed inconsistently"
+            "5": "Tiered, recorded, decision-driving"
+
+      - id: NIST-CSF-2.0:GV.SC-07
+        title: "Supplier risks are monitored throughout the relationship"
+        weight: 3
+        answerType: scale
+        tags: [govern, supply-chain, monitoring]
+        question: |
+          Are the cybersecurity risks posed by suppliers and their
+          products or services understood, recorded, prioritized,
+          responded to, and monitored throughout the relationship?
+        purpose: |
+          Supplier risk is not a one-time event. Risk profiles change with
+          ownership, products, and posture. Continuous monitoring catches
+          drift before it becomes incident.
+        expectedOutcome:
+          - "Each in-scope supplier has a risk record updated periodically."
+          - "Monitoring sources (assessments, threat intel, attestations) are defined."
+          - "Material risk changes trigger reassessment."
+        howTo:
+          - step: "Schedule periodic reassessments per tier"
+          - step: "Subscribe to relevant threat and breach feeds"
+          - step: "Trigger reassessment on material events"
+        evidenceExamples:
+          - "Supplier risk register with last review date"
+          - "Threat intelligence feed log"
+          - "Reassessment trigger event"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No ongoing monitoring"
+            "3": "Annual review only"
+            "5": "Continuous monitoring per tier"
+
+      - id: NIST-CSF-2.0:GV.SC-08
+        title: "Suppliers are included in incident response and recovery"
+        weight: 2
+        answerType: scale
+        tags: [govern, supply-chain, incident-response]
+        question: |
+          Are relevant suppliers and third parties included in incident
+          planning, response, and recovery activities?
+        purpose: |
+          Most material incidents involve at least one external party.
+          Including suppliers in plans avoids ad hoc improvisation during
+          a live incident.
+        expectedOutcome:
+          - "Incident response plan names supplier dependencies and contacts."
+          - "Suppliers participate in at least one annual exercise."
+          - "Notification obligations to suppliers are documented."
+        howTo:
+          - step: "Name supplier dependencies in IR runbooks"
+          - step: "Include suppliers in annual tabletop exercises"
+          - step: "Document mutual notification obligations"
+        evidenceExamples:
+          - "IR runbook with supplier section"
+          - "Tabletop report with supplier participation"
+          - "Notification agreement"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Suppliers not in IR"
+            "3": "Mentioned, not exercised"
+            "5": "Suppliers integrated and exercised"
+
+      - id: NIST-CSF-2.0:GV.SC-09
+        title: "Supply chain security is integrated across the lifecycle"
+        weight: 2
+        answerType: scale
+        tags: [govern, supply-chain, lifecycle, monitoring]
+        question: |
+          Are supply chain security practices integrated into cyber and
+          enterprise risk management and monitored throughout the
+          technology product and service life cycle?
+        purpose: |
+          Supply chain risk does not end at procurement. Lifecycle
+          integration ensures that risks emerging during operation and
+          decommissioning are caught.
+        expectedOutcome:
+          - "Lifecycle gates (design, procure, deploy, operate, retire) include supply chain checks."
+          - "Lifecycle performance is measured."
+          - "Lessons learned feed back into the program."
+        howTo:
+          - step: "Add supply chain checks at lifecycle gates"
+          - step: "Define lifecycle KPIs"
+          - step: "Feed lessons learned into the C-SCRM program"
+        evidenceExamples:
+          - "Lifecycle gate checklist"
+          - "Lifecycle KPI report"
+          - "Lessons learned register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No lifecycle integration"
+            "3": "Some gates covered"
+            "5": "Full lifecycle integration"
+
+      - id: NIST-CSF-2.0:GV.SC-10
+        title: "Post-termination supply chain obligations are addressed"
+        weight: 2
+        answerType: scale
+        tags: [govern, supply-chain, termination, data-disposal]
+        question: |
+          Do supply chain plans include activities for the period after
+          a partnership or service agreement concludes, including data
+          return or destruction and access revocation?
+        purpose: |
+          Most contractual security clauses focus on the active phase.
+          Without termination steps, data and access can persist long
+          after the relationship ends.
+        expectedOutcome:
+          - "Termination procedures specify data return or destruction."
+          - "Access revocation steps are defined and verified."
+          - "Termination evidence is retained per policy."
+        howTo:
+          - step: "Define termination playbook (data, access, certificates, secrets)"
+          - step: "Verify destruction or return with the supplier"
+          - step: "Retain evidence per policy"
+        evidenceExamples:
+          - "Termination playbook"
+          - "Data destruction certificate"
+          - "Access revocation report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No termination steps"
+            "3": "Steps exist, not verified"
+            "5": "Steps executed and verified"
+
+  - id: identify
+    name: "IDENTIFY (ID)"
+    description: |
+      The organization's current cybersecurity risks are understood.
+      Inventories of assets and dependencies, risk assessments,
+      vulnerabilities, and improvement information enable prioritization
+      consistent with risk strategy and stakeholder expectations.
+    controls:
+      - id: NIST-CSF-2.0:ID.AM-01
+        title: "Hardware inventory is maintained"
+        weight: 3
+        answerType: scale
+        tags: [identify, asset-management, hardware, inventory]
+        question: |
+          Is an inventory of hardware assets managed by the organization
+          maintained, kept current, and reconciled against discovery data?
+        purpose: |
+          You cannot protect what you do not know exists. Hardware
+          inventory is the foundation for patching, vulnerability
+          management, and incident scope determination.
+        expectedOutcome:
+          - "A central hardware inventory exists and includes owner and location."
+          - "Inventory is reconciled with discovery (network scans, MDM)."
+          - "Unknown devices trigger investigation."
+        howTo:
+          - step: "Adopt a single hardware inventory system of record"
+          - step: "Reconcile against discovery on a defined cadence"
+          - step: "Investigate and resolve unknowns"
+        evidenceExamples:
+          - "Hardware inventory extract"
+          - "Reconciliation report"
+          - "Unknown device investigation ticket"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No hardware inventory"
+            "3": "Inventory exists, not reconciled"
+            "5": "Reconciled inventory drives action"
+        crossReferences:
+          - iso27001:A.5.9
+
+      - id: NIST-CSF-2.0:ID.AM-02
+        title: "Software, services, and systems inventory is maintained"
+        weight: 3
+        answerType: scale
+        tags: [identify, asset-management, software, inventory]
+        question: |
+          Is an inventory of software, services, and systems managed by
+          the organization maintained and reconciled against discovery?
+        purpose: |
+          Unknown software is the most common entry point for known
+          vulnerabilities. A current software inventory drives patching,
+          license management, and incident scoping.
+        expectedOutcome:
+          - "Software, services, and systems inventory is centrally maintained."
+          - "Discovery reconciliation runs on a defined cadence."
+          - "Unapproved software is detected and handled."
+        howTo:
+          - step: "Maintain a software inventory (CMDB or SaaS register)"
+          - step: "Reconcile against EDR/discovery"
+          - step: "Flag and resolve unapproved software"
+        evidenceExamples:
+          - "Software inventory export"
+          - "Unapproved software report"
+          - "Reconciliation log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No software inventory"
+            "3": "Inventory partial"
+            "5": "Reconciled and acted upon"
+        crossReferences:
+          - iso27001:A.5.9
+
+      - id: NIST-CSF-2.0:ID.AM-03
+        title: "Network and data flow representations are maintained"
+        weight: 2
+        answerType: scale
+        tags: [identify, asset-management, network, data-flow]
+        question: |
+          Are representations of authorized network communication and
+          internal and external data flows maintained and current?
+        purpose: |
+          Network and data flow diagrams expose unintended pathways and
+          single points of failure that pure asset lists hide.
+        expectedOutcome:
+          - "Network and data flow diagrams exist for in-scope systems."
+          - "Diagrams are updated on material changes."
+          - "Diagrams are used in change and incident processes."
+        howTo:
+          - step: "Document network and data flow diagrams"
+          - step: "Maintain on material changes"
+          - step: "Reference in change and incident reviews"
+        evidenceExamples:
+          - "Current network diagram"
+          - "Data flow diagram"
+          - "Change record citing diagram"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No diagrams"
+            "3": "Diagrams outdated"
+            "5": "Diagrams maintained and used"
+
+      - id: NIST-CSF-2.0:ID.AM-04
+        title: "Inventory of services provided by suppliers is maintained"
+        weight: 2
+        answerType: scale
+        tags: [identify, asset-management, supplier, services]
+        question: |
+          Is an inventory of services provided to the organization by
+          suppliers maintained and reviewed?
+        purpose: |
+          Supplier-provided services often hold organizational data
+          outside direct controls. Inventorying them is a prerequisite
+          for both due diligence and incident response.
+        expectedOutcome:
+          - "All supplier services in scope are inventoried."
+          - "Each entry has owner and criticality."
+          - "Inventory is reviewed on contract events."
+        howTo:
+          - step: "Combine procurement and IT records into a unified service inventory"
+          - step: "Assign owner and criticality"
+          - step: "Review on renewal or change"
+        evidenceExamples:
+          - "Supplier service inventory"
+          - "Review log on contract events"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No supplier service inventory"
+            "3": "Partial inventory"
+            "5": "Maintained, owned, reviewed"
+
+      - id: NIST-CSF-2.0:ID.AM-05
+        title: "Assets are prioritized by criticality"
+        weight: 3
+        answerType: scale
+        tags: [identify, asset-management, criticality, classification]
+        question: |
+          Are assets prioritized based on classification, criticality,
+          available resources, and mission impact?
+        purpose: |
+          Uniform treatment of assets wastes effort on low-impact
+          resources and under-treats critical ones. Prioritization is
+          how risk strategy is operationalized.
+        expectedOutcome:
+          - "A criticality / classification scheme is in use."
+          - "Assets carry classification metadata."
+          - "Controls intensity scales with classification."
+        howTo:
+          - step: "Define a classification scheme"
+          - step: "Apply classification to assets"
+          - step: "Tie controls to classification"
+        evidenceExamples:
+          - "Classification scheme document"
+          - "Assets with classification metadata"
+          - "Control tiering guidance"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No classification"
+            "3": "Classification defined, not applied"
+            "5": "Applied and drives controls"
+        crossReferences:
+          - iso27001:A.5.12
+          - iso27001:A.5.13
+
+      - id: NIST-CSF-2.0:ID.AM-07
+        title: "Inventory of data and metadata is maintained"
+        weight: 2
+        answerType: scale
+        tags: [identify, asset-management, data, inventory]
+        question: |
+          Is an inventory of data and corresponding metadata for
+          designated data types maintained?
+        purpose: |
+          A data inventory underpins privacy, retention, and breach
+          notification obligations. Without it, the organization cannot
+          credibly answer "what data was affected?"
+        expectedOutcome:
+          - "Designated data types are catalogued with location and owner."
+          - "Metadata (classification, retention, lawful basis) is captured."
+          - "Inventory is reviewed periodically."
+        howTo:
+          - step: "Identify designated data types (PII, financial, health, secret)"
+          - step: "Catalog locations and metadata"
+          - step: "Review on a defined cadence"
+        evidenceExamples:
+          - "Data inventory / RoPA extract"
+          - "Metadata schema"
+          - "Review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No data inventory"
+            "3": "Partial inventory"
+            "5": "Maintained with metadata"
+        appliesIf: "data.regulated == true"
+
+      - id: NIST-CSF-2.0:ID.AM-08
+        title: "Asset lifecycle is managed end-to-end"
+        weight: 2
+        answerType: scale
+        tags: [identify, asset-management, lifecycle, disposal]
+        question: |
+          Are systems, hardware, software, services, and data managed
+          throughout their lifecycle (acquisition, operation, retirement)?
+        purpose: |
+          Retired assets that retain data, access, or trust paths are a
+          common breach source. Full-lifecycle management closes those
+          paths in a controlled way.
+        expectedOutcome:
+          - "Lifecycle states are defined and tracked per asset type."
+          - "Decommissioning includes data and access cleanup."
+          - "End-of-life events trigger documented review."
+        howTo:
+          - step: "Define lifecycle states and gates"
+          - step: "Couple decommissioning with data and access removal"
+          - step: "Record end-of-life events"
+        evidenceExamples:
+          - "Lifecycle policy"
+          - "Decommissioning record"
+          - "End-of-life review"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No lifecycle management"
+            "3": "Lifecycle defined but uneven"
+            "5": "Full lifecycle managed and recorded"
+
+      - id: NIST-CSF-2.0:ID.RA-01
+        title: "Vulnerabilities in assets are identified and recorded"
+        weight: 3
+        answerType: scale
+        tags: [identify, vulnerability, scanning, risk-assessment]
+        question: |
+          Are vulnerabilities in assets identified, validated, and
+          recorded through a documented process (e.g., scanning,
+          pentests, intelligence)?
+        purpose: |
+          Vulnerabilities that are not catalogued cannot be patched in a
+          prioritized way. A current vulnerability dataset is the basis
+          for risk-driven remediation.
+        expectedOutcome:
+          - "Routine vulnerability scans run against in-scope assets."
+          - "Findings are validated to remove false positives."
+          - "Vulnerabilities are recorded with severity and owner."
+        howTo:
+          - step: "Schedule recurring vulnerability scans"
+          - step: "Validate findings before tracking"
+          - step: "Record in a central register with owner and SLA"
+        evidenceExamples:
+          - "Scan schedule and reports"
+          - "Validation notes"
+          - "Vulnerability register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No scanning"
+            "3": "Scanning, no validation"
+            "5": "Scanned, validated, tracked"
+        crossReferences:
+          - iso27001:A.8.8
+
+      - id: NIST-CSF-2.0:ID.RA-02
+        title: "Cyber threat intelligence is received"
+        weight: 2
+        answerType: scale
+        tags: [identify, threat-intelligence]
+        question: |
+          Is cyber threat intelligence routinely received from information
+          sharing forums and other relevant sources, and used in risk
+          decisions?
+        purpose: |
+          Internal data alone misses adversary activity that has not yet
+          touched the organization. External intelligence shortens the
+          detection and response cycle.
+        expectedOutcome:
+          - "Threat intelligence sources are identified and subscribed."
+          - "Intelligence is triaged into actionable items."
+          - "Intelligence informs detection and risk decisions."
+        howTo:
+          - step: "Identify relevant intelligence sources (ISAC, vendors, CERT)"
+          - step: "Triage incoming intel into actionable items"
+          - step: "Feed actionable items into detection and risk"
+        evidenceExamples:
+          - "Intelligence source list"
+          - "Triage queue extract"
+          - "Detection rule updated from intel"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No intel sources"
+            "3": "Subscribed, not used"
+            "5": "Used in detection and risk"
+
+      - id: NIST-CSF-2.0:ID.RA-03
+        title: "Internal and external threats are identified"
+        weight: 2
+        answerType: scale
+        tags: [identify, threats, risk-assessment]
+        question: |
+          Are internal and external threats to the organization
+          identified, recorded, and used in risk assessments?
+        purpose: |
+          Without a current threat list, risk assessments default to
+          generic scenarios that do not reflect the organization's
+          actual exposure.
+        expectedOutcome:
+          - "A current threat catalog exists."
+          - "Threats are mapped to assets and risks."
+          - "Catalog is reviewed periodically."
+        howTo:
+          - step: "Maintain a threat catalog with internal and external sources"
+          - step: "Map threats to assets and risks"
+          - step: "Review catalog on a defined cadence"
+        evidenceExamples:
+          - "Threat catalog"
+          - "Threat-to-risk mapping"
+          - "Review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No threat catalog"
+            "3": "Generic catalog"
+            "5": "Tailored, mapped, reviewed"
+
+      - id: NIST-CSF-2.0:ID.RA-04
+        title: "Impact and likelihood of threats are identified"
+        weight: 2
+        answerType: scale
+        tags: [identify, risk-assessment, impact, likelihood]
+        question: |
+          Are the potential impacts and likelihoods of threats exploiting
+          vulnerabilities identified, documented, and used to inform risk
+          response?
+        purpose: |
+          Risk decisions made without impact and likelihood estimates are
+          opinions. Quantifying or rating both lets the organization
+          compare and prioritize risks defensibly.
+        expectedOutcome:
+          - "Impact and likelihood scales are defined."
+          - "Risks are rated using those scales."
+          - "Ratings inform treatment priority."
+        howTo:
+          - step: "Define impact and likelihood scales"
+          - step: "Rate risks using the scales"
+          - step: "Sort treatment backlog by combined rating"
+        evidenceExamples:
+          - "Impact and likelihood scale definitions"
+          - "Risk register with ratings"
+          - "Prioritized treatment backlog"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No impact / likelihood rating"
+            "3": "Ratings used inconsistently"
+            "5": "Consistent ratings drive priority"
+
+      - id: NIST-CSF-2.0:ID.RA-05
+        title: "Risks are prioritized using threats, vulnerabilities, impacts"
+        weight: 3
+        answerType: scale
+        tags: [identify, risk-assessment, prioritization]
+        question: |
+          Are threats, vulnerabilities, likelihoods, and impacts combined
+          to determine inherent risk and prioritize risk response?
+        purpose: |
+          Combining the elements explicitly avoids treating high-impact
+          but low-likelihood risks the same as low-impact ones. This is
+          the core of risk-based decision making.
+        expectedOutcome:
+          - "Inherent risk is computed from threat, vulnerability, likelihood, impact."
+          - "Prioritization is documented."
+          - "Top risks visibly drive program decisions."
+        howTo:
+          - step: "Document the inherent risk computation"
+          - step: "Produce a prioritized top-N list"
+          - step: "Reference top risks in program plans"
+        evidenceExamples:
+          - "Risk computation method"
+          - "Prioritized risk list"
+          - "Program plan citing top risks"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No prioritization"
+            "3": "Prioritized but not used"
+            "5": "Prioritized and drives program"
+
+      - id: NIST-CSF-2.0:ID.RA-06
+        title: "Risk responses are chosen, planned, and tracked"
+        weight: 3
+        answerType: scale
+        tags: [identify, risk-treatment, tracking]
+        question: |
+          Are risk responses chosen, planned, tracked, and communicated
+          for documented risks?
+        purpose: |
+          Risks without an owned response are decoration. Treatment plans
+          with owners and dates convert risk into managed work.
+        expectedOutcome:
+          - "Each open risk has a chosen response and owner."
+          - "Treatment progress is tracked."
+          - "Status is communicated to risk owners and leadership."
+        howTo:
+          - step: "Record response and owner per risk"
+          - step: "Track milestones and due dates"
+          - step: "Report status on a defined cadence"
+        evidenceExamples:
+          - "Risk register with response field"
+          - "Treatment plan with milestones"
+          - "Status report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No responses tracked"
+            "3": "Responses recorded, not tracked"
+            "5": "Responses tracked and reported"
+
+      - id: NIST-CSF-2.0:ID.RA-07
+        title: "Changes and exceptions are assessed and tracked"
+        weight: 2
+        answerType: scale
+        tags: [identify, change-management, exceptions]
+        question: |
+          Are changes and exceptions managed, assessed for risk impact,
+          recorded, and tracked?
+        purpose: |
+          Most production incidents trace back to changes. Risk-assessing
+          and tracking changes and exceptions reduces both incident
+          frequency and audit findings.
+        expectedOutcome:
+          - "A change management process includes risk assessment."
+          - "Exceptions are recorded with owner, justification, and expiry."
+          - "Open exceptions are reviewed periodically."
+        howTo:
+          - step: "Embed risk assessment into change tickets"
+          - step: "Maintain an exception register"
+          - step: "Review open exceptions on a defined cadence"
+        evidenceExamples:
+          - "Change ticket with risk fields"
+          - "Exception register"
+          - "Exception review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No risk in change"
+            "3": "Inconsistent"
+            "5": "Consistent assessment and review"
+
+      - id: NIST-CSF-2.0:ID.RA-08
+        title: "Vulnerability disclosure process is established"
+        weight: 2
+        answerType: scale
+        tags: [identify, vulnerability, disclosure]
+        question: |
+          Are processes for receiving, analyzing, and responding to
+          vulnerability disclosures (internal and external) established
+          and communicated?
+        purpose: |
+          Researchers and customers who cannot find a disclosure channel
+          may go public. A documented channel keeps disclosures private
+          long enough to be remediated.
+        expectedOutcome:
+          - "A published disclosure channel exists (e.g., security.txt, dedicated mailbox)."
+          - "Incoming reports are triaged within a stated timeframe."
+          - "Reporters receive acknowledgement and status."
+        howTo:
+          - step: "Publish a disclosure channel and policy"
+          - step: "Triage and route incoming reports"
+          - step: "Acknowledge and update reporters"
+        evidenceExamples:
+          - "Disclosure policy"
+          - "Triage queue extract"
+          - "Sample acknowledgement reply"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No disclosure channel"
+            "3": "Channel exists, no SLA"
+            "5": "Channel with SLA and triage"
+        crossReferences:
+          - iso27001:A.6.8
+
+      - id: NIST-CSF-2.0:ID.RA-09
+        title: "Authenticity and integrity of hardware and software is assessed"
+        weight: 2
+        answerType: scale
+        tags: [identify, supply-chain, authenticity, integrity]
+        question: |
+          Are the authenticity and integrity of hardware and software
+          assessed prior to acquisition and use?
+        purpose: |
+          Counterfeit hardware and tampered software bypass downstream
+          controls because they are trusted by default. Acquisition-time
+          checks block that path.
+        expectedOutcome:
+          - "Authenticity checks are defined per category (e.g., signature, provenance)."
+          - "Checks are required before deployment."
+          - "Failures escalate."
+        howTo:
+          - step: "Define authenticity checks per category"
+          - step: "Embed in procurement and deployment gates"
+          - step: "Escalate failures"
+        evidenceExamples:
+          - "Authenticity check policy"
+          - "Procurement gate record"
+          - "Escalation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No checks"
+            "3": "Checks for some categories"
+            "5": "Checks across categories with gates"
+
+      - id: NIST-CSF-2.0:ID.RA-10
+        title: "Critical suppliers are assessed before acquisition"
+        weight: 2
+        answerType: scale
+        tags: [identify, supply-chain, due-diligence]
+        question: |
+          Are critical suppliers formally assessed for cybersecurity
+          posture before acquisition or onboarding?
+        purpose: |
+          Onboarding a critical supplier without an assessment imports
+          their security debt. Pre-acquisition assessment lets the
+          organization negotiate remediation or decline.
+        expectedOutcome:
+          - "Pre-acquisition assessments are required for critical suppliers."
+          - "Assessments produce decisions or remediation requirements."
+          - "Decisions are recorded."
+        howTo:
+          - step: "Define critical supplier criteria"
+          - step: "Run pre-acquisition assessment"
+          - step: "Record decision and conditions"
+        evidenceExamples:
+          - "Critical supplier definition"
+          - "Pre-acquisition assessment report"
+          - "Decision record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessments"
+            "3": "Assessments inconsistent"
+            "5": "Assessment required, recorded"
+
+      - id: NIST-CSF-2.0:ID.IM-01
+        title: "Improvements are identified from evaluations"
+        weight: 2
+        answerType: scale
+        tags: [identify, improvement, assessment]
+        question: |
+          Are cybersecurity program improvements identified from
+          self-assessments, audits, and other evaluations?
+        purpose: |
+          Evaluations produce findings; the program only improves when
+          findings are converted to tracked, owned actions.
+        expectedOutcome:
+          - "Evaluation findings are logged centrally."
+          - "Each finding has owner, due date, and status."
+          - "Status is reported to leadership."
+        howTo:
+          - step: "Maintain a central findings register"
+          - step: "Assign owner and due date per finding"
+          - step: "Report status to leadership"
+        evidenceExamples:
+          - "Findings register"
+          - "Action plan"
+          - "Status report to leadership"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Findings ignored"
+            "3": "Findings logged, not tracked"
+            "5": "Findings tracked to closure"
+
+      - id: NIST-CSF-2.0:ID.IM-02
+        title: "Improvements identified from tests and exercises"
+        weight: 2
+        answerType: scale
+        tags: [identify, improvement, exercises, testing]
+        question: |
+          Are improvements identified from security tests and exercises,
+          including those run with suppliers and third parties?
+        purpose: |
+          Exercises produce the highest-value findings because they reveal
+          gaps in execution, not only in documentation. Acting on those
+          findings is what turns rehearsal into capability.
+        expectedOutcome:
+          - "Exercises and tests produce after-action reports."
+          - "Findings convert to tracked improvements."
+          - "Third-party participation is included where relevant."
+        howTo:
+          - step: "Conduct exercises and pentests with after-action reviews"
+          - step: "Convert findings to tracked improvements"
+          - step: "Include relevant suppliers"
+        evidenceExamples:
+          - "After-action report"
+          - "Improvement tracker"
+          - "Pentest remediation plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No exercises"
+            "3": "Exercises but no follow-up"
+            "5": "Exercises drive improvements"
+
+      - id: NIST-CSF-2.0:ID.IM-03
+        title: "Improvements identified from operations"
+        weight: 2
+        answerType: scale
+        tags: [identify, improvement, operations]
+        question: |
+          Are improvements identified from the execution of operational
+          processes, procedures, and activities?
+        purpose: |
+          Operations are the largest source of small, continuous
+          improvement signal. Capturing them prevents repeated firefighting.
+        expectedOutcome:
+          - "Operational learnings are captured (e.g., post-mortems, retros)."
+          - "Improvements are routed to owners."
+          - "Recurring issues drive root cause analysis."
+        howTo:
+          - step: "Run blameless post-mortems for operational events"
+          - step: "Route improvements to owners"
+          - step: "Conduct root cause analysis on recurring themes"
+        evidenceExamples:
+          - "Post-mortem report"
+          - "Improvement ticket"
+          - "Root cause analysis output"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No post-mortems"
+            "3": "Post-mortems without follow-up"
+            "5": "Post-mortems drive improvements"
+
+      - id: NIST-CSF-2.0:ID.IM-04
+        title: "Cybersecurity plans are established and maintained"
+        weight: 3
+        answerType: scale
+        tags: [identify, improvement, plans, incident-response]
+        question: |
+          Are incident response plans, business continuity plans, and
+          other cybersecurity plans that affect operations established,
+          communicated, maintained, and improved?
+        purpose: |
+          Plans that exist on paper but go untested fail under stress.
+          Maintaining and improving plans keeps them executable.
+        expectedOutcome:
+          - "Required plans exist (IR, BCP, DR, communications)."
+          - "Plans are communicated to executing teams."
+          - "Plans are reviewed and improved on a defined cadence."
+        howTo:
+          - step: "Inventory required plans"
+          - step: "Set ownership, cadence, and triggers for review"
+          - step: "Improve plans after exercises and incidents"
+        evidenceExamples:
+          - "Plan inventory"
+          - "Plan review log"
+          - "Improvement history"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plans missing"
+            "3": "Plans exist, not maintained"
+            "5": "Plans maintained and improved"
+
+  - id: protect
+    name: "PROTECT (PR)"
+    description: |
+      Safeguards manage the organization's cybersecurity risks. PROTECT
+      supports the ability to limit or contain the impact of an event
+      and covers identity, access, awareness, data security, platform
+      security, and infrastructure resilience.
+    controls:
+      - id: NIST-CSF-2.0:PR.AA-01
+        title: "Identities and credentials are managed"
+        weight: 3
+        answerType: scale
+        tags: [protect, iam, identity, credentials]
+        question: |
+          Are identities and credentials for authorized users, services,
+          and hardware issued, managed, and revoked under a documented
+          process?
+        purpose: |
+          Identity is the dominant control plane. Weak issuance and
+          stale credentials are the most exploited initial-access path.
+        expectedOutcome:
+          - "Identity lifecycle (request, approve, issue, revoke) is documented."
+          - "Service and machine identities are managed alongside human ones."
+          - "Stale credentials are removed within stated SLAs."
+        howTo:
+          - step: "Adopt a single identity provider as authority"
+          - step: "Govern service and machine identities"
+          - step: "Run periodic cleanups of stale credentials"
+        evidenceExamples:
+          - "Identity lifecycle policy"
+          - "IdP user and service account export"
+          - "Cleanup report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No identity lifecycle"
+            "3": "Partial lifecycle"
+            "5": "Full lifecycle with SLAs"
+        crossReferences:
+          - iso27001:A.5.16
+          - iso27001:A.5.17
+
+      - id: NIST-CSF-2.0:PR.AA-02
+        title: "Identities are proofed and bound to credentials"
+        weight: 2
+        answerType: scale
+        tags: [protect, iam, identity-proofing]
+        question: |
+          Are identities proofed and bound to credentials based on the
+          context and risk of interactions (e.g., workforce, customers,
+          contractors)?
+        purpose: |
+          Issuing a credential without proofing the identity behind it
+          undermines every downstream access decision. Risk-tiered
+          proofing matches assurance to context.
+        expectedOutcome:
+          - "Identity proofing levels are defined per user type."
+          - "Proofing evidence is captured at onboarding."
+          - "Binding to credentials is auditable."
+        howTo:
+          - step: "Define identity proofing levels per user type"
+          - step: "Capture proofing evidence at onboarding"
+          - step: "Audit credential bindings"
+        evidenceExamples:
+          - "Proofing matrix"
+          - "Onboarding records"
+          - "Binding audit log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No proofing"
+            "3": "Proofing inconsistent"
+            "5": "Tiered proofing required"
+
+      - id: NIST-CSF-2.0:PR.AA-03
+        title: "Users, services, and hardware are authenticated"
+        weight: 3
+        answerType: scale
+        tags: [protect, authentication, mfa, iam]
+        question: |
+          Are users, services, and hardware authenticated using methods
+          commensurate with risk (e.g., strong authentication, MFA,
+          machine identity)?
+        purpose: |
+          Authentication strength caps the rest of the access stack.
+          Single-factor authentication on privileged access is the most
+          common root cause of large breaches.
+        expectedOutcome:
+          - "MFA is enforced for all remote access and privileged actions."
+          - "Service-to-service authentication is in place."
+          - "Hardware authentication is used for managed devices where possible."
+        howTo:
+          - step: "Enforce MFA for remote and privileged access"
+          - step: "Use service identities for non-human authentication"
+          - step: "Use device authentication for managed endpoints"
+        evidenceExamples:
+          - "MFA policy and enforcement report"
+          - "Service identity inventory"
+          - "Device certificate inventory"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No MFA"
+            "3": "MFA partial"
+            "5": "MFA enforced, service / device auth in place"
+        crossReferences:
+          - iso27001:A.8.5
+
+      - id: NIST-CSF-2.0:PR.AA-04
+        title: "Identity assertions are protected and verified"
+        weight: 2
+        answerType: scale
+        tags: [protect, identity, federation, assertion]
+        question: |
+          Are identity assertions (e.g., tokens, federated assertions)
+          protected, conveyed securely, and verified by relying parties?
+        purpose: |
+          A leaked or unverifiable assertion is an instant impersonation.
+          Verifying signatures and audiences is the federated-equivalent
+          of password validation.
+        expectedOutcome:
+          - "Identity assertions are signed and short-lived."
+          - "Relying parties verify signature, audience, and expiry."
+          - "Token storage is protected on clients."
+        howTo:
+          - step: "Use signed, short-lived assertions"
+          - step: "Enforce verification at relying parties"
+          - step: "Protect assertion storage on clients"
+        evidenceExamples:
+          - "IdP configuration export"
+          - "Relying party verification policy"
+          - "Token lifetime configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Assertions unverified"
+            "3": "Some checks"
+            "5": "Full verification"
+
+      - id: NIST-CSF-2.0:PR.AA-05
+        title: "Access permissions follow least privilege and SoD"
+        weight: 3
+        answerType: scale
+        tags: [protect, authorization, least-privilege, sod, access-review]
+        question: |
+          Are access permissions, entitlements, and authorizations
+          defined in policy, managed, enforced, and reviewed, applying
+          least privilege and separation of duties?
+        purpose: |
+          Excessive access is the most common audit finding and the
+          biggest amplifier of any compromised account. Least privilege
+          and SoD reduce both the probability and impact of misuse.
+        expectedOutcome:
+          - "Access model is documented (RBAC/ABAC) with least-privilege defaults."
+          - "Toxic combinations (SoD) are defined and prevented."
+          - "Periodic access reviews are performed and acted upon."
+        howTo:
+          - step: "Document the access model and least-privilege defaults"
+          - step: "Define and enforce SoD constraints"
+          - step: "Run periodic access reviews with owner sign-off"
+        evidenceExamples:
+          - "Access model document"
+          - "SoD matrix"
+          - "Access review report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No access model"
+            "3": "Model defined, not reviewed"
+            "5": "Model enforced and reviewed"
+        crossReferences:
+          - iso27001:A.5.15
+          - iso27001:A.5.18
+
+      - id: NIST-CSF-2.0:PR.AA-06
+        title: "Physical access is managed and monitored"
+        weight: 2
+        answerType: scale
+        tags: [protect, physical-security, access-control]
+        question: |
+          Is physical access to assets and facilities managed, monitored,
+          and enforced commensurate with risk?
+        purpose: |
+          Physical access bypasses many logical controls. Tiered physical
+          access, monitoring, and visitor management are basic hygiene
+          for premises with sensitive assets.
+        expectedOutcome:
+          - "Physical zones are tiered by sensitivity."
+          - "Access logs are kept and reviewed."
+          - "Visitors are escorted and recorded."
+        howTo:
+          - step: "Tier physical zones (public, office, restricted)"
+          - step: "Log and review physical access"
+          - step: "Implement visitor management"
+        evidenceExamples:
+          - "Zone tiering map"
+          - "Physical access log review"
+          - "Visitor register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No physical tiering"
+            "3": "Tiering, no review"
+            "5": "Tiered, logged, reviewed"
+        crossReferences:
+          - iso27001:A.7.2
+          - iso27001:A.7.4
+        appliesIf: "facility.onPremises == true"
+
+      - id: NIST-CSF-2.0:PR.AT-01
+        title: "General awareness and training is provided"
+        weight: 2
+        answerType: scale
+        tags: [protect, awareness, training, personnel]
+        question: |
+          Do personnel receive cybersecurity awareness and training so
+          they can perform their general duties with cybersecurity risks
+          in mind?
+        purpose: |
+          People are part of the control surface. General awareness
+          training reduces the success rate of phishing, social
+          engineering, and policy violations.
+        expectedOutcome:
+          - "All in-scope personnel complete annual awareness training."
+          - "Completion is tracked and enforced."
+          - "Effectiveness is measured (e.g., phishing simulation)."
+        howTo:
+          - step: "Roll out annual awareness training"
+          - step: "Track completion and follow up on non-completion"
+          - step: "Measure effectiveness with phishing simulations"
+        evidenceExamples:
+          - "Training completion report"
+          - "Phishing simulation results"
+          - "Training content reference"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No awareness program"
+            "3": "Program but low completion"
+            "5": "Completed and effectiveness measured"
+        crossReferences:
+          - iso27001:A.6.3
+
+      - id: NIST-CSF-2.0:PR.AT-02
+        title: "Role-specific awareness and training is provided"
+        weight: 2
+        answerType: scale
+        tags: [protect, awareness, training, specialized-roles]
+        question: |
+          Do individuals in specialized roles (e.g., admins, developers,
+          incident responders) receive role-specific cybersecurity
+          training?
+        purpose: |
+          Generic training does not cover technical roles where the most
+          consequential decisions are made. Role-based training raises
+          the floor for high-impact roles.
+        expectedOutcome:
+          - "Role-based training paths exist for specialized roles."
+          - "Completion is tracked."
+          - "Skill currency is verified periodically."
+        howTo:
+          - step: "Define role-based training paths"
+          - step: "Track completion and currency"
+          - step: "Refresh content for evolving threats"
+        evidenceExamples:
+          - "Role-based curriculum"
+          - "Completion tracker"
+          - "Skill assessment results"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No role-based training"
+            "3": "Partial coverage"
+            "5": "All specialized roles covered"
+
+      - id: NIST-CSF-2.0:PR.DS-01
+        title: "Data-at-rest is protected"
+        weight: 3
+        answerType: scale
+        tags: [protect, data, encryption, data-at-rest]
+        question: |
+          Are confidentiality, integrity, and availability of data-at-rest
+          protected using controls commensurate with classification
+          (e.g., encryption, access controls, integrity checks)?
+        purpose: |
+          Most regulated data lives at rest most of the time. Encryption
+          and integrity controls reduce both the technical and regulatory
+          impact of unauthorized access.
+        expectedOutcome:
+          - "Sensitive data-at-rest is encrypted using approved methods."
+          - "Keys are managed under documented processes."
+          - "Integrity controls (e.g., checksums) are applied where needed."
+        howTo:
+          - step: "Enforce encryption for storage that holds sensitive data"
+          - step: "Manage keys via a dedicated KMS / HSM"
+          - step: "Apply integrity controls for high-value data"
+        evidenceExamples:
+          - "Encryption policy"
+          - "KMS configuration export"
+          - "Integrity verification log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No encryption"
+            "3": "Encryption partial"
+            "5": "Encryption + KMS + integrity"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: NIST-CSF-2.0:PR.DS-02
+        title: "Data-in-transit is protected"
+        weight: 3
+        answerType: scale
+        tags: [protect, data, encryption, data-in-transit, tls]
+        question: |
+          Are confidentiality, integrity, and availability of
+          data-in-transit protected using approved transport security?
+        purpose: |
+          Unprotected transit allows passive interception and active
+          tampering. Approved transport security is a baseline for all
+          modern systems.
+        expectedOutcome:
+          - "All in-scope traffic uses approved encryption."
+          - "Cipher and protocol policy is enforced."
+          - "Certificates are managed with renewal automation."
+        howTo:
+          - step: "Enforce TLS on all in-scope traffic"
+          - step: "Set and enforce cipher / protocol policy"
+          - step: "Automate certificate renewals"
+        evidenceExamples:
+          - "TLS policy"
+          - "Cipher scan report"
+          - "Certificate inventory"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plaintext common"
+            "3": "TLS but weak ciphers"
+            "5": "Enforced policy, automated renewal"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: NIST-CSF-2.0:PR.DS-10
+        title: "Data-in-use is protected"
+        weight: 2
+        answerType: scale
+        tags: [protect, data, data-in-use, runtime]
+        question: |
+          Are confidentiality, integrity, and availability of data-in-use
+          protected through controls such as memory protection, secure
+          enclaves, or runtime isolation where appropriate?
+        purpose: |
+          Data in memory is a high-value target for advanced attackers
+          and a blind spot for many control sets. Runtime isolation
+          reduces lateral exposure.
+        expectedOutcome:
+          - "Sensitive data is processed in isolated runtimes."
+          - "Memory protection features are enabled where supported."
+          - "High-sensitivity processing considers enclaves / TEEs."
+        howTo:
+          - step: "Identify processes handling sensitive data in memory"
+          - step: "Apply runtime isolation"
+          - step: "Evaluate enclaves / TEEs for highest sensitivity"
+        evidenceExamples:
+          - "Runtime isolation configuration"
+          - "Memory protection enforcement report"
+          - "Enclave configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No runtime protection"
+            "3": "Some isolation"
+            "5": "Isolation + memory protection"
+        appliesIf: "data.classification >= high"
+
+      - id: NIST-CSF-2.0:PR.DS-11
+        title: "Backups are created, protected, and tested"
+        weight: 3
+        answerType: scale
+        tags: [protect, backup, recovery, ransomware]
+        question: |
+          Are backups of data created, protected, maintained, and tested
+          on a schedule commensurate with recovery objectives?
+        purpose: |
+          Reliable backups are the single most important control against
+          ransomware and destructive incidents. Untested backups have a
+          high rate of silent failure.
+        expectedOutcome:
+          - "Backups are taken on a defined schedule with offline / immutable copy."
+          - "Restore tests are performed and documented."
+          - "Backup access is restricted and monitored."
+        howTo:
+          - step: "Implement a backup policy aligned to RPO/RTO"
+          - step: "Keep at least one offline or immutable copy"
+          - step: "Test restores periodically and document"
+        evidenceExamples:
+          - "Backup policy"
+          - "Restore test report"
+          - "Backup access audit log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No backups"
+            "3": "Backups untested"
+            "5": "Backups tested, immutable copy"
+        crossReferences:
+          - iso27001:A.8.13
+
+      - id: NIST-CSF-2.0:PR.PS-01
+        title: "Configuration management is established"
+        weight: 3
+        answerType: scale
+        tags: [protect, platform-security, configuration, hardening]
+        question: |
+          Are configuration management practices, including secure
+          baselines, drift detection, and change control, established
+          and applied?
+        purpose: |
+          Drift from a known-good configuration creates exploitable
+          weakness and breaks the link between policy and reality.
+          Configuration management restores that link.
+        expectedOutcome:
+          - "Secure baselines exist for in-scope platforms."
+          - "Drift is detected and remediated."
+          - "Configuration changes follow change control."
+        howTo:
+          - step: "Define secure baselines per platform"
+          - step: "Detect drift continuously"
+          - step: "Channel changes through change control"
+        evidenceExamples:
+          - "Baseline definitions"
+          - "Drift report"
+          - "Change ticket"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No baselines"
+            "3": "Baselines, no drift detection"
+            "5": "Baselines + drift detection + change control"
+        crossReferences:
+          - iso27001:A.8.9
+
+      - id: NIST-CSF-2.0:PR.PS-02
+        title: "Software is maintained and replaced commensurate with risk"
+        weight: 3
+        answerType: scale
+        tags: [protect, platform-security, patching, software-lifecycle]
+        question: |
+          Is software maintained (patched), replaced, and removed in
+          line with the risk it represents and the support status of the
+          components?
+        purpose: |
+          Unpatched and unsupported software is one of the highest-yield
+          attack vectors. Disciplined maintenance reduces exposure and
+          keeps the platform within vendor support.
+        expectedOutcome:
+          - "Patching SLAs are defined and met by severity."
+          - "Unsupported software is inventoried and on a replacement path."
+          - "Emergency patching path is documented."
+        howTo:
+          - step: "Define patching SLAs by severity"
+          - step: "Track unsupported software with replacement plans"
+          - step: "Run emergency patching drills"
+        evidenceExamples:
+          - "Patching SLA policy"
+          - "Patch compliance report"
+          - "Unsupported software remediation plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No patching cadence"
+            "3": "Patching, no SLAs"
+            "5": "SLAs met, unsupported managed"
+
+      - id: NIST-CSF-2.0:PR.PS-03
+        title: "Hardware is maintained and replaced commensurate with risk"
+        weight: 2
+        answerType: scale
+        tags: [protect, platform-security, hardware, lifecycle]
+        question: |
+          Is hardware maintained, replaced, and removed in line with
+          its risk, end-of-life status, and security posture?
+        purpose: |
+          Hardware that has lost firmware support or reached EOL is a
+          long-lived blind spot. Maintenance and timely replacement keep
+          the platform defensible.
+        expectedOutcome:
+          - "Hardware EOL is tracked and planned for."
+          - "Firmware updates are applied on a defined cadence."
+          - "Decommissioning includes data sanitization."
+        howTo:
+          - step: "Track hardware EOL dates"
+          - step: "Apply firmware updates on a defined cadence"
+          - step: "Sanitize media on decommissioning"
+        evidenceExamples:
+          - "EOL tracker"
+          - "Firmware update log"
+          - "Sanitization certificate"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No EOL tracking"
+            "3": "Tracking, ad hoc updates"
+            "5": "Tracked, updated, sanitized"
+
+      - id: NIST-CSF-2.0:PR.PS-04
+        title: "Log records are generated and made available"
+        weight: 3
+        answerType: scale
+        tags: [protect, logging, monitoring, siem]
+        question: |
+          Are log records generated and made available for continuous
+          monitoring across in-scope systems?
+        purpose: |
+          Without logs, neither detection nor investigation is possible.
+          Centralized, integrity-protected logs are the foundation for
+          DE and RS Functions.
+        expectedOutcome:
+          - "Logging requirements per system class are defined."
+          - "Logs are forwarded to a central store with retention."
+          - "Log integrity is protected."
+        howTo:
+          - step: "Define what to log per system class"
+          - step: "Forward to a central, retained log store"
+          - step: "Protect log integrity"
+        evidenceExamples:
+          - "Logging requirements document"
+          - "SIEM ingestion report"
+          - "Log integrity protection design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No central logs"
+            "3": "Partial centralization"
+            "5": "Centralized, retained, integrity-protected"
+        crossReferences:
+          - iso27001:A.8.15
+
+      - id: NIST-CSF-2.0:PR.PS-05
+        title: "Unauthorized software is prevented from installing and running"
+        weight: 2
+        answerType: scale
+        tags: [protect, platform-security, allowlisting, endpoint]
+        question: |
+          Are mechanisms in place to prevent installation and execution
+          of unauthorized software (e.g., application control,
+          allowlisting)?
+        purpose: |
+          Allowing arbitrary software to run defeats most preventative
+          controls. Application control reduces the attack surface and
+          slows down malware execution.
+        expectedOutcome:
+          - "Application control or allowlisting is enforced on managed endpoints."
+          - "Exceptions are documented and time-bound."
+          - "Bypass attempts are alerted and investigated."
+        howTo:
+          - step: "Enforce application control on managed endpoints"
+          - step: "Manage exceptions with expiry"
+          - step: "Alert on bypass attempts"
+        evidenceExamples:
+          - "Application control policy"
+          - "Exception register"
+          - "Bypass alert log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No control"
+            "3": "Monitor mode"
+            "5": "Enforced with exceptions managed"
+
+      - id: NIST-CSF-2.0:PR.PS-06
+        title: "Secure software development practices are integrated"
+        weight: 3
+        answerType: scale
+        tags: [protect, sdlc, secure-development, devsecops]
+        question: |
+          Are secure software development practices integrated into the
+          SDLC and their performance monitored throughout the software
+          life cycle?
+        purpose: |
+          Defects introduced during development are the cheapest to fix
+          and the costliest to ignore. Embedding security into the SDLC
+          shifts the cost curve left.
+        expectedOutcome:
+          - "Security requirements are part of design and review."
+          - "Static and dynamic analysis run in pipelines."
+          - "SBOMs and third-party component review are in place."
+        howTo:
+          - step: "Embed security requirements in design reviews"
+          - step: "Run SAST/DAST/SCA in CI"
+          - step: "Maintain SBOMs and review third-party components"
+        evidenceExamples:
+          - "Secure SDLC policy"
+          - "Pipeline scan results"
+          - "SBOM export"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SDLC security"
+            "3": "Some scanning"
+            "5": "Embedded SDLC + SBOM"
+        crossReferences:
+          - iso27001:A.8.25
+          - iso27001:A.8.28
+        appliesIf: "organization.develops_software == true"
+
+      - id: NIST-CSF-2.0:PR.IR-01
+        title: "Networks are protected from unauthorized access"
+        weight: 3
+        answerType: scale
+        tags: [protect, network, segmentation, firewall]
+        question: |
+          Are networks and environments protected from unauthorized
+          logical access and usage through segmentation, perimeter
+          controls, and zero-trust principles where applicable?
+        purpose: |
+          Flat networks amplify any compromise to the whole estate.
+          Segmentation and zero-trust patterns limit blast radius and
+          buy time for detection and response.
+        expectedOutcome:
+          - "Network segmentation is implemented based on trust zones."
+          - "East-west traffic is restricted by policy."
+          - "Remote access is mediated by zero-trust or VPN with MFA."
+        howTo:
+          - step: "Segment networks by trust zone"
+          - step: "Restrict east-west traffic with policy"
+          - step: "Mediate remote access with zero-trust or MFA VPN"
+        evidenceExamples:
+          - "Segmentation design"
+          - "Firewall policy export"
+          - "Remote access configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Flat network"
+            "3": "Perimeter only"
+            "5": "Segmentation + zero-trust patterns"
+        crossReferences:
+          - iso27001:A.8.20
+          - iso27001:A.8.22
+
+      - id: NIST-CSF-2.0:PR.IR-02
+        title: "Assets are protected from environmental threats"
+        weight: 2
+        answerType: scale
+        tags: [protect, physical-security, environmental, facilities]
+        question: |
+          Are technology assets protected from environmental threats
+          such as fire, water, power loss, and temperature extremes?
+        purpose: |
+          Environmental events cause as much downtime as cyber events
+          for many organizations. Environmental controls are a
+          prerequisite for availability targets.
+        expectedOutcome:
+          - "Facility design considers fire, water, power, and temperature."
+          - "Environmental monitoring alerts on excursions."
+          - "Periodic testing of environmental controls is performed."
+        howTo:
+          - step: "Apply environmental design standards to facilities"
+          - step: "Monitor environmental parameters with alerting"
+          - step: "Test environmental controls periodically"
+        evidenceExamples:
+          - "Facility design document"
+          - "Environmental monitoring alerts"
+          - "Test reports"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No environmental controls"
+            "3": "Controls present, not tested"
+            "5": "Controls in place and tested"
+        crossReferences:
+          - iso27001:A.7.5
+          - iso27001:A.7.11
+        appliesIf: "facility.onPremises == true"
+
+      - id: NIST-CSF-2.0:PR.IR-03
+        title: "Resilience mechanisms are implemented"
+        weight: 3
+        answerType: scale
+        tags: [protect, resilience, ha, dr]
+        question: |
+          Are mechanisms implemented to achieve resilience requirements
+          in normal and adverse situations (e.g., redundancy, failover,
+          graceful degradation)?
+        purpose: |
+          Resilience requirements that exist only in policy fail under
+          real load. Implemented mechanisms turn the SLA into something
+          the system can actually meet.
+        expectedOutcome:
+          - "Critical services have documented resilience patterns (HA, failover, graceful degradation)."
+          - "Failover is tested periodically."
+          - "Resilience meets stated objectives."
+        howTo:
+          - step: "Define resilience patterns per critical service"
+          - step: "Test failover periodically"
+          - step: "Measure achieved resilience against objectives"
+        evidenceExamples:
+          - "Resilience design documents"
+          - "Failover test report"
+          - "Achieved availability report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No resilience design"
+            "3": "Design, no testing"
+            "5": "Designed and tested"
+
+      - id: NIST-CSF-2.0:PR.IR-04
+        title: "Adequate resource capacity is maintained"
+        weight: 2
+        answerType: scale
+        tags: [protect, capacity, availability]
+        question: |
+          Is adequate resource capacity (compute, storage, network,
+          staffing) maintained to ensure availability under expected
+          and adverse loads?
+        purpose: |
+          Capacity exhaustion produces the same effect as a denial of
+          service. Capacity planning keeps availability inside committed
+          ranges.
+        expectedOutcome:
+          - "Capacity targets and headroom are defined per critical service."
+          - "Capacity is monitored with alerts on approach to threshold."
+          - "Capacity reviews drive procurement and scaling."
+        howTo:
+          - step: "Define capacity targets per critical service"
+          - step: "Monitor capacity with thresholds"
+          - step: "Drive procurement / scaling from reviews"
+        evidenceExamples:
+          - "Capacity plan"
+          - "Capacity dashboard"
+          - "Capacity review minutes"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No capacity planning"
+            "3": "Monitored, not planned"
+            "5": "Planned, monitored, acted on"
+        crossReferences:
+          - iso27001:A.8.6
+
+  - id: detect
+    name: "DETECT (DE)"
+    description: |
+      Possible cybersecurity attacks and compromises are found and
+      analyzed. DETECT enables timely discovery and analysis of adverse
+      events and is a prerequisite for effective RESPOND and RECOVER
+      activities.
+    controls:
+      - id: NIST-CSF-2.0:DE.CM-01
+        title: "Networks and services are monitored"
+        weight: 3
+        answerType: scale
+        tags: [detect, monitoring, network, ids]
+        question: |
+          Are networks and network services continuously monitored to
+          find potentially adverse events?
+        purpose: |
+          Adversary activity often traverses the network before reaching
+          a target. Network monitoring is the broadest detection signal
+          most organizations have.
+        expectedOutcome:
+          - "Network monitoring (NIDS, NetFlow, DNS) is in place across critical paths."
+          - "Detections feed a central queue."
+          - "Detections are tuned to reduce noise."
+        howTo:
+          - step: "Deploy network monitoring on critical paths"
+          - step: "Route detections to a central queue"
+          - step: "Tune detections to a manageable signal-to-noise"
+        evidenceExamples:
+          - "Network monitoring coverage map"
+          - "Detection tuning notes"
+          - "Sample detection ticket"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No network monitoring"
+            "3": "Partial coverage"
+            "5": "Full coverage, tuned, acted on"
+        crossReferences:
+          - iso27001:A.8.16
+
+      - id: NIST-CSF-2.0:DE.CM-02
+        title: "Physical environment is monitored"
+        weight: 2
+        answerType: scale
+        tags: [detect, monitoring, physical-security]
+        question: |
+          Is the physical environment monitored to find potentially
+          adverse events (e.g., unauthorized access, tampering)?
+        purpose: |
+          Physical compromise is rare but high-impact and often invisible
+          to logical monitoring. Physical monitoring closes that gap for
+          on-premise assets.
+        expectedOutcome:
+          - "Physical monitoring (CCTV, badge logs, sensors) covers restricted areas."
+          - "Alarms are routed and triaged."
+          - "Reviews of physical events are performed."
+        howTo:
+          - step: "Cover restricted areas with monitoring"
+          - step: "Route alarms to a triage process"
+          - step: "Periodically review physical event logs"
+        evidenceExamples:
+          - "Monitoring coverage map"
+          - "Alarm triage log"
+          - "Physical event review"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No physical monitoring"
+            "3": "Monitoring, no triage"
+            "5": "Monitoring + triage + review"
+        appliesIf: "facility.onPremises == true"
+
+      - id: NIST-CSF-2.0:DE.CM-03
+        title: "Personnel activity and technology usage is monitored"
+        weight: 2
+        answerType: scale
+        tags: [detect, monitoring, insider-threat, ueba]
+        question: |
+          Are personnel activity and technology usage monitored within
+          legal and policy boundaries to find potentially adverse events?
+        purpose: |
+          Insider events and account compromise present as anomalies in
+          user behavior. Lawful monitoring is what surfaces them.
+        expectedOutcome:
+          - "Monitoring scope and lawful basis are documented."
+          - "Behavior analytics or rule-based detection is in use."
+          - "Alerts are triaged through HR / Legal pathways when needed."
+        howTo:
+          - step: "Define lawful monitoring scope with HR / Legal"
+          - step: "Deploy behavior analytics or rule-based detection"
+          - step: "Use defined pathways for sensitive alerts"
+        evidenceExamples:
+          - "Monitoring policy"
+          - "UEBA configuration"
+          - "Sensitive alert handling procedure"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No user activity monitoring"
+            "3": "Monitoring without lawful basis"
+            "5": "Lawful, used, pathways defined"
+
+      - id: NIST-CSF-2.0:DE.CM-06
+        title: "External service provider activity is monitored"
+        weight: 2
+        answerType: scale
+        tags: [detect, monitoring, supplier, third-party]
+        question: |
+          Are external service provider activities and services monitored
+          to find potentially adverse events?
+        purpose: |
+          Suppliers operate inside the trust boundary. Monitoring their
+          activity is necessary for both incident scope determination and
+          contractual oversight.
+        expectedOutcome:
+          - "Supplier activity in scope is logged and reviewed."
+          - "Anomalous patterns generate alerts."
+          - "Supplier-related incidents include monitoring evidence."
+        howTo:
+          - step: "Log supplier activity in scope"
+          - step: "Define anomaly detection for supplier patterns"
+          - step: "Use evidence in supplier incident reviews"
+        evidenceExamples:
+          - "Supplier activity log review"
+          - "Anomaly alert"
+          - "Supplier incident report citing logs"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No supplier monitoring"
+            "3": "Logging, no review"
+            "5": "Logged, reviewed, alerted"
+
+      - id: NIST-CSF-2.0:DE.CM-09
+        title: "Hardware, software, and runtime are monitored"
+        weight: 3
+        answerType: scale
+        tags: [detect, monitoring, endpoint, edr, runtime]
+        question: |
+          Are computing hardware and software, runtime environments, and
+          their data continuously monitored to find potentially adverse
+          events?
+        purpose: |
+          Endpoint and workload telemetry catches activity that bypasses
+          the network perimeter, especially in cloud and remote-work
+          contexts.
+        expectedOutcome:
+          - "EDR or workload protection covers managed endpoints and servers."
+          - "Detections are triaged."
+          - "Coverage gaps are tracked."
+        howTo:
+          - step: "Deploy EDR / workload protection across managed assets"
+          - step: "Triage detections through SOC process"
+          - step: "Track coverage gaps and remediate"
+        evidenceExamples:
+          - "EDR coverage report"
+          - "Triage queue extract"
+          - "Coverage gap remediation plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No endpoint monitoring"
+            "3": "Partial coverage"
+            "5": "Full coverage, triaged"
+
+      - id: NIST-CSF-2.0:DE.AE-02
+        title: "Adverse events are analyzed to understand activity"
+        weight: 2
+        answerType: scale
+        tags: [detect, analysis, soc]
+        question: |
+          Are potentially adverse events analyzed to better understand
+          the associated activity and its implications?
+        purpose: |
+          Raw alerts are not insight. Analysis turns events into
+          understanding and prevents both false positives and missed
+          true positives from being missed.
+        expectedOutcome:
+          - "Analyst playbooks exist for common event types."
+          - "Analysis outcomes are recorded."
+          - "Lessons feed back into detection tuning."
+        howTo:
+          - step: "Maintain analyst playbooks for common events"
+          - step: "Record analysis outcomes"
+          - step: "Feed lessons into detection engineering"
+        evidenceExamples:
+          - "Playbook library"
+          - "Analysis case records"
+          - "Detection tuning ticket"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No analysis"
+            "3": "Analysis ad hoc"
+            "5": "Playbook-driven, fed back"
+
+      - id: NIST-CSF-2.0:DE.AE-03
+        title: "Information from multiple sources is correlated"
+        weight: 2
+        answerType: scale
+        tags: [detect, correlation, siem]
+        question: |
+          Is information correlated across multiple sources to improve
+          detection fidelity and reduce false positives?
+        purpose: |
+          Single-source detections are noisy. Correlation across logs,
+          intelligence, and identity raises confidence and surfaces
+          multi-stage activity.
+        expectedOutcome:
+          - "Correlation rules exist across at least two source types."
+          - "Correlated alerts are prioritized in triage."
+          - "Correlation rules are reviewed and tuned."
+        howTo:
+          - step: "Author correlation rules across log sources"
+          - step: "Prioritize correlated alerts"
+          - step: "Tune rules regularly"
+        evidenceExamples:
+          - "Correlation rule export"
+          - "Triage priority configuration"
+          - "Rule tuning log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No correlation"
+            "3": "Some correlation"
+            "5": "Correlated, prioritized, tuned"
+
+      - id: NIST-CSF-2.0:DE.AE-04
+        title: "Estimated impact and scope of events is understood"
+        weight: 2
+        answerType: scale
+        tags: [detect, impact, scope, analysis]
+        question: |
+          Are the estimated impact and scope of adverse events understood
+          and recorded?
+        purpose: |
+          Without an impact and scope estimate, response is sized to
+          guesswork. Early estimates shape the right level of escalation.
+        expectedOutcome:
+          - "Impact and scope are estimated during triage."
+          - "Estimates are refined as analysis proceeds."
+          - "Final estimates inform post-incident reporting."
+        howTo:
+          - step: "Add impact and scope fields to triage records"
+          - step: "Refine estimates during analysis"
+          - step: "Use final estimates in post-incident reports"
+        evidenceExamples:
+          - "Triage record with impact/scope fields"
+          - "Updated estimates during analysis"
+          - "Post-incident report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No estimates"
+            "3": "Estimates inconsistent"
+            "5": "Estimates recorded and refined"
+
+      - id: NIST-CSF-2.0:DE.AE-06
+        title: "Information on adverse events is shared appropriately"
+        weight: 2
+        answerType: scale
+        tags: [detect, communication, sharing, soc]
+        question: |
+          Is information on adverse events provided to authorized staff
+          and tools to enable analysis and response?
+        purpose: |
+          Hoarded event information delays response. Defined sharing
+          paths give analysts and tools the context they need to act.
+        expectedOutcome:
+          - "Authorized recipients and tools are defined."
+          - "Event data is shared in machine-readable form where possible."
+          - "Sharing respects sensitivity classification."
+        howTo:
+          - step: "Define authorized recipients and tools"
+          - step: "Use machine-readable formats (STIX, JSON) where possible"
+          - step: "Apply sensitivity controls to shared data"
+        evidenceExamples:
+          - "Sharing matrix"
+          - "Tool integration export"
+          - "Sensitivity-labeling configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No defined sharing"
+            "3": "Sharing ad hoc"
+            "5": "Defined and tooled"
+
+      - id: NIST-CSF-2.0:DE.AE-07
+        title: "Threat intelligence and context are integrated into analysis"
+        weight: 2
+        answerType: scale
+        tags: [detect, threat-intelligence, context, analysis]
+        question: |
+          Are cyber threat intelligence and other contextual information
+          integrated into the analysis of adverse events?
+        purpose: |
+          Detections analyzed in isolation miss adversary tradecraft and
+          campaign context. Integrating intelligence sharpens prioritization
+          and response.
+        expectedOutcome:
+          - "Analysts have access to enrichment from intel sources."
+          - "Enrichment is documented in case records."
+          - "Intelligence-driven priorities are reflected in triage."
+        howTo:
+          - step: "Wire intel sources into the analyst workbench"
+          - step: "Document enrichment in cases"
+          - step: "Prioritize triage by intel context"
+        evidenceExamples:
+          - "Intel integration configuration"
+          - "Case with enrichment notes"
+          - "Triage policy"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No intel in analysis"
+            "3": "Intel available, unused"
+            "5": "Intel drives triage"
+
+      - id: NIST-CSF-2.0:DE.AE-08
+        title: "Incidents are declared when criteria are met"
+        weight: 3
+        answerType: scale
+        tags: [detect, incident-declaration, criteria]
+        question: |
+          Are incidents declared when adverse events meet documented
+          incident criteria, and is the declaration recorded and routed?
+        purpose: |
+          Without explicit criteria, declarations depend on the analyst
+          on shift. Documented criteria produce consistent, timely
+          escalation and protect downstream obligations (notification,
+          regulatory).
+        expectedOutcome:
+          - "Incident declaration criteria are documented and understood."
+          - "Declarations are recorded with timestamp and basis."
+          - "Declarations trigger the response playbook."
+        howTo:
+          - step: "Document incident criteria"
+          - step: "Train analysts on declaration"
+          - step: "Wire declarations to the response playbook"
+        evidenceExamples:
+          - "Incident criteria document"
+          - "Declaration record"
+          - "Playbook trigger configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No criteria"
+            "3": "Criteria, no consistent declarations"
+            "5": "Criteria + declarations + trigger"
+        crossReferences:
+          - iso27001:A.5.25
+
+  - id: respond
+    name: "RESPOND (RS)"
+    description: |
+      Actions regarding a detected cybersecurity incident are taken.
+      RESPOND supports the ability to contain the effects of an incident
+      and covers incident management, analysis, communication, and
+      mitigation.
+    controls:
+      - id: NIST-CSF-2.0:RS.MA-01
+        title: "Incident response plan is executed"
+        weight: 3
+        answerType: scale
+        tags: [respond, incident-response, plan, execution]
+        question: |
+          Is the incident response plan executed in coordination with
+          relevant third parties once an incident is declared?
+        purpose: |
+          A response plan that is not actually executed during an event
+          is worse than no plan: it creates a false sense of control.
+          Documented execution closes that gap.
+        expectedOutcome:
+          - "On declaration, the IR plan is opened and followed."
+          - "Third parties are engaged per the plan."
+          - "Execution is logged for after-action review."
+        howTo:
+          - step: "Trigger IR plan on declaration"
+          - step: "Engage internal and external responders"
+          - step: "Log decisions and timelines"
+        evidenceExamples:
+          - "IR runbook"
+          - "Engagement log with third parties"
+          - "Incident timeline"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plan not executed"
+            "3": "Plan followed inconsistently"
+            "5": "Plan followed and logged"
+        crossReferences:
+          - iso27001:A.5.26
+
+      - id: NIST-CSF-2.0:RS.MA-02
+        title: "Incident reports are triaged and validated"
+        weight: 2
+        answerType: scale
+        tags: [respond, triage, validation]
+        question: |
+          Are incident reports triaged and validated to confirm whether
+          a real incident has occurred?
+        purpose: |
+          Misclassified incoming reports waste responder capacity and
+          delay real responses. Triage and validation right-size the
+          activation level.
+        expectedOutcome:
+          - "Triage criteria and SLAs are defined."
+          - "Validation produces a confirm / dismiss decision."
+          - "Outcomes feed metrics."
+        howTo:
+          - step: "Set triage criteria and SLAs"
+          - step: "Validate before activating the full plan"
+          - step: "Track outcomes as metrics"
+        evidenceExamples:
+          - "Triage procedure"
+          - "Validation records"
+          - "Triage metrics"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No triage"
+            "3": "Triage exists, not measured"
+            "5": "Triage with SLAs and metrics"
+
+      - id: NIST-CSF-2.0:RS.MA-03
+        title: "Incidents are categorized and prioritized"
+        weight: 2
+        answerType: scale
+        tags: [respond, prioritization, severity]
+        question: |
+          Are incidents categorized and prioritized based on documented
+          criteria (impact, scope, sensitivity)?
+        purpose: |
+          Without a category and priority, every incident competes for
+          the same resources. Tiering aligns response effort with risk.
+        expectedOutcome:
+          - "Category and priority scheme is documented."
+          - "Each incident carries category and priority."
+          - "Priority drives resource allocation."
+        howTo:
+          - step: "Adopt a category / priority scheme"
+          - step: "Apply consistently to incidents"
+          - step: "Allocate resources by priority"
+        evidenceExamples:
+          - "Category / priority scheme"
+          - "Incident record with priority field"
+          - "Resource allocation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No prioritization"
+            "3": "Prioritization, not consistent"
+            "5": "Prioritization drives effort"
+
+      - id: NIST-CSF-2.0:RS.MA-04
+        title: "Incidents are escalated as needed"
+        weight: 2
+        answerType: scale
+        tags: [respond, escalation, governance]
+        question: |
+          Are incidents escalated or elevated as needed to ensure the
+          right authority is engaged for decisions and communications?
+        purpose: |
+          Many incidents fail not for technical reasons but because the
+          right decision-maker was not engaged. Explicit escalation
+          shortens time-to-decision.
+        expectedOutcome:
+          - "Escalation paths exist for each priority."
+          - "Escalations are timely and documented."
+          - "Escalation effectiveness is reviewed."
+        howTo:
+          - step: "Define escalation paths per priority"
+          - step: "Make timing explicit (SLAs)"
+          - step: "Review escalation effectiveness in lessons learned"
+        evidenceExamples:
+          - "Escalation matrix"
+          - "Escalation log"
+          - "Lessons learned report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No escalation"
+            "3": "Ad hoc escalation"
+            "5": "Defined paths with SLAs"
+
+      - id: NIST-CSF-2.0:RS.MA-05
+        title: "Recovery initiation criteria are applied"
+        weight: 2
+        answerType: scale
+        tags: [respond, recovery, criteria, handover]
+        question: |
+          Are criteria for initiating incident recovery applied to
+          determine when to transition from response to recovery?
+        purpose: |
+          Premature recovery returns adversaries to a compromised
+          environment; delayed recovery prolongs business impact.
+          Criteria make the handover deliberate.
+        expectedOutcome:
+          - "Recovery initiation criteria are documented."
+          - "Criteria are applied before recovery starts."
+          - "Decisions to start recovery are recorded."
+        howTo:
+          - step: "Document recovery initiation criteria"
+          - step: "Apply during the incident"
+          - step: "Record the decision and basis"
+        evidenceExamples:
+          - "Recovery initiation criteria"
+          - "Recovery decision record"
+          - "Handover document"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No criteria"
+            "3": "Criteria, not applied"
+            "5": "Criteria applied and recorded"
+
+      - id: NIST-CSF-2.0:RS.AN-03
+        title: "Analysis establishes events and root cause"
+        weight: 2
+        answerType: scale
+        tags: [respond, analysis, root-cause]
+        question: |
+          Is analysis performed during incidents to establish what
+          happened and to identify root cause?
+        purpose: |
+          Containment without root cause analysis tends to leave the
+          adversary on dormant footholds. RCA is what makes containment
+          stick.
+        expectedOutcome:
+          - "RCA is performed for material incidents."
+          - "Findings drive containment and longer-term improvements."
+          - "RCA is documented in the case record."
+        howTo:
+          - step: "Embed RCA in incident workflow"
+          - step: "Track findings into improvement backlog"
+          - step: "Document RCA in case record"
+        evidenceExamples:
+          - "RCA report"
+          - "Improvement backlog entries"
+          - "Case record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No RCA"
+            "3": "RCA inconsistent"
+            "5": "RCA drives improvements"
+        crossReferences:
+          - iso27001:A.5.27
+
+      - id: NIST-CSF-2.0:RS.AN-06
+        title: "Investigation actions are recorded"
+        weight: 2
+        answerType: scale
+        tags: [respond, forensics, audit-trail]
+        question: |
+          Are actions performed during an investigation recorded, and is
+          the integrity and provenance of those records preserved?
+        purpose: |
+          Investigation records are evidence — for internal review, for
+          regulators, and potentially for legal proceedings. Untrustworthy
+          records erase that value.
+        expectedOutcome:
+          - "Investigation actions are logged with actor and timestamp."
+          - "Records are stored with integrity protection."
+          - "Provenance is documented (who, what, when, from where)."
+        howTo:
+          - step: "Log investigator actions automatically where possible"
+          - step: "Store records with integrity protection"
+          - step: "Document chain of custody"
+        evidenceExamples:
+          - "Investigation log"
+          - "Hash / signature of evidence"
+          - "Chain of custody form"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Actions unrecorded"
+            "3": "Actions logged informally"
+            "5": "Logged + integrity + provenance"
+
+      - id: NIST-CSF-2.0:RS.AN-07
+        title: "Incident data is collected with integrity preserved"
+        weight: 2
+        answerType: scale
+        tags: [respond, evidence, chain-of-custody]
+        question: |
+          Is incident data and metadata collected with integrity and
+          provenance preserved to support analysis and downstream uses?
+        purpose: |
+          Evidence value depends on integrity guarantees from the moment
+          of collection. Established procedures and tooling are what
+          provide that guarantee.
+        expectedOutcome:
+          - "Standard collection procedures are documented."
+          - "Tools produce verifiable artefacts."
+          - "Custody is tracked from collection to retention."
+        howTo:
+          - step: "Standardize collection procedures and tools"
+          - step: "Produce verifiable artefacts (hashes, signatures)"
+          - step: "Track custody"
+        evidenceExamples:
+          - "Collection SOP"
+          - "Forensic tool output with integrity proofs"
+          - "Custody log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No collection SOP"
+            "3": "Collection without integrity proofs"
+            "5": "SOP + integrity + custody"
+
+      - id: NIST-CSF-2.0:RS.AN-08
+        title: "Incident magnitude is estimated and validated"
+        weight: 2
+        answerType: scale
+        tags: [respond, magnitude, validation]
+        question: |
+          Is the magnitude of an incident (scope, severity, data
+          affected) estimated and validated as analysis proceeds?
+        purpose: |
+          Initial magnitude estimates are usually wrong. Tracking and
+          validating estimates keeps stakeholder communications honest
+          and supports notification decisions.
+        expectedOutcome:
+          - "Magnitude estimates are recorded and updated."
+          - "Validation against ground truth is performed."
+          - "Final magnitude is published in the report."
+        howTo:
+          - step: "Record magnitude estimates over time"
+          - step: "Validate against logs and forensics"
+          - step: "Publish final magnitude in the report"
+        evidenceExamples:
+          - "Magnitude tracking record"
+          - "Validation notes"
+          - "Final report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No magnitude tracking"
+            "3": "Tracked but not validated"
+            "5": "Tracked, validated, published"
+
+      - id: NIST-CSF-2.0:RS.CO-02
+        title: "Stakeholders are notified of incidents"
+        weight: 3
+        answerType: scale
+        tags: [respond, communication, notification, regulatory]
+        question: |
+          Are internal and external stakeholders notified of incidents
+          based on documented criteria and obligations (regulatory,
+          contractual, reputational)?
+        purpose: |
+          Late or missing notifications are a frequent cause of regulatory
+          penalties and lost trust. Documented criteria align legal,
+          PR, and operational decisions.
+        expectedOutcome:
+          - "Notification criteria, recipients, and timelines are documented."
+          - "Notifications are tracked against obligations."
+          - "Templates are prepared for likely scenarios."
+        howTo:
+          - step: "Map notification obligations (regulators, customers, partners)"
+          - step: "Prepare templates and approver paths"
+          - step: "Track notifications during incidents"
+        evidenceExamples:
+          - "Notification matrix"
+          - "Notification templates"
+          - "Notification log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No notification process"
+            "3": "Process exists, untested"
+            "5": "Process tested, obligations met"
+        crossReferences:
+          - iso27001:A.5.5
+
+      - id: NIST-CSF-2.0:RS.CO-03
+        title: "Information is shared with designated stakeholders"
+        weight: 2
+        answerType: scale
+        tags: [respond, communication, information-sharing]
+        question: |
+          Is information shared with designated internal and external
+          stakeholders during incidents, within sensitivity boundaries?
+        purpose: |
+          Operational stakeholders need information to act. Sharing
+          frameworks balance the need to inform with the need to protect
+          investigation integrity.
+        expectedOutcome:
+          - "Sharing rules per stakeholder type are documented (e.g., TLP)."
+          - "Sharing is logged."
+          - "Sensitive information is protected even when shared."
+        howTo:
+          - step: "Adopt sharing rules (e.g., TLP) per stakeholder type"
+          - step: "Log shares"
+          - step: "Protect sensitive material in transit and at rest"
+        evidenceExamples:
+          - "Sharing rules document"
+          - "Share log"
+          - "Sensitivity labeling configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No sharing rules"
+            "3": "Rules exist, not used"
+            "5": "Rules applied and logged"
+
+      - id: NIST-CSF-2.0:RS.MI-01
+        title: "Incidents are contained"
+        weight: 3
+        answerType: scale
+        tags: [respond, containment, soc]
+        question: |
+          Are incidents contained promptly using documented containment
+          options appropriate to severity?
+        purpose: |
+          Containment limits the blast radius and buys time for full
+          eradication. Delayed containment is the most common cause of
+          large incidents.
+        expectedOutcome:
+          - "Containment options are documented per scenario."
+          - "Containment is decided and executed quickly."
+          - "Decisions are recorded with rationale."
+        howTo:
+          - step: "Document containment options per scenario"
+          - step: "Authorize containment authority appropriately"
+          - step: "Record decisions"
+        evidenceExamples:
+          - "Containment playbooks"
+          - "Authority matrix"
+          - "Containment decision log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No containment plan"
+            "3": "Plan exists, slow execution"
+            "5": "Plan executed quickly and logged"
+
+      - id: NIST-CSF-2.0:RS.MI-02
+        title: "Incidents are eradicated"
+        weight: 3
+        answerType: scale
+        tags: [respond, eradication, remediation]
+        question: |
+          Are incidents eradicated by removing root causes and persistent
+          footholds before recovery is initiated?
+        purpose: |
+          Recovering without eradication invites the same incident to
+          recur. Eradication closes the door before normal operations
+          resume.
+        expectedOutcome:
+          - "Eradication actions are mapped to root causes."
+          - "Verification of eradication is performed."
+          - "Eradication is recorded in the case."
+        howTo:
+          - step: "Map eradication actions to root causes"
+          - step: "Verify eradication before recovery"
+          - step: "Record actions in the case"
+        evidenceExamples:
+          - "Eradication action list"
+          - "Verification report"
+          - "Case record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Eradication skipped"
+            "3": "Eradication without verification"
+            "5": "Eradication verified and recorded"
+
+  - id: recover
+    name: "RECOVER (RC)"
+    description: |
+      Assets and operations affected by a cybersecurity incident are
+      restored. RECOVER supports timely restoration to reduce the impact
+      of incidents and to support effective communications during and
+      after recovery.
+    controls:
+      - id: NIST-CSF-2.0:RC.RP-01
+        title: "Recovery plan is executed"
+        weight: 3
+        answerType: scale
+        tags: [recover, plan, execution, dr]
+        question: |
+          Is the recovery portion of the incident response plan executed
+          once initiated from the incident response process?
+        purpose: |
+          A recovery plan that is not actually executed during real
+          incidents has the same value as no plan at all. Documented
+          execution and decision points keep recovery on track.
+        expectedOutcome:
+          - "Recovery plan is opened and followed on initiation."
+          - "Roles and authorities are clear during execution."
+          - "Execution is logged for review."
+        howTo:
+          - step: "Open and follow the recovery plan"
+          - step: "Communicate roles and authorities"
+          - step: "Log decisions and timelines"
+        evidenceExamples:
+          - "Recovery runbook"
+          - "Recovery decision log"
+          - "Timeline reconstruction"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plan not used"
+            "3": "Plan partially followed"
+            "5": "Plan followed and logged"
+        crossReferences:
+          - iso27001:A.5.29
+
+      - id: NIST-CSF-2.0:RC.RP-02
+        title: "Recovery actions are selected and prioritized"
+        weight: 3
+        answerType: scale
+        tags: [recover, prioritization, rto, rpo]
+        question: |
+          Are recovery actions selected, scoped, prioritized, and
+          performed in line with recovery objectives (RTO / RPO) and
+          mission criticality?
+        purpose: |
+          Recovering without prioritization wastes critical capacity on
+          non-essential systems while the mission stays down. Prioritization
+          rebuilds the business in the right order.
+        expectedOutcome:
+          - "Recovery priorities are documented per service."
+          - "Sequence respects dependencies and objectives."
+          - "Progress is tracked against priorities."
+        howTo:
+          - step: "Maintain a prioritized recovery sequence per service"
+          - step: "Respect dependencies in execution"
+          - step: "Track progress against priorities"
+        evidenceExamples:
+          - "Recovery priority list"
+          - "Dependency map"
+          - "Progress tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No priorities"
+            "3": "Priorities documented, not followed"
+            "5": "Priorities followed and tracked"
+
+      - id: NIST-CSF-2.0:RC.RP-03
+        title: "Integrity of backups is verified before restoration"
+        weight: 3
+        answerType: scale
+        tags: [recover, backup, integrity, verification]
+        question: |
+          Is the integrity of backups and other restoration assets
+          verified before they are used for restoration?
+        purpose: |
+          Restoring compromised or corrupted backups reintroduces
+          incidents into the cleaned environment. Pre-restore integrity
+          checks prevent that.
+        expectedOutcome:
+          - "Backup integrity checks are defined and performed."
+          - "Compromised backups are quarantined."
+          - "Verification is logged."
+        howTo:
+          - step: "Define backup integrity checks (hashes, scans)"
+          - step: "Verify before restoration"
+          - step: "Quarantine and log compromised backups"
+        evidenceExamples:
+          - "Backup integrity procedure"
+          - "Verification log"
+          - "Quarantine record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No verification"
+            "3": "Verification inconsistent"
+            "5": "Verified before every restore"
+        crossReferences:
+          - iso27001:A.8.13
+
+      - id: NIST-CSF-2.0:RC.RP-04
+        title: "Mission functions inform post-incident operating norms"
+        weight: 2
+        answerType: scale
+        tags: [recover, mission, norms]
+        question: |
+          Are critical mission functions and cybersecurity risk management
+          considered to establish post-incident operational norms?
+        purpose: |
+          Returning to pre-incident operations without adjustment ignores
+          what the incident taught. New norms institutionalize the
+          improvements before they are forgotten.
+        expectedOutcome:
+          - "Post-incident operating norms are documented."
+          - "Norms reflect mission and risk considerations."
+          - "Norms are communicated to operational teams."
+        howTo:
+          - step: "Capture post-incident operating norms"
+          - step: "Include mission and risk considerations"
+          - step: "Communicate to operations"
+        evidenceExamples:
+          - "Post-incident operating norms document"
+          - "Communication record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Snap back to old norms"
+            "3": "Norms documented, not used"
+            "5": "Norms updated and communicated"
+
+      - id: NIST-CSF-2.0:RC.RP-05
+        title: "Integrity of restored assets is verified"
+        weight: 3
+        answerType: scale
+        tags: [recover, verification, integrity]
+        question: |
+          Is the integrity of restored assets verified, are systems and
+          services restored, and is normal operating status confirmed?
+        purpose: |
+          A restored system that still hosts adversary code or corrupt
+          data returns the organization to a compromised baseline.
+          Verification confirms the restored state is trustworthy.
+        expectedOutcome:
+          - "Restored systems are validated technically and functionally."
+          - "Adversary persistence is checked for."
+          - "Normal-state declaration is documented."
+        howTo:
+          - step: "Run technical and functional validation post-restore"
+          - step: "Sweep for adversary persistence"
+          - step: "Document normal-state declaration"
+        evidenceExamples:
+          - "Validation report"
+          - "Persistence sweep result"
+          - "Normal-state declaration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No verification"
+            "3": "Verification partial"
+            "5": "Validated, swept, declared"
+
+      - id: NIST-CSF-2.0:RC.RP-06
+        title: "End of recovery is declared and documented"
+        weight: 2
+        answerType: scale
+        tags: [recover, closure, documentation]
+        question: |
+          Is the end of incident recovery declared based on documented
+          criteria, and is incident-related documentation completed?
+        purpose: |
+          Without a declared end-state, recovery efforts continue
+          indefinitely and consume capacity, while documentation gaps
+          undermine future learning and audit.
+        expectedOutcome:
+          - "End-of-recovery criteria are documented."
+          - "Declaration is recorded with rationale."
+          - "Final incident documentation is completed."
+        howTo:
+          - step: "Define end-of-recovery criteria"
+          - step: "Record the declaration with rationale"
+          - step: "Complete final documentation"
+        evidenceExamples:
+          - "End-of-recovery criteria"
+          - "Declaration record"
+          - "Final incident report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No declaration"
+            "3": "Declaration informal"
+            "5": "Declaration recorded, docs complete"
+
+      - id: NIST-CSF-2.0:RC.CO-03
+        title: "Recovery progress is communicated to stakeholders"
+        weight: 2
+        answerType: scale
+        tags: [recover, communication, stakeholders]
+        question: |
+          Are recovery activities and progress in restoring operational
+          capabilities communicated to designated internal and external
+          stakeholders?
+        purpose: |
+          Silence during recovery erodes trust as quickly as the incident
+          itself. Regular, accurate updates manage expectations and
+          obligations.
+        expectedOutcome:
+          - "Update cadence and recipients are defined."
+          - "Updates are accurate and tailored to audience."
+          - "Updates are logged."
+        howTo:
+          - step: "Define update cadence and recipients"
+          - step: "Tailor messages by audience and sensitivity"
+          - step: "Log updates"
+        evidenceExamples:
+          - "Communication plan"
+          - "Sample stakeholder updates"
+          - "Update log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No updates"
+            "3": "Updates ad hoc"
+            "5": "Cadenced, tailored, logged"
+
+      - id: NIST-CSF-2.0:RC.CO-04
+        title: "Public communications are managed and approved"
+        weight: 2
+        answerType: scale
+        tags: [recover, communication, public, pr]
+        question: |
+          Are public updates on incident recovery shared using approved
+          methods and messaging coordinated with legal, regulatory, and
+          communications teams?
+        purpose: |
+          Unmanaged public statements can create legal exposure and
+          worsen reputational impact. Coordinated communication protects
+          both the organization and its stakeholders.
+        expectedOutcome:
+          - "Approval path for public statements is documented."
+          - "Pre-approved holding statements exist."
+          - "Public statements are coordinated with legal / regulatory."
+        howTo:
+          - step: "Define approval path for public statements"
+          - step: "Maintain pre-approved holding statements"
+          - step: "Coordinate with legal / regulatory / PR"
+        evidenceExamples:
+          - "Public statement approval policy"
+          - "Holding statement templates"
+          - "Coordination minute"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process for public statements"
+            "3": "Process exists, untested"
+            "5": "Process exercised and approved"
+
+

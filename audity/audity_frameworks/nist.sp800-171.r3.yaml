@@ -1,0 +1,675 @@
+framework:
+  schemaVersion: 1
+  key: nist.sp800-171.r3
+  name: "NIST SP 800-171 Rev. 3 - Protecting Controlled Unclassified Information"
+  shortName: "NIST 800-171 Rev. 3"
+  version: "Rev. 3"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "DoD Contractor Compliance Lead"
+    - "CMMC Lead"
+    - "CISO"
+  estimatedDurationMinutes: 240
+  description: |
+    NIST Special Publication 800-171 Rev. 3, "Protecting Controlled
+    Unclassified Information in Nonfederal Systems and Organizations",
+    is the U.S. federal standard for protecting CUI in nonfederal
+    systems. It is the basis of CMMC (Cybersecurity Maturity Model
+    Certification) for the U.S. Department of Defense supply chain.
+
+    This YAML covers the 17 control families of SP 800-171 Rev. 3 as
+    audit-readiness controls. The roughly 110 individual security
+    requirements are summarized at family level.
+  scopeNote: |
+    In scope: all 17 control families of SP 800-171 Rev. 3 (AC, AT,
+    AU, CM, IA, IR, MA, MP, PE, PS, PM, RA, CA, SC, SI, SR, PT)
+    structured as one audit-control per family.
+
+    Out of scope: the approximately 110 individual security requirements
+    as separate controls; ODP (Organization-Defined Parameter) values;
+    SP 800-171A assessment procedures; CMMC-specific tailoring.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NIST SP 800-171 Rev. 3 is published by the U.S. National Institute
+      of Standards and Technology and is in the public domain. Family
+      content has been paraphrased into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a family substantially unimplemented; would block
+    CMMC certification or DoD contract eligibility.
+  high: |
+    Material gap in a family without compensating measures.
+  medium: |
+    Partial implementation across a family; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: nist.sp800-171.r3:AC
+    target: nist.sp800-53.r5:AC
+    type: covers
+  - source: nist.sp800-171.r3:AU
+    target: nist.sp800-53.r5:AU
+    type: covers
+  - source: nist.sp800-171.r3:CM
+    target: nist.sp800-53.r5:CM
+    type: covers
+  - source: nist.sp800-171.r3:IA
+    target: nist.sp800-53.r5:IA
+    type: covers
+  - source: nist.sp800-171.r3:IR
+    target: nist.sp800-53.r5:IR
+    type: covers
+  - source: nist.sp800-171.r3:SC
+    target: nist.sp800-53.r5:SC
+    type: covers
+
+domains:
+  - id: technical
+    name: "Technical Controls"
+    description: |
+      Families implemented primarily through technical safeguards.
+    controls:
+      - id: nist.sp800-171.r3:AC
+        title: "Access Control (AC)"
+        weight: 3
+        answerType: scale
+        tags: [access-control, iam, cui]
+        question: |
+          Are accounts, system access, remote access, mobile access,
+          and access enforcement managed under documented policy to
+          protect CUI?
+        purpose: |
+          Access control is the gating layer for CUI protection.
+          Weak AC nullifies downstream protections.
+        expectedOutcome:
+          - "AC policy and procedures cover CUI flows."
+          - "Account lifecycle is managed."
+          - "Remote and mobile access are protected."
+        howTo:
+          - step: "Document AC policy for CUI"
+          - step: "Manage account lifecycle"
+          - step: "Protect remote and mobile access"
+        evidenceExamples:
+          - "AC policy"
+          - "Account inventory"
+          - "Remote access configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "AC ad hoc"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.sp800-171.r3:AU
+        title: "Audit and Accountability (AU)"
+        weight: 3
+        answerType: scale
+        tags: [logging, audit, accountability]
+        question: |
+          Are audit events identified, generated, retained, and reviewed
+          for CUI-handling systems?
+        purpose: |
+          AU is the substrate for accountability and investigation.
+          CUI handling requires explicit auditability.
+        expectedOutcome:
+          - "Audit event catalog covers CUI activity."
+          - "Logs are centralized and retained."
+          - "Reviews surface anomalies."
+        howTo:
+          - step: "Document audit events covering CUI"
+          - step: "Centralize and retain logs"
+          - step: "Review for anomalies"
+        evidenceExamples:
+          - "AU policy"
+          - "Log retention configuration"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No logs"
+            "3": "Logs partial"
+            "5": "Logs + retained + reviewed"
+
+      - id: nist.sp800-171.r3:CM
+        title: "Configuration Management (CM)"
+        weight: 3
+        answerType: scale
+        tags: [configuration, hardening, baseline]
+        question: |
+          Are baseline configurations established, components
+          inventoried, and changes controlled for CUI-handling systems?
+        purpose: |
+          Configuration drift undermines protection. CM keeps systems
+          aligned with secure baselines.
+        expectedOutcome:
+          - "Baselines exist per CUI-handling platform."
+          - "Components are inventoried."
+          - "Changes follow change management."
+        howTo:
+          - step: "Establish baselines for CUI platforms"
+          - step: "Inventory components"
+          - step: "Manage changes"
+        evidenceExamples:
+          - "Baselines"
+          - "Component inventory"
+          - "Change records"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No CM"
+            "3": "Partial"
+            "5": "Baselines + inventory + change"
+
+      - id: nist.sp800-171.r3:IA
+        title: "Identification and Authentication (IA)"
+        weight: 3
+        answerType: scale
+        tags: [iam, authentication, mfa]
+        question: |
+          Are users, processes, and devices uniquely identified and
+          authenticated with mechanisms appropriate to CUI risk,
+          including MFA where required?
+        purpose: |
+          Authentication is the entry control for CUI access. MFA is
+          mandatory for privileged and network access.
+        expectedOutcome:
+          - "Unique identification is enforced."
+          - "MFA is enforced for privileged and network access."
+          - "Authenticator management is documented."
+        howTo:
+          - step: "Enforce unique identification"
+          - step: "Enforce MFA on privileged / network access"
+          - step: "Document authenticator management"
+        evidenceExamples:
+          - "Unique ID policy"
+          - "MFA enforcement report"
+          - "Authenticator standard"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Shared accounts"
+            "3": "No MFA"
+            "5": "Unique + MFA + managed"
+
+      - id: nist.sp800-171.r3:SC
+        title: "System and Communications Protection (SC)"
+        weight: 3
+        answerType: scale
+        tags: [network, cryptography, communications]
+        question: |
+          Are system and communications protections (boundary, network
+          segmentation, cryptography, transmission protections)
+          implemented for CUI-handling systems?
+        purpose: |
+          SC covers technical boundary protections that contain CUI
+          flows.
+        expectedOutcome:
+          - "CUI boundary protections are designed and enforced."
+          - "Cryptography is applied per policy."
+          - "Network segmentation protects CUI."
+        howTo:
+          - step: "Design and enforce CUI boundary protections"
+          - step: "Apply cryptography per policy"
+          - step: "Segment networks containing CUI"
+        evidenceExamples:
+          - "Boundary design"
+          - "Cryptography standard"
+          - "Segmentation design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak SC"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.sp800-171.r3:SI
+        title: "System and Information Integrity (SI)"
+        weight: 3
+        answerType: scale
+        tags: [integrity, vulnerability, malware, monitoring]
+        question: |
+          Are flaws identified and corrected, malicious code protected
+          against, and CUI-handling systems monitored for integrity?
+        purpose: |
+          SI converts known vulnerability and attack data into
+          remediation and detection actions.
+        expectedOutcome:
+          - "Flaw remediation is managed under SLA."
+          - "Malicious code protections are deployed."
+          - "Monitoring is in place."
+        howTo:
+          - step: "Manage flaw remediation under SLA"
+          - step: "Deploy malicious code protections"
+          - step: "Operate monitoring"
+        evidenceExamples:
+          - "Patching SLA report"
+          - "Malware protection coverage"
+          - "Monitoring evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak SI"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.sp800-171.r3:MA
+        title: "Maintenance (MA)"
+        weight: 2
+        answerType: scale
+        tags: [maintenance, supervision]
+        question: |
+          Is system maintenance performed by authorized personnel using
+          approved tools, with documented controls?
+        purpose: |
+          Maintenance touches privileged interfaces and can expose CUI.
+          Controlled maintenance limits that path.
+        expectedOutcome:
+          - "Maintenance policy authorizes personnel and tools."
+          - "Non-local maintenance is monitored."
+          - "Maintenance is logged."
+        howTo:
+          - step: "Authorize personnel and tools"
+          - step: "Monitor non-local maintenance"
+          - step: "Log maintenance"
+        evidenceExamples:
+          - "MA policy"
+          - "Non-local maintenance log"
+          - "Maintenance record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No MA"
+            "3": "Partial"
+            "5": "Authorized + monitored"
+
+      - id: nist.sp800-171.r3:MP
+        title: "Media Protection (MP)"
+        weight: 2
+        answerType: scale
+        tags: [media, sanitization, transport]
+        question: |
+          Are digital and non-digital media containing CUI protected
+          through marking, storage, transport, and sanitization?
+        purpose: |
+          Media transports CUI outside the controlled environment.
+          Lifecycle protection prevents leakage.
+        expectedOutcome:
+          - "Media handling aligns to CUI marking."
+          - "Transport is controlled."
+          - "Sanitization is verified."
+        howTo:
+          - step: "Apply CUI marking to media"
+          - step: "Control transport"
+          - step: "Verify sanitization"
+        evidenceExamples:
+          - "Media policy"
+          - "Transport log"
+          - "Sanitization certificate"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak MP"
+            "3": "Partial"
+            "5": "Lifecycle covered"
+
+  - id: operational
+    name: "Operational Controls"
+    description: |
+      Families implemented primarily through people and processes.
+    controls:
+      - id: nist.sp800-171.r3:AT
+        title: "Awareness and Training (AT)"
+        weight: 2
+        answerType: scale
+        tags: [awareness, training]
+        question: |
+          Are personnel provided with security awareness and role-based
+          training appropriate to CUI handling?
+        purpose: |
+          People are part of the control surface for CUI. Training
+          reduces avoidable mistakes.
+        expectedOutcome:
+          - "Annual training is delivered."
+          - "Role-based training covers CUI handlers."
+          - "Completion is tracked."
+        howTo:
+          - step: "Deliver annual training"
+          - step: "Provide role-based training for CUI handlers"
+          - step: "Track completion"
+        evidenceExamples:
+          - "Curriculum"
+          - "Completion records"
+          - "Role-based training plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Generic only"
+            "5": "Tiered + tracked"
+
+      - id: nist.sp800-171.r3:IR
+        title: "Incident Response (IR)"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, plan, reporting]
+        question: |
+          Does the organization have an operational incident response
+          capability that handles CUI-related incidents and reports as
+          required?
+        purpose: |
+          IR for CUI requires explicit reporting paths to government
+          stakeholders.
+        expectedOutcome:
+          - "IR plan covers CUI incidents."
+          - "Capability is exercised."
+          - "Government reporting paths are defined."
+        howTo:
+          - step: "Document IR plan covering CUI"
+          - step: "Exercise the capability"
+          - step: "Define government reporting paths"
+        evidenceExamples:
+          - "IR plan"
+          - "Exercise report"
+          - "Reporting path documentation"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No IR"
+            "3": "Plan untested"
+            "5": "Plan exercised + reporting paths"
+
+      - id: nist.sp800-171.r3:PE
+        title: "Physical Protection (PE)"
+        weight: 2
+        answerType: scale
+        tags: [physical-security, facilities]
+        question: |
+          Is physical access to CUI-handling facilities and assets
+          controlled, monitored, and reviewed?
+        purpose: |
+          Physical access bypasses logical controls for CUI.
+        expectedOutcome:
+          - "Physical access to CUI areas is restricted."
+          - "Monitoring covers CUI areas."
+          - "Visitor management is in place."
+        howTo:
+          - step: "Restrict physical access to CUI areas"
+          - step: "Monitor CUI areas"
+          - step: "Manage visitors"
+        evidenceExamples:
+          - "Access control configuration"
+          - "Monitoring evidence"
+          - "Visitor register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak physical"
+            "3": "Partial"
+            "5": "Comprehensive"
+        appliesIf: "facility.onPremises == true"
+
+      - id: nist.sp800-171.r3:PS
+        title: "Personnel Security (PS)"
+        weight: 2
+        answerType: scale
+        tags: [personnel, screening, hr]
+        question: |
+          Are personnel handling CUI screened, briefed on security
+          duties, and managed across joiner / mover / leaver events?
+        purpose: |
+          Personnel access to CUI carries direct risk. Lifecycle
+          management is the basic safeguard.
+        expectedOutcome:
+          - "Screening matches role risk."
+          - "Briefings cover CUI duties."
+          - "Lifecycle changes trigger access updates."
+        howTo:
+          - step: "Screen per role risk"
+          - step: "Brief on CUI duties"
+          - step: "Update access on lifecycle changes"
+        evidenceExamples:
+          - "Screening policy"
+          - "Briefing records"
+          - "Lifecycle access record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No PS"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+  - id: management
+    name: "Management Controls"
+    description: |
+      Families implemented through governance, planning, and oversight.
+    controls:
+      - id: nist.sp800-171.r3:RA
+        title: "Risk Assessment (RA)"
+        weight: 3
+        answerType: scale
+        tags: [risk-assessment, vulnerability]
+        question: |
+          Are risk assessments performed for systems handling CUI,
+          with vulnerabilities tracked and remediated?
+        purpose: |
+          RA drives prioritization for CUI protection. Without it,
+          treatment is generic.
+        expectedOutcome:
+          - "Risk assessments cover CUI systems."
+          - "Vulnerabilities are tracked."
+          - "Treatment plans are followed."
+        howTo:
+          - step: "Assess risk for CUI systems"
+          - step: "Track vulnerabilities"
+          - step: "Follow treatment plans"
+        evidenceExamples:
+          - "Risk assessment report"
+          - "Vulnerability register"
+          - "Treatment plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No RA"
+            "3": "Partial"
+            "5": "Current + tracked + treated"
+
+      - id: nist.sp800-171.r3:CA
+        title: "Security Assessment (CA)"
+        weight: 3
+        answerType: scale
+        tags: [assessment, authorization, monitoring]
+        question: |
+          Are security controls for CUI systems assessed, plans of
+          actions and milestones tracked, and continuous monitoring
+          performed?
+        purpose: |
+          CA gives ongoing assurance that the control set works in
+          practice, beyond a one-time assessment.
+        expectedOutcome:
+          - "Assessment plans and reports exist."
+          - "POA&Ms are tracked."
+          - "Continuous monitoring is operational."
+        howTo:
+          - step: "Plan and execute assessments"
+          - step: "Track POA&Ms"
+          - step: "Operate continuous monitoring"
+        evidenceExamples:
+          - "Assessment report"
+          - "POA&M tracker"
+          - "Monitoring evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No CA"
+            "3": "Partial"
+            "5": "Assessed + tracked + monitored"
+
+      - id: nist.sp800-171.r3:PM
+        title: "Planning (PM)"
+        weight: 2
+        answerType: scale
+        tags: [planning, ssp, governance]
+        question: |
+          Is a System Security Plan (SSP) and supporting planning
+          artifacts maintained for CUI systems?
+        purpose: |
+          The SSP is the central artifact tying controls to the system.
+          Without it, control implementation is unauditable.
+        expectedOutcome:
+          - "SSP exists and is current."
+          - "Supporting plans (rules of behavior, ROB) exist."
+          - "Plans are reviewed periodically."
+        howTo:
+          - step: "Maintain the SSP"
+          - step: "Develop supporting plans"
+          - step: "Review periodically"
+        evidenceExamples:
+          - "SSP"
+          - "Rules of behavior"
+          - "Plan review log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SSP"
+            "3": "SSP outdated"
+            "5": "SSP current + ROB"
+
+      - id: nist.sp800-171.r3:SR
+        title: "Supply Chain Risk Management (SR)"
+        weight: 3
+        answerType: scale
+        tags: [supply-chain, third-party]
+        question: |
+          Are supply chain risks for CUI-handling systems and
+          components identified, managed, and monitored?
+        purpose: |
+          Supply chain compromises bypass internal controls. SR is the
+          family that addresses this systemically.
+        expectedOutcome:
+          - "Supply chain risk management plan exists."
+          - "Provenance / authenticity is verified."
+          - "Suppliers are monitored."
+        howTo:
+          - step: "Maintain SCRM plan"
+          - step: "Verify provenance / authenticity"
+          - step: "Monitor suppliers"
+        evidenceExamples:
+          - "SCRM plan"
+          - "Provenance verification"
+          - "Supplier monitoring"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SR"
+            "3": "Partial"
+            "5": "Plan + verification + monitoring"
+
+      - id: nist.sp800-171.r3:PT
+        title: "PII Processing and Transparency (PT)"
+        weight: 2
+        answerType: scale
+        tags: [privacy, pii, transparency]
+        question: |
+          Where CUI includes PII, is its processing governed by
+          documented authority, purpose specification, and transparency
+          requirements?
+        purpose: |
+          PT is the privacy family. PII subsets of CUI carry additional
+          obligations.
+        expectedOutcome:
+          - "Authority and purpose are documented."
+          - "Privacy notices are published."
+          - "Consent / objection is supported where required."
+        howTo:
+          - step: "Document authority and purpose"
+          - step: "Publish privacy notices"
+          - step: "Support consent / objection"
+        evidenceExamples:
+          - "Authority document"
+          - "Privacy notice"
+          - "Consent management"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No PT"
+            "3": "Partial"
+            "5": "Comprehensive"
+        appliesIf: "data.contains_pii == true"

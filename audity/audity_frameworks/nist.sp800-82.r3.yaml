@@ -1,0 +1,520 @@
+framework:
+  schemaVersion: 1
+  key: nist.sp800-82.r3
+  name: "NIST SP 800-82 Rev. 3 - Guide to Operational Technology (OT) Security"
+  shortName: "NIST 800-82 Rev. 3"
+  version: "Rev. 3"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "OT Security Lead"
+    - "ICS Engineer"
+    - "Auditor"
+    - "Plant Engineer"
+  estimatedDurationMinutes: 240
+  description: |
+    NIST Special Publication 800-82 Rev. 3, "Guide to Operational
+    Technology (OT) Security", provides guidance for securing OT
+    systems including industrial control systems (ICS), SCADA, and
+    distributed control systems while addressing performance,
+    reliability, and safety requirements.
+
+    This YAML covers the principal OT-specific security topics as
+    audit-readiness controls. SP 800-82 itself tailors NIST SP 800-53
+    controls for OT contexts; this framework structures those topics
+    for OT audit use.
+  scopeNote: |
+    In scope: OT-specific security topic areas (OT governance, asset
+    management, segmentation, identity, monitoring, vulnerability /
+    patch, IR, supply chain, physical, safety integration) as
+    audit-readiness controls.
+
+    Out of scope: the full SP 800-53 control overlays (use the
+    SP 800-53 Moderate Baseline framework for that); sector-specific
+    OT guidance (NRC, NERC CIP, etc.); IEC 62443 (licensed standard).
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NIST SP 800-82 Rev. 3 is published by the U.S. National Institute
+      of Standards and Technology and is in the public domain. Topic
+      content has been paraphrased into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure exposes safety-critical OT to compromise; potential for
+    physical harm or service disruption.
+  high: |
+    Material gap in an OT control area without compensating measures.
+  medium: |
+    Partial implementation; remediable in normal OT change cycle
+    (note: OT change cycles are often slow).
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: nist.sp800-82.r3:OT-SEG
+    target: iso27001:A.8.22
+    type: covers
+  - source: nist.sp800-82.r3:OT-AM
+    target: iso27001:A.5.9
+    type: covers
+  - source: nist.sp800-82.r3:OT-MON
+    target: iso27001:A.8.16
+    type: covers
+  - source: nist.sp800-82.r3:OT-IR
+    target: iso27001:A.5.24
+    type: covers
+
+domains:
+  - id: governance-and-people
+    name: "Governance, People, and Asset Management"
+    description: |
+      OT-specific governance, training, and asset management.
+    controls:
+      - id: nist.sp800-82.r3:OT-GOV
+        title: "OT security governance"
+        weight: 3
+        answerType: scale
+        tags: [ot, governance, roles]
+        question: |
+          Is OT security governance documented with clear roles, joint
+          IT/OT responsibilities, and safety-integrated decision-making?
+        purpose: |
+          OT operates under different constraints from IT (safety,
+          availability priority). Governance must reflect that.
+        expectedOutcome:
+          - "OT governance is documented."
+          - "Joint IT/OT roles are defined."
+          - "Safety is integrated into decisions."
+        howTo:
+          - step: "Document OT governance"
+          - step: "Define joint IT/OT roles"
+          - step: "Integrate safety in decisions"
+        evidenceExamples:
+          - "OT governance document"
+          - "Joint role description"
+          - "Safety-security integration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No OT governance"
+            "3": "Informal"
+            "5": "Documented + integrated"
+
+      - id: nist.sp800-82.r3:OT-AT
+        title: "OT awareness and training"
+        weight: 2
+        answerType: scale
+        tags: [ot, training, awareness]
+        question: |
+          Do OT personnel and IT personnel involved with OT receive
+          OT-specific cybersecurity training that addresses safety
+          considerations?
+        purpose: |
+          OT-naive interventions cause incidents. OT-specific training
+          prevents that.
+        expectedOutcome:
+          - "OT-specific training delivered."
+          - "Training covers safety considerations."
+          - "Completion tracked."
+        howTo:
+          - step: "Deliver OT-specific training"
+          - step: "Cover safety considerations"
+          - step: "Track completion"
+        evidenceExamples:
+          - "OT training material"
+          - "Completion record"
+          - "Safety topic coverage"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No OT training"
+            "3": "Generic only"
+            "5": "OT + safety"
+
+      - id: nist.sp800-82.r3:OT-AM
+        title: "OT asset management"
+        weight: 3
+        answerType: scale
+        tags: [ot, asset-management, inventory]
+        question: |
+          Are OT assets (PLCs, RTUs, HMIs, controllers, network
+          devices, instruments) inventoried with criticality and
+          dependency mapping?
+        purpose: |
+          Many OT environments lack a current asset inventory. Without
+          one, protection cannot be prioritized.
+        expectedOutcome:
+          - "OT inventory exists with criticality."
+          - "Safety dependencies are mapped."
+          - "Inventory is reconciled periodically."
+        howTo:
+          - step: "Maintain OT inventory with criticality"
+          - step: "Map safety dependencies"
+          - step: "Reconcile periodically"
+        evidenceExamples:
+          - "OT inventory"
+          - "Dependency map"
+          - "Reconciliation report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No OT inventory"
+            "3": "Partial"
+            "5": "Inventory + dependencies"
+        crossReferences:
+          - iso27001:A.5.9
+
+  - id: architecture-and-access
+    name: "Architecture, Segmentation, and Access"
+    description: |
+      Network architecture, segmentation between IT and OT, and OT
+      access control.
+    controls:
+      - id: nist.sp800-82.r3:OT-SEG
+        title: "OT network segmentation and zones"
+        weight: 3
+        answerType: scale
+        tags: [ot, segmentation, network, zones]
+        question: |
+          Are OT networks segmented from IT and the internet using
+          zones and conduits (e.g., aligned to the Purdue model),
+          with controlled crossing points?
+        purpose: |
+          Flat IT/OT connectivity is one of the most common root
+          causes of OT incidents.
+        expectedOutcome:
+          - "OT segmented from IT and internet."
+          - "Crossing points hardened and monitored."
+          - "Zones / conduits documented."
+        howTo:
+          - step: "Segment OT from IT and internet"
+          - step: "Harden and monitor crossing points"
+          - step: "Document zones / conduits"
+        evidenceExamples:
+          - "Network design"
+          - "Crossing point hardening"
+          - "Zone documentation"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Flat"
+            "3": "Partial"
+            "5": "Segmented + hardened"
+        crossReferences:
+          - iso27001:A.8.22
+
+      - id: nist.sp800-82.r3:OT-IAM
+        title: "OT identity, authentication, and access control"
+        weight: 3
+        answerType: scale
+        tags: [ot, iam, authentication, access-control]
+        question: |
+          Are identity, authentication, and access controls applied to
+          OT components consistent with OT availability and safety
+          constraints?
+        purpose: |
+          OT often has legacy authentication. Tailored controls
+          (e.g., bastion hosts, MFA for remote access) close gaps
+          without breaking operations.
+        expectedOutcome:
+          - "Identity and access controls applied to OT."
+          - "Remote access goes through hardened path with MFA."
+          - "Shared accounts justified or eliminated."
+        howTo:
+          - step: "Apply identity and access controls"
+          - step: "Mediate remote access with MFA"
+          - step: "Eliminate or justify shared accounts"
+        evidenceExamples:
+          - "OT access policy"
+          - "Remote access design"
+          - "Shared account register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak OT IAM"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.sp800-82.r3:OT-RA
+        title: "OT remote access"
+        weight: 3
+        answerType: scale
+        tags: [ot, remote-access, vpn, bastion]
+        question: |
+          Is remote access to OT systems mediated through a hardened
+          path, recorded, and revocable?
+        purpose: |
+          Vendor and operator remote access is a frequent OT
+          compromise vector.
+        expectedOutcome:
+          - "Remote access uses bastion / VPN with MFA."
+          - "Sessions are recorded."
+          - "Access is granted / revoked under change control."
+        howTo:
+          - step: "Mediate remote access via bastion / VPN with MFA"
+          - step: "Record sessions"
+          - step: "Govern access by change control"
+        evidenceExamples:
+          - "Remote access design"
+          - "Session recording configuration"
+          - "Change records"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Open remote"
+            "3": "Partial"
+            "5": "Mediated + recorded + governed"
+
+  - id: monitoring-vulnerabilities-ir
+    name: "Monitoring, Vulnerabilities, and Incident Response"
+    description: |
+      OT monitoring, vulnerability and patch management, and OT
+      incident response.
+    controls:
+      - id: nist.sp800-82.r3:OT-MON
+        title: "OT monitoring and detection"
+        weight: 3
+        answerType: scale
+        tags: [ot, monitoring, detection, anomaly]
+        question: |
+          Is OT-aware monitoring deployed (passive monitoring,
+          asset-aware IDS) to detect anomalous activity without
+          impacting operations?
+        purpose: |
+          Active scanning can disrupt OT. OT-aware tooling delivers
+          detection while preserving availability.
+        expectedOutcome:
+          - "Passive monitoring deployed."
+          - "OT-aware detection content tuned."
+          - "Alerts triaged through OT-aware process."
+        howTo:
+          - step: "Deploy passive monitoring"
+          - step: "Tune OT-aware detection content"
+          - step: "Triage through OT-aware process"
+        evidenceExamples:
+          - "Monitoring coverage"
+          - "Tuning log"
+          - "Triage process"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No OT monitoring"
+            "3": "Partial"
+            "5": "Coverage + tuning + triage"
+        crossReferences:
+          - iso27001:A.8.16
+
+      - id: nist.sp800-82.r3:OT-VM
+        title: "OT vulnerability and patch management"
+        weight: 3
+        answerType: scale
+        tags: [ot, vulnerability, patching, maintenance-window]
+        question: |
+          Is vulnerability and patch management applied to OT with
+          consideration of maintenance windows, vendor approval, and
+          safety impact?
+        purpose: |
+          OT patching is constrained by safety and uptime. Process
+          must accommodate these without leaving vulnerabilities
+          unaddressed.
+        expectedOutcome:
+          - "OT vulnerability scanning runs non-disruptively."
+          - "Patching follows vendor / maintenance windows."
+          - "Mitigations cover unpatchable assets."
+        howTo:
+          - step: "Run non-disruptive vulnerability scanning"
+          - step: "Patch within vendor / maintenance windows"
+          - step: "Apply mitigations for unpatchable assets"
+        evidenceExamples:
+          - "Scan policy"
+          - "Patching schedule"
+          - "Mitigation log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No OT VM"
+            "3": "Partial"
+            "5": "Scanning + patching + mitigations"
+
+      - id: nist.sp800-82.r3:OT-IR
+        title: "OT incident response and recovery"
+        weight: 3
+        answerType: scale
+        tags: [ot, incident-response, plan, recovery]
+        question: |
+          Is OT-specific incident response planned, exercised, and
+          coordinated with safety / operations?
+        purpose: |
+          OT IR has different priorities (safety, availability) than
+          IT IR. Plans must reflect that.
+        expectedOutcome:
+          - "OT IR plan exists."
+          - "Plan coordinated with safety / operations."
+          - "Plan is exercised."
+        howTo:
+          - step: "Document OT IR plan"
+          - step: "Coordinate with safety / operations"
+          - step: "Exercise the plan"
+        evidenceExamples:
+          - "OT IR plan"
+          - "Coordination evidence"
+          - "Exercise report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No OT IR"
+            "3": "Plan untested"
+            "5": "Plan exercised"
+        crossReferences:
+          - iso27001:A.5.24
+
+  - id: supply-chain-and-physical
+    name: "Supply Chain and Physical / Safety"
+    description: |
+      OT supply chain and the intersection of physical, safety, and
+      cybersecurity.
+    controls:
+      - id: nist.sp800-82.r3:OT-SR
+        title: "OT supply chain"
+        weight: 2
+        answerType: scale
+        tags: [ot, supply-chain, vendor, lifecycle]
+        question: |
+          Are OT supply chain risks (component provenance, vendor
+          support, end-of-life) identified and managed?
+        purpose: |
+          OT lifecycles are decades long. Supply chain visibility
+          across that lifespan is essential.
+        expectedOutcome:
+          - "Component provenance tracked."
+          - "Vendor support / EOL tracked."
+          - "Plans exist for EOL transitions."
+        howTo:
+          - step: "Track component provenance"
+          - step: "Track vendor support / EOL"
+          - step: "Plan EOL transitions"
+        evidenceExamples:
+          - "Component register"
+          - "EOL tracker"
+          - "EOL transition plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not tracked"
+            "3": "Partial"
+            "5": "Tracked + plans"
+
+      - id: nist.sp800-82.r3:OT-PE
+        title: "OT physical and environmental security"
+        weight: 3
+        answerType: scale
+        tags: [ot, physical-security, facilities, environmental]
+        question: |
+          Is physical access to OT equipment controlled and the
+          environment protected from physical and environmental
+          threats?
+        purpose: |
+          Physical access to OT enables both cyber and physical
+          attacks. Control is foundational.
+        expectedOutcome:
+          - "Physical access tiers enforced for OT."
+          - "Environmental controls protect OT."
+          - "Monitoring covers OT areas."
+        howTo:
+          - step: "Enforce physical access tiers for OT"
+          - step: "Protect OT environments"
+          - step: "Monitor OT areas"
+        evidenceExamples:
+          - "Access tier policy"
+          - "Environmental controls"
+          - "Monitoring evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: nist.sp800-82.r3:OT-SAF
+        title: "Safety integration with security"
+        weight: 3
+        answerType: scale
+        tags: [ot, safety, integration, sis]
+        question: |
+          Is the security program integrated with safety engineering
+          (safety instrumented systems, hazard analysis) so that
+          cybersecurity does not undermine safety and vice versa?
+        purpose: |
+          OT incidents can cause physical harm. Safety and security
+          must be jointly engineered.
+        expectedOutcome:
+          - "Joint safety / security risk assessment."
+          - "Changes assessed for both safety and security."
+          - "Safety systems are protected from cyber compromise."
+        howTo:
+          - step: "Perform joint safety / security risk assessment"
+          - step: "Assess changes for both"
+          - step: "Protect safety systems from cyber compromise"
+        evidenceExamples:
+          - "Joint risk assessment"
+          - "Change record"
+          - "Safety system protection design"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Disconnected"
+            "3": "Some integration"
+            "5": "Joint engineering"

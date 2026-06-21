@@ -1,0 +1,750 @@
+framework:
+  schemaVersion: 1
+  key: de.bsi.c5.2020
+  name: "BSI Cloud Computing Compliance Criteria Catalogue (C5:2020)"
+  shortName: "BSI C5:2020"
+  version: "2020"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "Cloud Security Lead"
+    - "CISO"
+    - "Compliance Officer"
+  estimatedDurationMinutes: 300
+  description: |
+    BSI C5:2020 (Cloud Computing Compliance Criteria Catalogue) is the
+    German Federal Office for Information Security's criteria catalogue
+    for assessing the information security of cloud services. C5 is
+    typically used by cloud providers seeking an ISAE 3000 attestation
+    and by cloud customers as a procurement baseline.
+
+    This YAML covers the 17 control areas of C5:2020 as audit-readiness
+    controls. The 125 individual basic criteria are summarized at area
+    level rather than enumerated individually; teams using C5 for a
+    formal attestation must consult the BSI catalogue for the criterion
+    text.
+  scopeNote: |
+    In scope: all 17 control areas of C5:2020 (OIS, SP, HR, AM, PS, OPS,
+    IDM, KRY, KOS, BEI, DLL, SIM, BCM, COM, INQ, PI, MOB), structured as
+    one control per area, with the basic criteria summarized.
+
+    Out of scope: the 125 individual basic criteria as separate controls
+    (the criteria are summarized within expectedOutcome and howTo);
+    additional criteria (zusätzliche Anforderungen); cross-walks to BSI
+    IT-Grundschutz; the ISAE 3000 reporting format.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      BSI C5:2020 is published by the German Federal Office for
+      Information Security (Bundesamt für Sicherheit in der
+      Informationstechnik) and made available for use. Area and
+      criterion content has been paraphrased into audit-readiness
+      English and is not reproduced verbatim.
+
+severityRubric:
+  critical: |
+    Failure exposes customer data or contradicts a non-negotiable
+    cloud baseline criterion; will block a C5 attestation.
+  high: |
+    Material gap in a control area without compensating controls.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate impact on the
+    customer-facing service.
+
+controlMappings:
+  - source: de.bsi.c5:OIS
+    target: iso27001:A.5.1
+    type: covers
+  - source: de.bsi.c5:HR
+    target: iso27001:A.6.3
+    type: covers
+  - source: de.bsi.c5:AM
+    target: iso27001:A.5.9
+    type: covers
+  - source: de.bsi.c5:PS
+    target: iso27001:A.7.1
+    type: covers
+  - source: de.bsi.c5:IDM
+    target: iso27001:A.5.15
+    type: covers
+  - source: de.bsi.c5:KRY
+    target: iso27001:A.8.24
+    type: covers
+  - source: de.bsi.c5:KOS
+    target: iso27001:A.8.20
+    type: covers
+  - source: de.bsi.c5:SIM
+    target: iso27001:A.5.24
+    type: covers
+  - source: de.bsi.c5:BCM
+    target: iso27001:A.5.29
+    type: covers
+  - source: de.bsi.c5:DLL
+    target: iso27001:A.5.19
+    type: covers
+
+domains:
+  - id: organization-and-policies
+    name: "Organization and Policies"
+    description: |
+      Organization of information security, security policies, and
+      compliance-related areas establishing the governance baseline.
+    controls:
+      - id: de.bsi.c5:OIS
+        title: "Organization of Information Security (OIS)"
+        weight: 3
+        answerType: scale
+        tags: [governance, organization, isms]
+        question: |
+          Is information security organized through documented
+          responsibilities, segregation of duties, contacts with
+          authorities and special interest groups, and management
+          oversight?
+        purpose: |
+          OIS sets the organizational foundation of the C5 program.
+          Weak organization undermines every downstream control area.
+        expectedOutcome:
+          - "Information security responsibilities are documented and assigned."
+          - "Segregation of duties is enforced for sensitive operations."
+          - "Contacts with authorities and SIGs are maintained."
+        howTo:
+          - step: "Document and assign security responsibilities"
+          - step: "Enforce SoD for sensitive operations"
+          - step: "Maintain authority and SIG contacts"
+        evidenceExamples:
+          - "Security organization chart"
+          - "SoD matrix"
+          - "Authority contact list"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No organization"
+            "3": "Partial"
+            "5": "Documented and applied"
+        crossReferences:
+          - iso27001:A.5.1
+
+      - id: de.bsi.c5:SP
+        title: "Security Policies and Procedures (SP)"
+        weight: 3
+        answerType: scale
+        tags: [governance, policy, procedures]
+        question: |
+          Are security policies and procedures defined, approved,
+          published, communicated, and reviewed in accordance with the
+          cloud service's risk profile?
+        purpose: |
+          Documented policy is the binding instrument for the cloud
+          service. Without it, requirements cannot be enforced or
+          audited.
+        expectedOutcome:
+          - "Policy hierarchy is approved and current."
+          - "Procedures support policies."
+          - "Review cycle is documented and met."
+        howTo:
+          - step: "Maintain the policy hierarchy"
+          - step: "Author procedures supporting policies"
+          - step: "Review on a defined cadence"
+        evidenceExamples:
+          - "Policy documents"
+          - "Procedure library"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policies"
+            "3": "Policies outdated"
+            "5": "Approved, current"
+
+      - id: de.bsi.c5:COM
+        title: "Compliance (COM)"
+        weight: 3
+        answerType: scale
+        tags: [compliance, legal, audit]
+        question: |
+          Are legal, contractual, and regulatory requirements relevant
+          to the cloud service identified, documented, and complied
+          with?
+        purpose: |
+          Cloud customers depend on the provider's compliance with the
+          obligations they have transferred. Missing obligations create
+          shared liability.
+        expectedOutcome:
+          - "Obligations register is current."
+          - "Compliance is monitored."
+          - "Independent reviews provide assurance."
+        howTo:
+          - step: "Maintain obligations register"
+          - step: "Monitor compliance"
+          - step: "Engage independent reviews"
+        evidenceExamples:
+          - "Obligations register"
+          - "Compliance report"
+          - "External review"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Obligations unmanaged"
+            "3": "Partial"
+            "5": "Managed and reviewed"
+
+      - id: de.bsi.c5:INQ
+        title: "Investigation Requests from Government Agencies (INQ)"
+        weight: 2
+        answerType: scale
+        tags: [legal, government, transparency, lawful-access]
+        question: |
+          Are processes in place to handle government investigation
+          requests for customer data lawfully, transparently, and with
+          documented decisions?
+        purpose: |
+          Cloud customers, especially in regulated sectors, require
+          assurance that lawful access requests are handled
+          predictably and with documented limits.
+        expectedOutcome:
+          - "Request handling process is documented."
+          - "Decisions are logged and reviewed by legal."
+          - "Customer notification (where lawful) is defined."
+        howTo:
+          - step: "Document request handling process"
+          - step: "Log decisions and engage legal"
+          - step: "Define lawful customer notification"
+        evidenceExamples:
+          - "INQ process document"
+          - "Decision log"
+          - "Customer notification policy"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process informal"
+            "5": "Process documented and used"
+
+  - id: people-and-physical
+    name: "People and Physical Security"
+    description: |
+      Personnel security, asset management, and physical security
+      areas relevant to the cloud service.
+    controls:
+      - id: de.bsi.c5:HR
+        title: "Human Resources (HR)"
+        weight: 2
+        answerType: scale
+        tags: [people, hr, screening, training]
+        question: |
+          Are personnel security duties (screening, employment
+          conditions, training, disciplinary process, role changes,
+          termination) defined and implemented?
+        purpose: |
+          Cloud providers operate on user trust amplified across many
+          customers. Personnel security is foundational to that trust.
+        expectedOutcome:
+          - "JML processes include security steps."
+          - "Annual training is delivered and tracked."
+          - "Background screening is performed where appropriate."
+        howTo:
+          - step: "Embed security in JML processes"
+          - step: "Deliver and track annual training"
+          - step: "Apply background screening per role"
+        evidenceExamples:
+          - "JML process document"
+          - "Training completion report"
+          - "Screening policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No HR security"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.6.3
+
+      - id: de.bsi.c5:AM
+        title: "Asset Management (AM)"
+        weight: 3
+        answerType: scale
+        tags: [asset-management, inventory, classification]
+        question: |
+          Are assets used to deliver the cloud service inventoried,
+          classified, owned, and managed throughout their lifecycle?
+        purpose: |
+          Cloud services are composed of dynamic assets. Without a
+          current inventory and ownership, controls cannot be applied
+          consistently.
+        expectedOutcome:
+          - "Asset inventory is current with owners and classification."
+          - "Lifecycle states are tracked."
+          - "Decommissioning is verifiable."
+        howTo:
+          - step: "Maintain asset inventory with owners and classification"
+          - step: "Track lifecycle states"
+          - step: "Verify decommissioning"
+        evidenceExamples:
+          - "Asset inventory"
+          - "Lifecycle records"
+          - "Decommissioning record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Inventory partial"
+            "5": "Inventory + lifecycle"
+        crossReferences:
+          - iso27001:A.5.9
+
+      - id: de.bsi.c5:PS
+        title: "Physical Security (PS)"
+        weight: 3
+        answerType: scale
+        tags: [physical-security, facilities, datacenter]
+        question: |
+          Are data centers and other facilities supporting the cloud
+          service protected against unauthorized physical access and
+          environmental threats?
+        purpose: |
+          Physical compromise of cloud infrastructure undermines all
+          logical controls. PS provides the assurance customers rely
+          on without ever entering the facility.
+        expectedOutcome:
+          - "Physical access tiers are enforced."
+          - "Environmental controls are tested."
+          - "Monitoring covers sensitive areas."
+        howTo:
+          - step: "Enforce physical access tiers"
+          - step: "Test environmental controls"
+          - step: "Monitor sensitive areas"
+        evidenceExamples:
+          - "Access tier policy"
+          - "Environmental test report"
+          - "Monitoring coverage map"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak physical"
+            "3": "Partial"
+            "5": "Tiered + monitored + tested"
+        crossReferences:
+          - iso27001:A.7.1
+
+  - id: operations-and-access
+    name: "Operations and Access"
+    description: |
+      Regulated operations, identity management, cryptography, and
+      communications security underpinning daily service delivery.
+    controls:
+      - id: de.bsi.c5:OPS
+        title: "Regulated Operations (OPS)"
+        weight: 3
+        answerType: scale
+        tags: [operations, change-management, logging, patching]
+        question: |
+          Are operational processes for the cloud service (change
+          management, capacity, vulnerability and patch management,
+          logging, monitoring, malware, backup) documented and applied?
+        purpose: |
+          OPS is the largest C5 area because operations are where most
+          incidents and findings originate. Discipline here keeps the
+          service stable and auditable.
+        expectedOutcome:
+          - "Change, capacity, and patch processes are documented and applied."
+          - "Logging, monitoring, and malware controls are deployed."
+          - "Backups are protected and tested."
+        howTo:
+          - step: "Document and apply change, capacity, patch processes"
+          - step: "Deploy logging, monitoring, malware controls"
+          - step: "Protect and test backups"
+        evidenceExamples:
+          - "Change records"
+          - "Patch compliance report"
+          - "Backup test report"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Operations ad hoc"
+            "3": "Some processes"
+            "5": "All processes documented"
+
+      - id: de.bsi.c5:IDM
+        title: "Identity and Access Management (IDM)"
+        weight: 3
+        answerType: scale
+        tags: [iam, authentication, authorization, mfa]
+        question: |
+          Are identities and access rights managed under documented
+          processes including MFA, least privilege, periodic review,
+          and privileged access control?
+        purpose: |
+          Identity is the dominant control plane for cloud services.
+          IDM weaknesses produce the highest-impact incidents.
+        expectedOutcome:
+          - "MFA is enforced for remote and privileged access."
+          - "Access is least-privilege and reviewed."
+          - "Privileged access is monitored."
+        howTo:
+          - step: "Enforce MFA for remote and privileged access"
+          - step: "Implement least privilege and access reviews"
+          - step: "Monitor privileged access"
+        evidenceExamples:
+          - "MFA enforcement report"
+          - "Access review report"
+          - "Privileged access monitoring"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak IAM"
+            "3": "Partial"
+            "5": "Comprehensive IAM"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: de.bsi.c5:KRY
+        title: "Cryptography and Key Management (KRY)"
+        weight: 3
+        answerType: scale
+        tags: [cryptography, encryption, key-management]
+        question: |
+          Are cryptographic standards defined and key management
+          (generation, storage, rotation, revocation) applied across
+          the cloud service?
+        purpose: |
+          Cloud customers depend on encryption to protect data they
+          cannot physically control. Key management determines whether
+          that protection actually holds.
+        expectedOutcome:
+          - "Cryptographic standards are defined and applied."
+          - "Keys are managed via KMS / HSM."
+          - "Customer-controlled keys are supported where required."
+        howTo:
+          - step: "Define cryptographic standards"
+          - step: "Manage keys via KMS / HSM"
+          - step: "Support customer-controlled keys"
+        evidenceExamples:
+          - "Cryptography policy"
+          - "KMS configuration"
+          - "Customer key feature"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No crypto standards"
+            "3": "Standards partial"
+            "5": "Standards + KMS + CMK"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: de.bsi.c5:KOS
+        title: "Communications Security (KOS)"
+        weight: 3
+        answerType: scale
+        tags: [network, communications, segmentation, tls]
+        question: |
+          Is communications security (network segmentation, transport
+          encryption, network device hardening, intrusion detection)
+          implemented across the cloud service?
+        purpose: |
+          Network controls underpin tenant isolation, a non-negotiable
+          property of multi-tenant cloud services.
+        expectedOutcome:
+          - "Network segmentation isolates tenants and zones."
+          - "Transport encryption is enforced."
+          - "Intrusion detection covers ingress / egress."
+        howTo:
+          - step: "Segment networks for tenant and zone isolation"
+          - step: "Enforce transport encryption"
+          - step: "Cover ingress / egress with intrusion detection"
+        evidenceExamples:
+          - "Segmentation design"
+          - "TLS policy"
+          - "Intrusion detection coverage"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak network"
+            "3": "Partial"
+            "5": "Full coverage"
+        crossReferences:
+          - iso27001:A.8.20
+
+  - id: development-and-suppliers
+    name: "Development and Suppliers"
+    description: |
+      Acquisition, development, and change of information systems and
+      management of suppliers supporting the cloud service.
+    controls:
+      - id: de.bsi.c5:BEI
+        title: "Acquisition, Development and Change (BEI)"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, secure-development, change-management]
+        question: |
+          Are acquisition, development, and change processes for the
+          cloud service designed and applied securely, including
+          requirements, secure coding, testing, separation of
+          environments, and review?
+        purpose: |
+          Most cloud service vulnerabilities originate in development
+          and change. Secure SDLC reduces these at source.
+        expectedOutcome:
+          - "Secure SDLC and acquisition standards are applied."
+          - "Environments are separated and protected."
+          - "Security testing is part of release gates."
+        howTo:
+          - step: "Apply secure SDLC and acquisition standards"
+          - step: "Separate and protect environments"
+          - step: "Embed security testing in release gates"
+        evidenceExamples:
+          - "Secure SDLC policy"
+          - "Environment separation design"
+          - "Release gate evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No secure SDLC"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: de.bsi.c5:DLL
+        title: "Service Provider and Supplier Management (DLL)"
+        weight: 3
+        answerType: scale
+        tags: [supplier, third-party, oversight]
+        question: |
+          Are service providers and suppliers contributing to the cloud
+          service identified, contractually managed, and monitored?
+        purpose: |
+          Cloud services are typically a chain of providers. Oversight
+          of the chain is what makes the C5 assurance meaningful.
+        expectedOutcome:
+          - "Supplier register with criticality is current."
+          - "Contracts include security obligations."
+          - "Monitoring covers performance and security."
+        howTo:
+          - step: "Maintain a tiered supplier register"
+          - step: "Include security obligations in contracts"
+          - step: "Monitor performance and security"
+        evidenceExamples:
+          - "Supplier register"
+          - "Standard security clauses"
+          - "Monitoring report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Suppliers unmanaged"
+            "3": "Partial"
+            "5": "Tiered + monitored"
+        crossReferences:
+          - iso27001:A.5.19
+
+  - id: incident-and-continuity
+    name: "Incident Management and Continuity"
+    description: |
+      Security incident management and business continuity management
+      for the cloud service.
+    controls:
+      - id: de.bsi.c5:SIM
+        title: "Security Incident Management (SIM)"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, plan, communication]
+        question: |
+          Is a security incident management process documented, applied,
+          and exercised, including communications with affected
+          customers within agreed timelines?
+        purpose: |
+          Customer trust during incidents depends on visible response
+          and timely communication. Both must be planned.
+        expectedOutcome:
+          - "IR process is documented and exercised."
+          - "Customer communication path with SLA exists."
+          - "Lessons learned drive improvements."
+        howTo:
+          - step: "Document and exercise IR process"
+          - step: "Establish customer communication SLA"
+          - step: "Drive improvements from lessons"
+        evidenceExamples:
+          - "IR process"
+          - "Exercise report"
+          - "Customer communication template"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process exercised + customer SLA"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: de.bsi.c5:BCM
+        title: "Business Continuity Management (BCM)"
+        weight: 3
+        answerType: scale
+        tags: [continuity, dr, availability]
+        question: |
+          Is business continuity for the cloud service planned and
+          tested, including failover, backup verification, and recovery
+          objectives aligned with customer agreements?
+        purpose: |
+          Cloud customers buy availability as much as security.
+          Tested BCM is the credible commitment behind the SLA.
+        expectedOutcome:
+          - "BCM plan covers RTO / RPO per service."
+          - "Failover and restore are tested."
+          - "BCM aligns with customer SLAs."
+        howTo:
+          - step: "Maintain BCM plans with RTO / RPO"
+          - step: "Test failover and restore"
+          - step: "Align with customer SLAs"
+        evidenceExamples:
+          - "BCM plan"
+          - "Test report"
+          - "Customer SLA mapping"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No BCM"
+            "3": "BCM untested"
+            "5": "BCM tested and aligned"
+        crossReferences:
+          - iso27001:A.5.29
+
+  - id: product-and-mobile
+    name: "Product Security and Mobile Devices"
+    description: |
+      Areas relating to the security of the cloud service as a product
+      delivered to customers and to mobile device usage by personnel.
+    controls:
+      - id: de.bsi.c5:PI
+        title: "Product Information (PI)"
+        weight: 2
+        answerType: scale
+        tags: [product, customer-information, transparency]
+        question: |
+          Is information about the cloud service (security features,
+          shared responsibility model, certifications) made available
+          to customers in a structured form?
+        purpose: |
+          Customers make security decisions based on what the provider
+          discloses. Structured product information enables informed
+          procurement and use.
+        expectedOutcome:
+          - "Security feature documentation is published."
+          - "Shared responsibility model is documented."
+          - "Certifications and attestations are published."
+        howTo:
+          - step: "Publish security feature documentation"
+          - step: "Document shared responsibility model"
+          - step: "Publish certifications"
+        evidenceExamples:
+          - "Security documentation portal"
+          - "Shared responsibility matrix"
+          - "Certification references"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No product info"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: de.bsi.c5:MOB
+        title: "Mobile Devices (MOB)"
+        weight: 2
+        answerType: scale
+        tags: [mobile, byod, endpoint]
+        question: |
+          Are mobile devices used by personnel to access the cloud
+          service managed and secured under documented policy?
+        purpose: |
+          Provider personnel mobile devices are an underestimated entry
+          path. Managed mobility closes that path.
+        expectedOutcome:
+          - "Mobile device policy is in force."
+          - "MDM / MAM enforces baseline."
+          - "Lost / stolen devices have a defined response."
+        howTo:
+          - step: "Adopt mobile device policy"
+          - step: "Enforce baseline via MDM / MAM"
+          - step: "Define lost / stolen response"
+        evidenceExamples:
+          - "Mobile policy"
+          - "MDM enforcement report"
+          - "Lost / stolen procedure"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Unmanaged mobile"
+            "3": "Partial"
+            "5": "Managed and responsive"

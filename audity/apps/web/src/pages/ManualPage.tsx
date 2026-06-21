@@ -127,8 +127,8 @@ export function ManualPage() {
   }, [filteredArticles]);
 
   return (
-    <div className="grid min-w-0 gap-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)]">
-      <aside className="xl:sticky xl:top-16 xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto">
+    <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)]">
+      <aside className="lg:sticky lg:top-14 lg:max-h-[calc(100vh-3.5rem)] lg:overflow-y-auto lg:pr-1">
         <div className="rounded-audity border border-audity-border bg-audity-panel p-3">
           <input
             type="search"

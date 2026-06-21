@@ -330,6 +330,15 @@ create table if not exists email_delivery_log (
   created_at timestamptz not null default now()
 );
 
+create table if not exists email_subscriptions (
+  topic text primary key,
+  roles jsonb not null default '[]'::jsonb,
+  extra_emails jsonb not null default '[]'::jsonb,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references users(id)
+);
+
 create table if not exists audit_logs (
   id uuid primary key,
   actor_user_id uuid references users(id),
@@ -1042,3 +1051,59 @@ create table if not exists user_preferences (
   tooltips_enabled boolean not null default true,
   updated_at timestamptz not null default now()
 );
+
+-- ============================================================================
+-- ARCHIVE SYSTEM (Customer archive + monthly ZIP bundles)
+-- ============================================================================
+
+alter table customers add column if not exists archived_by uuid references users(id);
+alter table customers add column if not exists archive_reason text;
+alter table assessments add column if not exists archived_at timestamptz;
+alter table assessments add column if not exists archived_by uuid references users(id);
+create index if not exists idx_customers_archived_at on customers(archived_at);
+create index if not exists idx_assessments_archived_at on assessments(archived_at);
+
+create table if not exists archive_index (
+  customer_id      uuid primary key references customers(id),
+  archived_at      timestamptz not null,
+  archived_by      uuid not null references users(id),
+  archive_month    text not null,
+  archive_state    text not null,
+  spool_path       text,
+  bundle_filename  text,
+  bundle_checksum  text,
+  manifest_json    jsonb not null,
+  size_bytes       bigint not null default 0,
+  exported_at      timestamptz,
+  notes            text
+);
+create index if not exists idx_archive_index_month on archive_index(archive_month);
+create index if not exists idx_archive_index_state on archive_index(archive_state);
+
+create table if not exists archive_restore_requests (
+  id              uuid primary key,
+  customer_id     uuid not null references customers(id),
+  requested_by    uuid not null references users(id),
+  reason          text not null,
+  status          text not null default 'pending',
+  requested_at    timestamptz not null default now(),
+  resolved_by     uuid references users(id),
+  resolved_at     timestamptz,
+  resolution_note text
+);
+create index if not exists idx_archive_restore_status on archive_restore_requests(status);
+
+-- ============================================================================
+-- ENCRYPTION KEY METADATA (BIP-39 recovery phrase fingerprint)
+-- ============================================================================
+
+create table if not exists encryption_key_meta (
+  id               int primary key default 1,
+  fingerprint      text not null,
+  setup_at         timestamptz not null default now(),
+  acknowledged_at  timestamptz,
+  acknowledged_by  uuid references users(id),
+  check (id = 1)
+);
+
+-- New permissions for archive approval + customer archiving are seeded via apps/api/src/rbac/permissions.ts

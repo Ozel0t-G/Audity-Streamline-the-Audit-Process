@@ -1,0 +1,756 @@
+framework:
+  schemaVersion: 1
+  key: nist.ai.rmf.1.0
+  name: "NIST AI Risk Management Framework 1.0"
+  shortName: "NIST AI RMF"
+  version: "1.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "AI Governance Lead"
+    - "ML Engineer"
+    - "Auditor"
+    - "Risk Manager"
+    - "Product Owner"
+  estimatedDurationMinutes: 300
+  description: |
+    NIST AI Risk Management Framework (AI RMF) 1.0 is a voluntary
+    framework published by the U.S. National Institute of Standards
+    and Technology for managing risks of AI systems. It defines four
+    functions: GOVERN, MAP, MEASURE, and MANAGE, each broken down into
+    categories and subcategories.
+
+    This YAML covers all 19 categories of NIST AI RMF 1.0 as
+    audit-readiness controls. The Generative AI Profile (NIST AI 600-1)
+    is referenced but not enumerated.
+  scopeNote: |
+    In scope: all 19 categories across the four functions GOVERN, MAP,
+    MEASURE, and MANAGE of NIST AI RMF 1.0, structured as one control
+    per category.
+
+    Out of scope: the AI RMF Playbook (action-level guidance); the
+    Generative AI Profile (AI 600-1); ISO/IEC 42001 (commercial
+    standard, separately licensed).
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NIST AI RMF 1.0 is published by the U.S. National Institute of
+      Standards and Technology and is in the public domain in the
+      United States. Function and category content has been paraphrased
+      into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a GOVERN or MEASURE category unimplemented for a
+    high-impact AI system; potential for material harm or regulatory
+    breach.
+  high: |
+    Material gap in a MAP or MANAGE category without compensating
+    measures.
+  medium: |
+    Partial implementation across a category; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: nist.ai.rmf:GOVERN-01
+    target: iso27001:A.5.1
+    type: related
+  - source: nist.ai.rmf:MAP-01
+    target: nist-csf-2.0:GV.OC-01
+    type: related
+  - source: nist.ai.rmf:MEASURE-01
+    target: nist-csf-2.0:ID.RA-04
+    type: related
+
+domains:
+  - id: govern
+    name: "GOVERN"
+    description: |
+      A culture of risk management is cultivated and present.
+      Policies, processes, procedures, and practices for managing AI
+      risks are in place, effective, and continually improved.
+    controls:
+      - id: nist.ai.rmf:GOVERN-01
+        title: "Policies, processes, procedures, and practices"
+        weight: 3
+        answerType: scale
+        tags: [governance, policy, ai]
+        question: |
+          Are policies, processes, procedures, and practices for AI
+          risk management documented, implemented, and reviewed?
+        purpose: |
+          Without a documented governance baseline, AI risk decisions
+          are inconsistent and unauditable.
+        expectedOutcome:
+          - "AI policy is documented and approved."
+          - "Procedures cover full AI lifecycle."
+          - "Review cycle is defined and met."
+        howTo:
+          - step: "Document and approve AI policy"
+          - step: "Build procedures across AI lifecycle"
+          - step: "Review on a defined cadence"
+        evidenceExamples:
+          - "AI policy"
+          - "Lifecycle procedures"
+          - "Review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No AI policy"
+            "3": "Policy outdated"
+            "5": "Policy current and applied"
+
+      - id: nist.ai.rmf:GOVERN-02
+        title: "Accountability structures"
+        weight: 3
+        answerType: scale
+        tags: [governance, accountability, roles]
+        question: |
+          Are accountability structures for AI risk in place such that
+          appropriate teams and individuals are empowered, responsible,
+          and trained?
+        purpose: |
+          AI risk that has no named owner has no manager. Empowered
+          accountability is the basis for action.
+        expectedOutcome:
+          - "AI risk roles are named and empowered."
+          - "Training is provided."
+          - "Reporting lines are defined."
+        howTo:
+          - step: "Name and empower AI risk roles"
+          - step: "Provide role-appropriate training"
+          - step: "Define reporting lines"
+        evidenceExamples:
+          - "Role definitions"
+          - "Training records"
+          - "Reporting structure"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No accountability"
+            "3": "Roles named, not empowered"
+            "5": "Roles + training + reporting"
+
+      - id: nist.ai.rmf:GOVERN-03
+        title: "Workforce diversity and inclusion"
+        weight: 2
+        answerType: scale
+        tags: [governance, diversity, inclusion, fairness]
+        question: |
+          Are workforce diversity, equity, and inclusion processes
+          integrated into AI risk management to reduce bias?
+        purpose: |
+          AI systems built by homogeneous teams tend to encode the
+          team's blind spots. Diverse perspectives reduce that risk.
+        expectedOutcome:
+          - "Diverse perspectives are involved in AI design."
+          - "Cross-functional review is required."
+          - "Outcomes are evaluated for inclusion."
+        howTo:
+          - step: "Involve diverse perspectives in AI design"
+          - step: "Require cross-functional review"
+          - step: "Evaluate outcomes for inclusion"
+        evidenceExamples:
+          - "Design participant list"
+          - "Cross-functional review record"
+          - "Inclusion evaluation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Homogeneous design"
+            "3": "Some diversity"
+            "5": "Diverse + cross-functional + evaluated"
+
+      - id: nist.ai.rmf:GOVERN-04
+        title: "Organizational culture and critical thinking"
+        weight: 2
+        answerType: scale
+        tags: [governance, culture, safety]
+        question: |
+          Are organizational teams committed to a culture that
+          considers and communicates AI risk?
+        purpose: |
+          Culture determines whether AI risk concerns are raised early
+          or suppressed until they manifest as incidents.
+        expectedOutcome:
+          - "Risk-aware AI culture is fostered."
+          - "Safe channels for raising concerns exist."
+          - "Critical thinking is rewarded."
+        howTo:
+          - step: "Foster risk-aware AI culture"
+          - step: "Establish safe channels for raising concerns"
+          - step: "Reward critical thinking"
+        evidenceExamples:
+          - "Culture communications"
+          - "Concern channel"
+          - "Reward mechanism"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Concerns silenced"
+            "3": "Mixed"
+            "5": "Risk-aware culture"
+
+      - id: nist.ai.rmf:GOVERN-05
+        title: "Engagement with AI actors"
+        weight: 2
+        answerType: scale
+        tags: [governance, stakeholders, engagement]
+        question: |
+          Are processes in place for robust engagement with AI actors
+          (developers, deployers, users, affected communities)?
+        purpose: |
+          Decisions made without affected actors miss real-world
+          context and impacts.
+        expectedOutcome:
+          - "AI actor engagement is documented."
+          - "Feedback informs decisions."
+          - "Engagement is reviewed."
+        howTo:
+          - step: "Document AI actor engagement"
+          - step: "Incorporate feedback into decisions"
+          - step: "Review engagement effectiveness"
+        evidenceExamples:
+          - "Engagement plan"
+          - "Feedback log"
+          - "Review report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No engagement"
+            "3": "Engagement informal"
+            "5": "Engagement + feedback used"
+
+      - id: nist.ai.rmf:GOVERN-06
+        title: "Third-party AI risks and benefits"
+        weight: 3
+        answerType: scale
+        tags: [governance, third-party, supplier, ai-supply-chain]
+        question: |
+          Are policies and procedures in place to address risks and
+          benefits of third-party AI components, models, datasets, and
+          services?
+        purpose: |
+          Most AI systems include third-party components. Visibility
+          and management of those is essential for end-to-end risk.
+        expectedOutcome:
+          - "Inventory of third-party AI components exists."
+          - "Risk assessment per component is performed."
+          - "Contractual safeguards are in place."
+        howTo:
+          - step: "Inventory third-party AI components"
+          - step: "Assess risk per component"
+          - step: "Embed contractual safeguards"
+        evidenceExamples:
+          - "Component inventory"
+          - "Risk assessments"
+          - "Contractual clauses"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Inventory, no assessment"
+            "5": "Inventory + assessment + clauses"
+
+  - id: map
+    name: "MAP"
+    description: |
+      Context is recognized and risks related to context are
+      identified. The MAP function establishes context for AI systems
+      and identifies risks.
+    controls:
+      - id: nist.ai.rmf:MAP-01
+        title: "Context is established and understood"
+        weight: 3
+        answerType: scale
+        tags: [context, use-case, scope]
+        question: |
+          Is the context for the AI system established, understood,
+          and documented, including intended purpose, deployment
+          settings, and limits?
+        purpose: |
+          Context shapes every risk decision. Missing context produces
+          inappropriate deployment and unrealistic expectations.
+        expectedOutcome:
+          - "Intended purpose is documented."
+          - "Deployment settings are described."
+          - "Limits of use are stated."
+        howTo:
+          - step: "Document intended purpose"
+          - step: "Describe deployment settings"
+          - step: "State limits of use"
+        evidenceExamples:
+          - "Use case document"
+          - "Deployment description"
+          - "Limits of use"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No context"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - nist-csf-2.0:GV.OC-01
+
+      - id: nist.ai.rmf:MAP-02
+        title: "Categorization of the AI system"
+        weight: 2
+        answerType: scale
+        tags: [categorization, classification]
+        question: |
+          Is the AI system categorized for risk (e.g., risk tier,
+          regulatory classification) and the categorization documented?
+        purpose: |
+          Categorization drives proportional safeguards. Without it,
+          every system gets either too much or too little control.
+        expectedOutcome:
+          - "Risk categorization is performed and documented."
+          - "Regulatory classification (if applicable) is identified."
+          - "Categorization drives controls."
+        howTo:
+          - step: "Categorize the AI system for risk"
+          - step: "Identify regulatory classification"
+          - step: "Tie controls to categorization"
+        evidenceExamples:
+          - "Categorization record"
+          - "Regulatory mapping"
+          - "Control tiering"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Uncategorized"
+            "3": "Categorized, not used"
+            "5": "Categorized and applied"
+
+      - id: nist.ai.rmf:MAP-03
+        title: "AI capabilities, targeted usage, goals, expected benefits"
+        weight: 2
+        answerType: scale
+        tags: [capabilities, goals, benefits]
+        question: |
+          Are the AI system's capabilities, targeted usage, goals, and
+          expected benefits documented and validated?
+        purpose: |
+          AI systems are often deployed for purposes they were not
+          designed for. Documented capabilities prevent inappropriate
+          use.
+        expectedOutcome:
+          - "Capabilities and benefits are documented."
+          - "Documentation is accessible to deployers."
+          - "Validation is performed."
+        howTo:
+          - step: "Document capabilities and benefits"
+          - step: "Make accessible to deployers"
+          - step: "Validate against deployment"
+        evidenceExamples:
+          - "Capabilities document"
+          - "Model card"
+          - "Validation record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No documentation"
+            "3": "Partial"
+            "5": "Comprehensive and validated"
+
+      - id: nist.ai.rmf:MAP-04
+        title: "Risks and benefits are mapped for AI components"
+        weight: 3
+        answerType: scale
+        tags: [risk, benefit, components]
+        question: |
+          Are risks and benefits mapped for the AI system's components,
+          including data, model, and deployment infrastructure?
+        purpose: |
+          Component-level risk mapping surfaces issues that are
+          invisible at the system level.
+        expectedOutcome:
+          - "Risks mapped for data, model, infrastructure."
+          - "Benefits mapped per component."
+          - "Map informs design decisions."
+        howTo:
+          - step: "Map risks per component"
+          - step: "Map benefits per component"
+          - step: "Use map in design"
+        evidenceExamples:
+          - "Component risk map"
+          - "Component benefit map"
+          - "Design decision record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No mapping"
+            "3": "Partial"
+            "5": "Mapped and used"
+
+      - id: nist.ai.rmf:MAP-05
+        title: "Impacts to individuals, groups, society are characterized"
+        weight: 3
+        answerType: scale
+        tags: [impact, society, fairness]
+        question: |
+          Are potential impacts of the AI system on individuals,
+          groups, communities, and society characterized and
+          documented?
+        purpose: |
+          Impacts beyond direct users are often invisible to the
+          development team. Explicit characterization prevents
+          downstream harm.
+        expectedOutcome:
+          - "Impacts characterized across affected groups."
+          - "Severity and likelihood are estimated."
+          - "Mitigations are identified."
+        howTo:
+          - step: "Characterize impacts across affected groups"
+          - step: "Estimate severity and likelihood"
+          - step: "Identify mitigations"
+        evidenceExamples:
+          - "Impact assessment"
+          - "Severity / likelihood table"
+          - "Mitigation list"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No impact assessment"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+  - id: measure
+    name: "MEASURE"
+    description: |
+      Identified risks are assessed, analyzed, or tracked. The
+      MEASURE function evaluates AI systems for the identified risks
+      using qualitative and quantitative methods.
+    controls:
+      - id: nist.ai.rmf:MEASURE-01
+        title: "Appropriate methods and metrics are identified and applied"
+        weight: 3
+        answerType: scale
+        tags: [measurement, methods, metrics]
+        question: |
+          Are appropriate methods and metrics identified and applied to
+          measure the AI system's trustworthiness characteristics?
+        purpose: |
+          Without methods and metrics, trustworthiness claims cannot
+          be verified or compared.
+        expectedOutcome:
+          - "Methods and metrics are documented."
+          - "Methods are applied during development and operation."
+          - "Results are reviewed."
+        howTo:
+          - step: "Document methods and metrics"
+          - step: "Apply during development and operation"
+          - step: "Review results"
+        evidenceExamples:
+          - "Methods catalog"
+          - "Measurement results"
+          - "Review record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No measurement"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - nist-csf-2.0:ID.RA-04
+
+      - id: nist.ai.rmf:MEASURE-02
+        title: "AI systems are evaluated for trustworthy characteristics"
+        weight: 3
+        answerType: scale
+        tags: [trustworthiness, evaluation, validity]
+        question: |
+          Are AI systems evaluated for trustworthy characteristics
+          (validity, reliability, safety, security, accountability,
+          transparency, explainability, privacy, fairness)?
+        purpose: |
+          AI RMF defines trustworthiness as a set of characteristics.
+          Evaluating each is what makes claims credible.
+        expectedOutcome:
+          - "Evaluation covers trustworthy characteristics."
+          - "Results are documented."
+          - "Gaps drive improvement."
+        howTo:
+          - step: "Evaluate across trustworthy characteristics"
+          - step: "Document results"
+          - step: "Drive improvement from gaps"
+        evidenceExamples:
+          - "Evaluation report"
+          - "Characteristic-by-characteristic results"
+          - "Improvement plan"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not evaluated"
+            "3": "Partial"
+            "5": "All characteristics"
+
+      - id: nist.ai.rmf:MEASURE-03
+        title: "Mechanisms for tracking identified AI risks are in place"
+        weight: 2
+        answerType: scale
+        tags: [tracking, risk-register, monitoring]
+        question: |
+          Are mechanisms in place to track identified AI risks over
+          time and across changes?
+        purpose: |
+          Risks that are not tracked degrade or expand silently.
+          Tracking surfaces both directions.
+        expectedOutcome:
+          - "AI risk register is current."
+          - "Risk indicators are monitored."
+          - "Changes trigger reassessment."
+        howTo:
+          - step: "Maintain AI risk register"
+          - step: "Monitor risk indicators"
+          - step: "Reassess on changes"
+        evidenceExamples:
+          - "AI risk register"
+          - "Risk indicator dashboard"
+          - "Reassessment record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No tracking"
+            "3": "Tracking partial"
+            "5": "Tracked + reassessed"
+
+      - id: nist.ai.rmf:MEASURE-04
+        title: "Feedback about measurement efficacy is gathered"
+        weight: 2
+        answerType: scale
+        tags: [feedback, efficacy, improvement]
+        question: |
+          Is feedback about the efficacy of measurement methods
+          gathered and used to improve methods over time?
+        purpose: |
+          Measurement methods themselves can drift or become outdated.
+          Feedback keeps them relevant.
+        expectedOutcome:
+          - "Feedback on methods is collected."
+          - "Methods are revised based on feedback."
+          - "Revision history is preserved."
+        howTo:
+          - step: "Collect feedback on methods"
+          - step: "Revise methods"
+          - step: "Preserve revision history"
+        evidenceExamples:
+          - "Feedback collection record"
+          - "Revised methods"
+          - "Revision history"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No feedback"
+            "3": "Feedback unused"
+            "5": "Feedback drives revision"
+
+  - id: manage
+    name: "MANAGE"
+    description: |
+      Risks are prioritized and acted upon based on a projected
+      impact. The MANAGE function allocates resources to risks
+      systematically.
+    controls:
+      - id: nist.ai.rmf:MANAGE-01
+        title: "AI risks are prioritized, responded to, and managed"
+        weight: 3
+        answerType: scale
+        tags: [management, prioritization, treatment]
+        question: |
+          Are AI risks prioritized based on impact, responded to with
+          appropriate treatments, and managed over time?
+        purpose: |
+          Without prioritization, all risks compete equally for
+          attention and none are managed well.
+        expectedOutcome:
+          - "Risks are prioritized by impact."
+          - "Responses are chosen and applied."
+          - "Management cadence is defined."
+        howTo:
+          - step: "Prioritize risks by impact"
+          - step: "Choose and apply responses"
+          - step: "Establish management cadence"
+        evidenceExamples:
+          - "Prioritized risk list"
+          - "Treatment records"
+          - "Management cadence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Reactive"
+            "3": "Partial"
+            "5": "Systematic"
+
+      - id: nist.ai.rmf:MANAGE-02
+        title: "Strategies to maximize benefit, minimize harm are in place"
+        weight: 3
+        answerType: scale
+        tags: [management, benefit, harm-reduction]
+        question: |
+          Are strategies in place to maximize AI benefits and minimize
+          negative impacts, including residual-risk acceptance criteria?
+        purpose: |
+          Benefit / harm trade-offs are inherent to AI deployment.
+          Documented strategies make those trade-offs explicit.
+        expectedOutcome:
+          - "Benefit / harm strategy is documented."
+          - "Residual-risk acceptance is governed."
+          - "Decisions are recorded."
+        howTo:
+          - step: "Document benefit / harm strategy"
+          - step: "Govern residual-risk acceptance"
+          - step: "Record decisions"
+        evidenceExamples:
+          - "Strategy document"
+          - "Acceptance criteria"
+          - "Decision log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No strategy"
+            "3": "Strategy informal"
+            "5": "Strategy + governance"
+
+      - id: nist.ai.rmf:MANAGE-03
+        title: "AI risks from third parties are regularly assessed and managed"
+        weight: 3
+        answerType: scale
+        tags: [management, third-party, supply-chain]
+        question: |
+          Are AI risks from third-party components, services, models,
+          and data regularly assessed and managed throughout the
+          relationship?
+        purpose: |
+          Third-party AI risks evolve as upstream components change.
+          Ongoing management catches drift.
+        expectedOutcome:
+          - "Third-party AI risks reassessed on cadence."
+          - "Material changes trigger reassessment."
+          - "Management actions are recorded."
+        howTo:
+          - step: "Reassess third-party AI risks on cadence"
+          - step: "Trigger reassessment on material changes"
+          - step: "Record management actions"
+        evidenceExamples:
+          - "Reassessment schedule"
+          - "Trigger event record"
+          - "Management action log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not managed"
+            "3": "One-time"
+            "5": "Ongoing management"
+
+      - id: nist.ai.rmf:MANAGE-04
+        title: "Risk treatments are monitored and documented"
+        weight: 2
+        answerType: scale
+        tags: [management, monitoring, documentation, lessons-learned]
+        question: |
+          Are risk treatments monitored for effectiveness and outcomes
+          documented to inform future AI risk management?
+        purpose: |
+          Treatment effectiveness data is the input to continuous
+          improvement of the program.
+        expectedOutcome:
+          - "Treatment effectiveness is monitored."
+          - "Outcomes are documented."
+          - "Lessons feed future risk management."
+        howTo:
+          - step: "Monitor treatment effectiveness"
+          - step: "Document outcomes"
+          - step: "Feed lessons into future risk management"
+        evidenceExamples:
+          - "Effectiveness metrics"
+          - "Outcome log"
+          - "Lessons-learned record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Monitored, no follow-up"
+            "5": "Monitored + lessons applied"

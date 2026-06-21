@@ -175,5 +175,73 @@ Volumes used by Docker:
 
 - `audity-db-data`: PostgreSQL data
 - `audity-storage-data`: MinIO object storage data
+- `audity-archive`: Archive spool and monthly encrypted bundles (`/app/archive` inside the api container)
 
 Before destructive server maintenance, create an Audity full backup and also snapshot Docker volumes if your hosting provider supports it.
+
+## Archive System
+
+Audity ships a hybrid archive workflow for retiring customers without losing
+audit trails. When a user archives a customer:
+
+1. DB rows stay in place, marked `archived_at` (read-only for non-admins, fully
+   accessible to admins).
+2. Evidence + report blobs move from MinIO into the local archive volume
+   (`/app/archive/spool/<YYYY-MM>/<customer-uuid>/`).
+3. An entry appears in `archive_index` linking the customer to the spool
+   directory and a generated manifest.
+
+Once a month (1st of the month by default, configurable via
+`AUDITY_ARCHIVE_BUNDLE_DAY`), the API container packages every customer
+spooled in the previous month into a single encrypted bundle:
+
+- File: `/app/archive/bundled/<YYYY-MM>.audity-archive`
+- Format: 8-byte header (magic `AUDA` + u32 version) · 12-byte IV · 16-byte
+  GCM tag · AES-256-GCM ciphertext of a ZIP body
+- Encryption key: `sha256(AUDITY_ENCRYPTION_KEY)` — the same derivation used
+  elsewhere in the app, so a single key protects everything.
+
+Admins can also trigger a bundle on demand from **Admin → Archive →
+Bundles → Bundle now**, download bundles for off-site storage, and re-import
+them later via **Admin → Archive → Re-import**.
+
+### Restore workflow
+
+Non-admin owners see archived customers under **Archive** in the main
+sidebar. They can request restoration with a justification; an Instance Admin
+reviews the request under **Admin → Archive → Restore requests** and either
+approves (which re-uploads evidence to MinIO, clears `archived_at`, and
+notifies the requester) or denies with a reason.
+
+### Disaster recovery
+
+1. After provisioning a fresh Audity host, set `AUDITY_ENCRYPTION_KEY` to the
+   **same** value the previous instance used (the human-readable form is
+   available via the recovery phrase shown during first-time setup).
+2. Restore the latest PostgreSQL backup so `customers`, `archive_index`,
+   and friends contain the historical state.
+3. Copy archived bundle files (`<month>.audity-archive`) into the
+   `audity-archive` Docker volume's `bundled/` subdirectory, or upload each
+   bundle via the **Admin → Archive → Re-import** form.
+4. On re-import the bundle is decrypted with the current key. Mismatched key
+   = decryption error: rotate `AUDITY_ENCRYPTION_KEY` back to the old value,
+   re-import, then rotate forward in a controlled migration.
+5. Approve restore requests to move evidence back into MinIO for individual
+   customers as needed.
+
+### Recovery phrase
+
+Every Audity instance derives its encryption key from
+`AUDITY_ENCRYPTION_KEY`. The setup wizard shows the corresponding **recovery
+phrase** (72 hex characters in 6 groups of 12) plus a short fingerprint that
+also appears on **Admin → System Monitor**.
+
+- Treat the phrase like a master password — anyone with it can decrypt
+  archives and backups.
+- Store it outside the server (password manager, printed envelope).
+- Re-display via `docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js`.
+- Verify a stored phrase against the running instance from the login page
+  (**"Verify your recovery phrase"** link below the form).
+- The login page's verify form also flags **`matchesInstance: false`** if you
+  ever rotate the key and need to confirm the old phrase still decodes a
+  legacy bundle.

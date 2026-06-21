@@ -19,6 +19,18 @@ const questionSchema = z.object({
   gapTrigger: z.string().default("score <= 2 or missing approved evidence")
 });
 
+const howToStepSchema = z.union([
+  z.string().transform((step) => ({ step, details: undefined as string | undefined })),
+  z.object({ step: z.string().min(1), details: z.string().optional() })
+]);
+
+const scoringSchema = z.object({
+  scale: z.string().optional(),
+  passWhen: z.string().optional(),
+  gapWhen: z.string().optional(),
+  quickAnswers: z.record(z.string(), z.string()).optional()
+});
+
 const controlSchema = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(1),
@@ -29,6 +41,18 @@ const controlSchema = z.object({
   source: z.string().trim().min(1).optional(),
   question: z.string().optional(),
   objective: z.string().optional(),
+  // ===== v1 authoring-guide additions (all optional, backwards compatible) =====
+  purpose: z.string().optional(),
+  expectedOutcome: z.array(z.string()).default([]),
+  howTo: z.array(howToStepSchema).default([]),
+  scoring: scoringSchema.optional(),
+  crossReferences: z.array(z.string()).default([]),
+  weight: z.number().int().optional(),
+  answerType: z.enum(["scale", "boolean", "text_evidence_only", "multiple_choice"]).optional(),
+  appliesIf: z.string().optional(),
+  evidenceMinimumCount: z.number().int().optional(),
+  evidenceRetentionMonths: z.number().int().optional(),
+  // ===== Legacy fields =====
   defaultWeight: z.number().default(1),
   readinessPassCondition: z.string().optional(),
   gapCondition: z.string().optional(),
@@ -55,7 +79,7 @@ const frameworkYamlSchema = z.object({
     name: z.string().trim().min(1),
     shortName: z.string().trim().min(1).optional(),
     version: z.string().trim().min(1).default("YAML"),
-    date: z.string().optional(),
+    date: z.union([z.string(), z.date()]).optional(),
     sourceType: z.string().default("yaml_managed"),
     licenseStatus: z.string().default("user_license_required"),
     statusLabel: z.string().default("YAML Managed"),
@@ -68,14 +92,32 @@ const frameworkYamlSchema = z.object({
     licensedContentImportSupported: z.boolean().default(false),
     redistributionNote: z.string().optional(),
     disclaimer: z.string().optional(),
-    defaultSuggestions: z.array(z.string()).default([])
+    defaultSuggestions: z.array(z.string()).default([]),
+    // ===== v1 authoring-guide additions (all optional) =====
+    schemaVersion: z.number().int().optional(),
+    status: z.enum(["draft", "published"]).optional(),
+    language: z.string().trim().optional(),
+    category: z.string().trim().optional(),
+    owner: z.string().trim().optional(),
+    intendedAudience: z.array(z.string()).optional(),
+    estimatedDurationMinutes: z.number().int().optional(),
+    description: z.string().optional(),
+    scopeNote: z.string().optional(),
+    license: z.object({
+      status: z.string().optional(),
+      confirmationRequired: z.boolean().optional(),
+      notice: z.string().optional()
+    }).optional(),
+    source: z.string().optional(),
+    importMeta: z.record(z.string(), z.unknown()).optional()
   }),
   domains: z.array(domainSchema).default([]),
   controlMappings: z.array(z.object({
     source: z.string().trim().min(1),
     target: z.string().trim().min(1),
     type: z.string().trim().min(1).default("related")
-  })).default([])
+  })).default([]),
+  severityRubric: z.record(z.string(), z.string()).optional()
 });
 
 type FrameworkYaml = z.infer<typeof frameworkYamlSchema>;
@@ -88,6 +130,56 @@ export type FrameworkYamlSyncResult = {
   errors: Array<{ file: string; message: string }>;
   frameworks: Array<{ file: string; id: string; key: string; name: string; controls: number; questions: number }>;
 };
+
+const KNOWN_FRAMEWORK_KEYS = new Set([
+  "key", "name", "shortName", "version", "date", "sourceType", "licenseStatus",
+  "statusLabel", "distributedByAudity", "deliveryMode", "contentClass",
+  "contentStatus", "officialStandardTextIncluded", "officialControlCatalogueIncluded",
+  "licensedContentImportSupported", "redistributionNote", "disclaimer",
+  "defaultSuggestions", "schemaVersion", "status", "language", "category", "owner",
+  "intendedAudience", "estimatedDurationMinutes", "description", "scopeNote",
+  "license", "source", "importMeta"
+]);
+const KNOWN_CONTROL_KEYS = new Set([
+  "id", "title", "description", "categoryId", "categoryTitle", "categoryDescription",
+  "source", "question", "objective", "defaultWeight", "readinessPassCondition",
+  "gapCondition", "criticalityHint", "reportMapping", "evidenceExamples", "tags",
+  "licensedMappingSlots", "suggestions", "questions",
+  "purpose", "expectedOutcome", "howTo", "scoring", "crossReferences", "weight",
+  "answerType", "appliesIf", "evidenceMinimumCount", "evidenceRetentionMonths"
+]);
+
+/**
+ * Walks the parsed YAML and returns a list of `path.to.unknown_key` for keys
+ * the schema silently drops. Used to surface schema drift instead of swallowing it.
+ */
+function detectUnknownKeys(input: unknown): string[] {
+  const issues: string[] = [];
+  if (!input || typeof input !== "object") return issues;
+  const root = input as Record<string, unknown>;
+  if (root.framework && typeof root.framework === "object") {
+    const fw = root.framework as Record<string, unknown>;
+    for (const key of Object.keys(fw)) {
+      if (!KNOWN_FRAMEWORK_KEYS.has(key)) issues.push(`framework.${key}`);
+    }
+  }
+  if (Array.isArray(root.domains)) {
+    root.domains.forEach((domain, domainIdx) => {
+      if (!domain || typeof domain !== "object") return;
+      const controls = (domain as Record<string, unknown>).controls;
+      if (!Array.isArray(controls)) return;
+      controls.forEach((control, controlIdx) => {
+        if (!control || typeof control !== "object") return;
+        for (const key of Object.keys(control)) {
+          if (!KNOWN_CONTROL_KEYS.has(key)) {
+            issues.push(`domains[${domainIdx}].controls[${controlIdx}].${key}`);
+          }
+        }
+      });
+    });
+  }
+  return issues;
+}
 
 function stableUuid(input: string): string {
   const hash = createHash("sha256").update(input).digest("hex");
@@ -119,7 +211,7 @@ function shippedYamlDirectory(): string {
   return resolve(process.cwd(), "shipped-frameworks");
 }
 
-type SyncSource = "shipped" | "user_uploaded" | "legacy";
+type SyncSource = "shipped" | "user_uploaded";
 
 async function discoverYamlFiles(): Promise<Array<{ path: string; source: SyncSource }>> {
   const results: Array<{ path: string; source: SyncSource }> = [];
@@ -129,10 +221,6 @@ async function discoverYamlFiles(): Promise<Array<{ path: string; source: SyncSo
   for (const file of await yamlFiles(userYamlDirectory())) {
     if (file.includes(`${"/"}_sources${"/"}`)) continue;
     results.push({ path: file, source: "user_uploaded" });
-  }
-  for (const file of await yamlFiles(yamlDirectory())) {
-    if (results.some((entry) => entry.path === file)) continue;
-    results.push({ path: file, source: "legacy" });
   }
   return results;
 }
@@ -177,7 +265,16 @@ function controlReportMapping(control: z.infer<typeof controlSchema>): Record<st
       categoryTitle: control.categoryTitle,
       categoryDescription: control.categoryDescription,
       source: control.source,
-      suggestions: control.suggestions.length ? control.suggestions : undefined
+      suggestions: control.suggestions.length ? control.suggestions : undefined,
+      // v1 authoring-guide additions — stored in jsonb so no migration needed
+      expectedOutcome: control.expectedOutcome.length ? control.expectedOutcome : undefined,
+      howTo: control.howTo.length ? control.howTo : undefined,
+      crossReferences: control.crossReferences.length ? control.crossReferences : undefined,
+      quickAnswers: control.scoring?.quickAnswers,
+      answerType: control.answerType,
+      appliesIf: control.appliesIf,
+      evidenceMinimumCount: control.evidenceMinimumCount,
+      evidenceRetentionMonths: control.evidenceRetentionMonths
     })
   };
 }
@@ -297,16 +394,22 @@ async function upsertFrameworkFromYaml(file: string, yaml: FrameworkYaml, source
           domainId,
           control.id,
           control.title,
-          control.description,
+          // v1 YAMLs ship no per-control description; fall back to title so the
+          // DB row isn't empty (UI uses this in collapsed control summaries).
+          control.description || control.purpose || control.title,
           defaultQuestion,
           JSON.stringify(control.evidenceExamples),
           JSON.stringify(control.tags),
           controlIndex + 1,
-          control.objective ?? control.description,
-          control.defaultWeight,
-          control.readinessPassCondition ?? "average_question_score >= 3 and at least one relevant evidence item approved",
-          control.gapCondition ?? "average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable",
-         control.criticalityHint ?? null,
+          // purpose (v1 authoring guide) is the canonical "why" — falls back to
+          // legacy objective/description so existing YAMLs still produce content.
+          control.purpose ?? control.objective ?? control.description,
+          // weight (v1) > defaultWeight (legacy) > 1
+          control.weight ?? control.defaultWeight,
+          // scoring.passWhen (v1) > readinessPassCondition (legacy) > built-in default
+          control.scoring?.passWhen ?? control.readinessPassCondition ?? "average_question_score >= 3 and at least one relevant evidence item approved",
+          control.scoring?.gapWhen ?? control.gapCondition ?? "average_question_score <= 2 or required evidence is absent, stale, rejected, or unverifiable",
+          control.criticalityHint ?? null,
           JSON.stringify(controlReportMapping(control))
         ]
       );
@@ -522,7 +625,15 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
           result.skippedFiles += 1;
           continue;
         }
-        const parsed = frameworkYamlSchema.parse(parse(raw));
+        const rawParsed = parse(raw) as unknown;
+        const unknownKeys = detectUnknownKeys(rawParsed);
+        if (unknownKeys.length > 0) {
+          result.errors.push({
+            file,
+            message: `Warning: ignored unknown YAML keys: ${unknownKeys.slice(0, 12).join(", ")}${unknownKeys.length > 12 ? " (truncated)" : ""}`
+          });
+        }
+        const parsed = frameworkYamlSchema.parse(rawParsed);
         const framework = await upsertFrameworkFromYaml(file, parsed, entry.source);
         controlMappings.push(...parsed.controlMappings);
         syncedHashes.set(file, hash);
@@ -539,22 +650,25 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
       await upsertControlMapping(mapping.source, mapping.target, mapping.type);
     }
     // Soft-archive frameworks whose YAML source file disappeared since the last
-    // sync. Frameworks without a yaml_source_path (e.g. legacy hand-imported
-    // tenant content) are left untouched.
+    // sync. Also force-archive any rows still flagged source_kind='legacy'
+    // (the old frameworks/ folder is no longer scanned).
     if (scannedPaths.length > 0) {
       await pool.query(
         `update frameworks
          set archived_at = now(), updated_at = now()
-         where yaml_source_path is not null
-           and archived_at is null
-           and yaml_source_path <> all($1::text[])`,
+         where archived_at is null
+           and (
+             (yaml_source_path is not null and yaml_source_path <> all($1::text[]))
+             or source_kind = 'legacy'
+           )`,
         [scannedPaths]
       );
     } else {
       await pool.query(
         `update frameworks
          set archived_at = now(), updated_at = now()
-         where yaml_source_path is not null and archived_at is null`
+         where archived_at is null
+           and (yaml_source_path is not null or source_kind = 'legacy')`
       );
     }
     return result;

@@ -1,0 +1,816 @@
+framework:
+  schemaVersion: 1
+  key: eu.nis2.2022
+  name: "EU NIS2 Directive (2022/2555)"
+  shortName: "NIS2"
+  version: "2022/2555"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: nis2
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "CISO"
+    - "Compliance Officer"
+    - "DPO"
+    - "Management Body"
+  estimatedDurationMinutes: 300
+  description: |
+    Directive (EU) 2022/2555 (NIS2) is the European Union's revised
+    framework for a high common level of cybersecurity across the Union.
+    It defines cybersecurity risk-management measures, governance
+    obligations on management bodies, and incident reporting requirements
+    for essential and important entities.
+
+    This YAML translates the obligations of NIS2 into audit-readiness
+    controls grouped into Governance, Risk-Management Measures, Reporting,
+    and Enforcement readiness. The ten risk-management measures of
+    Article 21 are reflected one-to-one as controls.
+  scopeNote: |
+    In scope: governance duties (Art. 20), risk-management measures
+    (Art. 21 a-j), reporting obligations (Art. 23), and basic enforcement
+    readiness derived from Chapters V and VII.
+
+    Out of scope: sector-specific transposition requirements from
+    individual EU Member States, Commission Implementing Regulation
+    (EU) 2024/2690 detailed technical requirements (these are referenced
+    in `crossReferences` rather than expanded), and obligations on
+    competent authorities, CSIRTs, or the Cooperation Group.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      Directive (EU) 2022/2555 is published in the Official Journal of
+      the European Union. EU law texts are not subject to copyright in
+      most jurisdictions. Article wording has been paraphrased into
+      audit-readiness language and is not reproduced verbatim.
+
+severityRubric:
+  critical: |
+    Failure exposes essential service continuity or triggers mandatory
+    reporting under Art. 23; potential for regulatory fines up to 2 %
+    of global turnover.
+  high: |
+    Material breach of an Art. 21 measure without a compensating control;
+    likely to surface in supervisory review.
+  medium: |
+    Partial implementation of an Art. 21 measure; remediable in the
+    normal improvement cycle.
+  low: |
+    Documentation or process maturity gap with no immediate supervisory
+    impact.
+
+controlMappings:
+  - source: eu.nis2:RM-A
+    target: iso27001:A.5.1
+    type: covers
+  - source: eu.nis2:RM-B
+    target: iso27001:A.5.24
+    type: covers
+  - source: eu.nis2:RM-C
+    target: iso27001:A.5.29
+    type: covers
+  - source: eu.nis2:RM-D
+    target: iso27001:A.5.19
+    type: covers
+  - source: eu.nis2:RM-E
+    target: iso27001:A.8.25
+    type: covers
+  - source: eu.nis2:RM-G
+    target: iso27001:A.6.3
+    type: covers
+  - source: eu.nis2:RM-H
+    target: iso27001:A.8.24
+    type: covers
+  - source: eu.nis2:RM-I
+    target: iso27001:A.5.15
+    type: covers
+  - source: eu.nis2:RM-J
+    target: iso27001:A.8.5
+    type: covers
+  - source: eu.nis2:RPT-01
+    target: nist-csf-2.0:RS.CO-02
+    type: covers
+
+domains:
+  - id: governance
+    name: "Governance and Accountability (Art. 20)"
+    description: |
+      Obligations on management bodies to approve risk-management
+      measures, oversee their implementation, and undertake training.
+    controls:
+      - id: eu.nis2:GOV-01
+        title: "Management body approves risk-management measures"
+        weight: 3
+        answerType: scale
+        tags: [governance, accountability, management-body]
+        question: |
+          Does the management body of the entity formally approve the
+          cybersecurity risk-management measures and oversee their
+          implementation?
+        purpose: |
+          NIST Art. 20(1) places explicit accountability on the management
+          body. Without documented approval and oversight, supervisory
+          authorities cannot verify the chain of accountability.
+        expectedOutcome:
+          - "Management body approval of risk-management measures is documented."
+          - "Periodic oversight is minuted."
+          - "Accountability is reflected in role descriptions."
+        howTo:
+          - step: "Present risk-management measures for formal approval"
+          - step: "Schedule periodic oversight reviews"
+          - step: "Document accountability in role descriptions"
+        evidenceExamples:
+          - "Board minute approving measures"
+          - "Oversight review minutes"
+          - "Role description with NIS2 accountability"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No board approval"
+            "3": "Approval one-off, no oversight"
+            "5": "Approval and recurring oversight"
+
+      - id: eu.nis2:GOV-02
+        title: "Management body cybersecurity training"
+        weight: 2
+        answerType: scale
+        tags: [governance, training, management-body]
+        question: |
+          Are members of the management body required to follow training
+          to gain sufficient knowledge to identify risks and to assess
+          cybersecurity risk-management practices?
+        purpose: |
+          Art. 20(2) requires management bodies to follow training and
+          encourages them to offer similar training to employees on a
+          regular basis. Untrained management bodies cannot meaningfully
+          assess proposals.
+        expectedOutcome:
+          - "Mandatory training is defined for the management body."
+          - "Completion is recorded."
+          - "Training content is updated to the threat landscape."
+        howTo:
+          - step: "Define mandatory training for the management body"
+          - step: "Record completion"
+          - step: "Refresh content periodically"
+        evidenceExamples:
+          - "Training curriculum"
+          - "Completion record"
+          - "Update history"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Training partial"
+            "5": "Training mandatory and refreshed"
+
+  - id: risk-management
+    name: "Risk-Management Measures (Art. 21)"
+    description: |
+      The ten risk-management measures of Article 21(2), letters (a)
+      through (j), each treated as a separate audit control.
+    controls:
+      - id: eu.nis2:RM-A
+        title: "Policies on risk analysis and information system security"
+        weight: 3
+        answerType: scale
+        tags: [policy, risk-analysis, isms]
+        question: |
+          Does the entity have documented policies on risk analysis and
+          on the security of network and information systems?
+        purpose: |
+          Art. 21(2)(a) requires a documented policy basis. Without it,
+          there is no enforceable baseline to assess risk-management
+          measures against.
+        expectedOutcome:
+          - "Risk analysis policy is documented and approved."
+          - "Information system security policy is documented and approved."
+          - "Policies are reviewed periodically."
+        howTo:
+          - step: "Approve a risk analysis policy"
+          - step: "Approve an information system security policy"
+          - step: "Review on a defined cadence"
+        evidenceExamples:
+          - "Risk analysis policy"
+          - "Information system security policy"
+          - "Policy review log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policies"
+            "3": "Policies outdated"
+            "5": "Approved, reviewed"
+        crossReferences:
+          - iso27001:A.5.1
+
+      - id: eu.nis2:RM-B
+        title: "Incident handling"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, soc]
+        question: |
+          Does the entity have an incident handling capability, including
+          detection, analysis, containment, eradication, and recovery,
+          documented and tested?
+        purpose: |
+          Art. 21(2)(b) explicitly names incident handling. The
+          reporting obligations in Art. 23 depend on it.
+        expectedOutcome:
+          - "Incident handling process is documented."
+          - "Roles, authorities, and runbooks are defined."
+          - "Process is exercised annually."
+        howTo:
+          - step: "Document incident handling process and runbooks"
+          - step: "Assign authorities"
+          - step: "Exercise annually"
+        evidenceExamples:
+          - "IR process document"
+          - "Authority matrix"
+          - "Exercise report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No IR capability"
+            "3": "Process untested"
+            "5": "Process exercised"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: eu.nis2:RM-C
+        title: "Business continuity, backups, and crisis management"
+        weight: 3
+        answerType: scale
+        tags: [continuity, backup, crisis-management]
+        question: |
+          Does the entity have business continuity arrangements covering
+          backup management, disaster recovery, and crisis management?
+        purpose: |
+          Art. 21(2)(c) bundles continuity, backups, DR, and crisis
+          management. These are the operational levers that determine
+          whether the entity recovers from significant incidents.
+        expectedOutcome:
+          - "BCP / DR plans exist and are tested."
+          - "Backups are protected and verified."
+          - "Crisis management roles are defined and exercised."
+        howTo:
+          - step: "Maintain BCP / DR plans aligned to RTO/RPO"
+          - step: "Verify backups and restoration"
+          - step: "Exercise crisis management"
+        evidenceExamples:
+          - "BCP / DR plan"
+          - "Backup verification report"
+          - "Crisis exercise minutes"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No BCP"
+            "3": "BCP untested"
+            "5": "BCP tested + backups verified"
+        crossReferences:
+          - iso27001:A.5.29
+          - iso27001:A.8.13
+
+      - id: eu.nis2:RM-D
+        title: "Supply chain security"
+        weight: 3
+        answerType: scale
+        tags: [supply-chain, vendor, third-party]
+        question: |
+          Does the entity manage cybersecurity in its supply chain,
+          including the security of relationships with direct suppliers
+          and service providers?
+        purpose: |
+          Art. 21(2)(d) makes supply chain risk explicit. Supplier
+          compromises increasingly drive the most material incidents.
+        expectedOutcome:
+          - "Supplier inventory with criticality exists."
+          - "Security requirements are in contracts."
+          - "Suppliers are monitored across the lifecycle."
+        howTo:
+          - step: "Maintain a tiered supplier inventory"
+          - step: "Include security clauses in contracts"
+          - step: "Monitor suppliers across the lifecycle"
+        evidenceExamples:
+          - "Supplier register with criticality"
+          - "Contract clause library"
+          - "Supplier monitoring report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No supplier program"
+            "3": "Program partial"
+            "5": "Program integrated"
+        crossReferences:
+          - iso27001:A.5.19
+          - iso27001:A.5.20
+
+      - id: eu.nis2:RM-E
+        title: "Security in acquisition, development and maintenance"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, acquisition, vulnerability-management]
+        question: |
+          Does the entity ensure security in the acquisition, development,
+          and maintenance of network and information systems, including
+          vulnerability handling and disclosure?
+        purpose: |
+          Art. 21(2)(e) covers the full lifecycle of systems. Vulnerability
+          handling is highlighted as a named expectation.
+        expectedOutcome:
+          - "Secure SDLC and acquisition standards exist."
+          - "Vulnerabilities are tracked and remediated under SLA."
+          - "Coordinated vulnerability disclosure channel exists."
+        howTo:
+          - step: "Apply secure SDLC and acquisition standards"
+          - step: "Track and remediate vulnerabilities under SLA"
+          - step: "Publish a vulnerability disclosure policy"
+        evidenceExamples:
+          - "Secure SDLC policy"
+          - "Vulnerability SLA report"
+          - "Disclosure policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "None"
+            "3": "Partial"
+            "5": "Lifecycle + VM + disclosure"
+        crossReferences:
+          - iso27001:A.8.25
+          - iso27001:A.8.8
+
+      - id: eu.nis2:RM-F
+        title: "Effectiveness assessment of risk-management measures"
+        weight: 2
+        answerType: scale
+        tags: [governance, effectiveness, measurement]
+        question: |
+          Does the entity have policies and procedures to assess the
+          effectiveness of its cybersecurity risk-management measures?
+        purpose: |
+          Art. 21(2)(f) requires not only measures but also a way to
+          measure them. Without effectiveness data, supervisory review
+          and internal improvement are equally blocked.
+        expectedOutcome:
+          - "Effectiveness assessment method is documented."
+          - "Assessments are performed on a defined cadence."
+          - "Findings drive improvements."
+        howTo:
+          - step: "Document the effectiveness assessment method"
+          - step: "Perform assessments on cadence"
+          - step: "Convert findings to improvements"
+        evidenceExamples:
+          - "Assessment method"
+          - "Assessment report"
+          - "Improvement tracker"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessment"
+            "3": "Assessment ad hoc"
+            "5": "Assessment cadenced and acted on"
+
+      - id: eu.nis2:RM-G
+        title: "Cyber hygiene and security training"
+        weight: 2
+        answerType: scale
+        tags: [awareness, training, hygiene]
+        question: |
+          Are basic cyber hygiene practices and cybersecurity training
+          provided to personnel?
+        purpose: |
+          Art. 21(2)(g) explicitly names hygiene and training. Most
+          initial-access incidents start at user level; training and
+          hygiene are the low-cost high-leverage controls.
+        expectedOutcome:
+          - "Annual cybersecurity training is delivered."
+          - "Hygiene standards (patching, MFA, anti-phishing) are enforced."
+          - "Effectiveness is measured."
+        howTo:
+          - step: "Deliver annual training"
+          - step: "Enforce hygiene standards"
+          - step: "Measure effectiveness"
+        evidenceExamples:
+          - "Training completion report"
+          - "Hygiene compliance report"
+          - "Phishing simulation results"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Training partial"
+            "5": "Training + hygiene + metrics"
+        crossReferences:
+          - iso27001:A.6.3
+
+      - id: eu.nis2:RM-H
+        title: "Cryptography and encryption"
+        weight: 3
+        answerType: scale
+        tags: [cryptography, encryption, key-management]
+        question: |
+          Does the entity have policies and procedures regarding the use
+          of cryptography and, where appropriate, encryption?
+        purpose: |
+          Art. 21(2)(h) names cryptography as a required policy area.
+          Improper or absent encryption converts contained breaches into
+          regulatory events.
+        expectedOutcome:
+          - "Cryptographic standards are defined."
+          - "Encryption is applied to data-in-transit and data-at-rest."
+          - "Key management is documented."
+        howTo:
+          - step: "Define cryptographic standards"
+          - step: "Apply encryption to data-in-transit and data-at-rest"
+          - step: "Document key management"
+        evidenceExamples:
+          - "Cryptography policy"
+          - "Encryption deployment report"
+          - "Key management procedure"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No crypto policy"
+            "3": "Policy partial"
+            "5": "Policy + encryption + KM"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: eu.nis2:RM-I
+        title: "HR security, access control, asset management"
+        weight: 3
+        answerType: scale
+        tags: [hr, access-control, asset-management]
+        question: |
+          Does the entity have human resources security, access control
+          policies, and asset management practices in place?
+        purpose: |
+          Art. 21(2)(i) bundles three foundational control areas.
+          Together they form the basis for most other safeguards.
+        expectedOutcome:
+          - "HR security covers joiner / mover / leaver."
+          - "Access control policy is enforced."
+          - "Asset inventory is current."
+        howTo:
+          - step: "Embed HR security in joiner / mover / leaver"
+          - step: "Enforce access control policy"
+          - step: "Maintain asset inventory"
+        evidenceExamples:
+          - "HR security policy"
+          - "Access policy enforcement"
+          - "Asset inventory extract"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "None"
+            "3": "Partial"
+            "5": "All three areas in place"
+        crossReferences:
+          - iso27001:A.5.15
+          - iso27001:A.5.9
+          - iso27001:A.6.1
+
+      - id: eu.nis2:RM-J
+        title: "MFA, secured communications, emergency communications"
+        weight: 3
+        answerType: scale
+        tags: [authentication, mfa, communications]
+        question: |
+          Does the entity use multi-factor authentication or continuous
+          authentication solutions, secured voice / video / text
+          communications, and secured emergency communication systems?
+        purpose: |
+          Art. 21(2)(j) names specific technical safeguards. MFA in
+          particular is the single highest-impact control against
+          account compromise.
+        expectedOutcome:
+          - "MFA is enforced for remote and privileged access."
+          - "Secured communications are used for sensitive interactions."
+          - "Emergency communications channels exist and are tested."
+        howTo:
+          - step: "Enforce MFA for remote and privileged access"
+          - step: "Use secured communications for sensitive interactions"
+          - step: "Establish and test emergency communications"
+        evidenceExamples:
+          - "MFA enforcement report"
+          - "Secured comms inventory"
+          - "Emergency comms test report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No MFA"
+            "3": "MFA partial"
+            "5": "MFA + secured + emergency"
+        crossReferences:
+          - iso27001:A.8.5
+
+  - id: reporting
+    name: "Reporting Obligations (Art. 23)"
+    description: |
+      Notification flow for significant incidents: early warning,
+      incident notification, intermediate report, and final report.
+    controls:
+      - id: eu.nis2:RPT-01
+        title: "Early warning within 24 hours"
+        weight: 3
+        answerType: scale
+        tags: [reporting, regulatory, csirt, soc]
+        question: |
+          Can the entity submit an early warning of a significant
+          incident to its CSIRT or competent authority within 24 hours
+          of becoming aware?
+        purpose: |
+          Art. 23(4)(a) sets the 24-hour early warning deadline.
+          Missing it is the most visible compliance failure.
+        expectedOutcome:
+          - "Process for early warning is documented and rehearsed."
+          - "Contacts to CSIRT / authority are validated."
+          - "Templates exist for early warning content."
+        howTo:
+          - step: "Document and rehearse the early warning process"
+          - step: "Validate CSIRT / authority contacts"
+          - step: "Prepare templates for early warning"
+        evidenceExamples:
+          - "Early warning process"
+          - "Contact validation log"
+          - "Early warning template"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process exercised"
+        crossReferences:
+          - nist-csf-2.0:RS.CO-02
+
+      - id: eu.nis2:RPT-02
+        title: "Incident notification within 72 hours"
+        weight: 3
+        answerType: scale
+        tags: [reporting, regulatory]
+        question: |
+          Can the entity submit an incident notification with initial
+          assessment, severity, and IoCs within 72 hours of becoming
+          aware of a significant incident?
+        purpose: |
+          Art. 23(4)(b) requires a 72-hour follow-up. Together with the
+          24-hour warning, these define the reporting cadence.
+        expectedOutcome:
+          - "Incident notification template covers required fields."
+          - "Severity assessment is performed promptly."
+          - "Notification is submitted within 72 hours."
+        howTo:
+          - step: "Maintain a notification template"
+          - step: "Establish severity assessment process"
+          - step: "Rehearse 72-hour submission"
+        evidenceExamples:
+          - "Notification template"
+          - "Severity assessment procedure"
+          - "Rehearsal record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process untested"
+            "5": "Process exercised"
+
+      - id: eu.nis2:RPT-03
+        title: "Intermediate report on request"
+        weight: 2
+        answerType: scale
+        tags: [reporting, regulatory]
+        question: |
+          Can the entity provide an intermediate report on the incident,
+          including status updates, upon request by the CSIRT or
+          competent authority?
+        purpose: |
+          Art. 23(4)(c) allows the authority to request intermediate
+          updates. The capability to provide these on demand prevents
+          escalation.
+        expectedOutcome:
+          - "Status reporting template exists."
+          - "Information collection is automated where possible."
+          - "Responder roles are defined."
+        howTo:
+          - step: "Maintain a status reporting template"
+          - step: "Automate information collection"
+          - step: "Define responder roles"
+        evidenceExamples:
+          - "Status report template"
+          - "Information collection workflow"
+          - "Role assignment"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No template"
+            "3": "Template, no rehearsal"
+            "5": "Template + rehearsal"
+
+      - id: eu.nis2:RPT-04
+        title: "Final report within one month"
+        weight: 3
+        answerType: scale
+        tags: [reporting, regulatory, lessons-learned]
+        question: |
+          Can the entity produce a final report within one month covering
+          the incident's description, severity, IoCs, mitigation
+          measures, and cross-border impact?
+        purpose: |
+          Art. 23(4)(d) sets a one-month deadline. The final report
+          drives both regulatory closure and internal learning.
+        expectedOutcome:
+          - "Final report template covers required fields."
+          - "Lessons learned and mitigation are recorded."
+          - "Cross-border impact is assessed."
+        howTo:
+          - step: "Maintain a final report template"
+          - step: "Capture lessons learned and mitigation"
+          - step: "Assess cross-border impact"
+        evidenceExamples:
+          - "Final report template"
+          - "Sample final report"
+          - "Cross-border assessment"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No final report process"
+            "3": "Process partial"
+            "5": "Process complete"
+
+      - id: eu.nis2:RPT-05
+        title: "Recipient notification on significant cyber threats"
+        weight: 2
+        answerType: scale
+        tags: [reporting, customer-communication]
+        question: |
+          Where applicable, does the entity notify recipients of its
+          services of significant cyber threats that could affect those
+          recipients?
+        purpose: |
+          Art. 23(2) places a recipient notification obligation on
+          essential and important entities in defined situations.
+        expectedOutcome:
+          - "Criteria for recipient notification are documented."
+          - "Notification path to recipients exists."
+          - "Templates are prepared."
+        howTo:
+          - step: "Document criteria for recipient notification"
+          - step: "Establish notification path"
+          - step: "Prepare templates"
+        evidenceExamples:
+          - "Criteria document"
+          - "Recipient contact list"
+          - "Notification template"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No process"
+            "3": "Process exists, untested"
+            "5": "Process tested"
+
+  - id: enforcement-readiness
+    name: "Enforcement and Supervision Readiness"
+    description: |
+      Capability to respond to supervisory measures from competent
+      authorities (Art. 32-34): audits, requests for information, and
+      evidence of corrective measures.
+    controls:
+      - id: eu.nis2:ENF-01
+        title: "Evidence readiness for supervisory authority"
+        weight: 2
+        answerType: scale
+        tags: [supervision, evidence, audit]
+        question: |
+          Is the entity able to produce evidence of its risk-management
+          measures, governance, and incident handling on request from
+          the competent authority?
+        purpose: |
+          Art. 32 empowers authorities to require evidence. Evidence
+          readiness is the difference between a routine inquiry and an
+          enforcement action.
+        expectedOutcome:
+          - "Evidence catalog mapped to Art. 21 measures exists."
+          - "Evidence is stored centrally with access controls."
+          - "Retrieval is rehearsed."
+        howTo:
+          - step: "Catalog evidence per Art. 21 measure"
+          - step: "Store centrally with access controls"
+          - step: "Rehearse retrieval on demand"
+        evidenceExamples:
+          - "Evidence catalog"
+          - "Evidence store reference"
+          - "Retrieval rehearsal log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No evidence catalog"
+            "3": "Catalog partial"
+            "5": "Catalog complete and rehearsed"
+
+      - id: eu.nis2:ENF-02
+        title: "Personal liability awareness in management body"
+        weight: 2
+        answerType: scale
+        tags: [governance, liability, management-body]
+        question: |
+          Is the management body aware of and prepared for the personal
+          liability provisions of Art. 32(6), which allow Member States
+          to suspend management functions in case of repeated breach?
+        purpose: |
+          Art. 32(6) introduces personal consequences for management.
+          Awareness of these consequences materially changes board
+          engagement.
+        expectedOutcome:
+          - "Briefing of management body on personal liability has occurred."
+          - "Acknowledgement is recorded."
+          - "Briefing is refreshed periodically."
+        howTo:
+          - step: "Brief the management body on personal liability"
+          - step: "Record acknowledgement"
+          - step: "Refresh periodically"
+        evidenceExamples:
+          - "Briefing material"
+          - "Acknowledgement record"
+          - "Refresh schedule"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not briefed"
+            "3": "Briefed once"
+            "5": "Briefed and refreshed"

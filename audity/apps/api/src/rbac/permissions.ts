@@ -32,7 +32,9 @@ export const permissions = [
   "email.manage",
   "frameworks.manage",
   "backup.manage",
-  "connectors.manage"
+  "connectors.manage",
+  "customer.archive",
+  "archive.approve"
 ] as const;
 
 export type PermissionName = (typeof permissions)[number];
@@ -53,7 +55,8 @@ export const rolePermissions: Record<(typeof roles)[number], PermissionName[]> =
     "report.send",
     "evidence.upload",
     "evidence.download",
-    "activitylog.view"
+    "activitylog.view",
+    "customer.archive"
   ],
   Auditor: [
     "assessment.create",

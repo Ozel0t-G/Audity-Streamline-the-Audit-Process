@@ -1,0 +1,610 @@
+framework:
+  schemaVersion: 1
+  key: owasp.asvs.5.0
+  name: "OWASP Application Security Verification Standard 5.0"
+  shortName: "OWASP ASVS 5.0"
+  version: "5.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Application Security Engineer"
+    - "Auditor"
+    - "Developer"
+    - "Security Architect"
+    - "Penetration Tester"
+  estimatedDurationMinutes: 300
+  description: |
+    The OWASP Application Security Verification Standard (ASVS) v5.0 is
+    a community-driven catalog of verifiable security requirements for
+    web application and service security. ASVS defines three
+    verification levels (L1 - opportunistic, L2 - standard,
+    L3 - advanced) that scale with risk.
+
+    This YAML covers the 14 chapters of ASVS 5.0 as audit-readiness
+    controls. The individual verification requirements within each
+    chapter are summarized at chapter level; teams using ASVS in CI/CD
+    or for formal verification should consult the per-requirement text.
+  scopeNote: |
+    In scope: all 14 chapters of OWASP ASVS 5.0 (V1 - V14), structured
+    as one control per chapter, with key verification requirements
+    summarized. Level progression (L1 / L2 / L3) is noted within each
+    chapter's expectedOutcome.
+
+    Out of scope: the hundreds of individual verification requirements
+    as separate controls; the CWE / NIST mappings published by OWASP;
+    and OWASP Mobile ASVS (separate framework).
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      OWASP ASVS is published by the OWASP Foundation under a Creative
+      Commons Attribution-ShareAlike 4.0 license. Chapter content has
+      been paraphrased into audit-readiness English; OWASP attribution
+      should accompany any operational use of this file.
+
+severityRubric:
+  critical: |
+    Failure leaves L1 baseline unmet for an internet-exposed
+    application; immediate attack surface.
+  high: |
+    Material gap in L2 verification without compensating controls.
+  medium: |
+    Partial implementation across a chapter; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: owasp.asvs.5.0:V01
+    target: iso27001:A.8.28
+    type: covers
+  - source: owasp.asvs.5.0:V06
+    target: iso27001:A.8.5
+    type: covers
+  - source: owasp.asvs.5.0:V07
+    target: nist-csf-2.0:PR.AA-04
+    type: related
+  - source: owasp.asvs.5.0:V08
+    target: iso27001:A.5.15
+    type: covers
+  - source: owasp.asvs.5.0:V11
+    target: iso27001:A.8.24
+    type: covers
+  - source: owasp.asvs.5.0:V12
+    target: iso27001:A.8.24
+    type: covers
+  - source: owasp.asvs.5.0:V13
+    target: iso27001:A.8.9
+    type: covers
+  - source: owasp.asvs.5.0:V14
+    target: iso27001:A.5.34
+    type: covers
+
+domains:
+  - id: input-and-output
+    name: "Input, Output, and Frontend"
+    description: |
+      Encoding, validation, frontend security, API services, and file
+      handling protections.
+    controls:
+      - id: owasp.asvs.5.0:V01
+        title: "V1 - Encoding and Sanitization"
+        weight: 3
+        answerType: scale
+        tags: [appsec, encoding, sanitization, xss, injection]
+        question: |
+          Is untrusted input encoded or sanitized at every interpreter
+          boundary (HTML, SQL, OS shell, LDAP, etc.) using
+          context-aware techniques?
+        purpose: |
+          Injection remains a top class of vulnerability. Context-aware
+          encoding / sanitization at every boundary closes the dominant
+          attack path.
+        expectedOutcome:
+          - "Output encoding is context-aware per sink (L1)."
+          - "Parameterized queries are mandatory (L1/L2)."
+          - "Server-side templating defaults to encoding (L2)."
+        howTo:
+          - step: "Use framework-provided output encoding per sink"
+          - step: "Require parameterized queries"
+          - step: "Default to encoding in server-side templates"
+        evidenceExamples:
+          - "Encoding policy"
+          - "Code review notes / lint rules"
+          - "SAST results"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Encoding inconsistent"
+            "3": "Partial"
+            "5": "Context-aware + enforced"
+        crossReferences:
+          - iso27001:A.8.28
+
+      - id: owasp.asvs.5.0:V02
+        title: "V2 - Validation and Business Logic"
+        weight: 3
+        answerType: scale
+        tags: [appsec, validation, business-logic]
+        question: |
+          Is input validated on the server side and business logic
+          designed to resist abuse (replay, parallel requests, sequence
+          tampering)?
+        purpose: |
+          Server-side validation is non-negotiable; business logic
+          abuse is increasingly the attack of choice once basic
+          injection is closed.
+        expectedOutcome:
+          - "Server-side validation is enforced for all input (L1)."
+          - "Business logic flows are documented and tested (L2)."
+          - "Anti-automation and rate limits exist (L2/L3)."
+        howTo:
+          - step: "Validate all input server-side"
+          - step: "Document and test business logic flows"
+          - step: "Apply anti-automation / rate limits"
+        evidenceExamples:
+          - "Validation framework configuration"
+          - "Business logic test cases"
+          - "Rate limit configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Client-side only"
+            "3": "Server-side partial"
+            "5": "Server-side + logic tested"
+
+      - id: owasp.asvs.5.0:V03
+        title: "V3 - Web Frontend Security"
+        weight: 2
+        answerType: scale
+        tags: [appsec, frontend, csp, security-headers]
+        question: |
+          Are web frontend security controls (CSP, security headers,
+          CSRF protection, cookie attributes) configured per ASVS?
+        purpose: |
+          Headers and frontend hardening provide defense-in-depth
+          against XSS, clickjacking, and CSRF at low operational cost.
+        expectedOutcome:
+          - "Security headers are deployed (L1)."
+          - "CSP with nonces or hashes is in place (L2)."
+          - "Cookie attributes (HttpOnly, Secure, SameSite) are enforced (L1)."
+        howTo:
+          - step: "Deploy security headers"
+          - step: "Implement CSP with nonces / hashes"
+          - step: "Enforce cookie attributes"
+        evidenceExamples:
+          - "Headers configuration"
+          - "CSP policy"
+          - "Cookie audit"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No headers"
+            "3": "Some headers"
+            "5": "Headers + CSP + cookies"
+
+      - id: owasp.asvs.5.0:V04
+        title: "V4 - API and Web Service"
+        weight: 3
+        answerType: scale
+        tags: [appsec, api, rest, graphql]
+        question: |
+          Are APIs (REST, GraphQL, gRPC) designed and secured per ASVS
+          (authentication, authorization, schema validation, rate
+          limiting)?
+        purpose: |
+          APIs are the dominant attack surface for modern applications.
+          API-specific safeguards are mandatory.
+        expectedOutcome:
+          - "All APIs require authentication where appropriate (L1)."
+          - "Per-endpoint authorization is enforced (L1/L2)."
+          - "Schema validation and rate limits are in place (L2)."
+        howTo:
+          - step: "Require authentication on all sensitive APIs"
+          - step: "Enforce per-endpoint authorization"
+          - step: "Apply schema validation and rate limits"
+        evidenceExamples:
+          - "API gateway policy"
+          - "OpenAPI / GraphQL schema"
+          - "Rate limit configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Open APIs"
+            "3": "Partial"
+            "5": "Auth + authz + schema + limits"
+
+      - id: owasp.asvs.5.0:V05
+        title: "V5 - File Handling"
+        weight: 2
+        answerType: scale
+        tags: [appsec, file-upload, file-handling]
+        question: |
+          Is file upload, storage, and processing secured against
+          path traversal, malicious content, and unsafe types?
+        purpose: |
+          File handling has produced major RCE and stored XSS issues.
+          ASVS V5 narrows the avenues.
+        expectedOutcome:
+          - "Upload type and size are validated (L1)."
+          - "Files are stored outside webroot with safe names (L1)."
+          - "Anti-malware scanning is in place (L2)."
+        howTo:
+          - step: "Validate type and size on upload"
+          - step: "Store files outside webroot with safe names"
+          - step: "Scan uploads for malware"
+        evidenceExamples:
+          - "Upload validation code"
+          - "Storage design"
+          - "AV scan configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Unsafe uploads"
+            "3": "Partial"
+            "5": "Validation + storage + AV"
+
+  - id: identity-and-access
+    name: "Authentication, Session, and Authorization"
+    description: |
+      Authentication, session management, authorization, and token
+      handling.
+    controls:
+      - id: owasp.asvs.5.0:V06
+        title: "V6 - Authentication"
+        weight: 3
+        answerType: scale
+        tags: [appsec, authentication, mfa, passwords]
+        question: |
+          Are authentication mechanisms designed per ASVS, including
+          MFA, password / passphrase policy, and protection against
+          credential attacks?
+        purpose: |
+          Authentication is the entry control for the application.
+          ASVS V6 distills the lessons from years of credential abuse.
+        expectedOutcome:
+          - "MFA is supported for sensitive accounts (L1)."
+          - "Password storage uses approved algorithms (L1)."
+          - "Account enumeration is prevented (L2)."
+        howTo:
+          - step: "Implement MFA for sensitive accounts"
+          - step: "Store passwords with approved algorithms"
+          - step: "Prevent account enumeration"
+        evidenceExamples:
+          - "Authentication design"
+          - "Password storage configuration"
+          - "Enumeration tests"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak auth"
+            "3": "Partial"
+            "5": "MFA + secure storage + enumeration-safe"
+        crossReferences:
+          - iso27001:A.8.5
+
+      - id: owasp.asvs.5.0:V07
+        title: "V7 - Session Management"
+        weight: 3
+        answerType: scale
+        tags: [appsec, session, cookies, jwt]
+        question: |
+          Are sessions created, maintained, and terminated securely
+          per ASVS, including session binding, timeout, and renewal?
+        purpose: |
+          Session weaknesses bypass authentication entirely. Sound
+          session lifecycle is the equal partner of strong auth.
+        expectedOutcome:
+          - "Sessions use unguessable tokens (L1)."
+          - "Idle and absolute timeouts are enforced (L1)."
+          - "Session is rotated on privilege change (L2)."
+        howTo:
+          - step: "Use unguessable session tokens"
+          - step: "Enforce idle / absolute timeouts"
+          - step: "Rotate session on privilege change"
+        evidenceExamples:
+          - "Session design"
+          - "Timeout configuration"
+          - "Rotation evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak sessions"
+            "3": "Partial"
+            "5": "Sessions managed end-to-end"
+
+      - id: owasp.asvs.5.0:V08
+        title: "V8 - Authorization"
+        weight: 3
+        answerType: scale
+        tags: [appsec, authorization, access-control, idor]
+        question: |
+          Is authorization enforced at every access point (function
+          level and object level), with explicit default deny and
+          tested for IDOR?
+        purpose: |
+          Broken authorization is one of the most common high-impact
+          findings. Function-level and object-level enforcement is the
+          core ASVS requirement.
+        expectedOutcome:
+          - "Default-deny authorization is in place (L1)."
+          - "Object-level access is checked (L1)."
+          - "Authorization is tested in CI (L2)."
+        howTo:
+          - step: "Apply default-deny authorization"
+          - step: "Check object-level access on every request"
+          - step: "Test authorization in CI"
+        evidenceExamples:
+          - "Authorization design"
+          - "Sample object-level check"
+          - "CI test results"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No authz"
+            "3": "Partial"
+            "5": "Default-deny + object-level + tested"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: owasp.asvs.5.0:V09
+        title: "V9 - Self-contained Tokens"
+        weight: 2
+        answerType: scale
+        tags: [appsec, tokens, jwt, paseto]
+        question: |
+          Are self-contained tokens (e.g., JWT, PASETO) issued, signed,
+          validated, and revoked per ASVS?
+        purpose: |
+          Self-contained tokens fail in well-documented ways (alg
+          confusion, missing audience). ASVS V9 lays out the
+          countermeasures.
+        expectedOutcome:
+          - "Tokens are signed with strong algorithms (L1)."
+          - "Issuer, audience, and expiry are verified (L1)."
+          - "Revocation strategy exists (L2)."
+        howTo:
+          - step: "Sign tokens with strong algorithms"
+          - step: "Verify issuer, audience, expiry"
+          - step: "Define revocation strategy"
+        evidenceExamples:
+          - "Token issuance code review"
+          - "Verification logic"
+          - "Revocation design"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Tokens unverified"
+            "3": "Partial"
+            "5": "Signed + verified + revocable"
+
+      - id: owasp.asvs.5.0:V10
+        title: "V10 - OAuth and OIDC"
+        weight: 2
+        answerType: scale
+        tags: [appsec, oauth, oidc, federation]
+        question: |
+          Are OAuth and OIDC flows implemented per current best
+          practice (PKCE, state, nonce, secure redirect handling)?
+        purpose: |
+          OAuth misconfigurations produce common high-impact bugs.
+          ASVS V10 reflects current OAuth 2.1 / FAPI guidance.
+        expectedOutcome:
+          - "PKCE is mandatory (L1)."
+          - "Redirect URIs are exact-matched (L1)."
+          - "State and nonce are validated (L1)."
+        howTo:
+          - step: "Require PKCE on all flows"
+          - step: "Exact-match redirect URIs"
+          - step: "Validate state and nonce"
+        evidenceExamples:
+          - "OAuth configuration"
+          - "Redirect URI policy"
+          - "State / nonce validation code"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak OAuth"
+            "3": "Partial"
+            "5": "PKCE + exact match + validated"
+        appliesIf: "application.uses_oauth == true"
+
+  - id: cryptography-and-transport
+    name: "Cryptography and Communications"
+    description: |
+      Cryptographic primitives, key management, and secure transport.
+    controls:
+      - id: owasp.asvs.5.0:V11
+        title: "V11 - Cryptography"
+        weight: 3
+        answerType: scale
+        tags: [appsec, cryptography, key-management]
+        question: |
+          Are cryptographic primitives, key management, and random
+          number generation aligned with ASVS V11?
+        purpose: |
+          Misuse of cryptography is silent and high-impact. ASVS V11
+          encodes the safe defaults.
+        expectedOutcome:
+          - "Approved algorithms are used (L1)."
+          - "Keys are managed via KMS / HSM (L2)."
+          - "Cryptographic agility is supported (L2/L3)."
+        howTo:
+          - step: "Use approved algorithms"
+          - step: "Manage keys via KMS / HSM"
+          - step: "Support cryptographic agility"
+        evidenceExamples:
+          - "Cryptography standard"
+          - "KMS configuration"
+          - "Algorithm migration plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak crypto"
+            "3": "Partial"
+            "5": "Standards + KMS + agility"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: owasp.asvs.5.0:V12
+        title: "V12 - Secure Communication"
+        weight: 3
+        answerType: scale
+        tags: [appsec, tls, transport, communication]
+        question: |
+          Is communication between application components and external
+          endpoints secured per ASVS (TLS configuration, certificate
+          validation, mTLS where appropriate)?
+        purpose: |
+          Insecure transport produces interception risk regardless of
+          application-layer effort. Strong defaults are mandatory.
+        expectedOutcome:
+          - "TLS is enforced on external endpoints (L1)."
+          - "Certificate validation is strict (L1)."
+          - "Internal traffic uses TLS / mTLS where appropriate (L2)."
+        howTo:
+          - step: "Enforce TLS on external endpoints"
+          - step: "Validate certificates strictly"
+          - step: "Apply TLS / mTLS internally where appropriate"
+        evidenceExamples:
+          - "TLS configuration"
+          - "Certificate validation policy"
+          - "Internal TLS design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plaintext"
+            "3": "TLS external only"
+            "5": "TLS + validation + internal"
+        crossReferences:
+          - iso27001:A.8.24
+
+  - id: configuration-and-data
+    name: "Configuration and Data Protection"
+    description: |
+      Application configuration, secrets management, and data
+      protection.
+    controls:
+      - id: owasp.asvs.5.0:V13
+        title: "V13 - Configuration"
+        weight: 3
+        answerType: scale
+        tags: [appsec, configuration, secrets, hardening]
+        question: |
+          Are application configuration and secrets handled securely
+          (no secrets in code, secure defaults, debug disabled,
+          dependency management)?
+        purpose: |
+          Configuration bugs produce some of the highest-impact
+          incidents. ASVS V13 codifies safe defaults and process.
+        expectedOutcome:
+          - "No secrets in source code or images (L1)."
+          - "Debug / verbose error output disabled in production (L1)."
+          - "Dependencies are inventoried and updated (L2)."
+        howTo:
+          - step: "Remove secrets from source code and images"
+          - step: "Disable debug / verbose errors in production"
+          - step: "Inventory and update dependencies"
+        evidenceExamples:
+          - "Secret scan results"
+          - "Production configuration"
+          - "Dependency inventory / SCA"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Secrets in code"
+            "3": "Partial"
+            "5": "No secrets + secure defaults + SCA"
+        crossReferences:
+          - iso27001:A.8.9
+
+      - id: owasp.asvs.5.0:V14
+        title: "V14 - Data Protection"
+        weight: 3
+        answerType: scale
+        tags: [appsec, data, privacy, retention]
+        question: |
+          Is sensitive data classified, minimized, protected at rest,
+          and managed under documented retention and disposal rules?
+        purpose: |
+          Data protection in the application aligns the technical
+          surface with privacy and security policy.
+        expectedOutcome:
+          - "Sensitive data is classified and minimized (L1)."
+          - "Encryption at rest is applied (L1)."
+          - "Retention and disposal are enforced (L2)."
+        howTo:
+          - step: "Classify and minimize sensitive data"
+          - step: "Apply encryption at rest"
+          - step: "Enforce retention and disposal"
+        evidenceExamples:
+          - "Data classification"
+          - "Encryption design"
+          - "Retention / disposal evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Data unprotected"
+            "3": "Partial"
+            "5": "Classified + encrypted + retained"
+        crossReferences:
+          - iso27001:A.5.34

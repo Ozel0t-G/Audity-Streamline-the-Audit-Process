@@ -1178,6 +1178,195 @@ export const manualArticles: ManualArticle[] = [
         ]
       }
     ]
+  },
+  {
+    id: "framework-import",
+    title: "Import a framework from CSV",
+    category: "admin",
+    audience: "admin",
+    keywords: ["framework", "import", "csv", "upload", "user_frameworks", "audity_frameworks"],
+    summary: "How an Instance Admin uploads a CSV of a licensed framework and Audity generates a complete YAML, optionally enriched by an LLM, that admins can review and publish.",
+    screenshot: "Screenshot: Admin Panel > Framework Library > Import section with Upload CSV button and Drafts list",
+    sections: [
+      {
+        heading: "When to use this",
+        blocks: [
+          { kind: "paragraph", text: "Audity ships with several built-in frameworks (visible with the 'shipped' badge). When you have purchased or licensed a framework that is not shipped — for example a tenant-specific policy or a paid standard catalogue — you upload it as a CSV and Audity converts it into the same YAML schema as the built-in ones. Tenant-uploaded frameworks carry the 'user' badge." }
+        ]
+      },
+      {
+        heading: "Folder layout (for the maintainer)",
+        blocks: [
+          { kind: "fields", items: [
+            { name: "audity_frameworks/", description: "Read-only on the running container. Built-in frameworks that ship with Audity live here." },
+            { name: "user_frameworks/", description: "Read-write bind-mount. Generated YAMLs from CSV uploads land here, along with their original source files under _sources/." },
+            { name: "frameworks/ (legacy)", description: "Older path supported for backwards compatibility. Migrate to audity_frameworks/ when you publish updates." }
+          ] }
+        ]
+      },
+      {
+        heading: "CSV format",
+        blocks: [
+          { kind: "paragraph", text: "Download the CSV template via Admin Panel > Framework Library > Download CSV Template. The header row is fixed: required columns are control_id, title and requirement. Optional columns are domain, weight (1, 2 or 3), tags (semicolon or comma separated) and source_reference." },
+          { kind: "code", language: "csv", text: "control_id,domain,title,requirement,weight,tags\nA.5.1,Organisational,Policies for information security,The organization shall define, approve, communicate and review information security policies.,3,policy;governance" }
+        ]
+      },
+      {
+        heading: "Upload and review",
+        blocks: [
+          { kind: "steps", items: [
+            "Open Admin Panel > Framework Library.",
+            "In the Framework Import section, click '+ CSV hochladen'.",
+            "Fill in framework_key (unique slug), display name, version and language.",
+            "Select your CSV file. Maximum 25 MB.",
+            "Click 'Upload starten'. Audity stages the file under user_frameworks/_sources/ and creates a draft.",
+            "If an AI provider is configured (see 'AI & Integrations'), Audity enriches each control with question, purpose, expectedOutcome, howTo and evidenceExamples. With AI off, fields contain TODO placeholders for you to fill manually.",
+            "Open the draft from the 'Drafts ready for review' section. Each control is editable inline; fields auto-save on blur. Use '♻ Re-generate' to ask the LLM again. Mark a control 'Approved' or 'TODO' as you go.",
+            "When satisfied, click 'Commit Framework'. The YAML is written to user_frameworks/ and appears in the Library within seconds."
+          ] }
+        ]
+      },
+      {
+        heading: "Deleting a user-uploaded framework",
+        blocks: [
+          { kind: "paragraph", text: "Open the framework in the Library and use the Delete action. The YAML file is removed from user_frameworks/ and the framework is archived in the database — existing assessment answers stay visible but read-only." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "ai-integrations",
+    title: "AI & Integrations",
+    category: "admin",
+    audience: "admin",
+    keywords: ["ai", "llm", "ollama", "anthropic", "claude", "openai", "api key", "integrations"],
+    summary: "How to configure the LLM provider Audity uses to enrich framework imports. Off is the default; you opt in when you connect Ollama, Anthropic or OpenAI.",
+    sections: [
+      {
+        heading: "Where it lives",
+        blocks: [
+          { kind: "paragraph", text: "Admin Panel > AI & Integrations. Three tabs: Provider, Usage and Test Console. AI is optional: with provider set to 'Off', framework imports still work — generated YAMLs contain TODO placeholders that you fill in manually." }
+        ]
+      },
+      {
+        heading: "Provider options",
+        blocks: [
+          { kind: "fields", items: [
+            { name: "Off (default)", description: "No outbound AI calls. Framework imports produce TODO placeholders." },
+            { name: "Ollama (self-hosted)", description: "You install Ollama on the host (e.g. brew install ollama && ollama pull llama3.1:8b). Audity reaches it via the configured HTTP endpoint, by default http://host.docker.internal:11434. No data leaves your network." },
+            { name: "Anthropic (Claude)", description: "Cloud API. Get an API key at console.anthropic.com → API Keys. Only control title + requirement are sent — no audit answers, no customer data, no PII." },
+            { name: "OpenAI", description: "Cloud API. Get an API key at platform.openai.com → API keys. Same data scope as Anthropic." }
+          ] }
+        ]
+      },
+      {
+        heading: "Configuring a provider",
+        blocks: [
+          { kind: "steps", items: [
+            "Pick the provider from the Provider tab.",
+            "Confirm or override the endpoint URL and model.",
+            "For external providers, paste your API key. Audity stores it encrypted; the key field is never displayed again — the UI only shows '••••••••• (saved)'.",
+            "Click 'Test Connection'. A short call validates the credentials and shows the latency.",
+            "Click 'Save'. Subsequent framework imports use the new provider; existing drafts can be re-generated control by control."
+          ] }
+        ]
+      },
+      {
+        heading: "Usage & cost tracking",
+        blocks: [
+          { kind: "paragraph", text: "The Usage tab lists tokens-in, tokens-out and estimated cost in USD per provider over the last 30 days. The numbers are derived from the framework_imports records, so they include drafts that were never committed." }
+        ]
+      },
+      {
+        heading: "Test Console",
+        blocks: [
+          { kind: "paragraph", text: "Paste a title and a requirement, pick a language, click 'Enrich'. The console shows the JSON the LLM would produce for that control — useful to validate prompt quality before processing a large CSV." }
+        ]
+      },
+      {
+        heading: "Privacy notes",
+        blocks: [
+          { kind: "warning", text: "External providers (Anthropic, OpenAI) receive the strings you author in the framework CSV (title + requirement). Treat those strings as published — never include customer-specific or classified content. Audit answers, evidence files and tenant data never reach any AI provider." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "server-status",
+    title: "Server status & system problems",
+    category: "admin",
+    audience: "admin",
+    keywords: ["status", "monitoring", "system", "problems", "ip", "hostname", "metrics", "uptime"],
+    summary: "What the System Monitor card shows, how Audity detects environmental and database issues, and how to interpret the problem badges.",
+    sections: [
+      {
+        heading: "Server status card",
+        blocks: [
+          { kind: "fields", items: [
+            { name: "Hostname", description: "The container's hostname — useful when running multiple instances." },
+            { name: "Public URL", description: "The AUDITY_PUBLIC_URL the API knows about. If this differs from how you reached the UI, your CSP and CORS may also need updating." },
+            { name: "Uptime", description: "Seconds since the API process started. Reset by every container restart, deploy or update." },
+            { name: "Platform / Node / CPU cores / Load average / Memory", description: "Host runtime info via Node's os module. Memory %, load average and CPU count help size the host." },
+            { name: "Network interfaces", description: "All non-internal NICs the container sees. Useful when troubleshooting reverse-proxy routing." }
+          ] }
+        ]
+      },
+      {
+        heading: "System Problems",
+        blocks: [
+          { kind: "paragraph", text: "Audity continuously evaluates a small set of health checks and surfaces them as red badges in the dashboard:" },
+          { kind: "fields", items: [
+            { name: "High CPU load", description: "Triggered when the 1-minute load average exceeds 90% of cores." },
+            { name: "High memory usage", description: "Triggered when used memory exceeds 90% of total." },
+            { name: "Low free storage", description: "Triggered when disk usage on the data volume exceeds 90%." },
+            { name: "Database unreachable", description: "A 'select 1' probe against the Postgres pool failed. Investigate audity-db logs and connection string." },
+            { name: "Stuck framework imports", description: "Imports that have not made progress in 10 minutes. Open the import in Framework Library > Drafts to retry or discard." }
+          ] }
+        ]
+      }
+    ]
+  },
+  {
+    id: "admin-user-management",
+    title: "User management & password resets",
+    category: "admin",
+    audience: "admin",
+    keywords: ["users", "invite", "password", "reset", "admin", "user management"],
+    summary: "How to invite new users, reset a user's password, and what password rules Audity enforces.",
+    sections: [
+      {
+        heading: "Inviting a user",
+        blocks: [
+          { kind: "paragraph", text: "Open Admin Panel > User Management. Fill the invite form with email, full name and role. The admin form intentionally ignores any password field — Audity always generates a 24-character random password (mixed case, digits, special characters)." },
+          { kind: "warning", text: "After clicking Invite, Audity shows the one-time password in a dialog. Copy it now — it is never displayed again. Deliver it to the new user through a secure side channel (in person, password manager share, encrypted message)." }
+        ]
+      },
+      {
+        heading: "Resetting a user's password",
+        blocks: [
+          { kind: "steps", items: [
+            "Open Admin Panel > User Management.",
+            "Find the user row.",
+            "Click 'Reset password'.",
+            "Audity generates a new 24-character password, replaces the hash in the database, and shows it in the same one-time dialog used for invites.",
+            "Copy the password (button) and deliver it to the user. They should change it on first login.",
+            "Click 'I've saved it' to close — the password is wiped from screen and memory."
+          ] }
+        ]
+      },
+      {
+        heading: "Password policy when users change their own password",
+        blocks: [
+          { kind: "paragraph", text: "User Settings > Change password enforces the following rules. The form blocks submission until all criteria are met:" },
+          { kind: "fields", items: [
+            { name: "Length", description: "At least 16 characters." },
+            { name: "Letters", description: "At least one uppercase and one lowercase letter." },
+            { name: "Digits", description: "At least one digit." },
+            { name: "Special characters", description: "At least one symbol from !@#$%^&*+_-=?" }
+          ] }
+        ]
+      }
+    ]
   }
 ];
 

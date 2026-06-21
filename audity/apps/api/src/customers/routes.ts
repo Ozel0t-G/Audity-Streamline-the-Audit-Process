@@ -7,7 +7,7 @@ import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { createNotification } from "../notifications/service.js";
 import { isUuid, validateBody } from "../utils/validation.js";
-import { canAccessCustomer, canManageCustomerAccess, customerAccessRecipients, isAdminRole } from "./access.js";
+import { canAccessCustomer, canManageCustomerAccess, canViewCustomerIncludingArchived, customerAccessRecipients, isAdminRole } from "./access.js";
 
 type CustomerBody = {
   name?: string;
@@ -55,7 +55,10 @@ function mapCustomer(row: Record<string, unknown>) {
     sharedWith: row.shared_with ?? [],
     selectedFrameworks: row.selected_frameworks ?? [],
     createdAt: row.created_at,
-    updatedAt: row.updated_at
+    updatedAt: row.updated_at,
+    archivedAt: row.archived_at ?? null,
+    archivedBy: row.archived_by ?? null,
+    archiveReason: row.archive_reason ?? null
   };
 }
 
@@ -88,6 +91,12 @@ function customerSelect(where: string) {
 async function loadCustomer(id: string) {
   if (!isUuid(id)) return null;
   const result = await pool.query(`${customerSelect("where c.id = $1 and c.archived_at is null")}`, [id]);
+  return result.rows[0] ? mapCustomer(result.rows[0]) : null;
+}
+
+async function loadCustomerIncludingArchived(id: string) {
+  if (!isUuid(id)) return null;
+  const result = await pool.query(`${customerSelect("where c.id = $1")}`, [id]);
   return result.rows[0] ? mapCustomer(result.rows[0]) : null;
 }
 
@@ -317,10 +326,11 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
     "/api/customers/:id",
     { preHandler: requirePermission("assessment.view") },
     async (request, reply) => {
-      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+      // Owners and admins may also fetch archived customers (read-only view).
+      if (!(await canViewCustomerIncludingArchived(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
       }
-      const customer = await loadCustomer(request.params.id);
+      const customer = await loadCustomerIncludingArchived(request.params.id);
       if (!customer) {
         return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
       }

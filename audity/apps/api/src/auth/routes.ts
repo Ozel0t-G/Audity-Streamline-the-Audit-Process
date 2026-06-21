@@ -2,9 +2,13 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 import argon2 from "argon2";
 import { z } from "zod";
 import { appendAuditEvent } from "../audit/service.js";
+import { parseUserAgent } from "../utils/userAgent.js";
 import { loadConfig } from "../config.js";
 import { pool } from "../db/client.js";
 import { requireAuth, requireCsrf, requirePermission } from "./hooks.js";
+import { validateUserPassword, PASSWORD_POLICY_DESCRIPTION } from "./passwordPolicy.js";
+import { acknowledgeKey, ensureKeyMeta } from "./encryptionKeyMeta.js";
+import { keyToPhrase, phraseToKey } from "./recoveryPhrase.js";
 import {
   signMfaChallengeToken,
   verifyAccessToken,
@@ -23,6 +27,7 @@ import {
 } from "./mfa.js";
 import {
   authenticateWithPassword,
+  authenticateWithPasswordDetailed,
   type AuthUser,
   createSession,
   createInstanceAdmin,
@@ -87,8 +92,12 @@ const disableMfaSchema = z.object({
 });
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(256),
-  newPassword: z.string().min(12).max(256)
+  newPassword: z.string().min(16).max(256)
 });
+
+function isInstanceAdmin(user: { role?: string } | undefined): boolean {
+  return user?.role === "Instance Admin";
+}
 
 function validateBody<T>(schema: z.ZodSchema<T>, body: unknown): T {
   const result = schema.safeParse(body);
@@ -146,22 +155,124 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     return { accessToken: session.accessToken, csrfToken: session.csrfToken, user: publicUser(user) };
   });
 
-  app.post<{ Body: LoginBody }>("/api/auth/login", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
-    const body = validateBody(loginSchema, request.body);
-    const user = await authenticateWithPassword(body.email, body.password);
-    if (!user) {
+  // ---- Recovery phrase (Disaster Recovery, Option B) ----
+  app.get(
+    "/api/auth/recovery-phrase",
+    { preHandler: requireAuth, config: { rateLimit: authRateLimit } },
+    async (request, reply) => {
+      if (!isInstanceAdmin(request.user)) {
+        return reply.code(403).send({ code: "FORBIDDEN", message: "Only Instance Admins can view the recovery phrase" });
+      }
+      const meta = await ensureKeyMeta();
+      return {
+        phrase: keyToPhrase(loadConfig().encryptionKey),
+        fingerprint: meta.fingerprint,
+        fingerprintShort: meta.fingerprint.match(/.{2}/g)!.join(" "),
+        acknowledgedAt: meta.acknowledged_at,
+        acknowledgedBy: meta.acknowledged_by
+      };
+    }
+  );
+
+  app.post(
+    "/api/auth/recovery-phrase/acknowledge",
+    { preHandler: requireCsrf, config: { rateLimit: authRateLimit } },
+    async (request, reply) => {
+      if (!isInstanceAdmin(request.user)) {
+        return reply.code(403).send({ code: "FORBIDDEN", message: "Only Instance Admins can acknowledge the recovery phrase" });
+      }
+      const meta = await acknowledgeKey(request.user!.sub);
       await appendAuditEvent({
-        actor: null,
-        action: "auth.login.failed",
-        entity: "user",
+        actor: request.user!.sub,
+        action: "encryption_key.acknowledged",
+        entity: "encryption_key",
+        entityId: "1",
         ip: request.ip,
         userAgent: request.headers["user-agent"] ?? null,
-        payload: { email: body.email }
+        payload: { fingerprint: meta.fingerprint }
+      });
+      return { acknowledgedAt: meta.acknowledged_at };
+    }
+  );
+
+  app.get(
+    "/api/auth/recovery-phrase/fingerprint",
+    { preHandler: requireAuth },
+    async () => {
+      const meta = await ensureKeyMeta();
+      return {
+        fingerprint: meta.fingerprint,
+        fingerprintShort: meta.fingerprint.match(/.{2}/g)!.join(" "),
+        acknowledgedAt: meta.acknowledged_at
+      };
+    }
+  );
+
+  app.post<{ Body: { phrase: string; expectedFingerprint?: string } }>(
+    "/api/auth/recovery-phrase/verify",
+    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      if (!request.body || typeof request.body.phrase !== "string") {
+        return reply.code(400).send({ code: "INVALID_INPUT", message: "phrase is required" });
+      }
+      try {
+        const { fingerprint } = phraseToKey(request.body.phrase);
+        const currentMeta = await ensureKeyMeta();
+        const matchesInstance = fingerprint === currentMeta.fingerprint;
+        if (request.body.expectedFingerprint && fingerprint !== request.body.expectedFingerprint.replace(/\s+/g, "").toLowerCase()) {
+          return {
+            valid: true,
+            matchesInstance,
+            matchesExpected: false,
+            fingerprint
+          };
+        }
+        return {
+          valid: true,
+          matchesInstance,
+          matchesExpected: true,
+          fingerprint
+        };
+      } catch (error) {
+        return reply.code(400).send({
+          code: "INVALID_PHRASE",
+          message: error instanceof Error ? error.message : "Invalid recovery phrase",
+          valid: false
+        });
+      }
+    }
+  );
+
+  app.post<{ Body: LoginBody }>("/api/auth/login", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
+    const body = validateBody(loginSchema, request.body);
+    const ua = parseUserAgent(request.headers["user-agent"] ?? null);
+    const outcome = await authenticateWithPasswordDetailed(body.email, body.password);
+    if (!outcome.ok) {
+      const reasonMap: Record<string, string> = {
+        no_user: "user_not_found",
+        disabled: "user_disabled",
+        wrong_password: "wrong_password"
+      };
+      await appendAuditEvent({
+        actor: outcome.userId ?? null,
+        action: "auth.login.failed",
+        entity: "user",
+        entityId: outcome.userId ?? null,
+        ip: request.ip,
+        userAgent: ua.raw,
+        payload: {
+          attempted_email: body.email,
+          failure_reason: reasonMap[outcome.reason] ?? outcome.reason,
+          browser: ua.browser,
+          os: ua.os,
+          device: ua.device
+        }
       });
       return reply
         .code(401)
         .send({ code: "LOGIN_FAILED", message: "Invalid email or password" });
     }
+    const user = outcome.user;
     if (await isMfaEnabled(user.id)) {
       return {
         mfaRequired: true,
@@ -175,7 +286,13 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       entity: "user",
       entityId: user.id,
       ip: request.ip,
-      userAgent: request.headers["user-agent"] ?? null
+      userAgent: ua.raw,
+      payload: {
+        email: user.email,
+        browser: ua.browser,
+        os: ua.os,
+        device: ua.device
+      }
     });
     setRefreshCookie(reply, session.refreshToken);
     return {
@@ -361,6 +478,14 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     { config: { rateLimit: authRateLimit }, preHandler: requireCsrf },
     async (request, reply) => {
       const body = validateBody(changePasswordSchema, request.body) as Required<ChangePasswordBody>;
+      const policy = validateUserPassword(body.newPassword);
+      if (!policy.ok) {
+        return reply.code(400).send({
+          code: "PASSWORD_POLICY",
+          message: `Password does not meet policy: ${policy.reasons.join(", ")}.`,
+          policy: PASSWORD_POLICY_DESCRIPTION
+        });
+      }
       const user = await pool.query<{ password_hash: string }>(
         "select password_hash from users where id = $1 and status = 'active'",
         [request.user!.sub]

@@ -12,13 +12,16 @@ import { registerAuditCenterRoutes } from "./audit-center/routes.js";
 import { registerAuthRoutes } from "./auth/routes.js";
 import { loadConfig } from "./config.js";
 import { registerCustomerRoutes } from "./customers/routes.js";
+import { registerArchiveRoutes } from "./archive/routes.js";
 import { registerConnectorRoutes, startConnectorSyncWorker } from "./connectors/routes.js";
 import { registerDashboardRoutes } from "./dashboard/routes.js";
 import { verifyDatabaseConnection } from "./db/client.js";
 import { applyCoreSchema } from "./db/schema.js";
+import { seedRolesAndPermissions } from "./rbac/seed.js";
 import { registerEvidenceRoutes } from "./evidence/routes.js";
 import { registerFrameworkRoutes } from "./frameworks/routes.js";
 import { startFrameworkYamlAutoSync } from "./frameworks/yamlImporter.js";
+import { startArchiveBundleCron } from "./archive/cron.js";
 import { registerNotificationRoutes } from "./notifications/routes.js";
 import { registerProductivityRoutes } from "./productivity/routes.js";
 import { registerReportRoutes } from "./reports/routes.js";
@@ -160,6 +163,10 @@ app.get("/ready", async () => {
 
 await verifyDatabaseConnection();
 await applyCoreSchema();
+// Re-sync roles + permissions on every startup so permission changes
+// shipped in a new release are applied to existing instances without a
+// separate `npm run db:seed` step.
+await seedRolesAndPermissions();
 // Recover stuck framework-import jobs on startup so they don't display
 // an eternal progress bar after an API restart mid-job.
 await (await import("./db/client.js")).pool.query(
@@ -170,11 +177,13 @@ await (await import("./db/client.js")).pool.query(
    where status in ('extracting', 'enriching')`
 );
 startFrameworkYamlAutoSync(app.log);
+startArchiveBundleCron(app.log);
 startConnectorSyncWorker(app.log);
 await registerAuthRoutes(app);
 await registerDashboardRoutes(app);
 await registerConnectorRoutes(app);
 await registerCustomerRoutes(app);
+await registerArchiveRoutes(app);
 await registerAssessmentRoutes(app);
 await registerAuditCenterRoutes(app);
 await registerFrameworkRoutes(app);

@@ -60,9 +60,9 @@ export function AiSettingsPage() {
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [testTitle, setTestTitle] = useState("Privileged Access Review");
   const [testRequirement, setTestRequirement] = useState(
-    "Die Organisation muss privilegierte Zugänge mindestens vierteljährlich überprüfen und dokumentieren."
+    "The organization shall review privileged accounts at least quarterly and document the outcome."
   );
-  const [testLanguage, setTestLanguage] = useState<"de" | "en">("de");
+  const [testLanguage, setTestLanguage] = useState<"de" | "en">("en");
   const [enrichResult, setEnrichResult] = useState<unknown>(null);
   const [enriching, setEnriching] = useState(false);
 
@@ -177,7 +177,7 @@ export function AiSettingsPage() {
   }
 
   if (!draft || !config) {
-    return <div className="text-sm text-audity-muted">Lädt…</div>;
+    return <div className="text-sm text-audity-muted">Loading…</div>;
   }
 
   const isExternal = draft.provider === "anthropic" || draft.provider === "openai";
@@ -191,8 +191,8 @@ export function AiSettingsPage() {
         <p className="audity-page-kicker">Administration</p>
         <h1 className="audity-page-title">AI & Integrations</h1>
         <p className="audity-page-copy">
-          Konfiguriere den LLM-Provider für Framework-Imports. Standard ist <strong>Off</strong> —
-          AI ist optional und du wählst aktiv, ob du sie nutzt.
+          Configure the LLM provider Audity uses for framework imports. The default is <strong>Off</strong> —
+          AI is optional and only used when you actively turn it on.
         </p>
       </div>
 
@@ -245,17 +245,34 @@ export function AiSettingsPage() {
               <legend className="audity-section-title px-1">Connection</legend>
               {draft.provider === "ollama" ? (
                 <p className="mb-3 rounded-audity border border-audity-warning/40 bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
-                  Ollama wird nicht mit Audity ausgeliefert — installiere es selbst auf dem Host:
-                  <code className="ml-1 text-[11px]">brew install ollama && ollama pull llama3.1:8b</code> bzw. unter Linux
+                  Ollama is not bundled with Audity — install it yourself on the host:
+                  <code className="ml-1 text-[11px]">brew install ollama && ollama pull llama3.1:8b</code> or on Linux
                   <code className="ml-1 text-[11px]">curl -fsSL https://ollama.com/install.sh | sh && ollama pull llama3.1:8b</code>.
-                  Der Default-Endpoint <code className="text-[11px]">http://host.docker.internal:11434</code> erreicht den Host
-                  aus dem Audity-Container. Falls Ollama auf einer anderen Maschine läuft, passe den Endpoint entsprechend an.
+                  The default endpoint <code className="text-[11px]">http://host.docker.internal:11434</code> lets the Audity
+                  container reach the host. If Ollama runs on a different machine, point the endpoint there.
                 </p>
               ) : null}
               {isExternal ? (
-                <p className="mb-3 rounded-audity border border-audity-warning/40 bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
-                  Bei Framework-Imports werden <strong>Title + Requirement</strong> jeder Kontrolle an {draft.provider === "anthropic" ? "Anthropic" : "OpenAI"} gesendet. Keine Audit-Antworten, keine Kunden-Daten, keine PII.
-                </p>
+                <div className="mb-3 rounded-audity border border-audity-warning/40 bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
+                  <p>
+                    Framework imports send only <strong>title + requirement</strong> per control to
+                    {draft.provider === "anthropic" ? " Anthropic" : " OpenAI"}. No audit answers,
+                    no customer data, no PII.
+                  </p>
+                  <p className="mt-2">
+                    Get your API key here:{" "}
+                    <a
+                      className="font-semibold underline"
+                      href={draft.provider === "anthropic" ? "https://console.anthropic.com/settings/keys" : "https://platform.openai.com/api-keys"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {draft.provider === "anthropic" ? "console.anthropic.com → API Keys" : "platform.openai.com → API keys"}
+                    </a>{" "}
+                    — sign in, create a new key, paste it below. Audity stores it encrypted
+                    and never displays it again.
+                  </p>
+                </div>
               ) : null}
               {showEndpoint ? (
                 <div className="mb-3">
@@ -286,7 +303,7 @@ export function AiSettingsPage() {
                     className="audity-input"
                     type="password"
                     autoComplete="off"
-                    placeholder={config.hasKey ? "•••••••••• (gespeichert)" : "API-Key eingeben"}
+                    placeholder={config.hasKey ? "•••••••••• (saved)" : "Paste API key"}
                     value={apiKeyInput}
                     onChange={(event) => {
                       setApiKeyInput(event.target.value);
@@ -296,7 +313,7 @@ export function AiSettingsPage() {
                   {config.hasKey ? (
                     <label className="mt-2 flex items-center gap-2 text-xs text-audity-secondary">
                       <input type="checkbox" checked={clearKey} onChange={(event) => setClearKey(event.target.checked)} />
-                      Gespeicherten Key entfernen
+                      Remove stored key
                     </label>
                   ) : null}
                 </div>
@@ -330,11 +347,11 @@ export function AiSettingsPage() {
 
           <div className="flex items-center gap-2">
             <button type="button" className="audity-btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Speichert…" : "Save"}
+              {saving ? "Saving…" : "Save"}
             </button>
             {draft.provider !== "none" ? (
               <button type="button" className="audity-btn-secondary" disabled={testing} onClick={handleTest}>
-                {testing ? "Testet…" : "Test Connection"}
+                {testing ? "Testing…" : "Test Connection"}
               </button>
             ) : null}
             {testResult ? (
@@ -351,7 +368,7 @@ export function AiSettingsPage() {
 
       {tab === "usage" ? (
         <div className="max-w-3xl">
-          <p className="mb-3 text-sm text-audity-secondary">Token- und Kostenverbrauch der letzten 30 Tage.</p>
+          <p className="mb-3 text-sm text-audity-secondary">Token and cost usage over the last 30 days.</p>
           <table className="w-full border-collapse text-sm">
             <thead className="bg-audity-panelAlt text-left text-xs uppercase text-audity-muted">
               <tr>
@@ -359,7 +376,7 @@ export function AiSettingsPage() {
                 <th className="px-3 py-2 text-right">Imports</th>
                 <th className="px-3 py-2 text-right">Tokens in</th>
                 <th className="px-3 py-2 text-right">Tokens out</th>
-                <th className="px-3 py-2 text-right">Geschätzte Kosten</th>
+                <th className="px-3 py-2 text-right">Estimated cost</th>
               </tr>
             </thead>
             <tbody>
@@ -383,8 +400,8 @@ export function AiSettingsPage() {
       {tab === "test" ? (
         <div className="max-w-3xl grid gap-3">
           <p className="text-sm text-audity-secondary">
-            Teste das Anreicherungs-Verhalten mit einem einzelnen Requirement, ohne ein Framework hochzuladen.
-            {config.provider === "none" ? " (Aktuell: Provider = Off → TODO-Placeholders.)" : ""}
+            Test enrichment behaviour against a single requirement without uploading a whole framework.
+            {config.provider === "none" ? " (Currently provider = Off → TODO placeholders.)" : ""}
           </p>
           <div className="grid gap-2">
             <label className="audity-label">Title</label>
@@ -397,13 +414,13 @@ export function AiSettingsPage() {
               onChange={(event) => setTestRequirement(event.target.value)}
             />
             <div className="flex items-center gap-2">
-              <label className="audity-label mb-0">Sprache</label>
+              <label className="audity-label mb-0">Language</label>
               <select className="audity-input max-w-[120px]" value={testLanguage} onChange={(event) => setTestLanguage(event.target.value as "de" | "en")}>
                 <option value="de">de</option>
                 <option value="en">en</option>
               </select>
               <button type="button" className="audity-btn-primary" disabled={enriching} onClick={handleEnrich}>
-                {enriching ? "Generiert…" : "Enrich"}
+                {enriching ? "Generating…" : "Enrich"}
               </button>
             </div>
           </div>

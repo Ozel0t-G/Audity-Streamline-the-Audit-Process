@@ -24,6 +24,7 @@
     "ioredis": "^5.11.0",
     "jsonwebtoken": "^9.0.2",
     "minio": "^8.0.7",
+    "nodemailer": "^6.9.14",
     "otplib": "^12.0.1",
     "pg": "^8.12.0",
     "qrcode": "^1.5.4",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/nodemailer": "^8.0.0",
     "@types/node": "^20.14.10",
     "@types/pg": "^8.11.6",
     "@types/qrcode": "^1.5.5",

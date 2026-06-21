@@ -43,10 +43,29 @@ async function collectSystemSnapshot() {
   const usedStorage = totalStorage - freeStorage;
   const storagePercent = totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
   const issues = [
-    loadPercent >= 90 ? "High CPU load" : null,
-    memoryPercent >= 90 ? "High memory usage" : null,
-    storagePercent >= 90 ? "Low free storage" : null
+    loadPercent >= 90 ? "High CPU load (load average > 90 % of cores)" : null,
+    memoryPercent >= 90 ? "High memory usage (>90 %)" : null,
+    storagePercent >= 90 ? "Low free storage (<10 %)" : null
   ].filter((issue): issue is string => Boolean(issue));
+
+  // Database health probe — fast SELECT against pool.
+  try {
+    await pool.query("select 1");
+  } catch (error) {
+    issues.push(`Database unreachable: ${error instanceof Error ? error.message.slice(0, 120) : "unknown"}`);
+  }
+
+  // Pending framework imports stuck in extracting/enriching > 10 min indicate a stalled background worker.
+  try {
+    const stuck = await pool.query<{ count: number }>(
+      "select count(*)::int as count from framework_imports where status in ('extracting','enriching') and updated_at < now() - interval '10 minutes'"
+    );
+    if (stuck.rows[0]?.count > 0) {
+      issues.push(`${stuck.rows[0].count} framework import job(s) appear stuck (no progress in 10 minutes)`);
+    }
+  } catch {
+    // ignore — table may not exist yet on first boot
+  }
 
   const snapshot = {
     status: issues.length ? "degraded" : "online",

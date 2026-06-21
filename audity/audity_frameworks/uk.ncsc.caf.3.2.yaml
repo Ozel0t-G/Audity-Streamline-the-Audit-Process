@@ -1,0 +1,590 @@
+framework:
+  schemaVersion: 1
+  key: uk.ncsc.caf.3.2
+  name: "NCSC Cyber Assessment Framework 3.2"
+  shortName: "NCSC CAF v3.2"
+  version: "3.2"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "CISO"
+    - "Operator of Essential Services"
+    - "Critical National Infrastructure Operator"
+  estimatedDurationMinutes: 300
+  description: |
+    The Cyber Assessment Framework (CAF), published by the UK National
+    Cyber Security Centre, is the standard framework for assessing
+    cybersecurity in organizations responsible for vital services. It
+    is widely used for NIS regulations compliance and as a broader
+    self-assessment tool.
+
+    This YAML covers all 14 CAF principles grouped into the four
+    objectives (A. Managing security risk; B. Protecting against cyber
+    attack; C. Detecting cyber security events; D. Minimising the
+    impact of cyber security incidents).
+  scopeNote: |
+    In scope: all 14 principles of NCSC CAF v3.2, structured as one
+    control per principle.
+
+    Out of scope: the Indicators of Good Practice (IGPs) at outcome
+    level (Achieved / Partially Achieved / Not Achieved); per-sector
+    CAF profiles published by competent authorities; the Cyber
+    Essentials and Cyber Essentials Plus schemes (separate frameworks).
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NCSC CAF v3.2 is published by the UK National Cyber Security
+      Centre under the Open Government Licence v3.0. Principle content
+      has been paraphrased into audit-readiness English.
+
+severityRubric:
+  critical: |
+    Failure leaves a principle Not Achieved for a vital service;
+    likely supervisory action.
+  high: |
+    Material gap (Partially Achieved with risk) without compensating
+    measures.
+  medium: |
+    Partial achievement on a principle; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: uk.ncsc.caf:A1
+    target: nist-csf-2.0:GV.RR-01
+    type: covers
+  - source: uk.ncsc.caf:A2
+    target: nist-csf-2.0:GV.RM-01
+    type: covers
+  - source: uk.ncsc.caf:A3
+    target: iso27001:A.5.9
+    type: covers
+  - source: uk.ncsc.caf:A4
+    target: iso27001:A.5.19
+    type: covers
+  - source: uk.ncsc.caf:B2
+    target: iso27001:A.5.15
+    type: covers
+  - source: uk.ncsc.caf:B3
+    target: iso27001:A.5.34
+    type: related
+  - source: uk.ncsc.caf:C1
+    target: iso27001:A.8.16
+    type: covers
+  - source: uk.ncsc.caf:D1
+    target: iso27001:A.5.24
+    type: covers
+
+domains:
+  - id: objective-a
+    name: "A. Managing Security Risk"
+    description: |
+      The organization has appropriate management policies, processes,
+      and procedures in place to govern its approach to the security
+      of network and information systems.
+    controls:
+      - id: uk.ncsc.caf:A1
+        title: "A1 - Governance"
+        weight: 3
+        answerType: scale
+        tags: [governance, leadership, accountability]
+        question: |
+          Is appropriate governance in place to oversee and direct
+          cybersecurity risk management, with accountability assigned
+          to senior leaders?
+        purpose: |
+          Without senior accountability, cybersecurity decisions drift
+          to those without authority. Documented governance fixes that.
+        expectedOutcome:
+          - "Senior accountability for cybersecurity is documented."
+          - "Governance forums meet on cadence."
+          - "Risk decisions are recorded."
+        howTo:
+          - step: "Assign senior accountability"
+          - step: "Establish governance forums"
+          - step: "Record risk decisions"
+        evidenceExamples:
+          - "Accountability statement"
+          - "Forum minutes"
+          - "Risk decision record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No governance"
+            "3": "Governance informal"
+            "5": "Documented and active"
+
+      - id: uk.ncsc.caf:A2
+        title: "A2 - Risk Management"
+        weight: 3
+        answerType: scale
+        tags: [risk-management, assessment, treatment]
+        question: |
+          Are cybersecurity risks systematically identified, assessed,
+          and treated using a documented methodology?
+        purpose: |
+          Without a methodology, risk treatment is unpredictable and
+          unfair across the organization.
+        expectedOutcome:
+          - "Documented methodology in use."
+          - "Risks tracked in a register."
+          - "Treatment is monitored."
+        howTo:
+          - step: "Adopt a documented methodology"
+          - step: "Maintain a risk register"
+          - step: "Monitor treatment"
+        evidenceExamples:
+          - "Methodology"
+          - "Risk register"
+          - "Treatment tracker"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Ad hoc"
+            "3": "Partial"
+            "5": "Methodology + tracked"
+
+      - id: uk.ncsc.caf:A3
+        title: "A3 - Asset Management"
+        weight: 3
+        answerType: scale
+        tags: [asset-management, inventory]
+        question: |
+          Are systems and information assets that contribute to the
+          essential function identified, classified, and managed?
+        purpose: |
+          Asset inventory underpins every downstream control. CAF
+          principle A3 sets this as foundational.
+        expectedOutcome:
+          - "Inventory of essential-function assets is current."
+          - "Classification reflects criticality."
+          - "Asset dependencies are mapped."
+        howTo:
+          - step: "Inventory essential-function assets"
+          - step: "Apply classification"
+          - step: "Map dependencies"
+        evidenceExamples:
+          - "Asset inventory"
+          - "Classification scheme"
+          - "Dependency map"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Partial"
+            "5": "Inventory + classification + deps"
+
+      - id: uk.ncsc.caf:A4
+        title: "A4 - Supply Chain"
+        weight: 3
+        answerType: scale
+        tags: [supply-chain, vendor, third-party]
+        question: |
+          Are risks to the essential function arising from the supply
+          chain identified and managed?
+        purpose: |
+          Supply chain compromises increasingly drive material
+          incidents. Active management addresses the dependency.
+        expectedOutcome:
+          - "Supply chain risk is documented per critical service."
+          - "Supplier oversight is proportionate."
+          - "Supplier incidents are tracked."
+        howTo:
+          - step: "Document supply chain risk per critical service"
+          - step: "Apply proportionate oversight"
+          - step: "Track supplier incidents"
+        evidenceExamples:
+          - "Supply chain risk register"
+          - "Supplier oversight plan"
+          - "Supplier incident log"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No supplier program"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+  - id: objective-b
+    name: "B. Protecting Against Cyber Attack"
+    description: |
+      The organization has proportionate security measures in place to
+      protect the essential function from cyber attack.
+    controls:
+      - id: uk.ncsc.caf:B1
+        title: "B1 - Service Protection Policies and Processes"
+        weight: 2
+        answerType: scale
+        tags: [policy, processes, protection]
+        question: |
+          Are service protection policies and processes documented and
+          applied across the organization?
+        purpose: |
+          Policies make protection enforceable and auditable. Without
+          them, protection is dependent on individual operators.
+        expectedOutcome:
+          - "Policies and processes are documented."
+          - "Policies are communicated."
+          - "Compliance is monitored."
+        howTo:
+          - step: "Document protection policies and processes"
+          - step: "Communicate to in-scope personnel"
+          - step: "Monitor compliance"
+        evidenceExamples:
+          - "Policy library"
+          - "Communication record"
+          - "Compliance report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policies"
+            "3": "Policies outdated"
+            "5": "Policies enforced"
+
+      - id: uk.ncsc.caf:B2
+        title: "B2 - Identity and Access Control"
+        weight: 3
+        answerType: scale
+        tags: [iam, access-control, mfa]
+        question: |
+          Are identity and access controls in place that prevent
+          unauthorized access to the essential function and its
+          supporting systems?
+        purpose: |
+          Identity is the dominant control plane. Weak IAM undermines
+          everything else.
+        expectedOutcome:
+          - "Identity lifecycle is managed."
+          - "MFA is enforced for privileged / remote access."
+          - "Access reviews are performed."
+        howTo:
+          - step: "Manage identity lifecycle"
+          - step: "Enforce MFA for privileged / remote access"
+          - step: "Perform access reviews"
+        evidenceExamples:
+          - "Identity lifecycle policy"
+          - "MFA enforcement report"
+          - "Access review report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak IAM"
+            "3": "Partial"
+            "5": "Lifecycle + MFA + reviews"
+
+      - id: uk.ncsc.caf:B3
+        title: "B3 - Data Security"
+        weight: 3
+        answerType: scale
+        tags: [data, encryption, integrity]
+        question: |
+          Is data critical to the essential function protected
+          appropriately during storage, transmission, and use?
+        purpose: |
+          Compromised data integrity or confidentiality can stop the
+          essential function. Data protection is foundational.
+        expectedOutcome:
+          - "Sensitive data is encrypted at rest and in transit."
+          - "Data integrity controls are in place."
+          - "Data access is monitored."
+        howTo:
+          - step: "Encrypt sensitive data at rest and in transit"
+          - step: "Apply data integrity controls"
+          - step: "Monitor data access"
+        evidenceExamples:
+          - "Encryption policy"
+          - "Integrity controls"
+          - "Access monitoring"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak data security"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: uk.ncsc.caf:B4
+        title: "B4 - System Security"
+        weight: 3
+        answerType: scale
+        tags: [system, hardening, patching, configuration]
+        question: |
+          Are technology systems supporting the essential function
+          built and operated securely (hardening, patching, secure
+          configuration, vulnerability management)?
+        purpose: |
+          Systems are the substrate of the service. Their security
+          posture directly affects service availability and integrity.
+        expectedOutcome:
+          - "Hardening baselines are applied."
+          - "Patching SLAs are met."
+          - "Vulnerability management is operational."
+        howTo:
+          - step: "Apply hardening baselines"
+          - step: "Meet patching SLAs"
+          - step: "Operate vulnerability management"
+        evidenceExamples:
+          - "Hardening baseline"
+          - "Patch compliance report"
+          - "Vulnerability report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak SS"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: uk.ncsc.caf:B5
+        title: "B5 - Resilient Networks and Systems"
+        weight: 3
+        answerType: scale
+        tags: [resilience, network, availability, dr]
+        question: |
+          Are networks and systems supporting the essential function
+          designed and operated to be resilient to cyber attack?
+        purpose: |
+          Resilience determines whether attacks become outages. CAF
+          B5 makes this an explicit principle.
+        expectedOutcome:
+          - "Resilience patterns are designed in."
+          - "Failover is tested."
+          - "Capacity headroom exists."
+        howTo:
+          - step: "Design resilience patterns"
+          - step: "Test failover"
+          - step: "Maintain capacity headroom"
+        evidenceExamples:
+          - "Resilience design"
+          - "Failover test report"
+          - "Capacity plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No resilience"
+            "3": "Designed, untested"
+            "5": "Designed + tested + capacity"
+
+      - id: uk.ncsc.caf:B6
+        title: "B6 - Staff Awareness and Training"
+        weight: 2
+        answerType: scale
+        tags: [awareness, training, staff]
+        question: |
+          Do staff receive appropriate cybersecurity awareness and
+          training relative to their roles in the essential function?
+        purpose: |
+          Staff behavior shapes the success of many attacks. Training
+          is high-leverage at low operational cost.
+        expectedOutcome:
+          - "Annual awareness training delivered."
+          - "Role-based training for sensitive roles."
+          - "Effectiveness measured."
+        howTo:
+          - step: "Deliver annual training"
+          - step: "Provide role-based training"
+          - step: "Measure effectiveness"
+        evidenceExamples:
+          - "Training records"
+          - "Role curriculum"
+          - "Effectiveness metric"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Generic only"
+            "5": "Tiered + measured"
+
+  - id: objective-c
+    name: "C. Detecting Cyber Security Events"
+    description: |
+      The organization has the capabilities required to ensure that
+      cyber security events affecting the essential function are
+      detected.
+    controls:
+      - id: uk.ncsc.caf:C1
+        title: "C1 - Security Monitoring"
+        weight: 3
+        answerType: scale
+        tags: [monitoring, detection, siem]
+        question: |
+          Is security monitoring in place across the systems supporting
+          the essential function, with coverage and analysis sufficient
+          to detect cyber security events?
+        purpose: |
+          Without monitoring, incidents become visible only after
+          impact. Monitoring is what shortens dwell.
+        expectedOutcome:
+          - "Monitoring covers in-scope systems."
+          - "Detection content is tuned."
+          - "Alerts are triaged."
+        howTo:
+          - step: "Monitor in-scope systems"
+          - step: "Tune detection content"
+          - step: "Triage alerts"
+        evidenceExamples:
+          - "Monitoring coverage map"
+          - "Tuning log"
+          - "Triage record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Partial"
+            "5": "Coverage + tuning + triage"
+
+      - id: uk.ncsc.caf:C2
+        title: "C2 - Proactive Security Event Discovery"
+        weight: 2
+        answerType: scale
+        tags: [detection, hunting, intelligence]
+        question: |
+          Does the organization proactively look for unknown or
+          undetected cyber security events using techniques such as
+          threat hunting?
+        purpose: |
+          Some events evade automated detection. Hunting and proactive
+          discovery surface them.
+        expectedOutcome:
+          - "Hunting programme is in place."
+          - "Hunts are planned and recorded."
+          - "Findings feed detection improvement."
+        howTo:
+          - step: "Establish a hunting programme"
+          - step: "Plan and record hunts"
+          - step: "Feed findings back into detection"
+        evidenceExamples:
+          - "Hunting programme"
+          - "Hunt report"
+          - "Detection improvement log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No hunting"
+            "3": "Hunting ad hoc"
+            "5": "Hunting programmed"
+
+  - id: objective-d
+    name: "D. Minimising the Impact of Incidents"
+    description: |
+      The organization has the capabilities to minimize the impact of
+      cyber security incidents on the essential function.
+    controls:
+      - id: uk.ncsc.caf:D1
+        title: "D1 - Response and Recovery Planning"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, recovery, plan]
+        question: |
+          Are response and recovery plans documented, tested, and
+          aligned with the essential function's recovery objectives?
+        purpose: |
+          Plans rehearsed in calm conditions become usable under
+          stress. Without exercise, plans are aspirational.
+        expectedOutcome:
+          - "Plans cover response and recovery."
+          - "Plans are tested at least annually."
+          - "Recovery objectives are met or improved."
+        howTo:
+          - step: "Document response and recovery plans"
+          - step: "Test at least annually"
+          - step: "Drive improvement"
+        evidenceExamples:
+          - "Response / recovery plan"
+          - "Test report"
+          - "Improvement plan"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plans"
+            "3": "Plans untested"
+            "5": "Plans tested + improving"
+
+      - id: uk.ncsc.caf:D2
+        title: "D2 - Lessons Learned"
+        weight: 2
+        answerType: scale
+        tags: [lessons-learned, improvement, post-incident]
+        question: |
+          Are lessons learned from incidents and exercises captured
+          and used to improve the organization's cybersecurity posture?
+        purpose: |
+          Repeating incidents indicate that lessons did not become
+          changes. Structured learning closes the loop.
+        expectedOutcome:
+          - "Post-incident reviews are performed."
+          - "Improvements are tracked to closure."
+          - "Recurring issues drive root cause analysis."
+        howTo:
+          - step: "Perform post-incident reviews"
+          - step: "Track improvements"
+          - step: "Conduct RCA on recurring issues"
+        evidenceExamples:
+          - "Post-incident review"
+          - "Improvement tracker"
+          - "RCA report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No reviews"
+            "3": "Reviews, no follow-up"
+            "5": "Reviews + tracking"

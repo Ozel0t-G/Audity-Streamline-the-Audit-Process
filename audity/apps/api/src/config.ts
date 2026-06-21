@@ -8,6 +8,8 @@ export type AudityConfig = {
   userSourcesDirectory: string;
   frameworkYamlDirectory: string;
   frameworkYamlSyncIntervalSeconds: number;
+  archiveDirectory: string;
+  archiveBundleDayOfMonth: number;
   logLevel: string;
   port: number;
   publicUrl: string;
@@ -103,6 +105,8 @@ export function loadConfig(): AudityConfig {
     userSourcesDirectory: process.env.AUDITY_USER_SOURCES_DIR ?? "user_frameworks/_sources",
     frameworkYamlDirectory: process.env.AUDITY_FRAMEWORK_YAML_DIR ?? "frameworks",
     frameworkYamlSyncIntervalSeconds: Number(process.env.AUDITY_FRAMEWORK_YAML_SYNC_INTERVAL_SECONDS ?? 10),
+    archiveDirectory: process.env.AUDITY_ARCHIVE_DIR ?? "/app/archive",
+    archiveBundleDayOfMonth: Number(process.env.AUDITY_ARCHIVE_BUNDLE_DAY ?? 1),
     logLevel: process.env.AUDITY_LOG_LEVEL ?? "info",
     port: Number(process.env.PORT ?? 3000),
     publicUrl,

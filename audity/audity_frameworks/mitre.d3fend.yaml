@@ -1,0 +1,317 @@
+framework:
+  schemaVersion: 1
+  key: mitre.d3fend
+  name: "MITRE D3FEND - Defensive Countermeasure Coverage Audit"
+  shortName: "MITRE D3FEND"
+  version: "1.0+"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Defensive Architect"
+    - "Detection Engineer"
+    - "Security Architect"
+    - "Auditor"
+  estimatedDurationMinutes: 180
+  description: |
+    MITRE D3FEND is a knowledge graph of cybersecurity
+    countermeasures, complementary to ATT&CK. It organizes defensive
+    techniques into seven tactics (Model, Harden, Detect, Isolate,
+    Deceive, Evict, Restore).
+
+    This YAML adapts D3FEND's seven tactics into an audit-readiness
+    framework that asks, for each tactic, "Does the defensive
+    architecture include meaningful coverage?". The underlying
+    techniques and digital artifact ontology are referenced but not
+    enumerated.
+  scopeNote: |
+    In scope: D3FEND's 7 tactics (Model, Harden, Detect, Isolate,
+    Deceive, Evict, Restore) structured as one audit-control per
+    tactic.
+
+    Out of scope: D3FEND digital artifact ontology; per-technique
+    relations to ATT&CK techniques; the D3FEND CWE / CAPEC links.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      MITRE D3FEND is published by MITRE under the D3FEND license
+      terms. Tactic content has been paraphrased into audit-readiness
+      English. D3FEND attribution should accompany operational use.
+
+severityRubric:
+  critical: |
+    No meaningful coverage for a foundational defensive tactic
+    (Harden / Detect / Isolate / Restore) in a high-risk environment.
+  high: |
+    Material gap in tactic coverage with no compensating defenses.
+  medium: |
+    Partial coverage; remediable through architectural improvement.
+  low: |
+    Documentation gap; coverage exists but not mapped.
+
+controlMappings:
+  - source: mitre.d3fend:HARDEN
+    target: iso27001:A.8.9
+    type: related
+  - source: mitre.d3fend:DETECT
+    target: iso27001:A.8.16
+    type: related
+  - source: mitre.d3fend:ISOLATE
+    target: iso27001:A.8.22
+    type: related
+
+domains:
+  - id: tactics
+    name: "D3FEND Tactics"
+    description: |
+      The seven defensive tactics of D3FEND.
+    controls:
+      - id: mitre.d3fend:MODEL
+        title: "Model"
+        weight: 2
+        answerType: scale
+        tags: [d3fend, model, architecture, asset-management]
+        question: |
+          Does the program maintain an accurate model of its
+          environment, assets, identities, network, and dependencies
+          to inform defensive decisions?
+        purpose: |
+          A current model is the prerequisite for all other defensive
+          tactics. Without it, defenses are misaligned.
+        expectedOutcome:
+          - "Asset / identity / network model exists and is current."
+          - "Dependencies are mapped."
+          - "Model informs defensive decisions."
+        howTo:
+          - step: "Maintain asset / identity / network model"
+          - step: "Map dependencies"
+          - step: "Use model in defensive decisions"
+        evidenceExamples:
+          - "Model documentation"
+          - "Dependency map"
+          - "Decision record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No model"
+            "3": "Model outdated"
+            "5": "Current + used"
+
+      - id: mitre.d3fend:HARDEN
+        title: "Harden"
+        weight: 3
+        answerType: scale
+        tags: [d3fend, harden, configuration, baseline]
+        question: |
+          Does the program reduce attack surface and apply hardening
+          across endpoints, applications, networks, and identities?
+        purpose: |
+          Hardening removes attacker options before exploitation.
+          It is the highest-leverage tactic.
+        expectedOutcome:
+          - "Hardening baselines exist per asset class."
+          - "Drift is detected and remediated."
+          - "Hardening is continuously improved."
+        howTo:
+          - step: "Define hardening baselines per asset class"
+          - step: "Detect and remediate drift"
+          - step: "Continuously improve hardening"
+        evidenceExamples:
+          - "Hardening baselines"
+          - "Drift report"
+          - "Improvement record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No hardening"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.9
+
+      - id: mitre.d3fend:DETECT
+        title: "Detect"
+        weight: 3
+        answerType: scale
+        tags: [d3fend, detect, monitoring, soc]
+        question: |
+          Does the program detect adversary activity across endpoints,
+          network, identities, and cloud?
+        purpose: |
+          Detection is the difference between minutes and weeks of
+          dwell. Coverage across signal sources increases catch rate.
+        expectedOutcome:
+          - "Detection coverage spans endpoints, network, identity, cloud."
+          - "Detection content is tuned."
+          - "Detections are triaged."
+        howTo:
+          - step: "Cover endpoints, network, identity, cloud with detection"
+          - step: "Tune detection content"
+          - step: "Triage detections"
+        evidenceExamples:
+          - "Detection coverage map"
+          - "Tuning log"
+          - "Triage record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No detection"
+            "3": "Partial"
+            "5": "Comprehensive + tuned"
+        crossReferences:
+          - iso27001:A.8.16
+
+      - id: mitre.d3fend:ISOLATE
+        title: "Isolate"
+        weight: 3
+        answerType: scale
+        tags: [d3fend, isolate, segmentation, containment]
+        question: |
+          Does the program isolate assets, identities, and processes
+          to limit blast radius (segmentation, sandboxing, privilege
+          separation)?
+        purpose: |
+          Isolation contains incidents and prevents lateral movement.
+          It is the second-strongest tactic after hardening.
+        expectedOutcome:
+          - "Network segmentation isolates trust zones."
+          - "Privilege separation is enforced."
+          - "Sandboxing limits risky execution."
+        howTo:
+          - step: "Segment networks by trust zone"
+          - step: "Enforce privilege separation"
+          - step: "Sandbox risky execution"
+        evidenceExamples:
+          - "Segmentation design"
+          - "Privilege separation design"
+          - "Sandbox configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Flat"
+            "3": "Partial"
+            "5": "Segmented + separated + sandboxed"
+        crossReferences:
+          - iso27001:A.8.22
+
+      - id: mitre.d3fend:DECEIVE
+        title: "Deceive"
+        weight: 1
+        answerType: scale
+        tags: [d3fend, deceive, honeypot, deception]
+        question: |
+          Does the program use deception (honeypots, canary tokens,
+          decoy accounts) to detect and slow adversaries?
+        purpose: |
+          Deception produces high-confidence detections that adversaries
+          cannot avoid without losing information.
+        expectedOutcome:
+          - "Deception assets deployed where appropriate."
+          - "Alerts on deception trigger response."
+          - "Coverage evolves with threat landscape."
+        howTo:
+          - step: "Deploy deception assets where appropriate"
+          - step: "Wire alerts to response"
+          - step: "Evolve coverage"
+        evidenceExamples:
+          - "Deception design"
+          - "Alert wiring"
+          - "Evolution log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No deception"
+            "3": "Limited"
+            "5": "Tiered + alerted"
+
+      - id: mitre.d3fend:EVICT
+        title: "Evict"
+        weight: 3
+        answerType: scale
+        tags: [d3fend, evict, containment, eradication]
+        question: |
+          Does the program have practiced procedures to evict
+          adversaries (contain, eradicate persistence, revoke
+          credentials)?
+        purpose: |
+          Eviction is what makes containment durable. Without it,
+          adversaries return through residual footholds.
+        expectedOutcome:
+          - "Eradication procedures documented."
+          - "Credential revocation is fast."
+          - "Persistence sweeps are routine."
+        howTo:
+          - step: "Document eradication procedures"
+          - step: "Build fast credential revocation"
+          - step: "Make persistence sweeps routine"
+        evidenceExamples:
+          - "Eradication playbook"
+          - "Revocation runbook"
+          - "Persistence sweep evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No eviction"
+            "3": "Procedures untested"
+            "5": "Procedures exercised"
+
+      - id: mitre.d3fend:RESTORE
+        title: "Restore"
+        weight: 3
+        answerType: scale
+        tags: [d3fend, restore, recovery, backup]
+        question: |
+          Does the program restore systems, identities, and data after
+          incidents with verified integrity?
+        purpose: |
+          Restore turns containment into recovery. Integrity
+          verification prevents reintroducing compromise.
+        expectedOutcome:
+          - "Restore procedures documented."
+          - "Backups verified before restore."
+          - "Recovery time meets objectives."
+        howTo:
+          - step: "Document restore procedures"
+          - step: "Verify backups before restore"
+          - step: "Meet recovery time objectives"
+        evidenceExamples:
+          - "Restore playbook"
+          - "Backup verification record"
+          - "RTO compliance"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No restore"
+            "3": "Untested"
+            "5": "Tested + verified"

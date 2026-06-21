@@ -1,0 +1,891 @@
+framework:
+  schemaVersion: 1
+  key: no.nsm.grunnprinsipper.2.1
+  name: "NSM Basic Principles for ICT Security 2.1"
+  shortName: "NSM Grunnprinsipper"
+  version: "2.1"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "CISO"
+    - "ICT Risk Manager"
+    - "Security Architect"
+    - "SOC Lead"
+  estimatedDurationMinutes: 360
+  description: |
+    The NSM Basic Principles for ICT Security (Grunnprinsipper for
+    IKT-sikkerhet) v2.1 is the foundational ICT security framework
+    published by the Norwegian National Security Authority (Nasjonal
+    sikkerhetsmyndighet, NSM). It defines 21 principles organized into
+    four categories: Identify and Map, Protect and Maintain, Detect,
+    and Respond and Recover.
+
+    This YAML treats each of the 21 principles as one audit-readiness
+    control. The 118 underlying security measures (sikringstiltak) are
+    summarized at principle level rather than enumerated individually;
+    organizations using the framework operationally should consult
+    NSM's own measure catalog for the detailed sikringstiltak.
+  scopeNote: |
+    In scope: all 21 principles of NSM Grunnprinsipper for IKT-sikkerhet
+    v2.1, structured as one control per principle.
+
+    Out of scope: the 118 individual sikringstiltak as separate controls
+    (these are summarized within each principle's expectedOutcome and
+    howTo fields, not enumerated); the related NSM publications
+    "Grunnprinsipper for sikkerhetsstyring" and the operational
+    handbooks; sector-specific guidance.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      NSM Grunnprinsipper for IKT-sikkerhet is published by Nasjonal
+      sikkerhetsmyndighet and made available for use by Norwegian and
+      international organizations. Principle wording has been
+      paraphrased into audit-readiness English and is not reproduced
+      verbatim.
+
+severityRubric:
+  critical: |
+    Failure leaves a foundational principle unimplemented and creates
+    a likely path to material incident.
+  high: |
+    Material gap in a principle without compensating measures.
+  medium: |
+    Principle is partially implemented; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: no.nsm.grunnprinsipper:1.1
+    target: nist-csf-2.0:GV.OC-04
+    type: related
+  - source: no.nsm.grunnprinsipper:1.2
+    target: nist-csf-2.0:ID.AM-01
+    type: covers
+  - source: no.nsm.grunnprinsipper:1.3
+    target: iso27001:A.5.16
+    type: covers
+  - source: no.nsm.grunnprinsipper:1.4
+    target: nist-csf-2.0:ID.RA-03
+    type: covers
+  - source: no.nsm.grunnprinsipper:2.1
+    target: iso27001:A.8.25
+    type: covers
+  - source: no.nsm.grunnprinsipper:2.3
+    target: iso27001:A.8.9
+    type: covers
+  - source: no.nsm.grunnprinsipper:2.4
+    target: iso27001:A.8.20
+    type: covers
+  - source: no.nsm.grunnprinsipper:2.6
+    target: iso27001:A.5.15
+    type: covers
+  - source: no.nsm.grunnprinsipper:2.7
+    target: iso27001:A.8.24
+    type: covers
+  - source: no.nsm.grunnprinsipper:2.9
+    target: iso27001:A.8.13
+    type: covers
+  - source: no.nsm.grunnprinsipper:3.1
+    target: iso27001:A.8.8
+    type: covers
+  - source: no.nsm.grunnprinsipper:3.2
+    target: iso27001:A.8.16
+    type: covers
+  - source: no.nsm.grunnprinsipper:4.1
+    target: iso27001:A.5.24
+    type: covers
+  - source: no.nsm.grunnprinsipper:4.3
+    target: nist-csf-2.0:RS.MI-01
+    type: covers
+
+domains:
+  - id: identify
+    name: "1. Identify and Map (Identifisere og kartlegge)"
+    description: |
+      Principles for understanding the organization's governance,
+      systems, users, threats, and risks as the foundation for all
+      protective measures.
+    controls:
+      - id: no.nsm.grunnprinsipper:1.1
+        title: "Map governance structures, deliveries, and supporting systems"
+        weight: 3
+        answerType: scale
+        tags: [identify, governance, mapping, systems]
+        question: |
+          Are the organization's governance structures, business
+          deliveries, and supporting ICT systems identified, mapped,
+          and maintained?
+        purpose: |
+          Without an explicit map of what the organization delivers and
+          which systems support those deliveries, prioritization of
+          security investment is impossible.
+        expectedOutcome:
+          - "Governance structures are documented."
+          - "Business deliveries are mapped to supporting systems."
+          - "Map is maintained on organizational change."
+        howTo:
+          - step: "Document governance structures"
+          - step: "Map business deliveries to supporting systems"
+          - step: "Maintain on organizational change"
+        evidenceExamples:
+          - "Governance map"
+          - "Delivery-to-system mapping"
+          - "Update log"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not mapped"
+            "3": "Map outdated"
+            "5": "Map current"
+        crossReferences:
+          - nist-csf-2.0:GV.OC-04
+
+      - id: no.nsm.grunnprinsipper:1.2
+        title: "Map devices and software in use"
+        weight: 3
+        answerType: scale
+        tags: [identify, asset-management, inventory]
+        question: |
+          Are devices and software in use across the organization
+          identified, inventoried, and reconciled against discovery?
+        purpose: |
+          Unknown devices and software are unmanaged. The inventory is
+          the precondition for patching, hardening, and monitoring.
+        expectedOutcome:
+          - "Central device and software inventory exists."
+          - "Reconciliation against discovery runs on cadence."
+          - "Unknowns are investigated."
+        howTo:
+          - step: "Maintain a central inventory"
+          - step: "Reconcile against discovery"
+          - step: "Investigate unknowns"
+        evidenceExamples:
+          - "Inventory extract"
+          - "Reconciliation report"
+          - "Investigation ticket"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Inventory partial"
+            "5": "Reconciled and investigated"
+        crossReferences:
+          - nist-csf-2.0:ID.AM-01
+          - nist-csf-2.0:ID.AM-02
+
+      - id: no.nsm.grunnprinsipper:1.3
+        title: "Map users and access needs"
+        weight: 3
+        answerType: scale
+        tags: [identify, iam, users, access]
+        question: |
+          Are users (human and non-human) and their access needs
+          identified, documented, and reviewed?
+        purpose: |
+          Access decisions made without knowing who needs what produce
+          over-provisioning and orphan accounts. Mapping needs is the
+          basis for least privilege.
+        expectedOutcome:
+          - "Users and their roles are inventoried."
+          - "Access needs are documented per role."
+          - "Reviews remove unnecessary access."
+        howTo:
+          - step: "Inventory users and roles"
+          - step: "Document access needs per role"
+          - step: "Review and remove unnecessary access"
+        evidenceExamples:
+          - "User and role inventory"
+          - "Role-access matrix"
+          - "Review report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not mapped"
+            "3": "Partial mapping"
+            "5": "Mapped and reviewed"
+        crossReferences:
+          - iso27001:A.5.16
+
+      - id: no.nsm.grunnprinsipper:1.4
+        title: "Map threats, vulnerabilities, and dependencies"
+        weight: 3
+        answerType: scale
+        tags: [identify, threat, vulnerability, dependency]
+        question: |
+          Are threats, vulnerabilities, and dependencies relevant to
+          the organization mapped and used to inform risk treatment?
+        purpose: |
+          Risk treatment that does not start from a current threat /
+          vulnerability / dependency map is generic and miscalibrated.
+        expectedOutcome:
+          - "Threat catalog is current."
+          - "Vulnerability data is collected and validated."
+          - "Dependencies are mapped to delivery functions."
+        howTo:
+          - step: "Maintain threat catalog"
+          - step: "Collect and validate vulnerability data"
+          - step: "Map dependencies to deliveries"
+        evidenceExamples:
+          - "Threat catalog"
+          - "Vulnerability register"
+          - "Dependency map"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "None mapped"
+            "3": "Partial mapping"
+            "5": "All three mapped"
+        crossReferences:
+          - nist-csf-2.0:ID.RA-03
+
+  - id: protect
+    name: "2. Protect and Maintain (Beskytte og opprettholde)"
+    description: |
+      Principles for putting in place and sustaining the technical and
+      procedural measures that protect the ICT environment.
+    controls:
+      - id: no.nsm.grunnprinsipper:2.1
+        title: "Security in acquisition and development processes"
+        weight: 3
+        answerType: scale
+        tags: [protect, sdlc, procurement, supply-chain]
+        question: |
+          Is information security integrated into the organization's
+          processes for acquiring and developing ICT, including
+          requirements, evaluation, and acceptance?
+        purpose: |
+          Retrofitting security to acquired or developed systems is the
+          expensive option. Integration at the acquisition / development
+          stage is where the most leverage lies.
+        expectedOutcome:
+          - "Security requirements appear in acquisition and development."
+          - "Suppliers are assessed against security criteria."
+          - "Acceptance includes security verification."
+        howTo:
+          - step: "Add security requirements to acquisition / development"
+          - step: "Assess suppliers against security criteria"
+          - step: "Verify security at acceptance"
+        evidenceExamples:
+          - "Requirement template"
+          - "Supplier assessment"
+          - "Acceptance security report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Security absent"
+            "3": "Security partial"
+            "5": "Integrated end-to-end"
+        crossReferences:
+          - iso27001:A.8.25
+
+      - id: no.nsm.grunnprinsipper:2.2
+        title: "Establish secure ICT architecture"
+        weight: 3
+        answerType: scale
+        tags: [protect, architecture, design]
+        question: |
+          Has the organization established and maintained a secure ICT
+          architecture, including segmentation, defense in depth, and
+          architectural standards?
+        purpose: |
+          Architecture decisions persist for years. Sound architecture
+          provides systemic risk reduction beyond what point controls
+          can achieve.
+        expectedOutcome:
+          - "Architecture standards are documented."
+          - "Defense in depth and segmentation are designed in."
+          - "Architecture review is part of changes."
+        howTo:
+          - step: "Document architecture standards"
+          - step: "Design in defense in depth and segmentation"
+          - step: "Require architecture review on changes"
+        evidenceExamples:
+          - "Architecture standards"
+          - "Architecture diagrams"
+          - "Architecture review record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No architecture"
+            "3": "Ad hoc"
+            "5": "Standards applied"
+
+      - id: no.nsm.grunnprinsipper:2.3
+        title: "Maintain secure configuration"
+        weight: 3
+        answerType: scale
+        tags: [protect, configuration, hardening, drift]
+        question: |
+          Is secure configuration of systems established, monitored
+          against drift, and maintained over time?
+        purpose: |
+          Even hardened systems drift to insecure states. Continuous
+          monitoring and remediation preserve the security baseline.
+        expectedOutcome:
+          - "Hardening baselines exist per platform."
+          - "Drift is detected and remediated."
+          - "Change control governs configuration changes."
+        howTo:
+          - step: "Define hardening baselines"
+          - step: "Detect and remediate drift"
+          - step: "Govern changes through change control"
+        evidenceExamples:
+          - "Baseline definitions"
+          - "Drift report"
+          - "Change record"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No baselines"
+            "3": "Baselines, no drift control"
+            "5": "Baselines + drift control"
+        crossReferences:
+          - iso27001:A.8.9
+
+      - id: no.nsm.grunnprinsipper:2.4
+        title: "Protect the organization's networks"
+        weight: 3
+        answerType: scale
+        tags: [protect, network, segmentation, firewall]
+        question: |
+          Are the organization's networks segmented and protected
+          against unauthorized access, including segregation of
+          high-trust and low-trust zones?
+        purpose: |
+          Flat networks amplify any compromise. Segmentation contains
+          the blast radius and increases attacker effort.
+        expectedOutcome:
+          - "Network segmentation is implemented."
+          - "Trust zones are explicit."
+          - "Network device configurations are managed."
+        howTo:
+          - step: "Implement network segmentation"
+          - step: "Make trust zones explicit"
+          - step: "Manage network device configurations"
+        evidenceExamples:
+          - "Network design"
+          - "Zone documentation"
+          - "Device configuration baseline"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Flat"
+            "3": "Partial segmentation"
+            "5": "Full segmentation + management"
+        crossReferences:
+          - iso27001:A.8.20
+
+      - id: no.nsm.grunnprinsipper:2.5
+        title: "Control data flow"
+        weight: 2
+        answerType: scale
+        tags: [protect, data-flow, dlp, egress]
+        question: |
+          Is the flow of data into, within, and out of the organization
+          monitored and controlled?
+        purpose: |
+          Uncontrolled data flow creates undetected exfiltration and
+          policy-bypass paths. Explicit control reduces both.
+        expectedOutcome:
+          - "Approved data flow paths are documented."
+          - "Unapproved flows are blocked or alerted."
+          - "Egress is monitored."
+        howTo:
+          - step: "Document approved data flows"
+          - step: "Block or alert on unapproved flows"
+          - step: "Monitor egress"
+        evidenceExamples:
+          - "Data flow diagram"
+          - "Flow control policy"
+          - "Egress monitoring report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Uncontrolled"
+            "3": "Partial control"
+            "5": "Documented + enforced"
+
+      - id: no.nsm.grunnprinsipper:2.6
+        title: "Control identities and access"
+        weight: 3
+        answerType: scale
+        tags: [protect, iam, access-control, least-privilege]
+        question: |
+          Are identities and access rights managed under documented
+          processes, including least privilege and multi-factor
+          authentication?
+        purpose: |
+          Identity is the dominant control plane. Discipline here
+          determines the security posture of everything that follows.
+        expectedOutcome:
+          - "Identity lifecycle is managed."
+          - "Least privilege is the default."
+          - "MFA is enforced for remote and privileged access."
+        howTo:
+          - step: "Manage identity lifecycle"
+          - step: "Default to least privilege"
+          - step: "Enforce MFA on remote and privileged access"
+        evidenceExamples:
+          - "Identity lifecycle policy"
+          - "Access model"
+          - "MFA enforcement report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Loose access"
+            "3": "Partial control"
+            "5": "Lifecycle + least priv + MFA"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: no.nsm.grunnprinsipper:2.7
+        title: "Protect data at rest and in transit"
+        weight: 3
+        answerType: scale
+        tags: [protect, encryption, data]
+        question: |
+          Is data at rest and in transit protected using approved
+          cryptographic methods and key management?
+        purpose: |
+          Encryption converts contained breaches into non-events for
+          regulated data. Key management determines whether the
+          encryption actually holds.
+        expectedOutcome:
+          - "Sensitive data at rest is encrypted with approved methods."
+          - "Transport encryption is enforced on in-scope channels."
+          - "Keys are managed under documented processes."
+        howTo:
+          - step: "Encrypt sensitive data at rest"
+          - step: "Enforce transport encryption"
+          - step: "Manage keys with KMS / HSM"
+        evidenceExamples:
+          - "Encryption policy"
+          - "TLS configuration"
+          - "Key management procedure"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plaintext"
+            "3": "Partial encryption"
+            "5": "Both directions + KM"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: no.nsm.grunnprinsipper:2.8
+        title: "Protect e-mail and browser"
+        weight: 2
+        answerType: scale
+        tags: [protect, email, browser, phishing]
+        question: |
+          Are e-mail and web browsing protected against malicious
+          content, phishing, and information leakage?
+        purpose: |
+          E-mail and browsing are the two largest initial-access
+          channels for most organizations. Specific safeguards on
+          these channels yield high risk reduction.
+        expectedOutcome:
+          - "Anti-phishing and anti-malware are enforced on e-mail."
+          - "Browser policies and web filtering are applied."
+          - "User awareness covers these channels."
+        howTo:
+          - step: "Enforce anti-phishing and anti-malware on e-mail"
+          - step: "Apply browser policies and web filtering"
+          - step: "Cover these channels in awareness"
+        evidenceExamples:
+          - "E-mail security configuration"
+          - "Browser / web filter policy"
+          - "Awareness module"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Few protections"
+            "3": "Partial"
+            "5": "Both channels protected"
+
+      - id: no.nsm.grunnprinsipper:2.9
+        title: "Establish capability for data recovery"
+        weight: 3
+        answerType: scale
+        tags: [protect, backup, recovery, ransomware]
+        question: |
+          Has the organization established the capability to recover
+          data through backups that are protected, tested, and
+          maintained?
+        purpose: |
+          Backups are the strongest single control against ransomware
+          and destructive events. Untested backups fail silently when
+          needed.
+        expectedOutcome:
+          - "Backup policy is aligned to RPO / RTO."
+          - "Backups are protected (offline / immutable)."
+          - "Restore tests are documented."
+        howTo:
+          - step: "Define backup policy aligned to RPO / RTO"
+          - step: "Maintain protected backup copies"
+          - step: "Test restores periodically"
+        evidenceExamples:
+          - "Backup policy"
+          - "Backup protection design"
+          - "Restore test report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No backups"
+            "3": "Untested"
+            "5": "Tested + protected"
+        crossReferences:
+          - iso27001:A.8.13
+
+      - id: no.nsm.grunnprinsipper:2.10
+        title: "Integrate security into change management"
+        weight: 2
+        answerType: scale
+        tags: [protect, change-management, integration]
+        question: |
+          Is information security integrated into the organization's
+          change management processes, including risk assessment of
+          changes?
+        purpose: |
+          Most production incidents trace to changes. Security in
+          change management catches risk before deployment.
+        expectedOutcome:
+          - "Change process includes security assessment."
+          - "Emergency changes follow a defined path."
+          - "Change reviews include security stakeholders."
+        howTo:
+          - step: "Add security assessment to change process"
+          - step: "Define emergency change path"
+          - step: "Include security in change reviews"
+        evidenceExamples:
+          - "Change process document"
+          - "Sample change with security assessment"
+          - "Emergency change record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No security in change"
+            "3": "Partial"
+            "5": "Integrated and applied"
+
+  - id: detect
+    name: "3. Detect (Oppdage)"
+    description: |
+      Principles for finding known vulnerabilities and threats and for
+      establishing and analyzing security monitoring.
+    controls:
+      - id: no.nsm.grunnprinsipper:3.1
+        title: "Detect and remove known vulnerabilities and threats"
+        weight: 3
+        answerType: scale
+        tags: [detect, vulnerability, patching]
+        question: |
+          Does the organization continuously detect and remove known
+          vulnerabilities and threats from its environment?
+        purpose: |
+          Most exploited vulnerabilities are known and patched
+          elsewhere. Removing them in the organization shortens the
+          window of opportunity.
+        expectedOutcome:
+          - "Continuous vulnerability scanning runs."
+          - "Findings are validated and prioritized."
+          - "Remediation meets defined SLAs."
+        howTo:
+          - step: "Run continuous vulnerability scanning"
+          - step: "Validate and prioritize findings"
+          - step: "Meet remediation SLAs"
+        evidenceExamples:
+          - "Scan results"
+          - "Vulnerability register"
+          - "SLA compliance report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No scanning"
+            "3": "Scanning, no SLA"
+            "5": "SLAs met"
+        crossReferences:
+          - iso27001:A.8.8
+
+      - id: no.nsm.grunnprinsipper:3.2
+        title: "Establish security monitoring"
+        weight: 3
+        answerType: scale
+        tags: [detect, monitoring, siem, logging]
+        question: |
+          Has the organization established security monitoring across
+          systems, network, and identities, with logs centralized and
+          retained?
+        purpose: |
+          Detection capability is the difference between catching an
+          incident in minutes and learning about it from a third party.
+        expectedOutcome:
+          - "Monitoring covers critical systems, network, and identities."
+          - "Logs are centralized with defined retention."
+          - "Detection content is tuned."
+        howTo:
+          - step: "Deploy monitoring across critical sources"
+          - step: "Centralize logs with retention"
+          - step: "Tune detection content"
+        evidenceExamples:
+          - "Monitoring coverage map"
+          - "SIEM ingestion report"
+          - "Detection rule export"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No monitoring"
+            "3": "Partial coverage"
+            "5": "Full coverage + tuned"
+        crossReferences:
+          - iso27001:A.8.16
+
+      - id: no.nsm.grunnprinsipper:3.3
+        title: "Analyze security monitoring data"
+        weight: 2
+        answerType: scale
+        tags: [detect, analysis, soc]
+        question: |
+          Is data from security monitoring analyzed by trained personnel
+          or automated tooling to identify actual security incidents?
+        purpose: |
+          Collected logs that nobody analyzes are passive infrastructure.
+          Active analysis converts data into action.
+        expectedOutcome:
+          - "Analyst playbooks exist for common signals."
+          - "Analysis outcomes are recorded."
+          - "Lessons feed detection improvement."
+        howTo:
+          - step: "Maintain analyst playbooks"
+          - step: "Record analysis outcomes"
+          - step: "Feed lessons into detection improvement"
+        evidenceExamples:
+          - "Playbook library"
+          - "Analysis case records"
+          - "Detection tuning ticket"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 18
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No analysis"
+            "3": "Analysis ad hoc"
+            "5": "Analysis structured"
+
+  - id: respond
+    name: "4. Respond and Recover (Håndtere og gjenopprette)"
+    description: |
+      Principles for preparing for, evaluating, handling, and learning
+      from security incidents.
+    controls:
+      - id: no.nsm.grunnprinsipper:4.1
+        title: "Prepare for incident handling"
+        weight: 3
+        answerType: scale
+        tags: [respond, preparation, plan, runbook]
+        question: |
+          Has the organization prepared for security incidents through
+          documented plans, defined roles, runbooks, and exercises?
+        purpose: |
+          Preparation, not improvisation, determines incident outcomes.
+          Plans rehearsed in calm conditions become usable in stressed
+          conditions.
+        expectedOutcome:
+          - "Incident handling plan and runbooks are documented."
+          - "Roles and authorities are defined."
+          - "Exercises are performed periodically."
+        howTo:
+          - step: "Document plan and runbooks"
+          - step: "Define roles and authorities"
+          - step: "Exercise periodically"
+        evidenceExamples:
+          - "IR plan"
+          - "Runbook library"
+          - "Exercise report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No preparation"
+            "3": "Plan, no exercises"
+            "5": "Plan + exercises"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: no.nsm.grunnprinsipper:4.2
+        title: "Assess and categorize incidents"
+        weight: 2
+        answerType: scale
+        tags: [respond, triage, categorization]
+        question: |
+          Are events triaged, assessed, and categorized consistently
+          to determine whether they constitute security incidents?
+        purpose: |
+          Without explicit criteria, triage depends on the analyst on
+          shift. Documented criteria normalize the call.
+        expectedOutcome:
+          - "Event-to-incident criteria are documented."
+          - "Categorization scheme exists."
+          - "Decisions are recorded."
+        howTo:
+          - step: "Document event-to-incident criteria"
+          - step: "Adopt a categorization scheme"
+          - step: "Record decisions"
+        evidenceExamples:
+          - "Criteria document"
+          - "Categorization scheme"
+          - "Sample decision record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No triage"
+            "3": "Triage informal"
+            "5": "Triage with criteria"
+
+      - id: no.nsm.grunnprinsipper:4.3
+        title: "Contain and handle incidents"
+        weight: 3
+        answerType: scale
+        tags: [respond, containment, handling, soc]
+        question: |
+          Are incidents contained and handled promptly using documented
+          procedures, with actions logged for after-action review?
+        purpose: |
+          Containment limits blast radius. Documented handling makes
+          response consistent and auditable.
+        expectedOutcome:
+          - "Containment options are documented per scenario."
+          - "Decisions and actions are logged."
+          - "Coordination paths are defined."
+        howTo:
+          - step: "Document containment per scenario"
+          - step: "Log decisions and actions"
+          - step: "Define coordination paths"
+        evidenceExamples:
+          - "Containment playbook"
+          - "Incident log"
+          - "Coordination path"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No containment"
+            "3": "Containment slow"
+            "5": "Containment quick and logged"
+        crossReferences:
+          - nist-csf-2.0:RS.MI-01
+
+      - id: no.nsm.grunnprinsipper:4.4
+        title: "Evaluate and learn from incidents"
+        weight: 2
+        answerType: scale
+        tags: [respond, lessons-learned, improvement]
+        question: |
+          Does the organization evaluate incidents after the fact and
+          translate learning into improvements?
+        purpose: |
+          Repeating incidents indicate that lessons did not become
+          changes. Structured post-incident learning closes the loop.
+        expectedOutcome:
+          - "Post-incident reviews are performed."
+          - "Improvements are tracked to closure."
+          - "Trends inform program changes."
+        howTo:
+          - step: "Conduct post-incident reviews"
+          - step: "Track improvements to closure"
+          - step: "Use trends to drive program changes"
+        evidenceExamples:
+          - "Post-incident review"
+          - "Improvement tracker"
+          - "Trend report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No review"
+            "3": "Review, no follow-up"
+            "5": "Review + improvements tracked"

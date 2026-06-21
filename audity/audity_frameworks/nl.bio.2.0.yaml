@@ -1,0 +1,223 @@
+framework:
+  schemaVersion: 1
+  key: nl.bio.2.0
+  name: "BIO 2.0 - Baseline Informatiebeveiliging Overheid (Netherlands)"
+  shortName: "BIO 2.0"
+  version: "2.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "Dutch Public Sector CISO"
+    - "Compliance Officer"
+  estimatedDurationMinutes: 240
+  description: |
+    BIO 2.0 (Baseline Informatiebeveiliging Overheid) is the
+    information security baseline for the Dutch public sector,
+    published by the Centrum Informatiebeveiliging en Privacybescherming
+    (CIP). BIO 2.0 is based on ISO/IEC 27002:2022 controls with
+    additional Dutch government-specific requirements (BIO-versterkingen).
+
+    This YAML covers the four control themes of BIO 2.0 at theme
+    level with summary of in-scope BIO-specific augmentations.
+  scopeNote: |
+    In scope: the four themes of BIO 2.0 (Organisational, People,
+    Physical, Technological) as one control per theme.
+
+    Out of scope: the individual ISO/IEC 27002:2022 controls as
+    separate audit-controls (use the ISO 27001 Annex A framework
+    for that); detailed BIO-versterkingen at control level; the BIO
+    Thema-uitwerkingen for specific topics.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      BIO 2.0 is published openly by the Dutch government via the CIP.
+      Theme content has been paraphrased into audit-readiness English.
+      Note that BIO is structurally aligned with ISO/IEC 27002:2022;
+      organizations should reference the ISO 27001 Annex A framework
+      for control-level granularity.
+
+severityRubric:
+  critical: |
+    Failure leaves a baseline theme substantially unimplemented for a
+    Dutch government entity; likely supervisory action.
+  high: |
+    Material gap in a theme without compensating measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement
+    cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: nl.bio.2.0:ORG
+    target: iso27001:A.5.1
+    type: covers
+  - source: nl.bio.2.0:PEO
+    target: iso27001:A.6.3
+    type: covers
+  - source: nl.bio.2.0:PHY
+    target: iso27001:A.7.1
+    type: covers
+  - source: nl.bio.2.0:TEC
+    target: iso27001:A.8.9
+    type: covers
+
+domains:
+  - id: themes
+    name: "BIO 2.0 Themes"
+    description: |
+      The four themes of BIO 2.0, aligned to ISO/IEC 27002:2022.
+    controls:
+      - id: nl.bio.2.0:ORG
+        title: "Organisational controls"
+        weight: 3
+        answerType: scale
+        tags: [bio, organisational, governance, isms]
+        question: |
+          Are organisational controls (policies, roles, asset
+          management, supplier relationships, compliance, incident
+          management, continuity) implemented per BIO 2.0?
+        purpose: |
+          The organisational theme is the governance backbone of BIO
+          2.0, with Dutch government-specific augmentations.
+        expectedOutcome:
+          - "ISMS policy set covers ISO and BIO additions."
+          - "Roles and supplier obligations align with BIO."
+          - "Compliance and incident processes are documented."
+        howTo:
+          - step: "Maintain ISMS policy set with BIO additions"
+          - step: "Align roles and supplier obligations with BIO"
+          - step: "Document compliance and incident processes"
+        evidenceExamples:
+          - "Policy library"
+          - "Role matrix"
+          - "Supplier obligations register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No organisational controls"
+            "3": "Partial"
+            "5": "Comprehensive with BIO additions"
+        crossReferences:
+          - iso27001:A.5.1
+
+      - id: nl.bio.2.0:PEO
+        title: "People controls"
+        weight: 2
+        answerType: scale
+        tags: [bio, people, hr, training]
+        question: |
+          Are people controls (screening, terms of employment,
+          awareness, disciplinary process, remote working, incident
+          reporting) implemented per BIO 2.0?
+        purpose: |
+          People controls govern the human element of the security
+          program with Dutch government-specific augmentations.
+        expectedOutcome:
+          - "JML processes cover security."
+          - "Awareness and training delivered."
+          - "Remote working controls applied."
+        howTo:
+          - step: "Cover security in JML processes"
+          - step: "Deliver awareness and training"
+          - step: "Apply remote working controls"
+        evidenceExamples:
+          - "JML process document"
+          - "Training records"
+          - "Remote working policy"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.6.3
+
+      - id: nl.bio.2.0:PHY
+        title: "Physical controls"
+        weight: 2
+        answerType: scale
+        tags: [bio, physical-security, facilities]
+        question: |
+          Are physical controls (perimeters, entry control, monitoring,
+          environmental, secure areas, equipment, media) implemented
+          per BIO 2.0?
+        purpose: |
+          Physical controls protect facilities used by Dutch
+          government entities.
+        expectedOutcome:
+          - "Physical perimeters and entry controls in place."
+          - "Monitoring covers sensitive areas."
+          - "Equipment and media lifecycle is managed."
+        howTo:
+          - step: "Implement perimeters and entry controls"
+          - step: "Monitor sensitive areas"
+          - step: "Manage equipment and media lifecycle"
+        evidenceExamples:
+          - "Facility security design"
+          - "Monitoring coverage"
+          - "Media lifecycle policy"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.7.1
+        appliesIf: "facility.onPremises == true"
+
+      - id: nl.bio.2.0:TEC
+        title: "Technological controls"
+        weight: 3
+        answerType: scale
+        tags: [bio, technical, configuration, monitoring]
+        question: |
+          Are technological controls (endpoints, access, cryptography,
+          logging, network, secure development, change management,
+          backup) implemented per BIO 2.0?
+        purpose: |
+          The technological theme is where most BIO-versterkingen sit
+          and where audit findings typically concentrate.
+        expectedOutcome:
+          - "Endpoint, network, cryptography controls in place."
+          - "Logging / monitoring deployed."
+          - "Secure development and change management applied."
+        howTo:
+          - step: "Implement endpoint / network / cryptography controls"
+          - step: "Deploy logging and monitoring"
+          - step: "Apply secure development and change management"
+        evidenceExamples:
+          - "Endpoint baseline"
+          - "Logging configuration"
+          - "Change management process"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.9

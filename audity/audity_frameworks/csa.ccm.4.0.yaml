@@ -1,0 +1,722 @@
+framework:
+  schemaVersion: 1
+  key: csa.ccm.4.0
+  name: "CSA Cloud Controls Matrix 4.0"
+  shortName: "CSA CCM v4"
+  version: "4.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "Cloud Security Lead"
+    - "CISO"
+    - "Compliance Officer"
+  estimatedDurationMinutes: 300
+  description: |
+    The Cloud Security Alliance (CSA) Cloud Controls Matrix (CCM) v4
+    is a cybersecurity controls framework for cloud computing. It
+    contains 197 control objectives organized into 17 domains
+    covering all key aspects of cloud technology. CCM is the basis
+    of the CSA STAR Program for cloud provider assurance.
+
+    This YAML covers all 17 CCM domains as audit-readiness controls.
+    The 197 individual control objectives are summarized at domain
+    level; teams using CCM for STAR self-assessment must work at the
+    control objective level.
+  scopeNote: |
+    In scope: all 17 domains of CSA CCM v4, structured as one control
+    per domain. The 197 individual control objectives are summarized
+    within each domain.
+
+    Out of scope: the 197 individual control objectives as separate
+    controls; the CAIQ (Consensus Assessments Initiative Questionnaire)
+    questions; STAR Level 1, 2, 3 assurance procedures; the cloud
+    shared responsibility model mappings to specific providers.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      CSA CCM v4 is published by the Cloud Security Alliance and made
+      available for use with attribution under CSA's terms. Domain
+      content has been paraphrased into audit-readiness English; CSA
+      attribution should accompany operational use of this file.
+
+severityRubric:
+  critical: |
+    Failure leaves a domain substantially unimplemented for a
+    customer-facing cloud service; STAR attestation blocked.
+  high: |
+    Material gap in a domain without compensating measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: csa.ccm:AIS
+    target: iso27001:A.8.25
+    type: covers
+  - source: csa.ccm:CEK
+    target: iso27001:A.8.24
+    type: covers
+  - source: csa.ccm:DCS
+    target: iso27001:A.7.1
+    type: covers
+  - source: csa.ccm:IAM
+    target: iso27001:A.5.15
+    type: covers
+  - source: csa.ccm:LOG
+    target: iso27001:A.8.15
+    type: covers
+  - source: csa.ccm:SEF
+    target: iso27001:A.5.24
+    type: covers
+  - source: csa.ccm:STA
+    target: iso27001:A.5.19
+    type: covers
+  - source: csa.ccm:TVM
+    target: iso27001:A.8.8
+    type: covers
+
+domains:
+  - id: governance
+    name: "Governance and Assurance"
+    description: |
+      Audit and Assurance; Governance, Risk and Compliance; Human
+      Resources domains.
+    controls:
+      - id: csa.ccm:AA
+        title: "Audit and Assurance (A&A)"
+        weight: 2
+        answerType: scale
+        tags: [audit, assurance, cloud]
+        question: |
+          Are audit and assurance activities planned, performed, and
+          reported on the cloud service to provide confidence to
+          customers and auditors?
+        purpose: |
+          Cloud customers cannot inspect the service; they rely on
+          attestations. Audit and assurance produces them.
+        expectedOutcome:
+          - "Audit plan covers in-scope service."
+          - "Independent attestations are performed (e.g., SOC 2, ISO 27001)."
+          - "Reports are accessible to customers under NDA."
+        howTo:
+          - step: "Plan audits covering in-scope services"
+          - step: "Engage independent attestations"
+          - step: "Make reports accessible under NDA"
+        evidenceExamples:
+          - "Audit plan"
+          - "Attestation report"
+          - "Customer access process"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assurance"
+            "3": "Self-attestation only"
+            "5": "Independent attestation"
+
+      - id: csa.ccm:GRC
+        title: "Governance, Risk and Compliance (GRC)"
+        weight: 3
+        answerType: scale
+        tags: [governance, risk, compliance]
+        question: |
+          Is a cloud GRC programme established covering policy, risk
+          assessment, and compliance with applicable obligations?
+        purpose: |
+          GRC is the umbrella under which other CCM domains operate.
+        expectedOutcome:
+          - "Cloud GRC programme is documented."
+          - "Risk assessment is performed."
+          - "Compliance obligations are mapped."
+        howTo:
+          - step: "Document GRC programme"
+          - step: "Perform risk assessment"
+          - step: "Map compliance obligations"
+        evidenceExamples:
+          - "GRC programme charter"
+          - "Risk assessment"
+          - "Compliance matrix"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No GRC"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: csa.ccm:HRS
+        title: "Human Resources (HRS)"
+        weight: 2
+        answerType: scale
+        tags: [hr, personnel, training]
+        question: |
+          Are HR practices for cloud service personnel (screening,
+          training, agreements, JML) documented and applied?
+        purpose: |
+          Cloud service personnel operate inside the trust boundary
+          for many customers simultaneously. HR controls matter.
+        expectedOutcome:
+          - "Screening matches role sensitivity."
+          - "Annual training is delivered."
+          - "JML processes are coupled to access."
+        howTo:
+          - step: "Screen per role sensitivity"
+          - step: "Deliver annual training"
+          - step: "Couple JML to access"
+        evidenceExamples:
+          - "Screening policy"
+          - "Training record"
+          - "JML process"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak HR"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+  - id: data-and-application
+    name: "Data and Application Security"
+    description: |
+      Application & Interface Security; Cryptography, Encryption and
+      Key Management; Data Security and Privacy Lifecycle Management.
+    controls:
+      - id: csa.ccm:AIS
+        title: "Application & Interface Security (AIS)"
+        weight: 3
+        answerType: scale
+        tags: [appsec, api, sdlc]
+        question: |
+          Are application and interface security practices (secure
+          SDLC, API security, vulnerability management) applied to
+          cloud-delivered software?
+        purpose: |
+          The application layer is what customers consume. AIS
+          provides assurance over its security.
+        expectedOutcome:
+          - "Secure SDLC is documented and applied."
+          - "APIs are authenticated and authorized."
+          - "Vulnerabilities are tracked and remediated."
+        howTo:
+          - step: "Apply secure SDLC"
+          - step: "Authenticate and authorize APIs"
+          - step: "Track and remediate vulnerabilities"
+        evidenceExamples:
+          - "SDLC policy"
+          - "API gateway configuration"
+          - "Vulnerability report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak AIS"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.8.25
+
+      - id: csa.ccm:CEK
+        title: "Cryptography, Encryption and Key Management (CEK)"
+        weight: 3
+        answerType: scale
+        tags: [cryptography, encryption, kms]
+        question: |
+          Are cryptography, encryption, and key management practices
+          applied to data-in-transit and data-at-rest for cloud
+          services?
+        purpose: |
+          Encryption protects data customers cannot physically secure.
+          KMS determines whether that protection holds.
+        expectedOutcome:
+          - "Cryptographic standards documented."
+          - "KMS / HSM used for keys."
+          - "Customer-managed keys supported where required."
+        howTo:
+          - step: "Document cryptographic standards"
+          - step: "Use KMS / HSM for keys"
+          - step: "Support customer-managed keys"
+        evidenceExamples:
+          - "Cryptography standard"
+          - "KMS configuration"
+          - "CMK feature"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak crypto"
+            "3": "Partial"
+            "5": "Standards + KMS + CMK"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: csa.ccm:DSP
+        title: "Data Security and Privacy Lifecycle Management (DSP)"
+        weight: 3
+        answerType: scale
+        tags: [data, privacy, lifecycle, classification]
+        question: |
+          Is data managed through its lifecycle with classification,
+          handling, retention, and deletion controls aligned with
+          privacy and contractual obligations?
+        purpose: |
+          Cloud customers entrust data to the provider. Lifecycle
+          management converts trust into demonstrable safeguards.
+        expectedOutcome:
+          - "Data classification scheme is applied."
+          - "Retention and deletion are enforced."
+          - "Privacy obligations are tracked."
+        howTo:
+          - step: "Apply data classification"
+          - step: "Enforce retention and deletion"
+          - step: "Track privacy obligations"
+        evidenceExamples:
+          - "Classification scheme"
+          - "Retention configuration"
+          - "Privacy obligations register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak DSP"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+  - id: identity-and-endpoint
+    name: "Identity, Endpoint, and Interoperability"
+    description: |
+      Identity and Access Management; Universal Endpoint Management;
+      Interoperability and Portability.
+    controls:
+      - id: csa.ccm:IAM
+        title: "Identity and Access Management (IAM)"
+        weight: 3
+        answerType: scale
+        tags: [iam, mfa, sso, least-privilege]
+        question: |
+          Are identity and access management practices (lifecycle,
+          MFA, least privilege, periodic review) applied to cloud
+          service personnel and customer-facing administration?
+        purpose: |
+          IAM is the dominant control plane for cloud security and
+          customer administration alike.
+        expectedOutcome:
+          - "Identity lifecycle is managed."
+          - "MFA is enforced for admins and customer-facing actions."
+          - "Access reviews are performed."
+        howTo:
+          - step: "Manage identity lifecycle"
+          - step: "Enforce MFA for admins and customer actions"
+          - step: "Run access reviews"
+        evidenceExamples:
+          - "Identity lifecycle policy"
+          - "MFA enforcement report"
+          - "Access review report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak IAM"
+            "3": "Partial"
+            "5": "Lifecycle + MFA + reviews"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: csa.ccm:UEM
+        title: "Universal Endpoint Management (UEM)"
+        weight: 2
+        answerType: scale
+        tags: [endpoint, mdm, byod]
+        question: |
+          Are endpoints used to operate the cloud service managed
+          through hardening, MDM, and monitoring?
+        purpose: |
+          Operator endpoints are the bridge into the cloud control
+          plane. Their security determines the rest.
+        expectedOutcome:
+          - "Endpoint hardening baseline enforced."
+          - "MDM controls in place."
+          - "Endpoint compliance monitored."
+        howTo:
+          - step: "Enforce endpoint hardening baseline"
+          - step: "Operate MDM controls"
+          - step: "Monitor endpoint compliance"
+        evidenceExamples:
+          - "Hardening baseline"
+          - "MDM enforcement report"
+          - "Compliance dashboard"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Unmanaged"
+            "3": "Partial"
+            "5": "Baseline + MDM + monitored"
+
+      - id: csa.ccm:IPY
+        title: "Interoperability and Portability (IPY)"
+        weight: 2
+        answerType: scale
+        tags: [interoperability, portability, exit, lock-in]
+        question: |
+          Are interoperability and portability supported so customers
+          can interoperate with other cloud services and exit the
+          service with their data?
+        purpose: |
+          Lock-in undermines customer leverage and crisis response.
+          IPY reduces it.
+        expectedOutcome:
+          - "Data export tooling exists."
+          - "Standard formats are supported."
+          - "Exit documentation is published."
+        howTo:
+          - step: "Provide data export tooling"
+          - step: "Support standard formats"
+          - step: "Publish exit documentation"
+        evidenceExamples:
+          - "Export tool"
+          - "Format support reference"
+          - "Exit documentation"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Lock-in"
+            "3": "Partial"
+            "5": "Tool + format + exit"
+
+  - id: infrastructure
+    name: "Infrastructure"
+    description: |
+      Datacenter Security; Infrastructure and Virtualization Security;
+      Change Control and Configuration Management.
+    controls:
+      - id: csa.ccm:DCS
+        title: "Datacenter Security (DCS)"
+        weight: 3
+        answerType: scale
+        tags: [datacenter, physical-security, facilities]
+        question: |
+          Is datacenter physical security designed and operated to
+          protect cloud infrastructure (tiered access, environmental
+          controls, monitoring)?
+        purpose: |
+          Physical compromise of cloud infrastructure undermines all
+          logical controls. DCS protects the foundation.
+        expectedOutcome:
+          - "Tiered physical access enforced."
+          - "Environmental controls tested."
+          - "Monitoring covers DC."
+        howTo:
+          - step: "Enforce tiered physical access"
+          - step: "Test environmental controls"
+          - step: "Monitor datacenters"
+        evidenceExamples:
+          - "Access tier policy"
+          - "Environmental test report"
+          - "Monitoring evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak DCS"
+            "3": "Partial"
+            "5": "Tiered + monitored + tested"
+        crossReferences:
+          - iso27001:A.7.1
+        appliesIf: "service.operates_datacenters == true"
+
+      - id: csa.ccm:IVS
+        title: "Infrastructure and Virtualization Security (IVS)"
+        weight: 3
+        answerType: scale
+        tags: [virtualization, hypervisor, infrastructure]
+        question: |
+          Are infrastructure and virtualization layers (hypervisors,
+          containers, networks, hosts) hardened, monitored, and
+          isolated between tenants?
+        purpose: |
+          Tenant isolation is the non-negotiable property of
+          multi-tenant cloud services.
+        expectedOutcome:
+          - "Tenant isolation is enforced."
+          - "Hypervisor / container hosts are hardened."
+          - "Networks are segmented."
+        howTo:
+          - step: "Enforce tenant isolation"
+          - step: "Harden hypervisor / container hosts"
+          - step: "Segment networks"
+        evidenceExamples:
+          - "Isolation design"
+          - "Hardening baseline"
+          - "Segmentation design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak IVS"
+            "3": "Partial"
+            "5": "Isolated + hardened + segmented"
+
+      - id: csa.ccm:CCC
+        title: "Change Control and Configuration Management (CCC)"
+        weight: 3
+        answerType: scale
+        tags: [change-management, configuration]
+        question: |
+          Are change control and configuration management practices
+          applied to all in-scope cloud components?
+        purpose: |
+          Cloud configuration drift produces silent risk at scale.
+          CCC keeps the platform inside its security baseline.
+        expectedOutcome:
+          - "Change management is documented and applied."
+          - "Configuration baselines exist."
+          - "Drift is detected."
+        howTo:
+          - step: "Document and apply change management"
+          - step: "Maintain configuration baselines"
+          - step: "Detect drift"
+        evidenceExamples:
+          - "Change records"
+          - "Baseline definitions"
+          - "Drift report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No CCC"
+            "3": "Partial"
+            "5": "Documented + baselined + drift"
+
+  - id: operations-and-resilience
+    name: "Operations and Resilience"
+    description: |
+      Business Continuity Management and Operational Resilience;
+      Logging and Monitoring; Security Incident Management; Threat
+      and Vulnerability Management.
+    controls:
+      - id: csa.ccm:BCR
+        title: "Business Continuity Management (BCR)"
+        weight: 3
+        answerType: scale
+        tags: [continuity, resilience, dr]
+        question: |
+          Is business continuity for the cloud service planned, tested,
+          and aligned with customer expectations?
+        purpose: |
+          Customer availability commitments rest on tested BCM.
+        expectedOutcome:
+          - "BCM plan covers in-scope services."
+          - "Plan is tested annually."
+          - "Customer commitments align."
+        howTo:
+          - step: "Develop BCM plan"
+          - step: "Test annually"
+          - step: "Align with customer commitments"
+        evidenceExamples:
+          - "BCM plan"
+          - "Test report"
+          - "Customer SLA mapping"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No BCM"
+            "3": "Untested"
+            "5": "Tested + aligned"
+
+      - id: csa.ccm:LOG
+        title: "Logging and Monitoring (LOG)"
+        weight: 3
+        answerType: scale
+        tags: [logging, monitoring, siem]
+        question: |
+          Are logs collected, retained, and monitored for the cloud
+          service, with customer-relevant logs made available?
+        purpose: |
+          Logs underpin detection, investigation, and customer
+          accountability.
+        expectedOutcome:
+          - "Logs are collected centrally."
+          - "Retention meets investigation needs."
+          - "Customer-relevant logs are available."
+        howTo:
+          - step: "Collect logs centrally"
+          - step: "Retain per investigation needs"
+          - step: "Provide customer-relevant logs"
+        evidenceExamples:
+          - "Logging design"
+          - "Retention configuration"
+          - "Customer log access"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No logs"
+            "3": "Internal only"
+            "5": "Central + customer access"
+        crossReferences:
+          - iso27001:A.8.15
+
+      - id: csa.ccm:SEF
+        title: "Security Incident Management, E-Discovery, and Forensics (SEF)"
+        weight: 3
+        answerType: scale
+        tags: [incident-response, forensics, e-discovery]
+        question: |
+          Is a security incident management capability operational,
+          including forensic readiness and e-discovery support for
+          customer needs?
+        purpose: |
+          Customers depend on the provider for forensic and e-discovery
+          support when their data is involved.
+        expectedOutcome:
+          - "IR process is documented and exercised."
+          - "Forensic readiness exists."
+          - "E-discovery support is documented."
+        howTo:
+          - step: "Document and exercise IR process"
+          - step: "Establish forensic readiness"
+          - step: "Document e-discovery support"
+        evidenceExamples:
+          - "IR process"
+          - "Forensic SOP"
+          - "E-discovery procedure"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No IR"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: csa.ccm:TVM
+        title: "Threat and Vulnerability Management (TVM)"
+        weight: 3
+        answerType: scale
+        tags: [threat, vulnerability, patching, scanning]
+        question: |
+          Are threats and vulnerabilities tracked and remediated for
+          the cloud service?
+        purpose: |
+          TVM is the operational discipline that keeps the platform
+          inside its known-good state over time.
+        expectedOutcome:
+          - "Vulnerability scanning operates."
+          - "Threat intelligence is consumed."
+          - "Remediation meets SLAs."
+        howTo:
+          - step: "Operate vulnerability scanning"
+          - step: "Consume threat intelligence"
+          - step: "Meet remediation SLAs"
+        evidenceExamples:
+          - "Scan results"
+          - "Intel integration"
+          - "SLA report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak TVM"
+            "3": "Partial"
+            "5": "Comprehensive + SLAs"
+        crossReferences:
+          - iso27001:A.8.8
+
+  - id: supply-chain
+    name: "Supply Chain"
+    description: |
+      Supply Chain Management, Transparency, and Accountability domain.
+    controls:
+      - id: csa.ccm:STA
+        title: "Supply Chain Management, Transparency, Accountability (STA)"
+        weight: 3
+        answerType: scale
+        tags: [supply-chain, third-party, vendor, transparency]
+        question: |
+          Are supply chain partners (subprocessors, infrastructure
+          providers) managed through contractual obligations, oversight,
+          and transparency to customers?
+        purpose: |
+          Cloud services chain trust across providers. STA makes that
+          chain visible and accountable.
+        expectedOutcome:
+          - "Subprocessor inventory exists."
+          - "Contractual obligations cover security."
+          - "Transparency to customers is in place."
+        howTo:
+          - step: "Maintain subprocessor inventory"
+          - step: "Embed security in contracts"
+          - step: "Provide customer transparency"
+        evidenceExamples:
+          - "Subprocessor inventory"
+          - "Standard contract clauses"
+          - "Customer transparency page"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak STA"
+            "3": "Partial"
+            "5": "Inventory + contracts + transparency"
+        crossReferences:
+          - iso27001:A.5.19

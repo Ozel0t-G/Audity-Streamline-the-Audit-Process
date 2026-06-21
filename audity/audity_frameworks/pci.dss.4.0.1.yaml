@@ -1,0 +1,582 @@
+framework:
+  schemaVersion: 1
+  key: pci.dss.4.0.1
+  name: "PCI DSS - Payment Card Industry Data Security Standard 4.0.1"
+  shortName: "PCI DSS 4.0.1"
+  version: "4.0.1"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: pci_dss
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Auditor"
+    - "QSA"
+    - "Compliance Officer"
+    - "CISO"
+    - "Payments Team"
+  estimatedDurationMinutes: 360
+  description: |
+    PCI DSS 4.0.1 is the global standard issued by the PCI Security
+    Standards Council for protecting account data. It applies to all
+    entities involved in processing, storing, or transmitting cardholder
+    data and sensitive authentication data.
+
+    This YAML covers the 12 main PCI DSS requirements as audit-readiness
+    controls. The individual sub-requirements (more than 300 in total)
+    are summarized at requirement level; full PCI DSS assessment must
+    use the PCI SSC ROC template or SAQ at the sub-requirement level.
+  scopeNote: |
+    In scope: all 12 main PCI DSS 4.0.1 requirements, structured as one
+    control per requirement, with key sub-requirements summarized in
+    expectedOutcome and howTo.
+
+    Out of scope: the more than 300 individual sub-requirements as
+    separate controls; PCI SSC Self-Assessment Questionnaires (SAQ A,
+    A-EP, B, B-IP, C, C-VT, D, P2PE-HW); ROC reporting templates;
+    customized approach requirements; appendices.
+  license:
+    status: tenant_licensed
+    confirmationRequired: true
+    notice: |
+      PCI DSS 4.0.1 is published by the PCI Security Standards Council
+      and is subject to its license terms. Audit-question content has
+      been paraphrased into Audity audit-readiness language; the
+      original PCI DSS text is not reproduced. Use of this file does
+      not constitute a PCI DSS assessment.
+
+severityRubric:
+  critical: |
+    Failure breaks a non-negotiable PCI requirement (e.g., storing PAN
+    unencrypted) and would block a Report on Compliance.
+  high: |
+    Material gap in a requirement without compensating controls.
+  medium: |
+    Partial implementation; remediable in the normal improvement cycle.
+  low: |
+    Documentation or maturity gap with no immediate impact on cardholder
+    data protection.
+
+controlMappings:
+  - source: pci.dss.4.0.1:R-01
+    target: iso27001:A.8.20
+    type: covers
+  - source: pci.dss.4.0.1:R-02
+    target: iso27001:A.8.9
+    type: covers
+  - source: pci.dss.4.0.1:R-03
+    target: iso27001:A.8.24
+    type: covers
+  - source: pci.dss.4.0.1:R-04
+    target: iso27001:A.8.24
+    type: covers
+  - source: pci.dss.4.0.1:R-05
+    target: iso27001:A.8.7
+    type: covers
+  - source: pci.dss.4.0.1:R-06
+    target: iso27001:A.8.25
+    type: covers
+  - source: pci.dss.4.0.1:R-07
+    target: iso27001:A.5.15
+    type: covers
+  - source: pci.dss.4.0.1:R-08
+    target: iso27001:A.8.5
+    type: covers
+  - source: pci.dss.4.0.1:R-09
+    target: iso27001:A.7.2
+    type: covers
+  - source: pci.dss.4.0.1:R-10
+    target: iso27001:A.8.15
+    type: covers
+  - source: pci.dss.4.0.1:R-11
+    target: iso27001:A.8.29
+    type: covers
+  - source: pci.dss.4.0.1:R-12
+    target: iso27001:A.5.1
+    type: covers
+
+domains:
+  - id: network-security
+    name: "Build and Maintain a Secure Network and Systems (Req. 1-2)"
+    description: |
+      Network security controls and secure configurations protecting
+      the cardholder data environment (CDE).
+    controls:
+      - id: pci.dss.4.0.1:R-01
+        title: "Install and Maintain Network Security Controls"
+        weight: 3
+        answerType: scale
+        tags: [network, segmentation, firewall, cde]
+        question: |
+          Are network security controls (firewalls, segmentation rules,
+          cloud-equivalent controls) installed, configured, documented,
+          and maintained to protect the cardholder data environment?
+        purpose: |
+          Network controls define the CDE boundary. Without a defended
+          boundary, scope explodes and protection cannot be
+          demonstrated.
+        expectedOutcome:
+          - "Network architecture documents the CDE and trust zones."
+          - "Rules between CDE and other networks are explicit and reviewed."
+          - "Changes to network controls follow change control."
+        howTo:
+          - step: "Document network architecture with CDE boundary"
+          - step: "Define explicit rules between CDE and other networks"
+          - step: "Channel changes through change control"
+        evidenceExamples:
+          - "CDE network diagram"
+          - "Firewall rule export"
+          - "Change records"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "CDE not defined"
+            "3": "Boundary unclear"
+            "5": "Defined + reviewed + changed via control"
+        crossReferences:
+          - iso27001:A.8.20
+
+      - id: pci.dss.4.0.1:R-02
+        title: "Apply Secure Configurations to All System Components"
+        weight: 3
+        answerType: scale
+        tags: [configuration, hardening, baseline]
+        question: |
+          Are secure configurations applied to all in-scope system
+          components, including changing defaults, hardening, and
+          documenting configuration standards?
+        purpose: |
+          Default configurations are insecure. PCI explicitly requires
+          changed defaults and documented hardening for all in-scope
+          components.
+        expectedOutcome:
+          - "Configuration standards exist per platform."
+          - "Defaults are changed before deployment."
+          - "Drift is detected and remediated."
+        howTo:
+          - step: "Maintain configuration standards per platform"
+          - step: "Change defaults at deployment"
+          - step: "Detect and remediate drift"
+        evidenceExamples:
+          - "Configuration standards"
+          - "Default-change record"
+          - "Drift report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No standards"
+            "3": "Standards, defaults remain"
+            "5": "Standards + defaults changed + drift"
+        crossReferences:
+          - iso27001:A.8.9
+
+  - id: protect-account-data
+    name: "Protect Account Data (Req. 3-4)"
+    description: |
+      Protection of stored account data and protection of cardholder
+      data in transit.
+    controls:
+      - id: pci.dss.4.0.1:R-03
+        title: "Protect Stored Account Data"
+        weight: 3
+        answerType: scale
+        tags: [data, encryption, pan, sad]
+        question: |
+          Is stored account data protected through minimization, strong
+          cryptography, and proper key management; and are SAD elements
+          not retained after authorization?
+        purpose: |
+          Storing data that need not be stored is the largest avoidable
+          source of PCI risk. SAD retention is a non-negotiable
+          prohibition.
+        expectedOutcome:
+          - "PAN storage is minimized and justified."
+          - "Stored PAN is rendered unreadable using strong cryptography."
+          - "SAD is not retained after authorization."
+        howTo:
+          - step: "Minimize and justify PAN storage"
+          - step: "Render stored PAN unreadable (e.g., encryption / hashing / truncation)"
+          - step: "Ensure SAD is not retained after authorization"
+        evidenceExamples:
+          - "Storage inventory and justification"
+          - "Encryption design"
+          - "SAD purge proof"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "PAN unprotected"
+            "3": "Partial"
+            "5": "Minimized + protected + SAD purged"
+        crossReferences:
+          - iso27001:A.8.24
+
+      - id: pci.dss.4.0.1:R-04
+        title: "Protect Cardholder Data with Strong Cryptography During Transmission"
+        weight: 3
+        answerType: scale
+        tags: [data, encryption, transmission, tls]
+        question: |
+          Is cardholder data protected with strong cryptography during
+          transmission over open, public networks?
+        purpose: |
+          Cardholder data in transit is exposed to passive interception
+          and active tampering. Strong cryptography is the baseline
+          defense.
+        expectedOutcome:
+          - "Approved strong cryptography is used in transmission."
+          - "Cipher / protocol policy is enforced."
+          - "Certificates are managed with renewal."
+        howTo:
+          - step: "Use approved strong cryptography in transmission"
+          - step: "Enforce cipher / protocol policy"
+          - step: "Manage certificate renewal"
+        evidenceExamples:
+          - "TLS policy"
+          - "Cipher scan results"
+          - "Certificate inventory"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Plaintext"
+            "3": "TLS but weak ciphers"
+            "5": "Policy enforced + renewal automated"
+        crossReferences:
+          - iso27001:A.8.24
+
+  - id: vulnerability-management
+    name: "Maintain a Vulnerability Management Program (Req. 5-6)"
+    description: |
+      Protection from malicious software and secure systems / software
+      development.
+    controls:
+      - id: pci.dss.4.0.1:R-05
+        title: "Protect All Systems and Networks from Malicious Software"
+        weight: 3
+        answerType: scale
+        tags: [malware, anti-malware, edr]
+        question: |
+          Are anti-malware solutions deployed on all systems commonly
+          affected by malware, kept current, and reviewed for
+          effectiveness?
+        purpose: |
+          Malware remains a dominant initial-access vector. Coverage
+          and currency together determine real-world effectiveness.
+        expectedOutcome:
+          - "Anti-malware is deployed on in-scope systems."
+          - "Signatures / behavior content is current."
+          - "Effectiveness is reviewed."
+        howTo:
+          - step: "Deploy anti-malware on in-scope systems"
+          - step: "Keep content current"
+          - step: "Review effectiveness periodically"
+        evidenceExamples:
+          - "Coverage report"
+          - "Currency report"
+          - "Effectiveness review"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No protection"
+            "3": "Partial coverage"
+            "5": "Full coverage + reviewed"
+        crossReferences:
+          - iso27001:A.8.7
+
+      - id: pci.dss.4.0.1:R-06
+        title: "Develop and Maintain Secure Systems and Software"
+        weight: 3
+        answerType: scale
+        tags: [sdlc, secure-development, patching]
+        question: |
+          Are systems and software developed, maintained, and patched
+          securely, including identification of vulnerabilities, secure
+          coding, and change management?
+        purpose: |
+          Application vulnerabilities are a common breach vector.
+          Secure development and patching reduce the exploitable
+          surface at the build stage.
+        expectedOutcome:
+          - "Secure SDLC is documented and applied."
+          - "Vulnerabilities are identified and patched under SLA."
+          - "Changes follow change management."
+        howTo:
+          - step: "Apply secure SDLC"
+          - step: "Identify and patch vulnerabilities under SLA"
+          - step: "Manage changes"
+        evidenceExamples:
+          - "Secure SDLC policy"
+          - "Vulnerability and patch reports"
+          - "Change records"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No SDLC"
+            "3": "Partial"
+            "5": "SDLC + patching + change"
+        crossReferences:
+          - iso27001:A.8.25
+
+  - id: access-control
+    name: "Implement Strong Access Control Measures (Req. 7-9)"
+    description: |
+      Restriction of logical and physical access to system components
+      and account data.
+    controls:
+      - id: pci.dss.4.0.1:R-07
+        title: "Restrict Access to System Components and Cardholder Data"
+        weight: 3
+        answerType: scale
+        tags: [access-control, least-privilege, business-need]
+        question: |
+          Is access to in-scope system components and cardholder data
+          restricted by business need to know and managed under
+          documented processes?
+        purpose: |
+          Over-broad access multiplies the impact of any compromised
+          account. Need-to-know enforcement is foundational to PCI.
+        expectedOutcome:
+          - "Access model defines need-to-know."
+          - "Roles are documented and applied."
+          - "Periodic review removes unnecessary access."
+        howTo:
+          - step: "Define a need-to-know access model"
+          - step: "Document and apply roles"
+          - step: "Review access periodically"
+        evidenceExamples:
+          - "Access model"
+          - "Role-access matrix"
+          - "Access review report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Broad access"
+            "3": "Partial restriction"
+            "5": "Need-to-know + reviews"
+        crossReferences:
+          - iso27001:A.5.15
+
+      - id: pci.dss.4.0.1:R-08
+        title: "Identify Users and Authenticate Access to System Components"
+        weight: 3
+        answerType: scale
+        tags: [iam, authentication, mfa]
+        question: |
+          Are all users identified and authenticated using strong
+          mechanisms (MFA, password policy, session controls) before
+          accessing in-scope system components?
+        purpose: |
+          Weak authentication on access to the CDE is one of the most
+          exploited weaknesses. MFA is now mandatory in 4.0.1.
+        expectedOutcome:
+          - "Unique identification is enforced."
+          - "MFA is enforced for access to the CDE."
+          - "Password / passphrase policy meets PCI minimum."
+        howTo:
+          - step: "Enforce unique identification"
+          - step: "Enforce MFA on CDE access"
+          - step: "Apply password / passphrase policy"
+        evidenceExamples:
+          - "Unique-ID policy"
+          - "MFA enforcement report"
+          - "Password policy"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Shared accounts"
+            "3": "No MFA"
+            "5": "Unique + MFA + policy"
+        crossReferences:
+          - iso27001:A.8.5
+
+      - id: pci.dss.4.0.1:R-09
+        title: "Restrict Physical Access to Cardholder Data"
+        weight: 3
+        answerType: scale
+        tags: [physical-security, cardholder-data, facilities]
+        question: |
+          Is physical access to cardholder data and to in-scope facilities
+          restricted, monitored, and reviewed?
+        purpose: |
+          Physical access bypasses many logical controls. Tiered
+          physical access with monitoring is the baseline.
+        expectedOutcome:
+          - "Physical access tiers are enforced."
+          - "Access is logged and reviewed."
+          - "Visitor management is in place."
+        howTo:
+          - step: "Enforce physical access tiers"
+          - step: "Log and review access"
+          - step: "Implement visitor management"
+        evidenceExamples:
+          - "Access tier policy"
+          - "Access log review"
+          - "Visitor register"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak physical"
+            "3": "Tiered, no review"
+            "5": "Tiered + reviewed + visitors"
+        crossReferences:
+          - iso27001:A.7.2
+        appliesIf: "facility.onPremises == true"
+
+  - id: monitor-and-test
+    name: "Regularly Monitor and Test Networks (Req. 10-11)"
+    description: |
+      Logging, monitoring, and testing of in-scope systems and
+      networks.
+    controls:
+      - id: pci.dss.4.0.1:R-10
+        title: "Log and Monitor All Access to System Components and Cardholder Data"
+        weight: 3
+        answerType: scale
+        tags: [logging, monitoring, audit, siem]
+        question: |
+          Are audit logs implemented to detect and identify anomalies
+          and suspicious activity for all in-scope system components
+          and cardholder data access?
+        purpose: |
+          Without logs, neither detection nor investigation is feasible.
+          PCI sets specific log content and retention requirements.
+        expectedOutcome:
+          - "Audit logs cover required events and content."
+          - "Logs are centralized with integrity protection."
+          - "Reviews and alerts identify anomalies."
+        howTo:
+          - step: "Configure logs to capture required events and content"
+          - step: "Centralize logs with integrity protection"
+          - step: "Set up reviews and alerts"
+        evidenceExamples:
+          - "Logging design"
+          - "Central log store"
+          - "Alert / review evidence"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No logs"
+            "3": "Logs, no review"
+            "5": "Central + reviewed + alerted"
+        crossReferences:
+          - iso27001:A.8.15
+
+      - id: pci.dss.4.0.1:R-11
+        title: "Test Security of Systems and Networks Regularly"
+        weight: 3
+        answerType: scale
+        tags: [testing, vulnerability, pentest, scanning]
+        question: |
+          Are in-scope systems and networks tested regularly through
+          vulnerability scanning, penetration testing, file integrity
+          monitoring, and wireless testing?
+        purpose: |
+          Testing finds what configuration management and scanning miss
+          on their own. PCI sets specific cadences and forms.
+        expectedOutcome:
+          - "Internal / external scans run on cadence."
+          - "Penetration testing is performed."
+          - "File integrity monitoring is in place."
+        howTo:
+          - step: "Run internal and external vulnerability scans"
+          - step: "Perform penetration testing"
+          - step: "Deploy file integrity monitoring"
+        evidenceExamples:
+          - "Scan reports"
+          - "Pentest report"
+          - "FIM configuration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No testing"
+            "3": "Some testing"
+            "5": "Scanning + pentest + FIM"
+        crossReferences:
+          - iso27001:A.8.29
+
+  - id: policy-and-program
+    name: "Maintain an Information Security Policy (Req. 12)"
+    description: |
+      Organizational policy, program, and governance supporting the
+      protection of account data.
+    controls:
+      - id: pci.dss.4.0.1:R-12
+        title: "Support Information Security with Organizational Policies and Programs"
+        weight: 3
+        answerType: scale
+        tags: [governance, policy, program, awareness]
+        question: |
+          Is an overall information security policy that supports the
+          protection of account data established, maintained, and
+          communicated, including risk assessment, awareness, third
+          parties, and incident response?
+        purpose: |
+          Req. 12 is the umbrella that ties technical requirements to
+          governance. Weak policy undermines technical compliance.
+        expectedOutcome:
+          - "Information security policy covers required topics."
+          - "Annual risk assessment and awareness training run."
+          - "Third-party management and IR are in place."
+        howTo:
+          - step: "Maintain information security policy across required topics"
+          - step: "Run annual risk assessment and awareness training"
+          - step: "Maintain third-party management and IR"
+        evidenceExamples:
+          - "Policy document"
+          - "Risk assessment / training records"
+          - "Third-party register / IR plan"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policy / program"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - iso27001:A.5.1

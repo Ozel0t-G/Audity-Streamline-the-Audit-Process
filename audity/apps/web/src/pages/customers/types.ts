@@ -13,6 +13,9 @@ export type Customer = {
   selectedFrameworks?: Array<{ id: string; name: string; shortName: string | null }>;
   createdAt?: string;
   updatedAt?: string;
+  archivedAt?: string | null;
+  archivedBy?: string | null;
+  archiveReason?: string | null;
 };
 
 export type AssessmentScope = {

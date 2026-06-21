@@ -1,0 +1,621 @@
+framework:
+  schemaVersion: 1
+  key: owasp.samm.2.0
+  name: "OWASP Software Assurance Maturity Model 2.0"
+  shortName: "OWASP SAMM 2.0"
+  version: "2.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "Application Security Lead"
+    - "Engineering Director"
+    - "Auditor"
+    - "Product Security Lead"
+  estimatedDurationMinutes: 240
+  description: |
+    The OWASP Software Assurance Maturity Model (SAMM) v2.0 is an open
+    framework for helping organizations formulate and implement a
+    strategy for software security tailored to specific risks. SAMM is
+    organized into five Business Functions (Governance, Design,
+    Implementation, Verification, Operations), each containing three
+    Security Practices, for a total of 15 Practices with maturity
+    levels 1 to 3.
+
+    This YAML covers all 15 SAMM Practices as audit-readiness controls
+    with maturity-level expectations summarized.
+  scopeNote: |
+    In scope: all 5 Business Functions and 15 Security Practices of
+    SAMM 2.0, structured as one control per Practice, with maturity
+    level 1 / 2 / 3 expectations summarized in expectedOutcome.
+
+    Out of scope: per-Practice Activities (Stream A / Stream B) as
+    separate controls; the SAMM Toolbox spreadsheets; the SAMM
+    benchmark data.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      OWASP SAMM 2.0 is published by the OWASP Foundation under a
+      Creative Commons Attribution-ShareAlike 4.0 license. Practice
+      content has been paraphrased into audit-readiness English; OWASP
+      attribution should accompany operational use of this file.
+
+severityRubric:
+  critical: |
+    Failure leaves a Practice unimplemented at Maturity 1; foundational
+    SDLC gap.
+  high: |
+    Material gap at Maturity 2 without compensating measures.
+  medium: |
+    Partial Maturity 2 implementation; remediable in the normal
+    improvement cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: owasp.samm.2.0:GV-SM
+    target: nist-csf-2.0:GV.RM-01
+    type: related
+  - source: owasp.samm.2.0:DS-TA
+    target: iso27001:A.8.27
+    type: covers
+  - source: owasp.samm.2.0:IM-SB
+    target: iso27001:A.8.32
+    type: related
+  - source: owasp.samm.2.0:VF-ST
+    target: iso27001:A.8.29
+    type: covers
+  - source: owasp.samm.2.0:OP-IM
+    target: iso27001:A.5.24
+    type: covers
+
+domains:
+  - id: governance
+    name: "Governance"
+    description: |
+      Activities related to how an organization manages overall
+      software development activities.
+    controls:
+      - id: owasp.samm.2.0:GV-SM
+        title: "Strategy and Metrics"
+        weight: 3
+        answerType: scale
+        tags: [governance, strategy, metrics, sdlc]
+        question: |
+          Does the organization have a strategy for software security
+          with measured progress and outcomes?
+        purpose: |
+          A strategy converts activity into outcomes. Metrics make the
+          program evaluable.
+        expectedOutcome:
+          - "Strategy defined for software security (M1)."
+          - "Metrics for security activities tracked (M2)."
+          - "Strategy adapts based on data (M3)."
+        howTo:
+          - step: "Define a software security strategy"
+          - step: "Track metrics for security activities"
+          - step: "Adapt strategy based on data"
+        evidenceExamples:
+          - "Strategy document"
+          - "Metric dashboard"
+          - "Strategy adaptation record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No strategy"
+            "3": "Strategy, no metrics"
+            "5": "Strategy + metrics + adaptation"
+
+      - id: owasp.samm.2.0:GV-PC
+        title: "Policy and Compliance"
+        weight: 3
+        answerType: scale
+        tags: [governance, policy, compliance]
+        question: |
+          Are software security policies and applicable compliance
+          obligations documented, mapped to controls, and enforced?
+        purpose: |
+          Policy gives the program its enforceable backbone.
+          Compliance mapping makes obligations explicit.
+        expectedOutcome:
+          - "Software security policies documented (M1)."
+          - "Compliance obligations mapped to controls (M2)."
+          - "Compliance verified by audit (M3)."
+        howTo:
+          - step: "Document software security policies"
+          - step: "Map compliance obligations to controls"
+          - step: "Audit compliance"
+        evidenceExamples:
+          - "Policy library"
+          - "Compliance map"
+          - "Audit report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No policies"
+            "3": "Policies + obligations mapped"
+            "5": "Audited compliance"
+
+      - id: owasp.samm.2.0:GV-EG
+        title: "Education and Guidance"
+        weight: 2
+        answerType: scale
+        tags: [governance, training, education]
+        question: |
+          Are software security education and role-based guidance
+          provided to developers, security personnel, and other
+          stakeholders?
+        purpose: |
+          Developers cannot apply security knowledge they do not have.
+          Education and guidance enable secure-by-default behavior.
+        expectedOutcome:
+          - "Basic security training delivered (M1)."
+          - "Role-based curricula in place (M2)."
+          - "Champions programme operational (M3)."
+        howTo:
+          - step: "Deliver basic security training"
+          - step: "Develop role-based curricula"
+          - step: "Run a champions programme"
+        evidenceExamples:
+          - "Training records"
+          - "Curriculum library"
+          - "Champions roster"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Basic only"
+            "5": "Role-based + champions"
+
+  - id: design
+    name: "Design"
+    description: |
+      Activities for defining and designing software in a security-
+      aware way.
+    controls:
+      - id: owasp.samm.2.0:DS-TA
+        title: "Threat Assessment"
+        weight: 3
+        answerType: scale
+        tags: [design, threat-modeling, assessment]
+        question: |
+          Are threats to software systems identified, documented, and
+          used to drive design decisions?
+        purpose: |
+          Without threat assessment, design decisions miss adversary
+          context. Threat modeling makes the threats explicit.
+        expectedOutcome:
+          - "Application risk profile per project (M1)."
+          - "Structured threat modeling on key projects (M2)."
+          - "Threat modeling integrated into SDLC (M3)."
+        howTo:
+          - step: "Develop application risk profile per project"
+          - step: "Run structured threat modeling on key projects"
+          - step: "Integrate threat modeling into the SDLC"
+        evidenceExamples:
+          - "Risk profile"
+          - "Threat model"
+          - "SDLC integration evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No assessment"
+            "3": "Some threat modeling"
+            "5": "Integrated in SDLC"
+
+      - id: owasp.samm.2.0:DS-SR
+        title: "Security Requirements"
+        weight: 3
+        answerType: scale
+        tags: [design, requirements, sdlc]
+        question: |
+          Are security requirements explicitly defined and embedded
+          into software requirements?
+        purpose: |
+          Requirements drive design and testing. Explicit security
+          requirements prevent unintended omission.
+        expectedOutcome:
+          - "Standard security requirements adopted (M1)."
+          - "Per-project security requirements tailored (M2)."
+          - "Security requirements verified in acceptance (M3)."
+        howTo:
+          - step: "Adopt standard security requirements"
+          - step: "Tailor per project"
+          - step: "Verify in acceptance"
+        evidenceExamples:
+          - "Standard requirement set"
+          - "Tailored requirements"
+          - "Acceptance verification"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No requirements"
+            "3": "Standard only"
+            "5": "Tailored + verified"
+
+      - id: owasp.samm.2.0:DS-SA
+        title: "Security Architecture"
+        weight: 3
+        answerType: scale
+        tags: [design, architecture, principles]
+        question: |
+          Is security architecture for software defined, reviewed, and
+          maintained, including reusable building blocks and reference
+          architectures?
+        purpose: |
+          Reusable security architecture multiplies the impact of
+          good design decisions and reduces per-project effort.
+        expectedOutcome:
+          - "Security architecture principles documented (M1)."
+          - "Reference architectures available (M2)."
+          - "Architecture reviewed in each project (M3)."
+        howTo:
+          - step: "Document security architecture principles"
+          - step: "Provide reference architectures"
+          - step: "Review architecture per project"
+        evidenceExamples:
+          - "Architecture principles"
+          - "Reference architecture"
+          - "Project review evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No architecture"
+            "3": "Principles only"
+            "5": "Reused + reviewed"
+
+  - id: implementation
+    name: "Implementation"
+    description: |
+      Activities for building and deploying software components and
+      managing software defects.
+    controls:
+      - id: owasp.samm.2.0:IM-SB
+        title: "Secure Build"
+        weight: 3
+        answerType: scale
+        tags: [implementation, build, pipeline, sast, sca]
+        question: |
+          Are software builds performed securely, with reproducibility,
+          dependency analysis, and integrated security testing?
+        purpose: |
+          The build pipeline is the production line of software. Its
+          security determines what reaches production.
+        expectedOutcome:
+          - "Builds are scripted and reproducible (M1)."
+          - "SAST / SCA run in CI (M2)."
+          - "Build pipeline is hardened end-to-end (M3)."
+        howTo:
+          - step: "Script and reproduce builds"
+          - step: "Run SAST / SCA in CI"
+          - step: "Harden build pipeline"
+        evidenceExamples:
+          - "Build pipeline configuration"
+          - "SAST / SCA results"
+          - "Pipeline hardening design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Manual builds"
+            "3": "CI with some scans"
+            "5": "Hardened end-to-end"
+
+      - id: owasp.samm.2.0:IM-SD
+        title: "Secure Deployment"
+        weight: 3
+        answerType: scale
+        tags: [implementation, deployment, secrets]
+        question: |
+          Are deployments performed securely, including secrets
+          management, configuration, and deployment integrity?
+        purpose: |
+          Deployment is where build artefacts meet production. Secrets
+          and configuration mishandled here produce major incidents.
+        expectedOutcome:
+          - "Deployment is automated and authenticated (M1)."
+          - "Secrets are managed via vault / KMS (M2)."
+          - "Deployment integrity verified (M3)."
+        howTo:
+          - step: "Automate and authenticate deployment"
+          - step: "Manage secrets via vault / KMS"
+          - step: "Verify deployment integrity"
+        evidenceExamples:
+          - "Deployment automation"
+          - "Vault configuration"
+          - "Integrity verification"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Manual deploy"
+            "3": "Automation, weak secrets"
+            "5": "Automated + vault + integrity"
+
+      - id: owasp.samm.2.0:IM-DM
+        title: "Defect Management"
+        weight: 3
+        answerType: scale
+        tags: [implementation, defects, vulnerability, tracking]
+        question: |
+          Are security defects identified, tracked, prioritized, and
+          remediated within defined SLAs?
+        purpose: |
+          Defects allowed to accumulate become attack surface.
+          Tracked, SLA-managed remediation keeps risk bounded.
+        expectedOutcome:
+          - "Defects are tracked centrally (M1)."
+          - "Severity / SLA assigned (M2)."
+          - "Trends drive program improvement (M3)."
+        howTo:
+          - step: "Track defects centrally"
+          - step: "Assign severity / SLA"
+          - step: "Use trends for improvement"
+        evidenceExamples:
+          - "Defect tracker"
+          - "SLA report"
+          - "Trend report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No tracking"
+            "3": "Tracking, no SLA"
+            "5": "Tracked + SLA + trends"
+
+  - id: verification
+    name: "Verification"
+    description: |
+      Activities related to checking and testing software during
+      development.
+    controls:
+      - id: owasp.samm.2.0:VF-AA
+        title: "Architecture Assessment"
+        weight: 2
+        answerType: scale
+        tags: [verification, architecture, review]
+        question: |
+          Is the security of software architecture validated through
+          review and assessment?
+        purpose: |
+          Architecture issues are expensive to fix late. Early
+          assessment catches them at design time.
+        expectedOutcome:
+          - "Ad hoc architecture review (M1)."
+          - "Architecture review against principles (M2)."
+          - "Continuous architecture validation (M3)."
+        howTo:
+          - step: "Review architecture ad hoc"
+          - step: "Review against documented principles"
+          - step: "Validate architecture continuously"
+        evidenceExamples:
+          - "Architecture review notes"
+          - "Principle-based review"
+          - "Continuous validation evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No review"
+            "3": "Ad hoc"
+            "5": "Continuous"
+
+      - id: owasp.samm.2.0:VF-RT
+        title: "Requirements-driven Testing"
+        weight: 3
+        answerType: scale
+        tags: [verification, testing, requirements]
+        question: |
+          Are security requirements verified through testing
+          (functional security tests, abuse case tests)?
+        purpose: |
+          Requirements that are not tested do not get verified. Tests
+          tied to requirements ensure ongoing coverage.
+        expectedOutcome:
+          - "Functional security tests in place (M1)."
+          - "Abuse case tests defined (M2)."
+          - "Requirements coverage measured (M3)."
+        howTo:
+          - step: "Build functional security tests"
+          - step: "Define abuse case tests"
+          - step: "Measure requirements coverage"
+        evidenceExamples:
+          - "Security test cases"
+          - "Abuse case tests"
+          - "Coverage metric"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No testing"
+            "3": "Functional only"
+            "5": "Functional + abuse + measured"
+
+      - id: owasp.samm.2.0:VF-ST
+        title: "Security Testing"
+        weight: 3
+        answerType: scale
+        tags: [verification, testing, dast, pentest]
+        question: |
+          Is the security of software tested using techniques such as
+          DAST, IAST, fuzz testing, and penetration testing?
+        purpose: |
+          Different techniques find different classes of bug.
+          Diverse testing catches what any one technique would miss.
+        expectedOutcome:
+          - "Basic security testing performed (M1)."
+          - "Multiple techniques applied (M2)."
+          - "Testing integrated and continuous (M3)."
+        howTo:
+          - step: "Perform basic security testing"
+          - step: "Apply multiple techniques"
+          - step: "Integrate testing in CI/CD"
+        evidenceExamples:
+          - "DAST results"
+          - "Pentest report"
+          - "CI testing configuration"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No testing"
+            "3": "Single technique"
+            "5": "Multi-technique + continuous"
+        crossReferences:
+          - iso27001:A.8.29
+
+  - id: operations
+    name: "Operations"
+    description: |
+      Activities related to maintaining and improving software
+      security in production.
+    controls:
+      - id: owasp.samm.2.0:OP-IM
+        title: "Incident Management"
+        weight: 3
+        answerType: scale
+        tags: [operations, incident-response, monitoring]
+        question: |
+          Are application security incidents detected, responded to,
+          and learned from?
+        purpose: |
+          Application-specific IR converts security telemetry into
+          response actions before user impact materializes.
+        expectedOutcome:
+          - "Application security monitoring in place (M1)."
+          - "IR process for application security (M2)."
+          - "Lessons drive engineering improvement (M3)."
+        howTo:
+          - step: "Operate application security monitoring"
+          - step: "Run IR process for application incidents"
+          - step: "Convert lessons to engineering improvement"
+        evidenceExamples:
+          - "Monitoring configuration"
+          - "IR runbook"
+          - "Improvement record"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No IR"
+            "3": "IR informal"
+            "5": "IR + lessons applied"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: owasp.samm.2.0:OP-EM
+        title: "Environment Management"
+        weight: 3
+        answerType: scale
+        tags: [operations, environment, hardening, patching]
+        question: |
+          Are application environments (dev, test, prod) managed
+          securely, with hardening, patching, and configuration
+          control?
+        purpose: |
+          Environments host applications and inherit their security
+          impact. Sound environment management is foundational.
+        expectedOutcome:
+          - "Hardening applied to environments (M1)."
+          - "Patching on SLA (M2)."
+          - "Continuous configuration validation (M3)."
+        howTo:
+          - step: "Apply hardening to environments"
+          - step: "Patch on SLA"
+          - step: "Validate configuration continuously"
+        evidenceExamples:
+          - "Hardening baseline"
+          - "Patch compliance"
+          - "Continuous validation"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak env mgmt"
+            "3": "Partial"
+            "5": "Hardened + patched + validated"
+
+      - id: owasp.samm.2.0:OP-OM
+        title: "Operational Management"
+        weight: 2
+        answerType: scale
+        tags: [operations, lifecycle, data]
+        question: |
+          Are application data lifecycle and operational processes
+          (backup, retention, decommissioning) managed securely?
+        purpose: |
+          Operational lifecycle activities for applications often
+          accumulate forgotten exposure. Active management closes it.
+        expectedOutcome:
+          - "Data lifecycle process documented (M1)."
+          - "Decommissioning includes data and access cleanup (M2)."
+          - "Lifecycle automation in place (M3)."
+        howTo:
+          - step: "Document data lifecycle process"
+          - step: "Include data / access cleanup on decommission"
+          - step: "Automate lifecycle"
+        evidenceExamples:
+          - "Lifecycle process"
+          - "Decommissioning record"
+          - "Automation evidence"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No lifecycle"
+            "3": "Manual lifecycle"
+            "5": "Automated lifecycle"

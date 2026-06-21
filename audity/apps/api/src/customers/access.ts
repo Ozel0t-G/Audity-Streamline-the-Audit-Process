@@ -60,6 +60,35 @@ export async function canAccessAssessment(user: AuthenticatedUser, assessmentId:
   return result.rows[0]?.allowed === true;
 }
 
+/**
+ * Read-only visibility for archived customers: owners and admins can still
+ * SEE an archived customer (to inspect history or request restore), but the
+ * write-side `canAccessCustomer` continues to filter them out.
+ */
+export async function canViewCustomerIncludingArchived(
+  user: AuthenticatedUser,
+  customerId: string
+): Promise<boolean> {
+  if (isAdminRole(user.role)) return true;
+  const result = await pool.query<{ allowed: boolean }>(
+    `select exists(
+      select 1 from customers c
+      where c.id = $1
+        and (
+          c.created_by_user_id = $2
+          or exists (
+            select 1 from customer_shares cs
+            where cs.customer_id = c.id
+              and cs.shared_with_user_id = $2
+              and cs.revoked_at is null
+          )
+        )
+    ) as allowed`,
+    [customerId, user.sub]
+  );
+  return result.rows[0]?.allowed === true;
+}
+
 export async function customerAccessRecipients(customerId: string): Promise<string[]> {
   const result = await pool.query<{ user_id: string }>(
     `select created_by_user_id as user_id from customers where id = $1 and created_by_user_id is not null

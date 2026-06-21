@@ -1,0 +1,433 @@
+framework:
+  schemaVersion: 1
+  key: sg.csa.ccop.2.0
+  name: "Singapore CSA Cybersecurity Code of Practice for CII 2.0"
+  shortName: "Singapore CCoP 2.0"
+  version: "2.0"
+  status: draft
+  date: 2026-06-20
+  language: en
+  category: internal_policy
+  owner: "TODO: assign framework owner"
+  intendedAudience:
+    - "CII Owner"
+    - "CISO"
+    - "Compliance Officer"
+    - "Auditor"
+  estimatedDurationMinutes: 240
+  description: |
+    The Cybersecurity Code of Practice (CCoP) 2.0 is issued by the
+    Cyber Security Agency of Singapore (CSA) under the Cybersecurity
+    Act, applying to owners of designated Critical Information
+    Infrastructure (CII) in Singapore. It is structured around
+    governance, identification, protection, detection, response and
+    recovery, with sector and OT-specific extensions.
+
+    This YAML covers the principal sections of CCoP 2.0 as
+    audit-readiness controls.
+  scopeNote: |
+    In scope: principal sections of CCoP 2.0 covering Governance,
+    Identification, Protection, Detection, Response and Recovery,
+    Cyber Resilience, Training and Awareness, Operational Technology
+    Security, and Third-Party / Domain-specific considerations as
+    audit-controls.
+
+    Out of scope: detailed clause-level requirements under each
+    section; sector-specific regulatory overlays issued by sector
+    regulators; CSA's separate Cybersecurity Health Reports.
+  license:
+    status: open_licensed
+    confirmationRequired: false
+    notice: |
+      CCoP 2.0 is issued by the Cyber Security Agency of Singapore.
+      Section content has been paraphrased into audit-readiness
+      English.
+
+severityRubric:
+  critical: |
+    Failure leaves a baseline CCoP section unmet for a CII;
+    supervisory action under the Cybersecurity Act likely.
+  high: |
+    Material gap in a section without compensating measures.
+  medium: |
+    Partial implementation; remediable in the normal improvement
+    cycle.
+  low: |
+    Documentation or maturity gap with limited operational impact.
+
+controlMappings:
+  - source: sg.csa.ccop:GOV
+    target: nist-csf-2.0:GV.RR-01
+    type: covers
+  - source: sg.csa.ccop:ID
+    target: nist-csf-2.0:ID.AM-01
+    type: covers
+  - source: sg.csa.ccop:PR
+    target: iso27001:A.5.15
+    type: related
+  - source: sg.csa.ccop:DE
+    target: iso27001:A.8.16
+    type: covers
+  - source: sg.csa.ccop:RR
+    target: iso27001:A.5.24
+    type: covers
+  - source: sg.csa.ccop:OT
+    target: nist.sp800-82.r3:OT-SEG
+    type: related
+
+domains:
+  - id: sections
+    name: "CCoP 2.0 Sections"
+    description: |
+      Principal sections of the Singapore Cybersecurity Code of
+      Practice 2.0.
+    controls:
+      - id: sg.csa.ccop:GOV
+        title: "Governance"
+        weight: 3
+        answerType: scale
+        tags: [ccop, governance, leadership, cii]
+        question: |
+          Is a cybersecurity governance structure in place for the
+          CII, with senior accountability, defined roles, and
+          oversight processes?
+        purpose: |
+          CII protection requires explicit senior accountability and
+          documented governance.
+        expectedOutcome:
+          - "Senior accountability is documented."
+          - "Cybersecurity roles defined."
+          - "Oversight cadence established."
+        howTo:
+          - step: "Document senior accountability"
+          - step: "Define cybersecurity roles"
+          - step: "Establish oversight cadence"
+        evidenceExamples:
+          - "Accountability statement"
+          - "Role matrix"
+          - "Oversight minutes"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No governance"
+            "3": "Informal"
+            "5": "Documented + active"
+
+      - id: sg.csa.ccop:ID
+        title: "Identification"
+        weight: 3
+        answerType: scale
+        tags: [ccop, identification, asset-management, dependencies]
+        question: |
+          Are CII assets, dependencies, and risks identified,
+          inventoried, and maintained current?
+        purpose: |
+          Identification is the foundation for proportionate
+          protection of CII.
+        expectedOutcome:
+          - "CII inventory current."
+          - "Dependencies mapped."
+          - "Risks documented."
+        howTo:
+          - step: "Maintain CII inventory"
+          - step: "Map dependencies"
+          - step: "Document risks"
+        evidenceExamples:
+          - "CII inventory"
+          - "Dependency map"
+          - "Risk register"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No inventory"
+            "3": "Partial"
+            "5": "Inventory + dependencies + risks"
+
+      - id: sg.csa.ccop:PR
+        title: "Protection"
+        weight: 3
+        answerType: scale
+        tags: [ccop, protection, access-control, segmentation]
+        question: |
+          Are protective measures (access control, segmentation,
+          cryptography, hardening, patching, awareness) implemented
+          to safeguard the CII?
+        purpose: |
+          Protection covers the technical and procedural safeguards
+          required for the CII.
+        expectedOutcome:
+          - "Access control and segmentation enforced."
+          - "Cryptography applied to sensitive data."
+          - "Hardening and patching on cadence."
+        howTo:
+          - step: "Enforce access control and segmentation"
+          - step: "Apply cryptography to sensitive data"
+          - step: "Maintain hardening and patching"
+        evidenceExamples:
+          - "Access policy"
+          - "Segmentation design"
+          - "Patch compliance"
+        evidenceMinimumCount: 3
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 3"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: sg.csa.ccop:DE
+        title: "Detection"
+        weight: 3
+        answerType: scale
+        tags: [ccop, detection, monitoring, soc]
+        question: |
+          Is detection capability (monitoring, anomaly detection,
+          threat intelligence) deployed across the CII?
+        purpose: |
+          Detection is the difference between minutes and weeks of
+          dwell time.
+        expectedOutcome:
+          - "Monitoring covers in-scope systems."
+          - "Detection content is tuned."
+          - "Threat intelligence is consumed."
+        howTo:
+          - step: "Cover in-scope systems with monitoring"
+          - step: "Tune detection content"
+          - step: "Consume threat intelligence"
+        evidenceExamples:
+          - "Monitoring coverage"
+          - "Tuning log"
+          - "Intel integration"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No detection"
+            "3": "Partial"
+            "5": "Comprehensive + intel"
+        crossReferences:
+          - iso27001:A.8.16
+
+      - id: sg.csa.ccop:RR
+        title: "Response and Recovery"
+        weight: 3
+        answerType: scale
+        tags: [ccop, response, recovery, plan]
+        question: |
+          Are incident response and recovery plans documented, tested,
+          and integrated with CSA reporting requirements?
+        purpose: |
+          Response and recovery determine impact mitigation. CSA
+          reporting integrates national coordination.
+        expectedOutcome:
+          - "IR / recovery plans documented."
+          - "Plans tested annually."
+          - "CSA reporting paths exist."
+        howTo:
+          - step: "Document IR / recovery plans"
+          - step: "Test annually"
+          - step: "Establish CSA reporting paths"
+        evidenceExamples:
+          - "IR plan"
+          - "Test report"
+          - "Reporting path"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 60
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No plan"
+            "3": "Plan untested"
+            "5": "Tested + integrated"
+        crossReferences:
+          - iso27001:A.5.24
+
+      - id: sg.csa.ccop:CR
+        title: "Cyber Resilience"
+        weight: 3
+        answerType: scale
+        tags: [ccop, resilience, exercise, recovery]
+        question: |
+          Is cyber resilience built into the CII through redundancy,
+          tested recovery, and resilience exercises?
+        purpose: |
+          Resilience converts incidents into managed events rather
+          than failures.
+        expectedOutcome:
+          - "Resilience patterns built into design."
+          - "Recovery tested."
+          - "Exercises performed."
+        howTo:
+          - step: "Build resilience patterns into design"
+          - step: "Test recovery"
+          - step: "Perform exercises"
+        evidenceExamples:
+          - "Resilience design"
+          - "Recovery test report"
+          - "Exercise report"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No resilience"
+            "3": "Designed, untested"
+            "5": "Designed + tested + exercised"
+
+      - id: sg.csa.ccop:TR
+        title: "Cybersecurity Training and Awareness"
+        weight: 2
+        answerType: scale
+        tags: [ccop, training, awareness, personnel]
+        question: |
+          Are CII personnel given appropriate cybersecurity training
+          and awareness?
+        purpose: |
+          People are part of the CII attack surface. Training reduces
+          avoidable mistakes.
+        expectedOutcome:
+          - "Annual training delivered."
+          - "Role-based content for technical staff."
+          - "Effectiveness measured."
+        howTo:
+          - step: "Deliver annual training"
+          - step: "Build role-based content"
+          - step: "Measure effectiveness"
+        evidenceExamples:
+          - "Training records"
+          - "Role-based curriculum"
+          - "Effectiveness metric"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "No training"
+            "3": "Generic only"
+            "5": "Tiered + measured"
+
+      - id: sg.csa.ccop:OT
+        title: "Operational Technology Security"
+        weight: 3
+        answerType: scale
+        tags: [ccop, ot, ics, segmentation]
+        question: |
+          Where the CII includes OT, are OT-specific security
+          requirements (segmentation, OT-aware monitoring, controlled
+          remote access) met?
+        purpose: |
+          OT in CII has heightened safety / availability impact.
+          Dedicated requirements apply.
+        expectedOutcome:
+          - "OT segmented from IT."
+          - "OT-aware monitoring in place."
+          - "Remote access controlled."
+        howTo:
+          - step: "Segment OT from IT"
+          - step: "Deploy OT-aware monitoring"
+          - step: "Control remote access"
+        evidenceExamples:
+          - "Segmentation design"
+          - "OT monitoring coverage"
+          - "Remote access design"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 24
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Weak"
+            "3": "Partial"
+            "5": "Comprehensive"
+        crossReferences:
+          - nist.sp800-82.r3:OT-SEG
+        appliesIf: "cii.has_ot == true"
+
+      - id: sg.csa.ccop:TP
+        title: "Third-Party Risk Management"
+        weight: 3
+        answerType: scale
+        tags: [ccop, third-party, vendor, supplier]
+        question: |
+          Are third-party risks to the CII identified, assessed,
+          contractually managed, and monitored?
+        purpose: |
+          CII depends on third-party services. Managing those risks
+          is part of CII duty of care.
+        expectedOutcome:
+          - "Third-party inventory exists."
+          - "Risk assessments performed."
+          - "Contractual safeguards in place."
+        howTo:
+          - step: "Maintain third-party inventory"
+          - step: "Assess risk"
+          - step: "Embed contractual safeguards"
+        evidenceExamples:
+          - "Third-party inventory"
+          - "Risk assessment"
+          - "Contract clauses"
+        evidenceMinimumCount: 2
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 2"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Unmanaged"
+            "3": "Partial"
+            "5": "Comprehensive"
+
+      - id: sg.csa.ccop:DOM
+        title: "Domain / Sector-Specific Requirements"
+        weight: 2
+        answerType: scale
+        tags: [ccop, sector, domain, regulatory]
+        question: |
+          Are domain or sector-specific cybersecurity requirements
+          (from the sector regulator or CSA) identified and met?
+        purpose: |
+          Sector regulators issue overlays. CII owners must integrate
+          them with CCoP obligations.
+        expectedOutcome:
+          - "Sector requirements identified."
+          - "Mapped to CCoP / internal controls."
+          - "Compliance reported."
+        howTo:
+          - step: "Identify sector requirements"
+          - step: "Map to CCoP / internal controls"
+          - step: "Report compliance"
+        evidenceExamples:
+          - "Sector requirement register"
+          - "Mapping"
+          - "Compliance report"
+        evidenceMinimumCount: 1
+        evidenceRetentionMonths: 36
+        scoring:
+          scale: "0-5+NA"
+          passWhen: "score >= 4 AND evidenceCount >= 1"
+          gapWhen: "score <= 2 OR evidenceCount == 0"
+          quickAnswers:
+            "0": "Not identified"
+            "3": "Identified, not mapped"
+            "5": "Identified + mapped + reported"
