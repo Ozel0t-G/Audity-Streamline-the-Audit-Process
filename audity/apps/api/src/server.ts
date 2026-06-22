@@ -29,6 +29,7 @@ import { registerNotificationPreferencesRoutes } from "./cockpit/preferences.js"
 import { startDigestScheduler } from "./cockpit/digest.js";
 import { registerFrameworkThresholdRoutes } from "./cockpit/adminThresholds.js";
 import { registerTransitionRoutes } from "./cockpit/transitions.js";
+import { registerCustomerAckRoutes } from "./customerAck/routes.js";
 import { registerProductivityRoutes } from "./productivity/routes.js";
 import { registerReportRoutes } from "./reports/routes.js";
 import { registerSecureRoutes } from "./secure/routes.js";
@@ -199,6 +200,7 @@ await registerCockpitRoutes(app);
 await registerNotificationPreferencesRoutes(app);
 await registerFrameworkThresholdRoutes(app);
 await registerTransitionRoutes(app);
+await registerCustomerAckRoutes(app, { publicUrl: config.publicUrl });
 startDigestScheduler();
 await registerProductivityRoutes(app);
 await registerWorkflowRoutes(app);

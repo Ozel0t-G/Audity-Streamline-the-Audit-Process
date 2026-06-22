@@ -27,6 +27,31 @@ type ScopeItem = {
   rationale?: string | null;
 };
 
+const SUGGESTED_ITEM_TYPES = [
+  "system",
+  "process",
+  "supplier",
+  "data_type",
+  "location",
+  "regulation",
+  "other"
+];
+
+const SUGGESTED_CRITICALITIES = ["low", "medium", "high", "critical"];
+
+const CURRENT_PHASE_OPTIONS = [
+  "Preparation",
+  "Kickoff",
+  "Evidence Collection",
+  "Interviews",
+  "Review",
+  "Findings",
+  "Report",
+  "Closure"
+];
+
+const READINESS_TARGET_OPTIONS = Array.from({ length: 20 }, (_, idx) => (idx + 1) * 5);
+
 function dateValue(value: unknown): string {
   if (!value) return "";
   if (typeof value !== "string") return "";
@@ -88,7 +113,7 @@ export function PlanPhasePage() {
       });
       setScopeItems(payload.scopeItems ?? []);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Plan konnte nicht geladen werden");
+      toast.error(err instanceof Error ? err.message : "Could not load the plan");
     } finally {
       setLoading(false);
     }
@@ -115,25 +140,31 @@ export function PlanPhasePage() {
           readinessTarget: Number(plan.readinessTarget)
         })
       });
-      toast.success("Plan gespeichert");
+      toast.success("Plan saved");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : "Save failed");
     }
   }
 
   async function addScopeItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!auditId) return;
+    const trimmedType = scopeForm.itemType.trim() || "other";
+    const trimmedCriticality = scopeForm.criticality.trim() || "medium";
     try {
       await api(`/api/assessments/${auditId}/audit-center/scope`, {
         method: "POST",
-        body: JSON.stringify(scopeForm)
+        body: JSON.stringify({
+          ...scopeForm,
+          itemType: trimmedType,
+          criticality: trimmedCriticality
+        })
       });
       setScopeForm({ ...scopeForm, name: "", description: "", rationale: "" });
-      toast.success("Scope-Item hinzugefügt");
+      toast.success("Scope item added");
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Konnte Scope-Item nicht anlegen");
+      toast.error(err instanceof Error ? err.message : "Could not add scope item");
     }
   }
 
@@ -141,38 +172,47 @@ export function PlanPhasePage() {
     <PhaseLayout
       active="plan"
       title="Plan & Scope"
-      description="Timeline, Audit-Owner, Reviewer, Scope-Items. Exit-Kriterium: Kickoff + Owner gesetzt, mind. 1 In-Scope-Item."
-      aiHint="AI kann Scope-Items aus dem Framework herleiten und Default-Timeline vorschlagen."
+      description="Timeline, audit owner, reviewer, scope items. Exit criterion: kickoff and owner set, at least 1 in-scope item."
+      aiHint="AI can suggest scope items from the framework and propose a default timeline."
     >
       {!auditId ? (
-        <p className="text-sm text-audity-muted">Kein Audit ausgewählt.</p>
+        <p className="text-sm text-audity-muted">No audit selected.</p>
       ) : loading ? (
         <Skeleton className="h-40" />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <form className="audity-card p-4" onSubmit={savePlan}>
-            <h2 className="mb-3 text-sm font-semibold text-audity-text">Audit-Plan</h2>
+            <h2 className="mb-3 text-sm font-semibold text-audity-text">Audit plan</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-xs font-medium text-audity-secondary">
-                Aktuelle Phase
-                <input
+                Current phase
+                <select
                   className="audity-input mt-1"
                   value={plan.currentPhase}
                   onChange={(e) => setPlan({ ...plan, currentPhase: e.target.value })}
                   disabled={!canEdit}
-                />
+                >
+                  {CURRENT_PHASE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="text-xs font-medium text-audity-secondary">
-                Readiness-Ziel %
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
+                Readiness target %
+                <select
                   className="audity-input mt-1"
                   value={plan.readinessTarget}
                   onChange={(e) => setPlan({ ...plan, readinessTarget: Number(e.target.value) })}
                   disabled={!canEdit}
-                />
+                >
+                  {READINESS_TARGET_OPTIONS.map((value) => (
+                    <option key={value} value={value}>
+                      {value}%
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="text-xs font-medium text-audity-secondary">
                 Kickoff
@@ -195,7 +235,7 @@ export function PlanPhasePage() {
                 />
               </label>
               <label className="text-xs font-medium text-audity-secondary">
-                Fieldwork Start
+                Fieldwork start
                 <input
                   type="date"
                   className="audity-input mt-1"
@@ -205,7 +245,7 @@ export function PlanPhasePage() {
                 />
               </label>
               <label className="text-xs font-medium text-audity-secondary">
-                Fieldwork Ende
+                Fieldwork end
                 <input
                   type="date"
                   className="audity-input mt-1"
@@ -215,7 +255,7 @@ export function PlanPhasePage() {
                 />
               </label>
               <label className="text-xs font-medium text-audity-secondary">
-                Report-Frist
+                Report due
                 <input
                   type="date"
                   className="audity-input mt-1"
@@ -225,7 +265,7 @@ export function PlanPhasePage() {
                 />
               </label>
               <label className="text-xs font-medium text-audity-secondary">
-                Audit-Owner
+                Audit owner
                 <input
                   className="audity-input mt-1"
                   value={plan.auditOwner}
@@ -245,14 +285,14 @@ export function PlanPhasePage() {
             </div>
             {canEdit ? (
               <button type="submit" className="audity-btn-primary mt-4">
-                Plan speichern
+                Save plan
               </button>
             ) : null}
           </form>
 
           <div className="audity-card p-4">
             <h2 className="mb-3 text-sm font-semibold text-audity-text">
-              Scope-Items ({scopeItems.length})
+              Scope items ({scopeItems.length})
             </h2>
             <ul className="mb-4 space-y-2 text-sm">
               {scopeItems.length ? (
@@ -264,7 +304,8 @@ export function PlanPhasePage() {
                     <div>
                       <strong className="text-audity-text">{item.name}</strong>
                       <p className="text-xs text-audity-muted">
-                        {item.itemType} · {item.criticality} · {item.inScope ? "In-Scope" : "Out-of-Scope"}
+                        {item.itemType} · {item.criticality} ·{" "}
+                        {item.inScope ? "In-scope" : "Out-of-scope"}
                       </p>
                       {item.description ? (
                         <p className="mt-1 text-xs text-audity-secondary">{item.description}</p>
@@ -273,40 +314,73 @@ export function PlanPhasePage() {
                   </li>
                 ))
               ) : (
-                <li className="text-xs text-audity-muted">Noch keine Scope-Items.</li>
+                <li className="text-xs text-audity-muted">No scope items yet.</li>
               )}
             </ul>
 
             {canEdit ? (
               <form className="space-y-2" onSubmit={addScopeItem}>
-                <select
-                  className="audity-input"
-                  value={scopeForm.itemType}
-                  onChange={(e) => setScopeForm({ ...scopeForm, itemType: e.target.value })}
-                >
-                  <option value="system">System</option>
-                  <option value="process">Process</option>
-                  <option value="supplier">Supplier</option>
-                  <option value="data_type">Data Type</option>
-                  <option value="location">Location</option>
-                  <option value="regulation">Regulation</option>
-                  <option value="other">Other</option>
-                </select>
-                <input
-                  className="audity-input"
-                  placeholder="Name"
-                  value={scopeForm.name}
-                  onChange={(e) => setScopeForm({ ...scopeForm, name: e.target.value })}
-                  required
-                />
-                <textarea
-                  className="audity-input min-h-[60px]"
-                  placeholder="Beschreibung"
-                  value={scopeForm.description}
-                  onChange={(e) => setScopeForm({ ...scopeForm, description: e.target.value })}
-                />
+                <label className="block text-xs font-medium text-audity-secondary">
+                  Item type
+                  <input
+                    list="scope-item-types"
+                    className="audity-input mt-1"
+                    placeholder="e.g. system, process, application, third-party tool…"
+                    value={scopeForm.itemType}
+                    onChange={(e) => setScopeForm({ ...scopeForm, itemType: e.target.value })}
+                  />
+                  <datalist id="scope-item-types">
+                    {SUGGESTED_ITEM_TYPES.map((value) => (
+                      <option key={value} value={value} />
+                    ))}
+                  </datalist>
+                  <span className="mt-1 block text-[11px] text-audity-muted">
+                    Free text — suggestions provided, type your own if needed.
+                  </span>
+                </label>
+                <label className="block text-xs font-medium text-audity-secondary">
+                  Name
+                  <input
+                    className="audity-input mt-1"
+                    placeholder="Name of the in-scope item"
+                    value={scopeForm.name}
+                    onChange={(e) => setScopeForm({ ...scopeForm, name: e.target.value })}
+                    required
+                  />
+                </label>
+                <label className="block text-xs font-medium text-audity-secondary">
+                  Description
+                  <textarea
+                    className="audity-input mt-1 min-h-[60px]"
+                    placeholder="Optional description / context"
+                    value={scopeForm.description}
+                    onChange={(e) => setScopeForm({ ...scopeForm, description: e.target.value })}
+                  />
+                </label>
+                <label className="block text-xs font-medium text-audity-secondary">
+                  Criticality
+                  <input
+                    list="scope-item-criticality"
+                    className="audity-input mt-1"
+                    value={scopeForm.criticality}
+                    onChange={(e) => setScopeForm({ ...scopeForm, criticality: e.target.value })}
+                  />
+                  <datalist id="scope-item-criticality">
+                    {SUGGESTED_CRITICALITIES.map((value) => (
+                      <option key={value} value={value} />
+                    ))}
+                  </datalist>
+                </label>
+                <label className="flex items-center gap-2 text-xs font-medium text-audity-secondary">
+                  <input
+                    type="checkbox"
+                    checked={scopeForm.inScope}
+                    onChange={(e) => setScopeForm({ ...scopeForm, inScope: e.target.checked })}
+                  />
+                  In scope
+                </label>
                 <button type="submit" className="audity-btn-primary">
-                  + Scope-Item
+                  + Add scope item
                 </button>
               </form>
             ) : null}

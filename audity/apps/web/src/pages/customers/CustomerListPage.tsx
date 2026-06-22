@@ -8,14 +8,14 @@ import type { Customer } from "./types";
 type FrameworkOption = { id: string; name: string; shortName: string | null };
 
 const industries = ["Technology", "Healthcare", "Finance", "Manufacturing", "Public Sector", "Retail"];
-const regulatoryContexts = ["ISO 27001", "IEC 62443", "NIS2", "SOC 2", "GDPR", "None"];
+const regulatoryContexts = ["ISO 27001", "IEC 62443", "NIS2", "DORA", "SOC 2", "GDPR", "HIPAA", "PCI DSS"];
 const criticalSystems = ["Identity", "Network", "Cloud", "ERP", "OT", "Customer Data"];
 const criticalities = ["Low", "Medium", "High", "Critical"];
 
 const emptyForm = {
   name: "",
   industry: industries[0],
-  regulatoryContext: regulatoryContexts[0],
+  regulatoryContexts: [] as string[],
   criticalSystems: [criticalSystems[0]],
   businessCriticality: "Medium",
   status: "active",
@@ -117,9 +117,14 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
     setError("");
     setSubmitting(true);
     try {
+      const { regulatoryContexts, ...rest } = form;
+      const payload = {
+        ...rest,
+        regulatoryContext: regulatoryContexts.length ? regulatoryContexts.join(", ") : undefined
+      };
       await api("/api/customers", {
         method: "POST",
-        body: JSON.stringify({ ...form })
+        body: JSON.stringify(payload)
       });
       setForm(emptyForm);
       setCreateOpen(false);
@@ -293,10 +298,14 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
                 </select>
               </div>
               <div>
-                <label className="audity-label" htmlFor="customer-context">Regulatory context</label>
-                <select id="customer-context" className="audity-input" value={form.regulatoryContext} onChange={(event) => setForm({ ...form, regulatoryContext: event.target.value })}>
-                  {regulatoryContexts.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
+                <MultiCombobox
+                  label="Regulatory context"
+                  options={regulatoryContexts.map((value) => ({ value, label: value }))}
+                  value={form.regulatoryContexts}
+                  onChange={(next) => setForm({ ...form, regulatoryContexts: next })}
+                  placeholder="Pick or type frameworks…"
+                  allowCreate
+                />
               </div>
             </div>
             <div>

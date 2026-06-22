@@ -54,11 +54,11 @@ const planSchema = z.object({
 });
 
 const scopeSchema = z.object({
-  itemType: z.enum(["system", "process", "supplier", "data_type", "location", "regulation", "other"]),
+  itemType: z.string().trim().min(1).max(60),
   name: z.string().trim().min(1).max(240),
   description: z.string().max(2000).optional(),
   inScope: z.boolean().optional(),
-  criticality: z.enum(["low", "medium", "high", "critical"]).optional(),
+  criticality: z.string().trim().min(1).max(60).optional(),
   rationale: z.string().max(2000).nullable().optional()
 });
 

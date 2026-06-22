@@ -108,7 +108,7 @@ async function loadDueDigestUsers(): Promise<DigestUser[]> {
 
 function renderDigestHtml(displayName: string | null, groups: Array<{ customerName: string; lines: string[] }>) {
   if (!groups.length) {
-    return `<p>Hallo ${displayName ?? "Audity-Nutzer"},</p><p>Heute keine offenen Aktionen — sauberer Posteingang.</p>`;
+    return `<p>Hello ${displayName ?? "Audity user"},</p><p>No open actions today — inbox is clear.</p>`;
   }
   const sections = groups
     .map(
@@ -117,24 +117,24 @@ function renderDigestHtml(displayName: string | null, groups: Array<{ customerNa
     )
     .join("");
   return `<div style="max-width:560px;font-family:sans-serif;">
-    <p>Hallo ${displayName ?? "Audity-Nutzer"},</p>
-    <p>${groups.reduce((sum, g) => sum + g.lines.length, 0)} offene Aktion(en) über ${groups.length} Kunde(n):</p>
+    <p>Hello ${displayName ?? "Audity user"},</p>
+    <p>${groups.reduce((sum, g) => sum + g.lines.length, 0)} open action(s) across ${groups.length} customer(s):</p>
     ${sections}
-    <p style="margin-top:24px;font-size:12px;color:#6b7280;">Audity Audit-Center Digest. <a href="/me/notification-prefs">Einstellungen ändern</a></p>
+    <p style="margin-top:24px;font-size:12px;color:#6b7280;">Audity Audit Center digest. <a href="/me/notification-prefs">Change preferences</a></p>
   </div>`;
 }
 
 function renderDigestText(displayName: string | null, groups: Array<{ customerName: string; lines: string[] }>) {
   if (!groups.length) {
-    return `Hallo ${displayName ?? "Audity-Nutzer"},\n\nHeute keine offenen Aktionen.\n`;
+    return `Hello ${displayName ?? "Audity user"},\n\nNo open actions today.\n`;
   }
   return [
-    `Hallo ${displayName ?? "Audity-Nutzer"},`,
+    `Hello ${displayName ?? "Audity user"},`,
     "",
-    `${groups.reduce((sum, g) => sum + g.lines.length, 0)} offene Aktion(en) über ${groups.length} Kunde(n):`,
+    `${groups.reduce((sum, g) => sum + g.lines.length, 0)} open action(s) across ${groups.length} customer(s):`,
     "",
     ...groups.flatMap((g) => [`# ${g.customerName}`, ...g.lines.map((l) => `  - ${l}`), ""]),
-    "Audity Audit-Center Digest"
+    "Audity Audit Center digest"
   ].join("\n");
 }
 
@@ -163,7 +163,7 @@ export async function sendDueDigests(): Promise<{ sent: number; skipped: number 
           customerName: action.customerName,
           lines: []
         };
-        const overdue = action.overdueBy ? ` (${action.overdueBy} T überfällig)` : "";
+        const overdue = action.overdueBy ? ` (${action.overdueBy}d overdue)` : "";
         entry.lines.push(`${action.title}${overdue} — ${action.detail}`);
         groupsMap.set(action.customerId, entry);
       }
@@ -173,8 +173,8 @@ export async function sendDueDigests(): Promise<{ sent: number; skipped: number 
         from: transport.sender,
         to: user.email,
         subject: groups.length
-          ? `Audity Digest · ${actions.length} offene Aktion(en)`
-          : "Audity Digest · sauberer Posteingang",
+          ? `Audity digest · ${actions.length} open action(s)`
+          : "Audity digest · inbox clear",
         text: renderDigestText(user.display_name, groups),
         html: renderDigestHtml(user.display_name, groups)
       });

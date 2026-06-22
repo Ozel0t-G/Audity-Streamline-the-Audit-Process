@@ -284,11 +284,11 @@ export async function registerCockpitRoutes(app: FastifyInstance): Promise<void>
         : 0;
 
       const executiveSummary = activeAudits.length
-        ? `${activeAudits.length} aktive${activeAudits.length === 1 ? "s" : ""} Audit${activeAudits.length === 1 ? "" : "s"} · Durchschnittliche Readiness ${totalReadiness}%. ` +
-          `${actions.length} offene Aktion${actions.length === 1 ? "" : "en"}.`
+        ? `${activeAudits.length} active audit${activeAudits.length === 1 ? "" : "s"} · average readiness ${totalReadiness}%. ` +
+          `${actions.length} open action${actions.length === 1 ? "" : "s"}.`
         : draftAudits.length
-          ? `${draftAudits.length} Audit${draftAudits.length === 1 ? "" : "s"} in Vorbereitung — Plan vervollständigen, um zu aktivieren.`
-          : "Noch kein Audit angelegt. Erstes Audit anlegen, um zu starten.";
+          ? `${draftAudits.length} audit${draftAudits.length === 1 ? "" : "s"} in preparation — complete the plan to activate.`
+          : "No audit yet. Create the first audit to start.";
 
       const role: "auditor" | "reviewer" | "admin" =
         user.role === "Instance Admin" || user.role === "Tenant Admin"

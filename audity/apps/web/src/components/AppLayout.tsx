@@ -440,7 +440,7 @@ function AppLayoutInner() {
             <NavIcon name="dashboard" /> {t("Dashboard")}
           </NavLink>
           <NavLink className={navClass} to="/inbox">
-            <NavIcon name="question" /> {t("Inbox")}
+            <NavIcon name="inbox" /> {t("Inbox")}
           </NavLink>
           <NavLink className={navClass} to="/customers/my">
             <NavIcon name="customers" /> {t("Customers")}
@@ -489,7 +489,7 @@ function AppLayoutInner() {
   );
 }
 
-function NavIcon({ name }: { name: "dashboard" | "customers" | "shared" | "archive" | "question" | "audit" | "risk" | "reports" | "users" | "frameworks" | "activity" | "audit-log" | "system" | "connector" | "branding" | "email" | "workbench" | "backup" | "manual" }) {
+function NavIcon({ name }: { name: "dashboard" | "customers" | "shared" | "archive" | "question" | "audit" | "risk" | "reports" | "users" | "frameworks" | "activity" | "audit-log" | "system" | "connector" | "branding" | "email" | "workbench" | "backup" | "manual" | "inbox" }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
   return (
     <svg className="h-4 w-4 shrink-0 text-current opacity-80" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
@@ -498,6 +498,7 @@ function NavIcon({ name }: { name: "dashboard" | "customers" | "shared" | "archi
       {name === "shared" ? <><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.6" y1="13.5" x2="15.4" y2="17.5" /><line x1="15.4" y1="6.5" x2="8.6" y2="10.5" /></> : null}
       {name === "archive" ? <><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" /><line x1="10" y1="13" x2="14" y2="13" /></> : null}
       {name === "question" ? <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.5-1.5 1-1.5 1.7" /><line x1="12" y1="17" x2="12" y2="17" /></> : null}
+      {name === "inbox" ? <><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" /></> : null}
       {name === "audit" ? <><path d="M9 11l3 3 7-7" /><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11" /></> : null}
       {name === "risk" ? <><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12" y2="17" /></> : null}
       {name === "reports" ? <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="13" y2="17" /></> : null}
@@ -609,7 +610,7 @@ function AdminLayoutInner() {
             <p className={navSectionClass}>{t("Administration")}</p>
             {can("roles.manage") ? <NavLink className={navClass} to="/admin/users"><NavIcon name="users" /> {t("User Management")}</NavLink> : null}
             {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks"><NavIcon name="frameworks" /> {t("Framework Library")}</NavLink> : null}
-            {can("settings.manage") ? <NavLink className={navClass} to="/admin/frameworks/thresholds"><NavIcon name="frameworks" /> {t("Stuck-Thresholds")}</NavLink> : null}
+            {can("settings.manage") ? <NavLink className={navClass} to="/admin/frameworks/thresholds"><NavIcon name="frameworks" /> {t("Stuck Thresholds")}</NavLink> : null}
             <p className={navSectionClass}>{t("Monitoring")}</p>
             {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity"><NavIcon name="activity" /> {t("Activity Log")}</NavLink> : null}
             {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit"><NavIcon name="audit-log" /> {t("Audit Log")}</NavLink> : null}

@@ -19,13 +19,13 @@ async function checkActiveGate(assessmentId: string): Promise<GateFailure[]> {
   );
   const planRow = plan.rows[0];
   if (!planRow) {
-    failures.push({ field: "plan", message: "Audit-Plan fehlt — Plan-Phase muss ausgefüllt werden." });
+    failures.push({ field: "plan", message: "Audit plan missing — complete the Plan phase first." });
   } else {
     if (!planRow.kickoff_at) {
-      failures.push({ field: "kickoff_at", message: "Kickoff-Datum fehlt." });
+      failures.push({ field: "kickoff_at", message: "Kickoff date missing." });
     }
     if (!planRow.audit_owner || !planRow.audit_owner.trim()) {
-      failures.push({ field: "audit_owner", message: "Audit-Owner fehlt." });
+      failures.push({ field: "audit_owner", message: "Audit owner missing." });
     }
   }
 
@@ -34,7 +34,7 @@ async function checkActiveGate(assessmentId: string): Promise<GateFailure[]> {
     [assessmentId]
   );
   if (Number(scope.rows[0]?.count ?? "0") < 1) {
-    failures.push({ field: "scope", message: "Mindestens 1 In-Scope-Item erforderlich." });
+    failures.push({ field: "scope", message: "At least 1 in-scope item required." });
   }
 
   return failures;
@@ -77,19 +77,19 @@ export async function registerTransitionRoutes(app: FastifyInstance): Promise<vo
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
       if (row.status === "active") {
-        return reply.code(409).send({ code: "ALREADY_ACTIVE", message: "Audit ist bereits aktiv." });
+        return reply.code(409).send({ code: "ALREADY_ACTIVE", message: "Audit is already active." });
       }
       if (!["draft", "imported"].includes(row.status)) {
         return reply.code(409).send({
           code: "INVALID_STATUS",
-          message: `Audit kann nicht aus Status "${row.status}" aktiviert werden.`
+          message: `Audit cannot be activated from status "${row.status}".`
         });
       }
       const failures = await checkActiveGate(request.params.id);
       if (failures.length) {
         return reply.code(422).send({
           code: "GATE_FAILED",
-          message: "Audit kann nicht aktiviert werden.",
+          message: "Audit cannot be activated.",
           failures
         });
       }
@@ -147,7 +147,7 @@ export async function registerTransitionRoutes(app: FastifyInstance): Promise<vo
       return {
         suggestions,
         note:
-          "Diese Liste ist abgeleitet aus dem (deprecated) Customer-Framework-Scope. Frameworks gehören jetzt zum Audit, nicht zum Kunden."
+          "This list is derived from the (deprecated) customer-level framework scope. Frameworks now belong to the audit, not the customer."
       };
     }
   );

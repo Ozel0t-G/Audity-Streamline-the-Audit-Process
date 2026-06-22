@@ -89,7 +89,7 @@ export function InboxPage() {
           setGroups((prev) => mergeGroups(prev, payload.actions));
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Inbox konnte nicht geladen werden");
+        toast.error(err instanceof Error ? err.message : "Could not load inbox");
       }
     },
     [api, overdueOnly, toast]
@@ -128,7 +128,7 @@ export function InboxPage() {
     return (
       <>
         <div className="audity-page-header">
-          <p className="audity-page-kicker">Tages-Sicht</p>
+          <p className="audity-page-kicker">Daily view</p>
           <h1 className="audity-page-title">Inbox</h1>
         </div>
         <PageSkeleton cards={2} showTable />
@@ -140,12 +140,12 @@ export function InboxPage() {
     <>
       <div className="audity-page-header flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="audity-page-kicker">Tages-Sicht</p>
+          <p className="audity-page-kicker">Daily view</p>
           <h1 className="audity-page-title">Inbox</h1>
           <p className="audity-page-copy">
-            {meta.totalCount} offene Aktion(en) · {meta.returned} geladen ·{" "}
-            <span className="text-audity-error">{meta.criticalCount} kritisch</span> ·{" "}
-            <span className="text-audity-warning">{meta.warningCount} Warnung(en)</span>
+            {meta.totalCount} open action(s) · {meta.returned} loaded ·{" "}
+            <span className="text-audity-error">{meta.criticalCount} critical</span> ·{" "}
+            <span className="text-audity-warning">{meta.warningCount} warning(s)</span>
           </p>
         </div>
         <label className="flex items-center gap-2 text-xs text-audity-secondary">
@@ -154,7 +154,7 @@ export function InboxPage() {
             checked={overdueOnly}
             onChange={(event) => setOverdueOnly(event.target.checked)}
           />
-          Nur überfällig
+          Overdue only
         </label>
       </div>
 
@@ -168,7 +168,7 @@ export function InboxPage() {
                     {group.customerName}
                   </Link>
                 </h2>
-                <span className="text-xs text-audity-muted">{group.actions.length} Aktion(en)</span>
+                <span className="text-xs text-audity-muted">{group.actions.length} action(s)</span>
               </header>
               <ul className="grid gap-2 sm:grid-cols-2">
                 {group.actions.map((action) => (
@@ -181,7 +181,7 @@ export function InboxPage() {
                         <span className="text-sm font-semibold">{action.title}</span>
                         {action.overdueBy ? (
                           <span className="rounded-full bg-audity-error px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                            {action.overdueBy}T
+                            {action.overdueBy}d
                           </span>
                         ) : null}
                       </div>
@@ -201,21 +201,21 @@ export function InboxPage() {
               ref={sentinelRef}
               className="rounded-audity border border-dashed border-audity-border bg-audity-panel p-4 text-center text-xs text-audity-muted"
             >
-              {loadingMore ? "Lade weitere Aktionen …" : "Scrollen für mehr"}
+              {loadingMore ? "Loading more actions…" : "Scroll for more"}
             </div>
           ) : (
             <div className="rounded-audity border border-audity-border bg-audity-panel p-3 text-center text-xs text-audity-muted">
-              Alle Aktionen geladen.
+              All actions loaded.
             </div>
           )}
         </div>
       ) : (
         <EmptyState
-          title={overdueOnly ? "Keine überfälligen Aktionen" : "Posteingang leer"}
+          title={overdueOnly ? "No overdue actions" : "Inbox empty"}
           description={
             overdueOnly
-              ? 'Filter "Nur überfällig" aktiv. Deaktivieren, um alle Aktionen zu sehen.'
-              : "Aktuell keine offenen Aktionen über alle deine Kunden."
+              ? 'Filter "Overdue only" is on. Disable it to see all actions.'
+              : "No open actions across your customers right now."
           }
         />
       )}

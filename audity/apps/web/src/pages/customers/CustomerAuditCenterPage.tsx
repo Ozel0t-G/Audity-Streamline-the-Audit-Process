@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { useCustomerContext } from "../../components/CustomerContextProvider";
-import { EmptyState, PageSkeleton, Slideover, useToast } from "../../components/ui";
+import { EmptyState, PageSkeleton, Slideover, useConfirm, useToast } from "../../components/ui";
 
 type CockpitAction = {
   id: string;
@@ -141,7 +141,7 @@ function PhaseBar({ active }: { active: CockpitAudit["phase"] }) {
                   ? "border-audity-success/60 bg-audity-success/10 text-audity-success"
                   : "border-audity-border bg-audity-panel text-audity-muted"
             }`}
-            title={isFieldworkOrFindings ? "Fieldwork ⇄ Findings laufen parallel" : undefined}
+            title={isFieldworkOrFindings ? "Fieldwork ⇄ Findings run in parallel" : undefined}
           >
             {isPast ? "✓ " : ""}{phase.label}
             {bridgeMark && phase.key === "Fieldwork" ? " ⇄" : ""}
@@ -164,7 +164,7 @@ function ActionCard({ action }: { action: CockpitAction }) {
         <span className="text-sm font-semibold">{action.title}</span>
         {action.overdueBy ? (
           <span className="rounded-full bg-audity-error px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-            {action.overdueBy}T überfällig
+            {action.overdueBy}d overdue
           </span>
         ) : null}
       </div>
@@ -191,7 +191,7 @@ function WorkstationTile({
     return (
       <div
         className="audity-card-muted flex h-28 cursor-not-allowed flex-col justify-between p-3 opacity-60"
-        title="Kein aktives Audit ausgewählt"
+        title="No active audit selected"
       >
         <span className="text-sm font-semibold text-audity-muted">{label}</span>
         <span className="text-xs text-audity-muted">{hint}</span>
@@ -218,27 +218,27 @@ function OnboardingWizard({
   return (
     <section className="audity-card border-audity-primary p-4">
       <div className="mb-3 flex items-center justify-between">
-        <p className="audity-page-kicker text-audity-primary">Onboarding · Schritt 1 von 3</p>
+        <p className="audity-page-kicker text-audity-primary">Onboarding · Step 1 of 3</p>
         <button className="text-xs text-audity-muted hover:text-audity-secondary" onClick={onDismiss}>
-          Später erinnern
+          Remind me later
         </button>
       </div>
-      <h2 className="audity-page-title text-xl">Erstes Audit anlegen</h2>
+      <h2 className="audity-page-title text-xl">Create the first audit</h2>
       <p className="audity-page-copy mt-2 text-sm">
-        Wähle ein Framework und ein Audit-Template — das Cockpit füllt sich danach automatisch mit
-        Plan-, Fieldwork- und Report-Phasen.
+        Pick a framework and an audit template — the cockpit will fill itself with Plan, Fieldwork
+        and Report phases as you go.
       </p>
       <ol className="mt-4 space-y-2 text-sm text-audity-secondary">
-        <li>1 · Audit anlegen (Template, Framework, Frist)</li>
-        <li className="opacity-60">2 · Plan vervollständigen (Kickoff-Datum, Owner)</li>
-        <li className="opacity-60">3 · Scope-Items definieren</li>
+        <li>1 · Create audit (template, framework, deadline)</li>
+        <li className="opacity-60">2 · Complete the plan (kickoff date, owner)</li>
+        <li className="opacity-60">3 · Define scope items</li>
       </ol>
       <div className="mt-4 flex gap-2">
         <button className="audity-btn-primary" onClick={onCreateAudit}>
-          + Audit anlegen
+          + Create audit
         </button>
         <Link to={`/customers/${customerId}/plan`} className="audity-btn-secondary">
-          Direkt zu Plan & Scope
+          Jump to Plan & Scope
         </Link>
       </div>
     </section>
@@ -260,7 +260,7 @@ function AuditCard({ audit, customerId }: { audit: CockpitAudit; customerId: str
         <div>
           <h3 className="text-sm font-semibold text-audity-text">{audit.type}</h3>
           <p className="mt-0.5 text-xs text-audity-muted">
-            {audit.framework ?? "Kein Framework"} · {audit.audience ?? "—"}
+            {audit.framework ?? "No framework"} · {audit.audience ?? "—"}
           </p>
         </div>
         <span className="rounded-audity border border-audity-borderStrong px-2 py-0.5 text-[10px] font-semibold uppercase text-audity-secondary">
@@ -275,13 +275,14 @@ function AuditCard({ audit, customerId }: { audit: CockpitAudit; customerId: str
       </div>
       <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-audity-secondary">
         <span>
-          Readiness {audit.readinessScore}% / Ziel {audit.readinessTarget}%
+          Readiness {audit.readinessScore}% / target {audit.readinessTarget}%
         </span>
-        <span>{target ? `Frist ${target}` : `Update vor ${updatedAgoDays}T`}</span>
+        <span>{target ? `Due ${target}` : `Updated ${updatedAgoDays}d ago`}</span>
       </div>
       {audit.stuck.stuck ? (
         <p className="mt-2 text-[11px] text-audity-warning">
-          Stagniert seit {audit.stuck.days} Tagen (Schwellwert {audit.stuck.threshold}T) — Stuck-Detection ausgelöst
+          Stagnant for {audit.stuck.days} days (threshold {audit.stuck.threshold}d) — stuck detection
+          triggered
         </p>
       ) : null}
     </Link>
@@ -308,7 +309,7 @@ function PromoteImportedSection({
     setPromoting(audit.id);
     try {
       await api(`/api/assessments/${audit.id}/promote-to-active`, { method: "POST" });
-      toast.success(`${audit.type} aktiviert`);
+      toast.success(`${audit.type} activated`);
       setGateFailures((current) => {
         const next = { ...current };
         delete next[audit.id];
@@ -320,7 +321,7 @@ function PromoteImportedSection({
       if (error?.code === "GATE_FAILED" && error.failures) {
         setGateFailures((current) => ({ ...current, [audit.id]: error.failures! }));
       } else {
-        toast.error(error?.message ?? "Aktivierung fehlgeschlagen");
+        toast.error(error?.message ?? "Activation failed");
       }
     } finally {
       setPromoting(null);
@@ -330,10 +331,10 @@ function PromoteImportedSection({
   return (
     <section className="audity-card border-audity-warning p-4">
       <h2 className="text-base font-semibold text-audity-warning">
-        Übernommen (Read-mostly · {audits.length})
+        Imported (read-mostly · {audits.length})
       </h2>
       <p className="mt-1 text-xs text-audity-muted">
-        Importierte Audits können nach Plan-Vervollständigung in aktiven Status promoted werden.
+        Imported audits can be promoted to active status after the plan is complete.
       </p>
       <ul className="mt-3 space-y-3">
         {audits.map((audit) => {
@@ -347,7 +348,7 @@ function PromoteImportedSection({
                 <div>
                   <strong className="text-audity-text">{audit.type}</strong>
                   <p className="text-xs text-audity-muted">
-                    {audit.framework ?? "Kein Framework"} · {audit.audience ?? "—"}
+                    {audit.framework ?? "No framework"} · {audit.audience ?? "—"}
                   </p>
                 </div>
                 <button
@@ -355,12 +356,12 @@ function PromoteImportedSection({
                   onClick={() => void promote(audit)}
                   disabled={promoting === audit.id}
                 >
-                  {promoting === audit.id ? "Aktivieren …" : "Audit fortsetzen"}
+                  {promoting === audit.id ? "Activating…" : "Resume audit"}
                 </button>
               </div>
               {failures ? (
                 <div className="mt-3 rounded-audity border border-audity-error/40 bg-audity-error/10 p-2 text-xs text-audity-error">
-                  <strong>Aktivierungs-Gate fehlgeschlagen:</strong>
+                  <strong>Activation gate failed:</strong>
                   <ul className="mt-1 list-disc pl-4">
                     {failures.map((failure, idx) => (
                       <li key={idx}>{failure.message}</li>
@@ -371,7 +372,7 @@ function PromoteImportedSection({
                       className="font-semibold underline"
                       to={`/customers/${customerId}/plan?audit=${audit.id}`}
                     >
-                      → Plan vervollständigen
+                      → Complete the plan
                     </Link>
                   </p>
                 </div>
@@ -386,16 +387,20 @@ function PromoteImportedSection({
 
 export function CustomerAuditCenterPage() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const api = useApi();
   const { user } = useAuth();
   const { setCustomerLabel } = useCustomerContext();
   const navigate = useNavigate();
   const toast = useToast();
+  const confirm = useConfirm();
   const [data, setData] = useState<CockpitPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  const [archiveSubmitting, setArchiveSubmitting] = useState(false);
 
   const selectedAuditId = searchParams.get("audit");
   const selectedAudit = useMemo<CockpitAudit | null>(() => {
@@ -422,7 +427,7 @@ export function CustomerAuditCenterPage() {
       setCustomerLabel(payload.customer.name);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cockpit konnte nicht geladen werden");
+      setError(err instanceof Error ? err.message : "Could not load cockpit");
     } finally {
       setLoading(false);
     }
@@ -439,7 +444,7 @@ export function CustomerAuditCenterPage() {
       await api(`/api/customers/${id}/cockpit/dismiss-onboarding`, { method: "POST" });
       void load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Konnte Onboarding nicht ausblenden");
+      toast.error(err instanceof Error ? err.message : "Could not dismiss onboarding");
     }
   }
 
@@ -448,7 +453,7 @@ export function CustomerAuditCenterPage() {
       <>
         <div className="audity-page-header">
           <p className="audity-page-kicker">Customer Audit Center</p>
-          <h1 className="audity-page-title">Lade Cockpit …</h1>
+          <h1 className="audity-page-title">Loading cockpit…</h1>
         </div>
         <PageSkeleton cards={4} showTable />
         {error ? (
@@ -463,6 +468,33 @@ export function CustomerAuditCenterPage() {
   const isArchived = Boolean(data.customer.archivedAt);
   const canEdit = !isArchived && Boolean(user?.permissions.includes("assessment.edit"));
   const canCreateAudit = !isArchived && Boolean(user?.permissions.includes("assessment.create"));
+  const canArchive = !isArchived && Boolean(user?.permissions?.includes("customer.archive"));
+
+  async function submitArchive() {
+    if (!id || !data) return;
+    const ok = await confirm({
+      title: `Archive ${data.customer.name}?`,
+      body: "This will move evidence + reports to the archive volume and lock the customer as read-only.",
+      confirmLabel: "Archive",
+      cancelLabel: "Cancel",
+      destructive: true
+    });
+    if (!ok) return;
+    setArchiveSubmitting(true);
+    try {
+      await api(`/api/customers/${id}/archive`, {
+        method: "POST",
+        body: JSON.stringify({ reason: archiveReason })
+      });
+      toast.success("Customer archived. Evidence has moved to the archive volume.");
+      setArchiveOpen(false);
+      navigate("/customers");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Archive failed");
+    } finally {
+      setArchiveSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -471,30 +503,42 @@ export function CustomerAuditCenterPage() {
           <p className="audity-page-kicker">Customer Audit Center</p>
           <h1 className="audity-page-title">{data.customer.name}</h1>
           <p className="audity-page-copy">
-            {data.customer.industry ?? "—"} · Kritikalität {data.customer.businessCriticality ?? "—"}
+            {data.customer.industry ?? "—"} · Criticality {data.customer.businessCriticality ?? "—"}
             {data.meta.totalReadiness > 0
-              ? ` · Ø Readiness ${data.meta.totalReadiness}%`
+              ? ` · avg readiness ${data.meta.totalReadiness}%`
               : ""}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 text-right">
           {isArchived ? (
             <div className="rounded-audity border border-audity-warning/40 bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
-              <div className="font-semibold">Archivierter Kunde (read-only)</div>
+              <div className="font-semibold">Archived customer (read-only)</div>
               {data.customer.archiveReason ? (
-                <div className="mt-0.5 italic">Grund: {data.customer.archiveReason}</div>
+                <div className="mt-0.5 italic">Reason: {data.customer.archiveReason}</div>
               ) : null}
             </div>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {canCreateAudit ? (
                 <button className="audity-btn-primary" onClick={() => setCreateOpen(true)}>
-                  + Neues Audit
+                  + New audit
                 </button>
               ) : null}
               <Link to="/inbox" className="audity-btn-secondary">
                 Inbox
               </Link>
+              {canArchive ? (
+                <button
+                  className="audity-btn-secondary text-xs"
+                  onClick={() => {
+                    setArchiveReason("");
+                    setArchiveOpen(true);
+                  }}
+                  title="Archive this customer"
+                >
+                  Archive customer
+                </button>
+              ) : null}
             </div>
           )}
         </div>
@@ -524,7 +568,7 @@ export function CustomerAuditCenterPage() {
           <div className="mt-3">
             <PhaseBar active={selectedAudit.phase} />
             <p className="mt-2 text-xs text-audity-muted">
-              Phase aktuell: <strong>{selectedAudit.phase}</strong> · Fieldwork und Findings laufen parallel.
+              Current phase: <strong>{selectedAudit.phase}</strong> · Fieldwork and Findings run in parallel.
             </p>
           </div>
         ) : null}
@@ -536,9 +580,9 @@ export function CustomerAuditCenterPage() {
           {data.audits.active.length ? (
             <section className="audity-card p-4">
               <header className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-base font-semibold text-audity-text">Aktive Audits</h2>
+                <h2 className="text-base font-semibold text-audity-text">Active audits</h2>
                 <span className="text-xs text-audity-muted">
-                  {data.audits.active.length} aktiv
+                  {data.audits.active.length} active
                 </span>
               </header>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -553,9 +597,9 @@ export function CustomerAuditCenterPage() {
           {data.nextActions.length ? (
             <section className="audity-card p-4">
               <header className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-base font-semibold text-audity-text">Nächste Aktionen</h2>
+                <h2 className="text-base font-semibold text-audity-text">Next actions</h2>
                 <span className="text-xs text-audity-muted">
-                  Rollen-Sicht: <strong>{data.meta.role}</strong>
+                  Role view: <strong>{data.meta.role}</strong>
                 </span>
               </header>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -570,10 +614,10 @@ export function CustomerAuditCenterPage() {
           {data.stuck.length ? (
             <section className="audity-card border-audity-warning p-4">
               <h2 className="text-base font-semibold text-audity-warning">
-                Festgefahren ({data.stuck.length})
+                Stuck ({data.stuck.length})
               </h2>
               <p className="mt-1 text-xs text-audity-muted">
-                Aktive Audits ohne Bewegung über dem konfigurierten Schwellwert.
+                Active audits without movement above the configured threshold.
               </p>
               <ul className="mt-3 space-y-2 text-sm">
                 {data.stuck.map((entry) => (
@@ -586,8 +630,8 @@ export function CustomerAuditCenterPage() {
                         <strong>{entry.assessmentName}</strong> · Phase {entry.phase}
                       </span>
                       <span className="text-xs text-audity-warning">
-                        {entry.daysWithoutMovement} Tage
-                        {entry.threshold ? ` / ${entry.threshold}T Limit` : ""}
+                        {entry.daysWithoutMovement} days
+                        {entry.threshold ? ` / ${entry.threshold}d limit` : ""}
                       </span>
                     </Link>
                   </li>
@@ -603,46 +647,45 @@ export function CustomerAuditCenterPage() {
             onPromoted={() => void load()}
           />
 
-
           {/* Workstation tiles */}
           <section className="audity-card p-4">
-            <h2 className="mb-3 text-base font-semibold text-audity-text">Werkstatt</h2>
+            <h2 className="mb-3 text-base font-semibold text-audity-text">Workstation</h2>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <WorkstationTile
                 to={`/customers/${id}/plan${selectedAudit ? `?audit=${selectedAudit.id}` : ""}`}
                 label="Plan & Scope"
-                hint="Timeline, Owner, Scope-Items"
+                hint="Timeline, owner, scope items"
                 disabled={!selectedAudit}
               />
               <WorkstationTile
                 to={`/customers/${id}/controls${selectedAudit ? `?audit=${selectedAudit.id}` : ""}`}
                 label="Controls & Evidence"
-                hint="Scoring, Mapping, Sampling"
+                hint="Scoring, mapping, sampling"
                 disabled={!selectedAudit}
               />
               <WorkstationTile
                 to={`/customers/${id}/findings${selectedAudit ? `?audit=${selectedAudit.id}` : ""}`}
                 label="Findings"
-                hint="Lifecycle, Remediation, Re-Test"
+                hint="Lifecycle, remediation, re-test"
                 disabled={!selectedAudit}
               />
               <WorkstationTile
                 to={`/customers/${id}/report${selectedAudit ? `?audit=${selectedAudit.id}` : ""}`}
                 label="Report & Sign-off"
-                hint="SoA, Pack-Export, Signaturen"
+                hint="SoA, pack export, signatures"
                 disabled={!selectedAudit}
               />
             </div>
           </section>
 
-          {/* Draft / Imported / Completed */}
-          {(data.audits.draft.length || data.audits.imported.length || data.audits.completed.length) ? (
+          {/* Draft / Completed */}
+          {(data.audits.draft.length || data.audits.completed.length) ? (
             <section className="audity-card p-4">
-              <h2 className="mb-3 text-base font-semibold text-audity-text">Weitere Audits</h2>
+              <h2 className="mb-3 text-base font-semibold text-audity-text">Other audits</h2>
               <div className="space-y-3">
                 {data.audits.draft.length ? (
                   <div>
-                    <p className="audity-page-kicker">In Vorbereitung</p>
+                    <p className="audity-page-kicker">In preparation</p>
                     <ul className="mt-2 grid gap-2 sm:grid-cols-2">
                       {data.audits.draft.map((audit) => (
                         <li key={audit.id}>
@@ -654,7 +697,7 @@ export function CustomerAuditCenterPage() {
                 ) : null}
                 {data.audits.completed.length ? (
                   <div>
-                    <p className="audity-page-kicker">Abgeschlossen</p>
+                    <p className="audity-page-kicker">Completed</p>
                     <ul className="mt-2 grid gap-2 sm:grid-cols-2">
                       {data.audits.completed.map((audit) => (
                         <li key={audit.id}>
@@ -670,12 +713,12 @@ export function CustomerAuditCenterPage() {
 
           {!data.audits.totalCount && !data.meta.showOnboarding ? (
             <EmptyState
-              title="Kein Audit vorhanden"
-              description="Lege das erste Audit für diesen Kunden an, um das Cockpit zu starten."
+              title="No audit yet"
+              description="Create the first audit for this customer to start the cockpit."
               action={
                 canCreateAudit ? (
                   <button className="audity-btn-primary" onClick={() => setCreateOpen(true)}>
-                    + Neues Audit
+                    + New audit
                   </button>
                 ) : null
               }
@@ -686,15 +729,15 @@ export function CustomerAuditCenterPage() {
         {/* Side column */}
         <aside className="space-y-4">
           <section className="audity-card p-4">
-            <h2 className="text-base font-semibold text-audity-text">Team & Zugriff</h2>
+            <h2 className="text-base font-semibold text-audity-text">Team & access</h2>
             <p className="mt-2 text-sm text-audity-secondary">
               Owner: {data.team.owner ?? "—"}
             </p>
             <p className="mt-2 text-sm text-audity-secondary">
-              Geteilt mit:{" "}
+              Shared with:{" "}
               {data.team.shareTargets.length
                 ? data.team.shareTargets.map((t) => t.name ?? t.email).join(", ")
-                : "Niemandem"}
+                : "Nobody"}
             </p>
           </section>
 
@@ -713,7 +756,7 @@ export function CustomerAuditCenterPage() {
                   </li>
                 ))
               ) : (
-                <li className="text-audity-muted">Keine Aktivität.</li>
+                <li className="text-audity-muted">No activity.</li>
               )}
             </ul>
           </section>
@@ -729,6 +772,44 @@ export function CustomerAuditCenterPage() {
           navigate(`/customers/${id}/plan?audit=${assessmentId}`);
         }}
       />
+
+      <Slideover
+        title={`Archive customer: ${data.customer.name}`}
+        open={archiveOpen}
+        onClose={() => setArchiveOpen(false)}
+      >
+        <p className="mb-3 text-sm text-audity-secondary">
+          Archiving locks this customer as read-only. Evidence and report blobs move to the
+          archive volume and become unavailable until an Instance Admin approves a restore.
+        </p>
+        <label className="mb-2 block text-xs font-medium text-audity-secondary">
+          Reason for archive
+        </label>
+        <textarea
+          className="audity-input min-h-[7rem]"
+          value={archiveReason}
+          onChange={(event) => setArchiveReason(event.target.value)}
+          minLength={3}
+          maxLength={500}
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            className="audity-btn-secondary"
+            type="button"
+            onClick={() => setArchiveOpen(false)}
+          >
+            Cancel
+          </button>
+          <button
+            className="audity-btn-primary"
+            type="button"
+            disabled={archiveSubmitting || archiveReason.trim().length < 3}
+            onClick={() => void submitArchive()}
+          >
+            {archiveSubmitting ? "Archiving…" : "Archive"}
+          </button>
+        </div>
+      </Slideover>
     </>
   );
 }
@@ -749,14 +830,15 @@ function CreateAuditSlideover({
   const [templates, setTemplates] = useState<Array<{ key: string; name: string; type: string; audience: string; language: string }>>([]);
   const [frameworks, setFrameworks] = useState<Array<{ id: string; name: string; shortName: string | null }>>([]);
   const [form, setForm] = useState({
-    templateKey: "iso27001_readiness",
-    type: "Full Security Maturity Assessment",
-    audience: "Management + Technical Team",
+    templateKey: "",
+    type: "",
+    audience: "",
     frameworkId: "",
     language: "en",
     targetDate: "",
     status: "draft"
   });
+  const [dateUnknown, setDateUnknown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -768,57 +850,102 @@ function CreateAuditSlideover({
       .then(([tpl, fw]) => {
         setTemplates(tpl.templates);
         setFrameworks(fw.frameworks);
-        if (!form.frameworkId && fw.frameworks[0]) {
-          setForm((current) => ({ ...current, frameworkId: fw.frameworks[0].id }));
-        }
       })
       .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  function applyTemplate(key: string) {
+    if (!key) {
+      setForm({
+        ...form,
+        templateKey: "",
+        type: form.type,
+        audience: form.audience,
+        language: form.language
+      });
+      return;
+    }
+    const tpl = templates.find((t) => t.key === key);
+    setForm({
+      ...form,
+      templateKey: key,
+      type: tpl?.type ?? form.type,
+      audience: tpl?.audience ?? form.audience,
+      language: tpl?.language ?? form.language
+    });
+  }
+
   async function submit() {
     setSubmitting(true);
     try {
+      const payload: Record<string, unknown> = {
+        templateKey: form.templateKey || undefined,
+        type: form.type || "Audit",
+        audience: form.audience || undefined,
+        frameworkId: form.frameworkId || undefined,
+        language: form.language,
+        status: form.status
+      };
+      if (!dateUnknown && form.targetDate) {
+        payload.targetDate = form.targetDate;
+      }
       const result = await api<{ assessment: { id: string } }>(
         `/api/customers/${customerId}/assessments`,
         {
           method: "POST",
-          body: JSON.stringify(form)
+          body: JSON.stringify(payload)
         }
       );
       onCreated(result.assessment.id);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Audit konnte nicht angelegt werden");
+      toast.error(err instanceof Error ? err.message : "Could not create audit");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Slideover title="Neues Audit anlegen" open={open} onClose={onClose}>
+    <Slideover title="New audit" open={open} onClose={onClose}>
       <label className="mb-3 block text-xs font-medium text-audity-secondary">
         Template
         <select
           className="audity-input mt-2"
           value={form.templateKey}
-          onChange={(event) => {
-            const tpl = templates.find((t) => t.key === event.target.value);
-            setForm({
-              ...form,
-              templateKey: event.target.value,
-              type: tpl?.type ?? form.type,
-              audience: tpl?.audience ?? form.audience,
-              language: tpl?.language ?? form.language
-            });
-          }}
+          onChange={(event) => applyTemplate(event.target.value)}
         >
+          <option value="">— None (free start) —</option>
           {templates.map((t) => (
             <option key={t.key} value={t.key}>
               {t.name}
             </option>
           ))}
         </select>
+        <span className="mt-1 block text-[11px] text-audity-muted">
+          Pick a template to pre-fill fields, or start free.
+        </span>
       </label>
+
+      <label className="mb-3 block text-xs font-medium text-audity-secondary">
+        Type
+        <input
+          className="audity-input mt-2"
+          value={form.type}
+          placeholder="e.g. Internal audit, Readiness assessment, Supplier review"
+          onChange={(event) => setForm({ ...form, type: event.target.value })}
+        />
+      </label>
+
+      <label className="mb-3 block text-xs font-medium text-audity-secondary">
+        Audience
+        <input
+          className="audity-input mt-2"
+          value={form.audience}
+          placeholder="e.g. Management + Security, Board, Regulator"
+          onChange={(event) => setForm({ ...form, audience: event.target.value })}
+        />
+      </label>
+
       <label className="mb-3 block text-xs font-medium text-audity-secondary">
         Framework
         <select
@@ -826,32 +953,52 @@ function CreateAuditSlideover({
           value={form.frameworkId}
           onChange={(event) => setForm({ ...form, frameworkId: event.target.value })}
         >
+          <option value="">— None (no framework) —</option>
           {frameworks.map((f) => (
             <option key={f.id} value={f.id}>
               {f.shortName ?? f.name}
             </option>
           ))}
         </select>
+        <span className="mt-1 block text-[11px] text-audity-muted">
+          Optional. Audits without a framework start with an empty question catalogue.
+        </span>
       </label>
-      <label className="mb-3 block text-xs font-medium text-audity-secondary">
-        Zielfrist
+
+      <label className="mb-2 block text-xs font-medium text-audity-secondary">
+        Target date
         <input
           type="date"
           className="audity-input mt-2"
           value={form.targetDate}
+          disabled={dateUnknown}
           onChange={(event) => setForm({ ...form, targetDate: event.target.value })}
         />
       </label>
+      <label className="mb-3 flex items-center gap-2 text-xs text-audity-secondary">
+        <input
+          type="checkbox"
+          checked={dateUnknown}
+          onChange={(event) => {
+            setDateUnknown(event.target.checked);
+            if (event.target.checked) {
+              setForm({ ...form, targetDate: "" });
+            }
+          }}
+        />
+        Date not yet known — continue without a deadline
+      </label>
+
       <div className="mt-4 flex justify-end gap-2">
         <button className="audity-btn-secondary" onClick={onClose} disabled={submitting}>
-          Abbrechen
+          Cancel
         </button>
         <button
           className="audity-btn-primary"
           onClick={() => void submit()}
-          disabled={submitting || !form.frameworkId}
+          disabled={submitting}
         >
-          {submitting ? "Anlegen …" : "Audit anlegen"}
+          {submitting ? "Creating…" : "Create audit"}
         </button>
       </div>
     </Slideover>

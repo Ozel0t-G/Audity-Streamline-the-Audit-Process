@@ -18,17 +18,17 @@ type FrameworkRow = {
 };
 
 const FIELD_LABEL: Record<keyof Thresholds, string> = {
-  fieldwork: "Fieldwork-Stillstand",
-  findings_response: "Mgmt-Response ausstehend",
-  evidence_request: "Evidence-Request offen",
-  remediation: "Remediation stagniert"
+  fieldwork: "Fieldwork stagnation",
+  findings_response: "Management response pending",
+  evidence_request: "Evidence request open",
+  remediation: "Remediation stagnation"
 };
 
 const FIELD_HINT: Record<keyof Thresholds, string> = {
-  fieldwork: "Tage ohne Mutation im Audit, ab denen Stuck-Signal greift.",
-  findings_response: "Tage ohne Mgmt-Response auf ein Finding.",
-  evidence_request: "Tage offener Evidence-Request, bevor Eskalation.",
-  remediation: "Tage in `treating`-Status ohne Update."
+  fieldwork: "Days without any mutation on the audit before stuck signal triggers.",
+  findings_response: "Days without a management response on a finding.",
+  evidence_request: "Days an evidence request stays open before escalation.",
+  remediation: "Days in `treating` state without an update."
 };
 
 export function AdminFrameworkThresholdsPage() {
@@ -50,7 +50,7 @@ export function AdminFrameworkThresholdsPage() {
       setDefaults(payload.defaults);
       setFrameworks(payload.frameworks);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Konnte Thresholds nicht laden");
+      toast.error(err instanceof Error ? err.message : "Could not load thresholds");
     } finally {
       setLoading(false);
     }
@@ -74,12 +74,12 @@ export function AdminFrameworkThresholdsPage() {
         method: "PUT",
         body: JSON.stringify(draft)
       });
-      toast.success(`Schwellwerte für ${editing.name} gespeichert`);
+      toast.success(`Thresholds for ${editing.name} saved`);
       setEditing(null);
       setDraft(null);
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -93,12 +93,12 @@ export function AdminFrameworkThresholdsPage() {
         method: "PUT",
         body: JSON.stringify({})
       });
-      toast.success(`${editing.name}: zurück auf System-Default`);
+      toast.success(`${editing.name}: reset to system default`);
       setEditing(null);
       setDraft(null);
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Reset fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : "Reset failed");
     } finally {
       setSaving(false);
     }
@@ -109,7 +109,7 @@ export function AdminFrameworkThresholdsPage() {
       <>
         <div className="audity-page-header">
           <p className="audity-page-kicker">Admin · Frameworks</p>
-          <h1 className="audity-page-title">Stuck-Threshold-Defaults</h1>
+          <h1 className="audity-page-title">Stuck-threshold defaults</h1>
         </div>
         <PageSkeleton cards={3} showTable />
       </>
@@ -120,17 +120,17 @@ export function AdminFrameworkThresholdsPage() {
     <>
       <div className="audity-page-header">
         <p className="audity-page-kicker">Admin · Frameworks</p>
-        <h1 className="audity-page-title">Stuck-Threshold-Defaults pro Framework</h1>
+        <h1 className="audity-page-title">Stuck-threshold defaults per framework</h1>
         <p className="audity-page-copy">
-          Jedes Audit erbt diese Defaults beim Anlegen. Audit-Owner können sie per Audit überschreiben.
-          Reihenfolge: Audit-Override &gt; Framework-Default &gt; System-Default.
+          Every audit inherits these defaults at creation. Audit owners can override them per
+          audit. Resolution order: audit override &gt; framework default &gt; system default.
         </p>
       </div>
 
       <section className="audity-card mb-4 p-4">
-        <h2 className="text-sm font-semibold text-audity-text">System-Defaults</h2>
+        <h2 className="text-sm font-semibold text-audity-text">System defaults</h2>
         <p className="mt-1 text-xs text-audity-muted">
-          Verwendet, wenn weder Audit noch Framework eigene Werte gesetzt haben.
+          Used when neither audit nor framework set their own values.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {(Object.keys(FIELD_LABEL) as Array<keyof Thresholds>).map((key) => (
@@ -140,7 +140,7 @@ export function AdminFrameworkThresholdsPage() {
             >
               <div className="font-semibold text-audity-text">{FIELD_LABEL[key]}</div>
               <div className="mt-1 text-audity-secondary">
-                <strong>{defaults[key]}</strong> Tage
+                <strong>{defaults[key]}</strong> days
               </div>
             </div>
           ))}
@@ -167,10 +167,10 @@ export function AdminFrameworkThresholdsPage() {
                   ) : null}
                 </div>
                 <div className="mt-1 text-xs text-audity-muted">
-                  Fieldwork {framework.thresholds.fieldwork}T · Findings-Resp{" "}
-                  {framework.thresholds.findings_response}T · Evidence-Req{" "}
-                  {framework.thresholds.evidence_request}T · Remediation{" "}
-                  {framework.thresholds.remediation}T
+                  Fieldwork {framework.thresholds.fieldwork}d · Findings resp{" "}
+                  {framework.thresholds.findings_response}d · Evidence req{" "}
+                  {framework.thresholds.evidence_request}d · Remediation{" "}
+                  {framework.thresholds.remediation}d
                   {framework.hasCustom ? (
                     <span className="ml-2 rounded-full bg-audity-primary px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                       Custom
@@ -181,7 +181,7 @@ export function AdminFrameworkThresholdsPage() {
                 </div>
               </div>
               <button className="audity-btn-secondary text-xs" onClick={() => openEditor(framework)}>
-                Bearbeiten
+                Edit
               </button>
             </li>
           ))}
@@ -199,12 +199,13 @@ export function AdminFrameworkThresholdsPage() {
           >
             <h2 className="text-base font-semibold text-audity-text">{editing.name}</h2>
             <p className="mt-1 text-xs text-audity-muted">
-              Setze leeres Feld auf System-Default, um Framework-Override zu entfernen.
+              Leave the modal via Reset to remove the framework override and fall back to the
+              system default.
             </p>
             <div className="mt-4 space-y-3">
               {(Object.keys(FIELD_LABEL) as Array<keyof Thresholds>).map((key) => (
                 <label key={key} className="block text-xs font-medium text-audity-secondary">
-                  {FIELD_LABEL[key]} (Tage)
+                  {FIELD_LABEL[key]} (days)
                   <input
                     type="number"
                     min={1}
@@ -226,9 +227,9 @@ export function AdminFrameworkThresholdsPage() {
                 className="audity-btn-secondary text-xs"
                 onClick={() => void resetToDefault()}
                 disabled={saving || !editing.hasCustom}
-                title="Setzt das Framework auf System-Default zurück"
+                title="Reset this framework to the system default"
               >
-                Auf System-Default zurücksetzen
+                Reset to system default
               </button>
               <div className="flex gap-2">
                 <button
@@ -236,10 +237,10 @@ export function AdminFrameworkThresholdsPage() {
                   onClick={() => setEditing(null)}
                   disabled={saving}
                 >
-                  Abbrechen
+                  Cancel
                 </button>
                 <button className="audity-btn-primary" onClick={() => void save()} disabled={saving}>
-                  {saving ? "Speichern …" : "Speichern"}
+                  {saving ? "Saving…" : "Save"}
                 </button>
               </div>
             </div>

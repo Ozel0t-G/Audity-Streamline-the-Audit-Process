@@ -70,6 +70,233 @@ const userMfaSection: ManualSection = {
 
 export const manualArticles: ManualArticle[] = [
   {
+    id: "customer-audit-center",
+    title: "Customer Audit Center (Cockpit)",
+    category: "workspace",
+    audience: "user",
+    keywords: [
+      "cockpit",
+      "customer center",
+      "next actions",
+      "active audits",
+      "phases",
+      "stuck",
+      "promote",
+      "archive customer",
+      "onboarding"
+    ],
+    summary:
+      "When you click a customer you land in the Customer Audit Center — the central place for everything in that customer's context.",
+    sections: [
+      {
+        heading: "What the cockpit shows",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Opening any customer takes you directly to its Audit Center. The page is organised top-to-bottom: status header, executive summary with the phase bar, then a column of active audits, next actions, stuck audits, the workstation tiles, plus a side column with team and activity."
+          },
+          {
+            kind: "fields",
+            intro: "Main blocks:",
+            items: [
+              { name: "Status header", description: "Customer name, industry, criticality, average readiness. Archived customers show a read-only banner here." },
+              { name: "Executive Summary", description: "One-line state of the cockpit plus the phase bar (Setup → Plan → Fieldwork ⇄ Findings → Report → Sign-off). Fieldwork and Findings run in parallel." },
+              { name: "Active audits", description: "Up to 3 audits in active status with readiness bar, owner, framework, target date or last-update age." },
+              { name: "Next actions", description: "Role-filtered to-do list (reviewer / auditor). Click an action to deep-link into the related phase page." },
+              { name: "Stuck", description: "Audits with no movement above the configured threshold per phase. The threshold cascade is audit > framework > system default." },
+              { name: "Imported (read-mostly)", description: "Audits brought in from external sources. Use the Resume audit button to promote them to active once Plan + at least one in-scope item are present." },
+              { name: "Workstation tiles", description: "Quick entry points into Plan & Scope, Controls & Evidence, Findings, Report & Sign-off for the currently selected audit." },
+              { name: "Other audits", description: "In preparation (draft) and Completed audits." },
+              { name: "Team & access", description: "Owner plus colleagues the customer is shared with." },
+              { name: "Activity", description: "Last 10 events touching this customer or its assessments." }
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Create the first audit",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "Open the customer (you land in the cockpit).",
+              "Click '+ New audit' in the page header (or use the onboarding card if no audit exists yet).",
+              "Pick a template — or select '— None (free start) —' to start without any pre-filled values.",
+              "Type a Type and Audience (free text).",
+              "Pick a Framework — or '— None (no framework) —' to start with an empty question catalogue.",
+              "Set Target date, or tick 'Date not yet known' to continue without a deadline.",
+              "Click Create audit. You land on Plan & Scope for the new audit."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Phase workflow: Plan, Controls, Findings, Report",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "The four workstation tiles open dedicated phase pages. Each page carries the same header (customer breadcrumb, audit switcher, AI Assist toggle) so you can move between phases without losing context."
+          },
+          {
+            kind: "fields",
+            intro: "Phase pages:",
+            items: [
+              { name: "Plan & Scope", description: "Timeline (kickoff, fieldwork, report due, closure), audit owner, reviewer, current phase dropdown, readiness target (5% increments). Below: free-text scope items with suggested types and criticality." },
+              { name: "Controls & Evidence", description: "Six tiles linking into the existing control / evidence workspaces (guided questions, control workspace, evidence mapping, evidence requests, interviews and samples, contradictions)." },
+              { name: "Findings", description: "Tiles into the findings workflow page and the legacy audit-center findings tabs (severity matrix, management response, remediation and re-test)." },
+              { name: "Report & Sign-off", description: "Tiles into report assets, review workflow, sign-off, and SoA + pack export." }
+            ]
+          },
+          {
+            kind: "note",
+            text:
+              "The phase tiles for Controls / Findings / Report currently open the legacy Audit Center workflows directly — those still hold the form details. The phase pages themselves act as launchpads with consistent navigation."
+          }
+        ]
+      },
+      {
+        heading: "Promote an imported audit",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Imports come in as status imported (read-mostly). Resume them once you have a plan and at least one in-scope item."
+          },
+          {
+            kind: "steps",
+            items: [
+              "Scroll to the 'Imported (read-mostly)' section in the cockpit.",
+              "Click 'Resume audit' on the imported audit.",
+              "If the gate fails, the cockpit shows the missing items inline — usually kickoff date, audit owner, or in-scope items. Click the 'Complete the plan' link to fix them.",
+              "Click 'Resume audit' again; the status switches to active and the audit appears in the active audits block."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Archive a customer",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "Open the customer (cockpit).",
+              "Click 'Archive customer' in the page header (visible to users with the customer.archive permission).",
+              "Enter a reason (3-500 characters).",
+              "Confirm the dialog. Evidence and report blobs move to the archive volume; the customer becomes read-only.",
+              "An Instance Admin must approve any later restore from the Admin → Archive view."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: "inbox-and-bell",
+    title: "Inbox: cross-customer next actions",
+    category: "workspace",
+    audience: "user",
+    keywords: ["inbox", "next actions", "bell", "notifications", "digest", "cross-customer"],
+    summary:
+      "The Inbox is the day view across all customers you have access to. The bell in the top bar shows the unread count.",
+    sections: [
+      {
+        heading: "Opening the Inbox",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "Click 'Inbox' in the side nav under Workspace, or click the bell-styled Inbox button in the top bar.",
+              "The page lists open actions grouped by customer.",
+              "Tick 'Overdue only' to hide non-overdue actions.",
+              "Click any action card to deep-link into the related phase page for that audit.",
+              "Scroll down to load more — pagination is cursor-based, 50 items per request, infinite-scroll triggered by the sentinel at the bottom."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Notification preferences (email digest)",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Each user controls in-app notifications and the daily email digest from /api/me/notification-prefs (UI is rolled out incrementally; the API is live)."
+          },
+          {
+            kind: "fields",
+            items: [
+              { name: "in-app", description: "Show the bell counter and in-cockpit action cards. On by default." },
+              { name: "digest-enabled", description: "Send an email digest of open actions once per day." },
+              { name: "digest-hour-local", description: "Local hour (0-23) when the digest is sent." },
+              { name: "digest-timezone", description: "IANA timezone used to interpret digest-hour-local (default Europe/Berlin)." }
+            ]
+          },
+          {
+            kind: "note",
+            text:
+              "The digest job ticks every 10 minutes and de-duplicates with a 12-hour window so users never get two digests in the same day."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: "stuck-thresholds-admin",
+    title: "Admin: Framework Stuck Thresholds",
+    category: "admin",
+    audience: "admin",
+    keywords: [
+      "stuck",
+      "thresholds",
+      "framework defaults",
+      "fieldwork",
+      "remediation",
+      "evidence request",
+      "findings response"
+    ],
+    summary:
+      "Tenant admins can define per-framework defaults for the four stuck thresholds. Audits inherit them at creation; audit owners can override per audit.",
+    sections: [
+      {
+        heading: "Threshold cascade",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Resolution order is strict: assessment.stuck_thresholds > framework.default_stuck_thresholds > system default. Each field cascades independently — overriding only fieldwork on a framework still falls back to system defaults for the other three."
+          },
+          {
+            kind: "fields",
+            intro: "Threshold fields:",
+            items: [
+              { name: "fieldwork", description: "Days without any mutation on the audit before the cockpit Stuck block fires." },
+              { name: "findings_response", description: "Days without a management response on a finding." },
+              { name: "evidence_request", description: "Days an evidence request stays open before escalation." },
+              { name: "remediation", description: "Days in treating status without an update." }
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Edit defaults for a framework",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "Open Admin → Stuck Thresholds in the side nav (requires settings.manage).",
+              "Find the framework in the list. The badge shows 'Custom' if it already has overrides, otherwise 'Default'.",
+              "Click Edit, set each threshold in days (1 to 3650).",
+              "Click Save to persist. The cockpit picks up the new values on next refresh (or after the 5-minute cache expires).",
+              "Use Reset to system default to remove the framework override; the system default applies again."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: "first-login",
     title: "First login and initial setup",
     category: "start",

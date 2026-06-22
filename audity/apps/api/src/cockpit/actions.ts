@@ -52,11 +52,13 @@ async function loadAccessibleAssessments(
   scope: { customerId?: string }
 ): Promise<AssessmentForActions[]> {
   const isAdmin = user.role === "Instance Admin" || user.role === "Tenant Admin";
-  const params: unknown[] = [user.sub];
+  const params: unknown[] = [];
   const conditions: string[] = ["a.archived_at is null"];
   if (!isAdmin) {
+    params.push(user.sub);
+    const userParam = `$${params.length}`;
     conditions.push(
-      "(c.created_by_user_id = $1 or exists (select 1 from customer_shares s where s.customer_id = c.id and s.shared_with_user_id = $1 and s.revoked_at is null))"
+      `(c.created_by_user_id = ${userParam} or exists (select 1 from customer_shares s where s.customer_id = c.id and s.shared_with_user_id = ${userParam} and s.revoked_at is null))`
     );
   }
   if (scope.customerId) {
@@ -114,8 +116,8 @@ export async function deriveNextActions(
         customerName: assessment.customer_name,
         assessmentId: assessment.id,
         assessmentName: assessment.type,
-        title: `${ready} Controls warten auf Review`,
-        detail: "Reviewer-Approval erforderlich",
+        title: `${ready} control${ready === 1 ? "" : "s"} awaiting review`,
+        detail: "Reviewer approval required",
         count: ready,
         overdueBy: null,
         deepLink: `/customers/${assessment.customer_id}/controls?audit=${assessment.id}&filter=ready_for_review`,
@@ -166,8 +168,8 @@ export async function deriveNextActions(
       customerName: assessment.customer_name,
       assessmentId,
       assessmentName: assessment.type,
-      title: `${info.count} Evidence-Request${info.count === 1 ? "" : "s"} überfällig`,
-      detail: `Längster Verzug: ${info.maxOverdue} Tage`,
+      title: `${info.count} evidence request${info.count === 1 ? "" : "s"} overdue`,
+      detail: `Longest delay: ${info.maxOverdue} day${info.maxOverdue === 1 ? "" : "s"}`,
       count: info.count,
       overdueBy: info.maxOverdue,
       deepLink: `/customers/${assessment.customer_id}/controls?audit=${assessmentId}&tab=requests`,
@@ -202,8 +204,8 @@ export async function deriveNextActions(
         customerName: assessment.customer_name,
         assessmentId: row.assessment_id,
         assessmentName: assessment.type,
-        title: `${pending} Finding${pending === 1 ? "" : "s"} wartet auf Antwort`,
-        detail: "Mgmt-Response ausstehend",
+        title: `${pending} finding${pending === 1 ? "" : "s"} awaiting response`,
+        detail: "Management response pending",
         count: pending,
         overdueBy: null,
         deepLink: `/customers/${assessment.customer_id}/findings?audit=${row.assessment_id}&filter=response_pending`,
@@ -219,8 +221,8 @@ export async function deriveNextActions(
         customerName: assessment.customer_name,
         assessmentId: row.assessment_id,
         assessmentName: assessment.type,
-        title: `${overdueRemediation} Remediation${overdueRemediation === 1 ? "" : "s"} überfällig`,
-        detail: "Re-Test ausstehend",
+        title: `${overdueRemediation} remediation${overdueRemediation === 1 ? "" : "s"} overdue`,
+        detail: "Re-test pending",
         count: overdueRemediation,
         overdueBy: null,
         deepLink: `/customers/${assessment.customer_id}/findings?audit=${row.assessment_id}&filter=remediation_overdue`,
@@ -253,8 +255,8 @@ export async function deriveNextActions(
       customerName: assessment.customer_name,
       assessmentId: row.assessment_id,
       assessmentName: assessment.type,
-      title: `${count} Widerspruch${count === 1 ? "" : "e"} erkannt`,
-      detail: "Controls als ready, aber ohne mapped Evidence",
+      title: `${count} contradiction${count === 1 ? "" : "s"} detected`,
+      detail: "Controls marked ready but missing mapped evidence",
       count,
       overdueBy: null,
       deepLink: `/customers/${assessment.customer_id}/controls?audit=${row.assessment_id}&filter=contradiction`,
@@ -282,8 +284,8 @@ export async function deriveNextActions(
       customerName: assessment.customer_name,
       assessmentId: row.assessment_id,
       assessmentName: assessment.type,
-      title: `Sign-off ausstehend`,
-      detail: `${count} Report-Review${count === 1 ? "" : "s"} im Sign-off-Status`,
+      title: `Sign-off pending`,
+      detail: `${count} report review${count === 1 ? "" : "s"} in sign-off state`,
       count,
       overdueBy: null,
       deepLink: `/customers/${assessment.customer_id}/report?audit=${row.assessment_id}`,

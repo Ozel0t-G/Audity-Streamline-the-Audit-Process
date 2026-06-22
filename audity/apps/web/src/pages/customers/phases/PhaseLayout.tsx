@@ -98,7 +98,7 @@ export function PhaseLayout({
         </div>
         <div className="flex flex-col items-end gap-2">
           <Link to={`/customers/${id}`} className="audity-btn-secondary text-xs">
-            ← Zurück zum Cockpit
+            ← Back to cockpit
           </Link>
           {audits.length > 1 ? (
             <select
@@ -118,7 +118,7 @@ export function PhaseLayout({
 
       {isReadOnly ? (
         <div className="rounded-audity border border-audity-warning/40 bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
-          Read-only · Archivierter Kunde
+          Read-only · archived customer
         </div>
       ) : null}
 
@@ -144,7 +144,7 @@ export function PhaseLayout({
             className="rounded-t-audity px-3 py-2 text-sm font-semibold text-audity-secondary hover:bg-audity-panel"
             onClick={() => setAiOpen((v) => !v)}
           >
-            AI-Assist {aiOpen ? "▸" : "◂"}
+            AI Assist {aiOpen ? "▸" : "◂"}
           </button>
         </div>
       </nav>
@@ -153,17 +153,17 @@ export function PhaseLayout({
         <div className="min-w-0">{children}</div>
         {aiOpen ? (
           <aside className="audity-card h-fit p-4">
-            <h2 className="text-sm font-semibold text-audity-text">AI-Assist · {title}</h2>
+            <h2 className="text-sm font-semibold text-audity-text">AI Assist · {title}</h2>
             <p className="mt-1 text-xs text-audity-muted">
-              {aiHint ?? "Kontextbezogene Vorschläge für diese Phase."}
+              {aiHint ?? "Context-aware suggestions for this phase."}
             </p>
             <ul className="mt-3 space-y-2 text-xs text-audity-secondary">
-              <li>· Score-Vorschlag aus Evidence (Controls-Phase)</li>
-              <li>· Severity-Vorschlag aus Impact/Likelihood (Findings)</li>
-              <li>· Executive Summary regenerieren (Report)</li>
+              <li>· Score suggestion from evidence (Controls phase)</li>
+              <li>· Severity suggestion from impact / likelihood (Findings)</li>
+              <li>· Regenerate executive summary (Report)</li>
             </ul>
             <p className="mt-3 text-[11px] text-audity-muted">
-              AI-Calls laufen async im Worker, idempotent gecached für 1h.
+              AI calls run async in the worker, idempotency-cached for 1h.
             </p>
           </aside>
         ) : null}
