@@ -317,18 +317,28 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
       const result = await pool.query(
-        "select * from reports where id = $1 and assessment_id = $2",
+        "select selected_blocks, author_info from reports where id = $1 and assessment_id = $2",
         [request.params.reportId, request.params.id]
       );
       if (!result.rows[0]) {
         return reply.code(404).send({ code: "REPORT_NOT_FOUND", message: "Report not found" });
       }
+      // Always re-render against the latest admin branding so logo/colour
+      // changes take effect without recreating the report row. The original
+      // html_preview captured at creation is no longer trusted.
+      const blocks = result.rows[0].selected_blocks ?? defaultBlocks;
+      const authorInfo = result.rows[0].author_info ?? undefined;
+      const html = await buildReportHtml(request.params.id, blocks, authorInfo);
+      await pool.query(
+        "update reports set html_preview = $2, updated_at = now() where id = $1",
+        [request.params.reportId, html]
+      );
       reply.header("Content-Type", "text/html; charset=utf-8");
-      return result.rows[0].html_preview;
+      return html;
     }
   );
 
-  app.post<{ Params: { id: string; reportId: string } }>(
+  app.post<{ Params: { id: string; reportId: string }; Body: { format?: string } }>(
     "/api/assessments/:id/reports/:reportId/export",
     { preHandler: requireCsrfPermission("report.export") },
     async (request, reply) => {
@@ -336,21 +346,44 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
       const report = await pool.query(
-        "select id from reports where id = $1 and assessment_id = $2",
+        "select id, selected_blocks, author_info from reports where id = $1 and assessment_id = $2",
         [request.params.reportId, request.params.id]
       );
       if (!report.rows[0]) {
         return reply.code(404).send({ code: "REPORT_NOT_FOUND", message: "Report not found" });
       }
-      const job = await reportQueue.add("export-report-pdf", {
-        assessmentId: request.params.id,
-        reportId: request.params.reportId,
-        userId: request.user!.sub
-      });
+      const format = (request.body?.format ?? "pdf").toLowerCase();
+      if (format !== "pdf" && format !== "xlsx") {
+        return reply.code(400).send({
+          code: "FORMAT_UNSUPPORTED",
+          message: "Supported export formats are 'pdf' and 'xlsx'."
+        });
+      }
+      // Always re-render the HTML against the latest admin branding before
+      // queuing the PDF render — otherwise the worker would use a stale
+      // html_preview captured when the report was first created.
+      if (format === "pdf") {
+        const blocks = report.rows[0].selected_blocks ?? defaultBlocks;
+        const authorInfo = report.rows[0].author_info ?? undefined;
+        const freshHtml = await buildReportHtml(request.params.id, blocks, authorInfo);
+        await pool.query(
+          "update reports set html_preview = $2 where id = $1",
+          [request.params.reportId, freshHtml]
+        );
+      }
+      const job = await reportQueue.add(
+        format === "xlsx" ? "export-report-xlsx" : "export-report-pdf",
+        {
+          assessmentId: request.params.id,
+          reportId: request.params.reportId,
+          userId: request.user!.sub,
+          format
+        }
+      );
       await pool.query("update reports set status = 'queued', updated_at = now() where id = $1", [
         request.params.reportId
       ]);
-      return reply.code(202).send({ jobId: job.id });
+      return reply.code(202).send({ jobId: job.id, format });
     }
   );
 

@@ -402,3 +402,138 @@ button {
 .audity-tooltips-off .audity-tooltip-layer {
   display: none;
 }
+
+.audity-update-bar-stripes {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.18) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.18) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  animation: audity-update-bar-stripes-move 1.2s linear infinite;
+}
+
+@keyframes audity-update-bar-stripes-move {
+  from { background-position: 0 0; }
+  to   { background-position: 1rem 0; }
+}
+
+.audity-login-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  /* Deep slate base with two very muted accent washes. No saturated
+     primary/secondary colors — this should read as a serious business
+     surface, not a marketing splash page. */
+  background:
+    radial-gradient(1400px 900px at 15% 15%, rgba(71, 85, 105, 0.18), transparent 65%),
+    radial-gradient(1300px 900px at 85% 90%, rgba(51, 65, 85, 0.22), transparent 70%),
+    linear-gradient(160deg, #0a121f 0%, #0d1726 50%, #0a1322 100%);
+}
+
+.audity-login-bg__blobs {
+  position: absolute;
+  inset: 0;
+  filter: blur(90px);
+  z-index: 1;
+}
+
+.audity-login-bg__blobs::before,
+.audity-login-bg__blobs::after,
+.audity-login-bg__blobs > span {
+  content: "";
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.audity-login-bg__blobs::before {
+  top: -22vmax;
+  left: -18vmax;
+  /* Cool steel blue — desaturated, low contrast against the base. */
+  background: radial-gradient(circle at 30% 30%, #475569 0%, rgba(71, 85, 105, 0.4) 40%, transparent 70%);
+  animation: audity-login-blob-a 32s ease-in-out infinite alternate;
+}
+
+.audity-login-bg__blobs::after {
+  bottom: -22vmax;
+  right: -18vmax;
+  /* Muted indigo — barely-there accent for warmth balance. */
+  background: radial-gradient(circle at 70% 70%, #3b4a6b 0%, rgba(59, 74, 107, 0.4) 40%, transparent 70%);
+  animation: audity-login-blob-b 38s ease-in-out infinite alternate;
+}
+
+.audity-login-bg__blob-c {
+  display: block;
+  top: 30vmax;
+  left: 30vmax;
+  width: 50vmax !important;
+  height: 50vmax !important;
+  /* Third blob deliberately the dimmest — adds depth without colour. */
+  background: radial-gradient(circle at 50% 50%, #334155 0%, rgba(51, 65, 85, 0.3) 40%, transparent 70%);
+  opacity: 0.18 !important;
+  animation: audity-login-blob-c 44s ease-in-out infinite alternate;
+}
+
+.audity-login-bg__grid {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  pointer-events: none;
+}
+
+.audity-login-bg__noise {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0.12;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+@keyframes audity-login-blob-a {
+  0%   { transform: translate(0, 0)            scale(1); }
+  50%  { transform: translate(14vmax, 10vmax)  scale(1.15); }
+  100% { transform: translate(5vmax, 18vmax)   scale(0.92); }
+}
+
+@keyframes audity-login-blob-b {
+  0%   { transform: translate(0, 0)             scale(1); }
+  50%  { transform: translate(-12vmax, -8vmax)  scale(1.10); }
+  100% { transform: translate(-5vmax, -16vmax)  scale(0.94); }
+}
+
+@keyframes audity-login-blob-c {
+  0%   { transform: translate(0, 0)             scale(1); }
+  50%  { transform: translate(-10vmax, 6vmax)   scale(1.08); }
+  100% { transform: translate(8vmax, -10vmax)   scale(0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audity-login-bg__blobs::before,
+  .audity-login-bg__blobs::after,
+  .audity-login-bg__blob-c {
+    animation: none;
+  }
+  .audity-update-bar-stripes {
+    animation: none;
+  }
+}

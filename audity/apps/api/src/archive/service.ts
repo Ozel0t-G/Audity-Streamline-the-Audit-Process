@@ -73,9 +73,10 @@ async function loadAssessments(customerId: string): Promise<Array<{ id: string; 
 async function loadEvidenceKeys(customerId: string): Promise<string[]> {
   const rows = await pool.query<{ object_key: string }>(
     `select object_key
-       from evidence_files ef
-       join assessments a on a.id = ef.assessment_id
-      where a.customer_id = $1`,
+       from evidence_items ei
+       join assessments a on a.id = ei.assessment_id
+      where a.customer_id = $1
+        and ei.object_key is not null`,
     [customerId]
   );
   return rows.rows.map((row) => row.object_key);
@@ -83,11 +84,11 @@ async function loadEvidenceKeys(customerId: string): Promise<string[]> {
 
 async function loadReportKeys(customerId: string): Promise<string[]> {
   const rows = await pool.query<{ object_key: string }>(
-    `select object_key
+    `select pdf_object_key as object_key
        from reports r
        join assessments a on a.id = r.assessment_id
       where a.customer_id = $1
-        and r.object_key is not null`,
+        and r.pdf_object_key is not null`,
     [customerId]
   );
   return rows.rows.map((row) => row.object_key);

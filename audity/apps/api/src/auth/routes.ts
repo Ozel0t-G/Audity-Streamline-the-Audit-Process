@@ -208,30 +208,28 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post<{ Body: { phrase: string; expectedFingerprint?: string } }>(
+  // Authenticated-only phrase verify: lets an Instance Admin confirm their
+  // stored recovery phrase still matches the current encryption key
+  // (e.g. after a key rotation). Removed from the login page intentionally:
+  // an unauthenticated verify endpoint is a confirmation oracle for any
+  // attacker who got partial knowledge of the phrase. Disaster-recovery
+  // verification now goes through the CLI script + post-login admin UI.
+  app.post<{ Body: { phrase: string } }>(
     "/api/auth/recovery-phrase/verify",
-    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    { preHandler: requireCsrf, config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
     async (request, reply) => {
+      if (!isInstanceAdmin(request.user)) {
+        return reply.code(403).send({ code: "FORBIDDEN", message: "Only Instance Admins can verify the recovery phrase" });
+      }
       if (!request.body || typeof request.body.phrase !== "string") {
         return reply.code(400).send({ code: "INVALID_INPUT", message: "phrase is required" });
       }
       try {
         const { fingerprint } = phraseToKey(request.body.phrase);
         const currentMeta = await ensureKeyMeta();
-        const matchesInstance = fingerprint === currentMeta.fingerprint;
-        if (request.body.expectedFingerprint && fingerprint !== request.body.expectedFingerprint.replace(/\s+/g, "").toLowerCase()) {
-          return {
-            valid: true,
-            matchesInstance,
-            matchesExpected: false,
-            fingerprint
-          };
-        }
         return {
           valid: true,
-          matchesInstance,
-          matchesExpected: true,
-          fingerprint
+          matchesInstance: fingerprint === currentMeta.fingerprint
         };
       } catch (error) {
         return reply.code(400).send({

@@ -29,7 +29,12 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: audity-api
-    user: "1000:1000"
+    # No `user:` here on purpose — the entrypoint starts as root only long
+    # enough to fix ownership of volume-backed dirs (e.g. /app/archive on
+    # an externally-created named volume) and then drops to the `node`
+    # user via su-exec. Pinning user: "1000:1000" here would block the
+    # privilege drop and crash with `su-exec: setgroups: Operation not
+    # permitted`.
     read_only: true
     tmpfs:
       - /tmp

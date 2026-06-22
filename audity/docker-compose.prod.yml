@@ -25,7 +25,8 @@ services:
   audity-api:
     image: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}/audity-api:${AUDITY_VERSION:-latest}
     container_name: audity-api
-    user: "1000:1000"
+    # No `user:` here — see docker-compose.yml for the reasoning. The
+    # entrypoint drops privileges to `node` after fixing volume perms.
     read_only: true
     tmpfs:
       - /tmp

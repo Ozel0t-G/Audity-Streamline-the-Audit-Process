@@ -1,5 +1,5 @@
 import Fastify from "fastify";
-import { Worker } from "bullmq";
+import { Worker, type Job } from "bullmq";
 import { Client } from "minio";
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -917,67 +917,10 @@ await ensureBucket();
 new Worker(
   "audity-report-export",
   async (job) => {
-    const { reportId, userId } = job.data as {
-      assessmentId: string;
-      reportId: string;
-      userId: string;
-    };
-    await job.updateProgress(10);
-    const report = await pool.query<{ html_preview: string }>(
-      "select html_preview from reports where id = $1",
-      [reportId]
-    );
-    if (!report.rows[0]) {
-      throw new Error("Report not found");
+    if (job.name === "export-report-xlsx") {
+      return runXlsxExport(job);
     }
-    await pool.query("update reports set status = 'rendering', updated_at = now() where id = $1", [
-      reportId
-    ]);
-    const browser = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH ?? "/usr/bin/chromium-browser",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
-    try {
-      const page = await browser.newPage();
-      await page.setContent(report.rows[0].html_preview, { waitUntil: "load" });
-      await job.updateProgress(60);
-      const pdf = await page.pdf({ format: "A4", printBackground: true });
-      const objectKey = `reports/${reportId}/audity-report.pdf`;
-      await storageClient.putObject(storageBucket, objectKey, Buffer.from(pdf), pdf.length, {
-        "Content-Type": "application/pdf"
-      });
-      await pool.query(
-        `update reports
-         set status = 'exported',
-             pdf_object_key = $2,
-             exported_at = now(),
-             content = content || $3::jsonb,
-             updated_at = now()
-         where id = $1`,
-        [
-          reportId,
-          objectKey,
-          JSON.stringify({
-            generationTimestamp: new Date().toISOString(),
-            reportVersion: 1,
-            pdfObjectKey: objectKey
-          })
-        ]
-      );
-      await appendReportExported(userId, reportId, objectKey);
-      await job.updateProgress(100);
-      return { objectKey };
-    } catch (error) {
-      // If PDF generation fails, reset status so the UI doesn't stay stuck
-      // showing "rendering". The job itself may still retry depending on queue settings.
-      await pool.query(
-        "update reports set status = 'export_failed', updated_at = now() where id = $1",
-        [reportId]
-      ).catch(() => undefined);
-      throw error;
-    } finally {
-      await browser.close();
-    }
+    return runPdfExport(job);
   },
   {
     connection: {
@@ -985,6 +928,249 @@ new Worker(
     }
   }
 );
+
+async function runPdfExport(job: Job): Promise<{ objectKey: string }> {
+  const { reportId, userId } = job.data as {
+    assessmentId: string;
+    reportId: string;
+    userId: string;
+  };
+  await job.updateProgress(10);
+  const report = await pool.query<{ html_preview: string }>(
+    "select html_preview from reports where id = $1",
+    [reportId]
+  );
+  if (!report.rows[0]) {
+    throw new Error("Report not found");
+  }
+  await pool.query("update reports set status = 'rendering', updated_at = now() where id = $1", [
+    reportId
+  ]);
+  const browser = await puppeteer.launch({
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH ?? "/usr/bin/chromium-browser",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(report.rows[0].html_preview, { waitUntil: "load" });
+    await job.updateProgress(60);
+    const pdf = await page.pdf({ format: "A4", printBackground: true });
+    const objectKey = `reports/${reportId}/audity-report.pdf`;
+    await storageClient.putObject(storageBucket, objectKey, Buffer.from(pdf), pdf.length, {
+      "Content-Type": "application/pdf"
+    });
+    await pool.query(
+      `update reports
+       set status = 'exported',
+           pdf_object_key = $2,
+           exported_at = now(),
+           content = content || $3::jsonb,
+           updated_at = now()
+       where id = $1`,
+      [
+        reportId,
+        objectKey,
+        JSON.stringify({
+          generationTimestamp: new Date().toISOString(),
+          reportVersion: 1,
+          pdfObjectKey: objectKey
+        })
+      ]
+    );
+    await appendReportExported(userId, reportId, objectKey);
+    await job.updateProgress(100);
+    return { objectKey };
+  } catch (error) {
+    await pool.query(
+      "update reports set status = 'export_failed', updated_at = now() where id = $1",
+      [reportId]
+    ).catch(() => undefined);
+    throw error;
+  } finally {
+    await browser.close();
+  }
+}
+
+async function runXlsxExport(job: Job): Promise<{ objectKey: string }> {
+  const { assessmentId, reportId, userId } = job.data as {
+    assessmentId: string;
+    reportId: string;
+    userId: string;
+  };
+  await job.updateProgress(10);
+  await pool.query("update reports set status = 'rendering', updated_at = now() where id = $1", [
+    reportId
+  ]);
+
+  const ExcelJS = (await import("exceljs")).default;
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Audity";
+  workbook.created = new Date();
+
+  const assessment = await pool.query<{
+    id: string;
+    name: string;
+    customer_name: string;
+    status: string;
+  }>(
+    `select a.id::text, a.name, c.name as customer_name, a.status
+       from assessments a
+       join customers c on c.id = a.customer_id
+      where a.id = $1`,
+    [assessmentId]
+  );
+  const overview = workbook.addWorksheet("Overview");
+  overview.columns = [
+    { header: "Field", key: "field", width: 24 },
+    { header: "Value", key: "value", width: 60 }
+  ];
+  overview.addRows([
+    { field: "Customer", value: assessment.rows[0]?.customer_name ?? "" },
+    { field: "Assessment", value: assessment.rows[0]?.name ?? "" },
+    { field: "Status", value: assessment.rows[0]?.status ?? "" },
+    { field: "Generated", value: new Date().toISOString() },
+    { field: "Report ID", value: reportId }
+  ]);
+  overview.getRow(1).font = { bold: true };
+
+  await job.updateProgress(30);
+
+  const controls = await pool.query<{
+    control_code: string;
+    control_title: string;
+    score: number | null;
+    answer_text: string | null;
+    notes: string | null;
+    framework_name: string;
+  }>(
+    `select fc.control_code,
+            fc.title as control_title,
+            ca.score,
+            ca.answer_text,
+            ca.notes,
+            f.name as framework_name
+       from control_answers ca
+       join assessment_questions aq on aq.id = ca.assessment_question_id
+       join framework_controls fc on fc.id = aq.framework_control_id
+       join framework_domains fd on fd.id = fc.framework_domain_id
+       join frameworks f on f.id = fd.framework_id
+      where aq.assessment_id = $1
+      order by f.name, fc.control_code`,
+    [assessmentId]
+  );
+  const controlsSheet = workbook.addWorksheet("Controls");
+  controlsSheet.columns = [
+    { header: "Framework", key: "framework", width: 22 },
+    { header: "Control", key: "code", width: 14 },
+    { header: "Title", key: "title", width: 48 },
+    { header: "Score", key: "score", width: 8 },
+    { header: "Answer", key: "answer", width: 60 },
+    { header: "Notes", key: "notes", width: 40 }
+  ];
+  for (const row of controls.rows) {
+    controlsSheet.addRow({
+      framework: row.framework_name,
+      code: row.control_code,
+      title: row.control_title,
+      score: row.score,
+      answer: row.answer_text,
+      notes: row.notes
+    });
+  }
+  controlsSheet.getRow(1).font = { bold: true };
+  controlsSheet.autoFilter = { from: "A1", to: "F1" };
+
+  await job.updateProgress(55);
+
+  const findings = await pool.query<{
+    id: string;
+    title: string;
+    severity: string | null;
+    status: string | null;
+    description: string | null;
+    recommendation: string | null;
+    control_code: string | null;
+  }>(
+    `select f.id::text, f.title, f.severity, f.status, f.description, f.recommendation, fc.control_code
+       from findings f
+       left join framework_controls fc on fc.id = f.framework_control_id
+      where f.assessment_id = $1
+      order by f.severity desc nulls last, f.title`,
+    [assessmentId]
+  ).catch(() => ({ rows: [] as Array<never> }));
+  const findingsSheet = workbook.addWorksheet("Findings");
+  findingsSheet.columns = [
+    { header: "Title", key: "title", width: 42 },
+    { header: "Severity", key: "severity", width: 12 },
+    { header: "Status", key: "status", width: 14 },
+    { header: "Control", key: "control_code", width: 14 },
+    { header: "Description", key: "description", width: 50 },
+    { header: "Recommendation", key: "recommendation", width: 50 }
+  ];
+  for (const row of findings.rows) {
+    findingsSheet.addRow(row);
+  }
+  findingsSheet.getRow(1).font = { bold: true };
+  if (findings.rows.length > 0) findingsSheet.autoFilter = { from: "A1", to: "F1" };
+
+  await job.updateProgress(75);
+
+  const risks = await pool.query<{
+    id: string;
+    title: string;
+    likelihood: string | null;
+    impact: string | null;
+    status: string | null;
+    treatment: string | null;
+    owner: string | null;
+  }>(
+    `select id::text, title, likelihood, impact, status, treatment, owner
+       from risks
+      where assessment_id = $1
+      order by status, title`,
+    [assessmentId]
+  ).catch(() => ({ rows: [] as Array<never> }));
+  const risksSheet = workbook.addWorksheet("Risks");
+  risksSheet.columns = [
+    { header: "Title", key: "title", width: 42 },
+    { header: "Likelihood", key: "likelihood", width: 14 },
+    { header: "Impact", key: "impact", width: 14 },
+    { header: "Status", key: "status", width: 14 },
+    { header: "Treatment", key: "treatment", width: 30 },
+    { header: "Owner", key: "owner", width: 20 }
+  ];
+  for (const row of risks.rows) {
+    risksSheet.addRow(row);
+  }
+  risksSheet.getRow(1).font = { bold: true };
+  if (risks.rows.length > 0) risksSheet.autoFilter = { from: "A1", to: "F1" };
+
+  await job.updateProgress(90);
+
+  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+  const objectKey = `reports/${reportId}/audity-report.xlsx`;
+  await storageClient.putObject(storageBucket, objectKey, buffer, buffer.length, {
+    "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+  await pool.query(
+    `update reports
+       set status = 'exported',
+           exported_at = now(),
+           content = content || $2::jsonb,
+           updated_at = now()
+     where id = $1`,
+    [
+      reportId,
+      JSON.stringify({
+        xlsxObjectKey: objectKey,
+        xlsxGeneratedAt: new Date().toISOString()
+      })
+    ]
+  );
+  await appendReportExported(userId, reportId, objectKey);
+  await job.updateProgress(100);
+  return { objectKey };
+}
 
 new Worker(
   "audity-email-send",

@@ -10,6 +10,7 @@ import { useIdleLogout } from "./layout/useIdleLogout";
 import { useTooltips } from "./layout/useTooltips";
 import { useLanguage, useUserTheme } from "./layout/useUserTheme";
 import { OnboardingTips } from "./OnboardingTips";
+import { NextActionBell } from "./NextActionBell";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -241,6 +242,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         ) : null}
       </div>
       <div className="flex items-center gap-1">
+        <NextActionBell />
         <button
           type="button"
           className="audity-btn-icon md:hidden"
@@ -437,6 +439,9 @@ function AppLayoutInner() {
           <NavLink className={navClass} to="/dashboard">
             <NavIcon name="dashboard" /> {t("Dashboard")}
           </NavLink>
+          <NavLink className={navClass} to="/inbox">
+            <NavIcon name="question" /> {t("Inbox")}
+          </NavLink>
           <NavLink className={navClass} to="/customers/my">
             <NavIcon name="customers" /> {t("Customers")}
           </NavLink>
@@ -604,6 +609,7 @@ function AdminLayoutInner() {
             <p className={navSectionClass}>{t("Administration")}</p>
             {can("roles.manage") ? <NavLink className={navClass} to="/admin/users"><NavIcon name="users" /> {t("User Management")}</NavLink> : null}
             {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks"><NavIcon name="frameworks" /> {t("Framework Library")}</NavLink> : null}
+            {can("settings.manage") ? <NavLink className={navClass} to="/admin/frameworks/thresholds"><NavIcon name="frameworks" /> {t("Stuck-Thresholds")}</NavLink> : null}
             <p className={navSectionClass}>{t("Monitoring")}</p>
             {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity"><NavIcon name="activity" /> {t("Activity Log")}</NavLink> : null}
             {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit"><NavIcon name="audit-log" /> {t("Audit Log")}</NavLink> : null}

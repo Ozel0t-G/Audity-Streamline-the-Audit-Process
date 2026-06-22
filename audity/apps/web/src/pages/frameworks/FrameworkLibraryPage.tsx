@@ -375,7 +375,6 @@ export function FrameworkLibraryPage() {
             <section className="min-w-0 rounded-audity border border-audity-border bg-audity-panel">
               <div className="border-b border-audity-border px-3 py-2.5">
                 <h2 className="text-lg font-semibold">{selected?.name ?? "Framework"}</h2>
-                <p className="mt-1 text-sm text-audity-secondary">{selected?.sourceType} · {selected?.licenseStatus}</p>
                 <input className="mt-3 audity-input" placeholder="Search controls" value={controlSearch} onChange={(event) => setControlSearch(event.target.value)} />
               </div>
               <div className="space-y-3 p-3">

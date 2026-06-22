@@ -205,6 +205,41 @@ export async function ensureUpdateNotificationForAdmin(): Promise<void> {
   }
 }
 
+/**
+ * Periodically poll the configured update manifest so admins don't have to
+ * click "Check for updates" themselves. Default interval: 10 minutes.
+ *
+ * Errors are swallowed (they are surfaced via UpdateStatus.checkError) — a
+ * transient GitHub outage must not crash the API process.
+ */
+export function startUpdateAutoCheck(logger?: {
+  info: (value: unknown, message?: string) => void;
+  error: (value: unknown, message?: string) => void;
+}) {
+  const intervalSeconds = Math.max(
+    60,
+    Number(process.env.AUDITY_UPDATE_CHECK_INTERVAL_SECONDS ?? 600)
+  );
+  const run = async () => {
+    try {
+      const status = await checkForUpdates(true);
+      if (status.updateAvailable) {
+        logger?.info(
+          { latestVersion: status.latestVersion, currentVersion: status.currentVersion },
+          "Audity auto-update check: newer release found"
+        );
+      }
+    } catch (error) {
+      logger?.error(error, "Audity auto-update check failed");
+    }
+  };
+  // Kick off a check shortly after boot (give the DB a few seconds to settle).
+  setTimeout(() => void run(), 15_000).unref();
+  const timer = setInterval(() => void run(), intervalSeconds * 1000);
+  timer.unref();
+  return timer;
+}
+
 async function adminRecipients() {
   const result = await pool.query<{ id: string }>(
     `select distinct u.id

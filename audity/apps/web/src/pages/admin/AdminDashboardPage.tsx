@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import type { ActivityLog, AdminUser, AuditLog, PermissionOption, RoleOption } from "./types";
+import { MultiCombobox } from "../../components/ui";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 const highRiskActions = new Set([
@@ -1153,20 +1154,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                     {updateStatus.checkError}
                   </p>
                 ) : null}
-                {updateJob ? (
-                  <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-xs font-medium text-audity-muted">Update Job Log</p>
-                      <span className="text-xs text-audity-secondary">
-                        {updateJob.startedAt ? new Date(updateJob.startedAt).toLocaleString() : "Not started"}
-                        {updateJob.exitCode !== null ? ` · exit ${updateJob.exitCode}` : ""}
-                      </span>
-                    </div>
-                    <pre className="max-h-56 overflow-auto rounded-audity border border-audity-border bg-audity-app p-3 text-xs leading-relaxed text-audity-secondary">
-                      {updateJob.log.length ? updateJob.log.join("\n") : "No update log yet."}
-                    </pre>
-                  </div>
-                ) : null}
+                {updateJob ? <UpdateJobProgress job={updateJob} /> : null}
               </section>
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <form className="max-w-md space-y-3" onSubmit={saveSystemSettings}>
@@ -1450,6 +1438,148 @@ type RecoveryFingerprintInfo = {
   acknowledgedAt: string | null;
 };
 
+type UpdatePhase = {
+  match: RegExp;
+  label: string;
+  progress: number;
+};
+
+const UPDATE_PHASES: UpdatePhase[] = [
+  { match: /^Audity image update/i,             label: "Initialising",                 progress: 5 },
+  { match: /Capturing current running images/i, label: "Capturing rollback snapshot",  progress: 15 },
+  { match: /Pulling target images/i,            label: "Pulling target images",        progress: 30 },
+  { match: /Running migration and seed/i,       label: "Running database migration",   progress: 55 },
+  { match: /Restarting Audity application/i,    label: "Restarting services",          progress: 75 },
+  { match: /Checking service health/i,          label: "Health-checking services",     progress: 90 },
+  { match: /Audity update is complete/i,        label: "Done",                         progress: 100 }
+];
+
+function derivePhase(job: UpdateJob): { label: string; progress: number; failed: boolean } {
+  const failed = job.status === "failed" || (job.exitCode !== null && job.exitCode !== 0);
+  if (job.status === "succeeded" || (job.exitCode === 0 && job.status !== "running")) {
+    return { label: "Done", progress: 100, failed: false };
+  }
+  let best: UpdatePhase | null = null;
+  for (const line of job.log) {
+    for (const phase of UPDATE_PHASES) {
+      if (phase.match.test(line)) {
+        if (!best || phase.progress > best.progress) best = phase;
+      }
+    }
+  }
+  if (failed) {
+    return {
+      label: best ? `Failed during: ${best.label}` : "Failed",
+      progress: best?.progress ?? 0,
+      failed: true
+    };
+  }
+  if (!best) {
+    return { label: job.status === "running" ? "Starting…" : "Waiting", progress: 2, failed: false };
+  }
+  // If the last matched phase has progress=100 but the job is still running,
+  // cap at 95 so the bar visibly finishes only when the job actually does.
+  if (job.status === "running" && best.progress >= 100) {
+    return { label: "Finalising", progress: 95, failed: false };
+  }
+  return { label: best.label, progress: best.progress, failed: false };
+}
+
+function UpdateJobProgress({ job }: { job: UpdateJob }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const phase = derivePhase(job);
+  const errorLines = job.log.filter((line) => /error|failed|fatal/i.test(line));
+  const logText = job.log.join("\n");
+
+  async function copyLog(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore — older browsers without clipboard API */
+    }
+  }
+
+  const barColour =
+    phase.failed
+      ? "bg-audity-error"
+      : phase.progress >= 100
+      ? "bg-audity-success"
+      : "bg-audity-primary";
+  const showStripes = job.status === "running" && !phase.failed;
+
+  return (
+    <div className="mt-3 rounded-audity border border-audity-border bg-audity-page p-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-medium text-audity-muted">
+            Update progress · {job.status}
+            {job.exitCode !== null ? ` · exit ${job.exitCode}` : ""}
+          </p>
+          <p className="mt-0.5 text-sm font-semibold text-audity-text">{phase.label}</p>
+        </div>
+        <span className="text-xs text-audity-secondary">
+          {job.startedAt ? new Date(job.startedAt).toLocaleTimeString() : "Not started"}
+        </span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-audity-app">
+        <div
+          className={`h-full transition-all duration-500 ease-out ${barColour} ${
+            showStripes ? "audity-update-bar-stripes" : ""
+          }`}
+          style={{ width: `${Math.max(2, Math.min(100, phase.progress))}%` }}
+        />
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-audity-muted">
+        <span>{Math.round(phase.progress)}%</span>
+        <button
+          type="button"
+          className="font-medium text-audity-secondary underline-offset-2 hover:underline"
+          onClick={() => setDetailsOpen((value) => !value)}
+        >
+          {detailsOpen ? "Hide details" : "Show details"}
+        </button>
+      </div>
+      {phase.failed && errorLines.length > 0 ? (
+        <div className="mt-2 rounded-audity border border-audity-error/40 bg-audity-error/10 p-2 text-xs text-audity-error">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="font-semibold">Errors detected</span>
+            <button
+              type="button"
+              className="underline-offset-2 hover:underline"
+              onClick={() => void copyLog(errorLines.join("\n"))}
+            >
+              {copied ? "Copied!" : "Copy errors"}
+            </button>
+          </div>
+          <pre className="max-h-32 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed">
+            {errorLines.join("\n")}
+          </pre>
+        </div>
+      ) : null}
+      {detailsOpen ? (
+        <div className="mt-2 rounded-audity border border-audity-border bg-audity-app p-2">
+          <div className="mb-1 flex items-center justify-between text-xs">
+            <span className="font-medium text-audity-muted">Full update log</span>
+            <button
+              type="button"
+              className="text-audity-secondary underline-offset-2 hover:underline"
+              onClick={() => void copyLog(logText)}
+            >
+              {copied ? "Copied!" : "Copy log"}
+            </button>
+          </div>
+          <pre className="max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-audity-secondary">
+            {logText || "No update log yet."}
+          </pre>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ServerStatusCard() {
   const api = useApi();
   const [info, setInfo] = useState<SystemInfo | null>(null);
@@ -1624,88 +1754,109 @@ function EmailSubscriptionsCard() {
     return <div className="audity-card text-sm text-audity-muted">Loading email subscriptions…</div>;
   }
 
+  const roleOptions = KNOWN_ROLES.map((role) => ({ value: role, label: role }));
+
   return (
     <section className="audity-card">
       <h2 className="audity-section-title">Notification routing</h2>
       <p className="mt-1 text-xs text-audity-secondary">
-        Pick which user groups receive an email when a specific event happens in Audity.
-        Members of a role get an email if they are active and have a valid address.
-        Extra recipients are arbitrary email addresses that don't need a user account.
+        Choose which roles receive an email per event. Members of a role get the email if they are
+        active and have a valid address. Extra recipients are individual addresses without a user
+        account (comma-separated).
       </p>
-      {error ? <div className="mt-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
-      <div className="mt-4 space-y-3">
-        {topics.map((topic) => {
-          const sub = subs[topic.id];
-          if (!sub) return null;
-          return (
-            <div key={topic.id} className="rounded-audity-md border border-audity-border bg-audity-page p-3">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-audity-text">{topic.label}</p>
-                  <p className="mt-0.5 text-xs text-audity-secondary">{topic.description}</p>
-                </div>
-                <label className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={sub.enabled}
-                    onChange={(event) => update(topic.id, { enabled: event.target.checked })}
-                  />
-                  Enabled
-                </label>
-              </div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="audity-label">Roles</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {KNOWN_ROLES.map((role) => {
-                      const active = sub.roles.includes(role);
-                      return (
-                        <button
-                          key={role}
-                          type="button"
-                          className={`rounded-full border px-2.5 py-0.5 text-xs ${active ? "border-audity-primary bg-audity-primaryActive/40 text-audity-primary" : "border-audity-border bg-audity-page text-audity-secondary hover:border-audity-borderStrong"}`}
-                          onClick={() => update(topic.id, {
-                            roles: active ? sub.roles.filter((r) => r !== role) : [...sub.roles, role]
-                          })}
-                        >
-                          {role}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <p className="audity-label">Extra recipients (one per line)</p>
-                  <textarea
-                    className="audity-input"
-                    rows={2}
-                    value={sub.extraEmails.join("\n")}
-                    onChange={(event) => update(topic.id, {
-                      extraEmails: event.target.value.split(/\n/).map((line) => line.trim()).filter(Boolean)
-                    })}
-                    placeholder="security@example.com"
-                  />
-                </div>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <p className="text-[11px] text-audity-muted">
-                  Variables available in template: {topic.variables.length ? topic.variables.join(", ") : "—"}
-                </p>
-                <div className="flex items-center gap-2">
-                  {savedId === topic.id ? <span className="text-xs text-audity-success">✓ Saved</span> : null}
-                  <button
-                    type="button"
-                    className="audity-btn-soft audity-btn-sm"
-                    disabled={savingId === topic.id}
-                    onClick={() => void save(topic.id)}
-                  >
-                    {savingId === topic.id ? "Saving…" : "Save"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {error ? (
+        <div className="mt-3 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">
+          {error}
+        </div>
+      ) : null}
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[860px] border-separate border-spacing-0 text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wide text-audity-muted">
+              <th className="border-b border-audity-border px-3 py-2 font-medium" style={{ width: "32%" }}>
+                Event
+              </th>
+              <th className="border-b border-audity-border px-3 py-2 font-medium" style={{ width: "8%" }}>
+                On
+              </th>
+              <th className="border-b border-audity-border px-3 py-2 font-medium" style={{ width: "28%" }}>
+                Roles
+              </th>
+              <th className="border-b border-audity-border px-3 py-2 font-medium" style={{ width: "24%" }}>
+                Extra recipients
+              </th>
+              <th className="border-b border-audity-border px-3 py-2 font-medium" style={{ width: "8%" }}>
+                {/* save column */}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {topics.map((topic) => {
+              const sub = subs[topic.id];
+              if (!sub) return null;
+              return (
+                <tr key={topic.id} className="align-top">
+                  <td className="border-b border-audity-border px-3 py-3">
+                    <div className="font-semibold text-audity-text">{topic.label}</div>
+                    <div className="mt-0.5 text-xs text-audity-secondary">{topic.description}</div>
+                    {topic.variables.length ? (
+                      <div className="mt-1 text-[11px] text-audity-muted">
+                        Variables: {topic.variables.join(", ")}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="border-b border-audity-border px-3 py-3">
+                    <label className="inline-flex items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={sub.enabled}
+                        onChange={(event) => update(topic.id, { enabled: event.target.checked })}
+                      />
+                    </label>
+                  </td>
+                  <td className="border-b border-audity-border px-3 py-3">
+                    <MultiCombobox
+                      options={roleOptions}
+                      value={sub.roles}
+                      onChange={(roles) => update(topic.id, { roles })}
+                      placeholder="Select roles…"
+                      ariaLabel={`Roles for ${topic.label}`}
+                    />
+                  </td>
+                  <td className="border-b border-audity-border px-3 py-3">
+                    <input
+                      type="text"
+                      className="audity-input"
+                      value={sub.extraEmails.join(", ")}
+                      onChange={(event) =>
+                        update(topic.id, {
+                          extraEmails: event.target.value
+                            .split(/[,\n]/)
+                            .map((line) => line.trim())
+                            .filter(Boolean)
+                        })
+                      }
+                      placeholder="a@example.com, b@example.com"
+                    />
+                  </td>
+                  <td className="border-b border-audity-border px-3 py-3 text-right">
+                    {savedId === topic.id ? (
+                      <span className="mr-2 text-xs text-audity-success">✓</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="audity-btn-soft audity-btn-sm"
+                      disabled={savingId === topic.id}
+                      onClick={() => void save(topic.id)}
+                    >
+                      {savingId === topic.id ? "Saving…" : "Save"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </section>
   );

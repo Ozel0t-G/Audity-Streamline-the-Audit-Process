@@ -1114,6 +1114,375 @@ export const manualArticles: ManualArticle[] = [
     ]
   },
   {
+    id: "admin-disaster-recovery",
+    title: "Admin: Disaster Recovery Flow",
+    category: "admin",
+    audience: "admin",
+    keywords: [
+      "disaster",
+      "recovery",
+      "dr",
+      "recovery phrase",
+      "encryption key",
+      "AUDITY_ENCRYPTION_KEY",
+      "fingerprint",
+      "lost server",
+      "lost host",
+      "rebuild",
+      "rotate key",
+      "archive",
+      "bundle",
+      "restore",
+      "emergency",
+      "wiederherstellung",
+      "notfall"
+    ],
+    summary:
+      "Step-by-step playbook for recovering a lost Audity instance, rotating the encryption key, and re-importing archived bundles. Spells out exactly when and where each value must be entered.",
+    sections: [
+      {
+        heading: "Before disaster strikes — what you must already have",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Audity disaster recovery only works if THREE pieces of information were preserved BEFORE the incident. Without them, encrypted backups and archive bundles cannot be decrypted. Audity cannot recover any of these for you."
+          },
+          {
+            kind: "fields",
+            items: [
+              {
+                name: "1. The recovery phrase",
+                description:
+                  "72 hex characters in 6 groups of 12 (e.g. a1b2c3d4e5f6-…). Shown to the Instance Admin on the very first setup-wizard screen, and any time by running the CLI script (see below). Treat it like a master password. Store it in a password manager AND on paper in a safe."
+              },
+              {
+                name: "2. The latest encrypted backup package",
+                description:
+                  "Created via Admin → Backup → Download package backup. Each download produces a fresh encrypted zip and a one-time password. Keep the zip and the password in separate locations."
+              },
+              {
+                name: "3. The monthly archive bundles (if archive system is used)",
+                description:
+                  "Files named YYYY-MM.audity-archive under /app/archive/bundled/. Copy them to off-site storage on a schedule that matches your retention policy."
+              }
+            ]
+          },
+          {
+            kind: "warning",
+            text:
+              "If you lose the recovery phrase / encryption key, no encrypted backup zip and no archive bundle can ever be decrypted again. There is no back door. Test the recovery flow at least once per year while you still have all three pieces."
+          }
+        ]
+      },
+      {
+        heading: "Where to see the current fingerprint (sanity check anytime)",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Each instance has an encryption-key fingerprint (16-character hex prefix of sha256(AUDITY_ENCRYPTION_KEY)). The fingerprint is shown in two places so admins can confirm the running instance still uses the expected key."
+          },
+          {
+            kind: "steps",
+            intro: "In the Audity UI:",
+            items: [
+              "Sign in as Instance Admin.",
+              "Open Admin Panel → System Monitor.",
+              "Scroll to the Server status card. The Encryption-key fingerprint row shows the current fingerprint and whether the recovery phrase has been acknowledged.",
+              "Compare this value against the fingerprint you wrote down with the recovery phrase. If they differ, the encryption key changed since you last stored the phrase — see the key rotation section below."
+            ]
+          },
+          {
+            kind: "steps",
+            intro: "From a host shell (no login required):",
+            items: [
+              "SSH into the host that runs the Audity Docker stack.",
+              "Run: docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js",
+              "The script prints the full 72-character recovery phrase, the full fingerprint, and a short fingerprint. Anyone with shell access can run this — make sure your SSH access is locked down."
+            ]
+          },
+          {
+            kind: "code",
+            language: "bash",
+            text:
+              "docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js"
+          }
+        ]
+      },
+      {
+        heading: "Scenario A — Full rebuild after host loss",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Use this when the Audity host is gone (hardware failure, deleted VM, lost cloud account, ransomware wipe). You will provision a fresh host, restore the database from a backup, and tell the new instance to decrypt with the original key."
+          },
+          {
+            kind: "steps",
+            intro: "Step 1 — Provision a fresh host:",
+            items: [
+              "Install Docker + Docker Compose on a new machine.",
+              "Clone or copy your Audity repository (the one with docker-compose.yml).",
+              "Do NOT bring the stack up yet."
+            ]
+          },
+          {
+            kind: "steps",
+            intro: "Step 2 — Set the original encryption key in the .env file BEFORE the first compose up:",
+            items: [
+              "Open the .env file next to docker-compose.yml in a text editor.",
+              "Find the line AUDITY_ENCRYPTION_KEY=... (or add it if missing).",
+              "Set it to the EXACT value the previous instance used. If you only have the recovery phrase, that phrase IS the human-readable form of the key — convert it back: paste the phrase into the field. The phrase has the same entropy as the raw key; either form is accepted on input because Audity derives the actual AES key via sha256() either way.",
+              "Save the file."
+            ]
+          },
+          {
+            kind: "warning",
+            text:
+              "The encryption key MUST be set before the API container starts for the first time. If you let Audity boot with a fresh random key, it will generate a new fingerprint, and no old backup/archive can ever be decrypted with that instance again."
+          },
+          {
+            kind: "steps",
+            intro: "Step 3 — Start the stack and wait for the database to come up:",
+            items: [
+              "Run: docker compose up -d",
+              "Wait for the audity-api container to be healthy (docker compose ps shows healthy)."
+            ]
+          },
+          {
+            kind: "code",
+            language: "bash",
+            text:
+              "docker compose up -d\ndocker compose ps\n# wait until audity-api shows 'healthy'"
+          },
+          {
+            kind: "steps",
+            intro: "Step 4 — Confirm the fingerprint matches your stored value:",
+            items: [
+              "Run: docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js",
+              "Compare the printed fingerprint to the one you wrote down next to your recovery phrase.",
+              "If they MATCH → continue with Step 5.",
+              "If they do NOT match → STOP. The key in .env is wrong. Fix .env (correct phrase / correct key value), run: docker compose down audity-api && docker compose up -d audity-api, then re-check."
+            ]
+          },
+          {
+            kind: "steps",
+            intro: "Step 5 — Restore the most recent encrypted backup:",
+            items: [
+              "Copy the encrypted backup zip (e.g. audity-backup-2026-06-15.zip) onto the new host.",
+              "Sign into the fresh Audity instance as Instance Admin. Note: at this point the new instance has only the admin you create during the setup wizard — that user is separate from any user inside the backup.",
+              "Open Admin Panel → Backup.",
+              "Use 'Upload backup package' (or place the zip directly into the audity-backups MinIO bucket via the worker import path documented in Admin → Backup → Help).",
+              "Once the package is registered as a backup job, click Restore on it.",
+              "Audity asks for the one-time password that was generated when the backup was downloaded. Paste it.",
+              "Type the safety phrase RESTORE AUDITY (exactly, English, case sensitive) into the confirmation field.",
+              "Click Confirm restore. The DB and evidence are reloaded; the app restarts; all users must sign in again."
+            ]
+          },
+          {
+            kind: "note",
+            text:
+              "After the restore, log in with the credentials of an admin that existed in the backup (not the temporary setup-wizard admin). The temporary setup-wizard admin is overwritten by the backup."
+          },
+          {
+            kind: "steps",
+            intro: "Step 6 — Re-import archive bundles (only if you use the archive system):",
+            items: [
+              "Copy each YYYY-MM.audity-archive file onto the new host.",
+              "Open Admin Panel → Archive → Re-import.",
+              "Upload one bundle at a time. Audity decrypts each with the current encryption key (which now matches the original).",
+              "After upload, the archived customers appear under Admin → Archive → Customer overview in 'spool' state.",
+              "If users need to access an archived customer's data, ask them to file a restore request, then approve it under Admin → Archive → Restore requests. Approval re-uploads the evidence to MinIO."
+            ]
+          },
+          {
+            kind: "warning",
+            text:
+              "If a bundle fails to decrypt with 'Bundle decryption failed', the encryption key currently running does not match the key the bundle was written with. Either fix AUDITY_ENCRYPTION_KEY (see Scenario A Step 2), or follow Scenario C (key rotation) to use the original key."
+          }
+        ]
+      },
+      {
+        heading: "Scenario B — Rotate AUDITY_ENCRYPTION_KEY (planned)",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Use this when policy requires a periodic key rotation, or when you suspect the recovery phrase was exposed. The procedure produces a new key + a new recovery phrase, and re-encrypts any data that is still encrypted with the old key."
+          },
+          {
+            kind: "warning",
+            text:
+              "Rotation is a one-way operation. After rotation, the OLD recovery phrase no longer decrypts NEW backups or NEW archive bundles. You MUST keep the old phrase available until every old backup / bundle you care about has been re-encrypted under the new key, OR until you have deleted them."
+          },
+          {
+            kind: "steps",
+            intro: "Step 1 — Prepare a fresh backup with the old key:",
+            items: [
+              "Sign in as Instance Admin → Admin Panel → Backup → Download package backup.",
+              "Store the encrypted zip + the one-time password somewhere safe. This is your 'last known good' state under the old key."
+            ]
+          },
+          {
+            kind: "steps",
+            intro: "Step 2 — Generate a new encryption key:",
+            items: [
+              "On the host, generate 32 random bytes and encode them as base64: openssl rand -base64 32",
+              "Copy the output. This is your new AUDITY_ENCRYPTION_KEY value."
+            ]
+          },
+          {
+            kind: "code",
+            language: "bash",
+            text: "openssl rand -base64 32"
+          },
+          {
+            kind: "steps",
+            intro: "Step 3 — Save the OLD key and the NEW key to a vault:",
+            items: [
+              "Both the old key and the new key must be stored. The old key is needed to re-import any archive bundles created before the rotation.",
+              "Label them clearly with the rotation date."
+            ]
+          },
+          {
+            kind: "steps",
+            intro: "Step 4 — Apply the new key and restart:",
+            items: [
+              "Edit .env on the host, replace AUDITY_ENCRYPTION_KEY with the new value, save.",
+              "Run: docker compose down audity-api && docker compose up -d audity-api",
+              "After audity-api is healthy, confirm Admin → System Monitor shows the NEW fingerprint (the 'Phrase acknowledged' badge will turn yellow until you acknowledge the new phrase)."
+            ]
+          },
+          {
+            kind: "steps",
+            intro: "Step 5 — View and store the new recovery phrase:",
+            items: [
+              "Run: docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js",
+              "Write down the new phrase + new fingerprint.",
+              "In the UI: Admin → System Monitor → click the (re-)acknowledge action to mark the new phrase as stored."
+            ]
+          },
+          {
+            kind: "steps",
+            intro: "Step 6 — Re-encrypt anything you want to keep portable:",
+            items: [
+              "Download a fresh backup (Admin → Backup → Download package backup). This new zip uses the new key.",
+              "Trigger a manual archive bundle for the current month (Admin → Archive → Bundles → Bundle now). The new bundle uses the new key.",
+              "Old backups + old bundles remain decryptable with the OLD key only."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Scenario C — Re-import a bundle that was written with a DIFFERENT key",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Used when restoring archive bundles from a previous owner, from a different Audity instance, or after a key rotation. The bundle is encrypted with key X, but the running instance uses key Y."
+          },
+          {
+            kind: "steps",
+            intro: "Procedure:",
+            items: [
+              "Note the fingerprint of the bundle's original key (it was logged by the instance that created the bundle).",
+              "Decide whether you want the running instance to PERMANENTLY use the old key (then follow Scenario A Step 2 with the old key) or whether you want a one-time decrypt only.",
+              "For permanent: edit .env → AUDITY_ENCRYPTION_KEY = old key → docker compose restart audity-api → fingerprint should now equal the bundle's original fingerprint → upload via Admin → Archive → Re-import.",
+              "For one-time decrypt only: spin up a temporary Audity instance on a workstation with the old key in .env, re-import the bundle there, download a fresh backup from the temporary instance with the NEW key (after rotating its key), then import that backup into the real production instance."
+            ]
+          },
+          {
+            kind: "note",
+            text:
+              "There is intentionally no 'paste an override key into the UI' button — that would be a permanent exfiltration risk. Key changes always go through the .env + restart path so they are auditable on the host."
+          }
+        ]
+      },
+      {
+        heading: "Scenario D — Lost recovery phrase, instance still running",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "If the instance is still up, you can recover the phrase from the running container, then re-store it."
+          },
+          {
+            kind: "steps",
+            items: [
+              "Run: docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js",
+              "Copy the printed phrase and fingerprint to your password manager AND a printed copy in a safe.",
+              "Open Admin Panel → System Monitor and confirm the fingerprint matches.",
+              "If anyone else might have seen the phrase or had shell access to the host: rotate the key (Scenario B)."
+            ]
+          },
+          {
+            kind: "warning",
+            text:
+              "If the instance is also lost AND the phrase is lost, recovery is impossible. The encryption is by design unbypassable. Make sure the phrase lives in at least two physically separated locations."
+          }
+        ]
+      },
+      {
+        heading: "Yearly DR drill — recommended checklist",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Run this drill once per year, ideally a quarter before any planned key rotation. It catches missing phrases, expired off-site backups, and operator-procedure gaps while everything still works."
+          },
+          {
+            kind: "steps",
+            items: [
+              "Download a fresh encrypted backup package and note the one-time password.",
+              "Spin up an Audity stack on a clean test host or VM. Use the SAME AUDITY_ENCRYPTION_KEY as production (so the test instance can decrypt the backup).",
+              "Confirm the fingerprint matches: docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js",
+              "Restore the backup on the test instance. Verify a known customer + a known assessment appear with their evidence + reports.",
+              "Re-import the most recent archive bundle on the test instance. Approve one restore request. Verify the evidence comes back online.",
+              "Destroy the test instance. Document the time spent and any operator friction so the runbook can be tightened."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Quick reference table — where each value goes",
+        blocks: [
+          {
+            kind: "fields",
+            items: [
+              {
+                name: "AUDITY_ENCRYPTION_KEY",
+                description:
+                  "Host .env file next to docker-compose.yml. Read at API container start. Restart the audity-api container after any change."
+              },
+              {
+                name: "Recovery phrase (72 hex chars)",
+                description:
+                  "Shown once during setup wizard. Re-displayable via docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js. Never entered into the UI — the phrase is the user-readable form of the key, the key goes into .env."
+              },
+              {
+                name: "Backup one-time password",
+                description:
+                  "Displayed in the Admin → Backup page right after Download package backup. Required to decrypt the zip during restore. Audity does not store it."
+              },
+              {
+                name: "Safety phrase 'RESTORE AUDITY'",
+                description:
+                  "Typed into Admin → Backup → Restore confirmation field. Hard-coded English string, intentional."
+              },
+              {
+                name: "Archive bundle file (YYYY-MM.audity-archive)",
+                description:
+                  "Found under /app/archive/bundled/ inside the audity-api container, or in the audity-archive Docker volume on the host. Uploaded via Admin → Archive → Re-import."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    related: ["admin-backup", "server-status", "smtp-settings"]
+  },
+  {
     id: "keyboard-shortcuts",
     title: "Keyboard shortcuts",
     category: "reference",

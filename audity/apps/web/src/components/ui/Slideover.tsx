@@ -19,6 +19,11 @@ const widthClasses = {
 export function Slideover({ open, onClose, title, description, children, footer, width = "md" }: Props) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  // Capture onClose in a ref so the focus-trap effect below doesn't re-run
+  // whenever the parent re-renders with a new inline onClose handler — that
+  // would steal focus on every keystroke inside the panel.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -31,7 +36,7 @@ export function Slideover({ open, onClose, title, description, children, footer,
 
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !panelRef.current) return;
@@ -58,7 +63,7 @@ export function Slideover({ open, onClose, title, description, children, footer,
       window.removeEventListener("keydown", handleKey);
       previouslyFocusedRef.current?.focus({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

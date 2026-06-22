@@ -549,7 +549,7 @@ function HintBlocks({ question }: HintBlocksProps) {
     <aside className="flex shrink-0 flex-col gap-2">
       {purpose ? (
         <HintCard
-          icon="💡"
+          icon={<HintIcon name="why" />}
           title="Why this matters"
           open={openState.purpose !== false}
           onToggle={() => toggle("purpose")}
@@ -559,7 +559,7 @@ function HintBlocks({ question }: HintBlocksProps) {
       ) : null}
       {expected.length > 0 ? (
         <HintCard
-          icon="✅"
+          icon={<HintIcon name="good" />}
           title="What good looks like"
           open={openState.expected !== false}
           onToggle={() => toggle("expected")}
@@ -573,7 +573,7 @@ function HintBlocks({ question }: HintBlocksProps) {
       ) : null}
       {howTo.length > 0 ? (
         <HintCard
-          icon="📋"
+          icon={<HintIcon name="howTo" />}
           title="How to satisfy this"
           open={openState.howTo !== false}
           onToggle={() => toggle("howTo")}
@@ -593,7 +593,7 @@ function HintBlocks({ question }: HintBlocksProps) {
       ) : null}
       {crossRefs.length > 0 ? (
         <HintCard
-          icon="🔗"
+          icon={<HintIcon name="related" />}
           title="Related controls"
           open={openState.crossRefs === true}
           onToggle={() => toggle("crossRefs")}
@@ -612,7 +612,7 @@ function HintBlocks({ question }: HintBlocksProps) {
 }
 
 function HintCard({ icon, title, open, onToggle, children }: {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   open: boolean;
   onToggle: () => void;
@@ -627,7 +627,7 @@ function HintCard({ icon, title, open, onToggle, children }: {
         aria-expanded={open}
       >
         <span className="flex items-center gap-2">
-          <span className="text-base" aria-hidden="true">{icon}</span>
+          <span className="text-audity-muted" aria-hidden="true">{icon}</span>
           <span className="text-sm font-semibold text-audity-text">{title}</span>
         </span>
         <svg
@@ -643,6 +643,52 @@ function HintCard({ icon, title, open, onToggle, children }: {
       </button>
       {open ? <div className="border-t border-audity-border px-4 py-3">{children}</div> : null}
     </section>
+  );
+}
+
+function HintIcon({ name }: { name: "why" | "good" | "howTo" | "related" }) {
+  // Match the sidebar/menu icon style: 16px, currentColor stroke, no fill,
+  // rounded line caps. Keeps the visual language consistent with the rest
+  // of the app.
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {name === "why" ? (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <line x1="12" y1="8" x2="12" y2="13" />
+          <circle cx="12" cy="16.5" r="0.5" fill="currentColor" />
+        </>
+      ) : null}
+      {name === "good" ? (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M8 12.5l2.5 2.5L16 9.5" />
+        </>
+      ) : null}
+      {name === "howTo" ? (
+        <>
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <line x1="8" y1="9" x2="16" y2="9" />
+          <line x1="8" y1="13" x2="16" y2="13" />
+          <line x1="8" y1="17" x2="13" y2="17" />
+        </>
+      ) : null}
+      {name === "related" ? (
+        <>
+          <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" />
+          <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
+        </>
+      ) : null}
+    </svg>
   );
 }
 

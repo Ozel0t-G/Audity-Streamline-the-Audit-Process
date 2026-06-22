@@ -185,28 +185,6 @@ export function AssessmentAssetsPage() {
     }
   }
 
-  async function uploadLogo(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const input = form.elements.namedItem("logo") as HTMLInputElement;
-    if (!input.files?.[0]) return;
-    const body = new FormData();
-    body.set("file", input.files[0]);
-    const logo = await api<{ logoObjectKey: string; logoFileName: string }>("/api/admin/branding/logo", {
-      method: "POST",
-      body
-    });
-    setBranding({ ...branding, logoObjectKey: logo.logoObjectKey, logoFileName: logo.logoFileName });
-  }
-
-  async function saveBranding(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const payload = await api<{ branding: Branding }>("/api/admin/branding", {
-      method: "PUT",
-      body: JSON.stringify(branding)
-    });
-    setBranding(payload.branding);
-  }
 
   async function createReport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -222,8 +200,10 @@ export function AssessmentAssetsPage() {
   async function exportReport() {
     if (!id || !report) return;
     window.localStorage.setItem("audity_export_format", exportFormat);
+    const format = exportFormat.toLowerCase() === "excel" ? "xlsx" : "pdf";
     const payload = await api<{ jobId: string }>(`/api/assessments/${id}/reports/${report.id}/export`, {
-      method: "POST"
+      method: "POST",
+      body: JSON.stringify({ format })
     });
     setJob({ id: payload.jobId, status: "queued" });
   }
@@ -340,27 +320,9 @@ export function AssessmentAssetsPage() {
                 ))}
               </div>
             </section>
-            {canManageBranding ? (
-            <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-              <h2 className="mb-4 text-lg font-semibold">Branding</h2>
-              <form className="mb-3 flex gap-2" onSubmit={(event) => void uploadLogo(event)}>
-                <input name="logo" type="file" accept="image/png,image/jpeg" className="min-w-0 text-sm text-audity-secondary" />
-                <button className="audity-btn-secondary">Logo</button>
-              </form>
-              <form className="space-y-3" onSubmit={(event) => void saveBranding(event)}>
-                {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
-                  <label key={key} className="grid grid-cols-[120px_1fr] items-center gap-3 text-xs font-medium text-audity-secondary">
-                    {key}
-                    <input type="color" className="h-9 w-full rounded-audity border border-audity-border bg-audity-page" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
-                  </label>
-                ))}
-                {(["headerText", "footerText", "confidentialityLabel"] as const).map((key) => (
-                  <input key={key} className="audity-input" value={branding[key]} onChange={(event) => setBranding({ ...branding, [key]: event.target.value })} />
-                ))}
-                <button className="audity-btn-primary">Save branding</button>
-              </form>
-            </section>
-            ) : null}
+            {/* Branding is admin-managed only — configured under Admin → Branding.
+                The report always renders against the current admin branding;
+                there is no per-assessment override. */}
           </div>
           <section className="mt-3 rounded-audity border border-audity-border bg-audity-panel p-4">
             <h2 className="mb-4 text-lg font-semibold">Report Builder</h2>
@@ -377,9 +339,8 @@ export function AssessmentAssetsPage() {
                 <label className="block text-xs font-medium text-audity-secondary">
                   Export Format
                   <select className="mt-2 audity-input" value={exportFormat} onChange={(event) => setExportFormat(event.target.value)}>
-                    <option>PDF</option>
-                    <option>Word</option>
-                    <option>HTML</option>
+                    <option value="PDF">PDF (read-only)</option>
+                    <option value="Excel">Excel (editable .xlsx)</option>
                   </select>
                 </label>
                 {Object.entries(authorInfo).map(([key, value]) => (

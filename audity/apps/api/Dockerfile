@@ -27,6 +27,15 @@ COPY apps/api/src/db/migrations apps/api/dist/db/migrations
 COPY audity_frameworks audity_frameworks
 COPY frameworks frameworks
 COPY audity_frameworks shipped-frameworks
-USER node
+# Pre-create the archive directory tree owned by `node`. The volume mounted
+# at /app/archive picks up node ownership on first mount, but an existing
+# empty volume may still be root-owned — the entrypoint fixes that case at
+# runtime as well.
+RUN mkdir -p /app/archive/spool /app/archive/bundled /app/user_frameworks \
+ && chown -R node:node /app/archive /app/user_frameworks \
+ && apk add --no-cache su-exec
+COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 3000
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "apps/api/dist/server.js"]
