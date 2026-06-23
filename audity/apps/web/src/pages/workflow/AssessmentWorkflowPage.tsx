@@ -192,8 +192,18 @@ function CommentList({ comments }: { comments: ReviewComment[] }) {
   );
 }
 
-export function AssessmentWorkflowPage() {
-  const { id } = useParams();
+export function AssessmentWorkflowPage({
+  assessmentId,
+  only,
+  embedded = false
+}: {
+  assessmentId?: string;
+  only?: "findings" | "risk" | "roadmap";
+  embedded?: boolean;
+} = {}) {
+  const params = useParams();
+  const id = assessmentId ?? params.id;
+  const showStage = (stage: "findings" | "risk" | "roadmap") => !only || only === stage;
   const api = useApi();
   const { accessToken, user } = useAuth();
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
@@ -692,6 +702,7 @@ export function AssessmentWorkflowPage() {
 
   return (
     <>
+          {!embedded ? (
           <WorkflowFilterBar
             filter={workflowFilter}
             onChange={setWorkflowFilter}
@@ -701,6 +712,8 @@ export function AssessmentWorkflowPage() {
             ]))}
             counts={{ findings: findings.length, risks: risks.length, roadmap: roadmapItems.length }}
           />
+          ) : null}
+          {!embedded ? (
           <div className="audity-page-header">
             <p className="audity-page-kicker">Guided Workflow</p>
             <h1 className="audity-page-title">Findings, Risks & Roadmap</h1>
@@ -708,8 +721,10 @@ export function AssessmentWorkflowPage() {
               Stage 1 → Stage 2 → Stage 3 · {findings.length} findings · {risks.length} risks · {roadmapItems.length} roadmap items
             </p>
           </div>
+          ) : null}
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           {saved ? <div className="mb-4 rounded-audity border border-audity-success bg-audity-success/10 px-3 py-2 text-sm text-audity-success">{saved}</div> : null}
+          {!embedded || showStage("findings") ? (
           <section className="mb-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="grid gap-2 md:grid-cols-4">
               <div className="rounded-audity border border-audity-border bg-audity-page px-3 py-2">
@@ -730,6 +745,7 @@ export function AssessmentWorkflowPage() {
               </div>
             </div>
           </section>
+          ) : null}
           {(dueRiskCount || dueRoadmapCount) ? (
           <section className="mb-4 rounded-audity border border-audity-warning bg-audity-panel p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -745,6 +761,7 @@ export function AssessmentWorkflowPage() {
           </section>
           ) : null}
           <div className="space-y-4 min-w-0">
+            {showStage("findings") ? (
             <section className="rounded-audity border border-audity-border bg-audity-panel">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-audity-border px-3 py-2.5">
                 <div>
@@ -794,6 +811,7 @@ export function AssessmentWorkflowPage() {
                 />
               </div>
             </section>
+            ) : null}
 
             <FindingSlideover
               assessmentId={id ?? ""}
@@ -931,6 +949,7 @@ export function AssessmentWorkflowPage() {
                 </div>
               </div>
             </section>
+            {showStage("risk") ? (
             <aside className="space-y-4">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="mb-4">
@@ -1159,7 +1178,9 @@ export function AssessmentWorkflowPage() {
               </form>
               ) : null}
             </aside>
+            ) : null}
           </div>
+          {showStage("roadmap") ? (
           <section className="mt-4 rounded-audity border border-audity-border bg-audity-panel p-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -1197,6 +1218,7 @@ export function AssessmentWorkflowPage() {
               </div>
             </DndContext>
           </section>
+          ) : null}
 
           <StickyBulkBar
             count={selectedFindingIds.length}

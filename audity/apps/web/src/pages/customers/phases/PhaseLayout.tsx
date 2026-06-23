@@ -16,7 +16,10 @@ const PHASE_TABS = [
   { key: "plan", label: "Plan & Scope" },
   { key: "controls", label: "Controls & Evidence" },
   { key: "findings", label: "Findings" },
-  { key: "report", label: "Report & Sign-off" }
+  { key: "risk", label: "Risk Register" },
+  { key: "roadmap", label: "Roadmap" },
+  { key: "report", label: "Report & Sign-off" },
+  { key: "evidence", label: "Evidence & Reports" }
 ] as const;
 
 export function PhaseLayout({
@@ -82,6 +85,7 @@ export function PhaseLayout({
   }
 
   const isReadOnly = Boolean(customer?.archivedAt);
+  const activeAudit = audits.find((audit) => audit.id === selectedAudit) ?? null;
 
   return (
     <div className="space-y-4">
@@ -94,6 +98,16 @@ export function PhaseLayout({
             · {title}
           </p>
           <h1 className="audity-page-title">{title}</h1>
+          {activeAudit ? (
+            <div className="mt-1 inline-flex items-center gap-2 rounded-audity border border-audity-primary/40 bg-audity-primary/10 px-2.5 py-1 text-xs">
+              <span className="font-semibold text-audity-primary">Active audit:</span>
+              <span className="font-medium text-audity-text">{activeAudit.type}</span>
+              {activeAudit.framework ? <span className="text-audity-muted">· {activeAudit.framework}</span> : null}
+              <span className="rounded-audity border border-audity-borderStrong px-1.5 py-0.5 text-[10px] font-semibold uppercase text-audity-secondary">
+                {activeAudit.status}
+              </span>
+            </div>
+          ) : null}
           {description ? <p className="audity-page-copy">{description}</p> : null}
         </div>
         <div className="flex flex-col items-end gap-2">

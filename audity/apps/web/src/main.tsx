@@ -31,12 +31,14 @@ const PlanPhasePage = lazy(() => import("./pages/customers/phases/PlanPhasePage"
 const ControlsPhasePage = lazy(() => import("./pages/customers/phases/ControlsPhasePage").then((m) => ({ default: m.ControlsPhasePage })));
 const FindingsPhasePage = lazy(() => import("./pages/customers/phases/FindingsPhasePage").then((m) => ({ default: m.FindingsPhasePage })));
 const ReportPhasePage = lazy(() => import("./pages/customers/phases/ReportPhasePage").then((m) => ({ default: m.ReportPhasePage })));
+const RiskPhasePage = lazy(() => import("./pages/customers/phases/RiskPhasePage").then((m) => ({ default: m.RiskPhasePage })));
+const RoadmapPhasePage = lazy(() => import("./pages/customers/phases/RoadmapPhasePage").then((m) => ({ default: m.RoadmapPhasePage })));
+const EvidencePhasePage = lazy(() => import("./pages/customers/phases/EvidencePhasePage").then((m) => ({ default: m.EvidencePhasePage })));
 const InboxPage = lazy(() => import("./pages/InboxPage").then((m) => ({ default: m.InboxPage })));
 const RedirectAuditCenter = lazy(() => import("./pages/RedirectAuditCenter").then((m) => ({ default: m.RedirectAuditCenter })));
+const RedirectToCustomerTab = lazy(() => import("./pages/RedirectToCustomerTab").then((m) => ({ default: m.RedirectToCustomerTab })));
 const FrameworkLibraryPage = lazy(() => import("./pages/frameworks/FrameworkLibraryPage").then((m) => ({ default: m.FrameworkLibraryPage })));
 const GuidedQuestionsPage = lazy(() => import("./pages/frameworks/GuidedQuestionsPage").then((m) => ({ default: m.GuidedQuestionsPage })));
-const AssessmentAssetsPage = lazy(() => import("./pages/reports/AssessmentAssetsPage").then((m) => ({ default: m.AssessmentAssetsPage })));
-const AssessmentWorkflowPage = lazy(() => import("./pages/workflow/AssessmentWorkflowPage").then((m) => ({ default: m.AssessmentWorkflowPage })));
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageSkeleton cards={3} showTable />}>{children}</Suspense>;
@@ -66,14 +68,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/customers/:id/plan" element={<LazyRoute><PlanPhasePage /></LazyRoute>} />
               <Route path="/customers/:id/controls" element={<LazyRoute><ControlsPhasePage /></LazyRoute>} />
               <Route path="/customers/:id/findings" element={<LazyRoute><FindingsPhasePage /></LazyRoute>} />
+              <Route path="/customers/:id/risk" element={<LazyRoute><RiskPhasePage /></LazyRoute>} />
+              <Route path="/customers/:id/roadmap" element={<LazyRoute><RoadmapPhasePage /></LazyRoute>} />
               <Route path="/customers/:id/report" element={<LazyRoute><ReportPhasePage /></LazyRoute>} />
+              <Route path="/customers/:id/evidence" element={<LazyRoute><EvidencePhasePage /></LazyRoute>} />
               <Route path="/customers/:id/legacy" element={<LazyRoute><CustomerDetailLegacyPage /></LazyRoute>} />
               <Route path="/user-settings" element={<LazyRoute><UserSettingsPage /></LazyRoute>} />
               <Route path="/assessments/:id/questions" element={<LazyRoute><GuidedQuestionsPage /></LazyRoute>} />
               <Route path="/assessments/:id/audit-center" element={<LazyRoute><RedirectAuditCenter /></LazyRoute>} />
               <Route path="/assessments/:id/audit-center-legacy" element={<LazyRoute><AuditCenterPage /></LazyRoute>} />
-              <Route path="/assessments/:id/workflow" element={<LazyRoute><AssessmentWorkflowPage /></LazyRoute>} />
-              <Route path="/assessments/:id/assets" element={<LazyRoute><AssessmentAssetsPage /></LazyRoute>} />
+              <Route path="/assessments/:id/workflow" element={<LazyRoute><RedirectToCustomerTab tab="risk" /></LazyRoute>} />
+              <Route path="/assessments/:id/assets" element={<LazyRoute><RedirectToCustomerTab tab="evidence" /></LazyRoute>} />
             </Route>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<Navigate to="/admin/activity" replace />} />

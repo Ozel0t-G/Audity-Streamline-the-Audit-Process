@@ -47,8 +47,12 @@ const blocks = [
   "Appendix"
 ];
 
-export function AssessmentAssetsPage() {
-  const { id } = useParams();
+export function AssessmentAssetsPage({
+  assessmentId,
+  embedded = false
+}: { assessmentId?: string; embedded?: boolean } = {}) {
+  const params = useParams();
+  const id = assessmentId ?? params.id;
   const navigate = useNavigate();
   const api = useApi();
   const { accessToken, expireSession, refreshSession, user } = useAuth();
@@ -281,10 +285,12 @@ export function AssessmentAssetsPage() {
 
   return (
     <>
+          {!embedded ? (
           <div className="audity-page-header">
             <p className="audity-page-kicker">Evidence & Report Builder</p>
             <h1 className="audity-page-title">Assessment Assets</h1>
           </div>
+          ) : null}
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
           <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
