@@ -316,19 +316,29 @@ export async function recordTokenOpen(tokenId: string): Promise<void> {
   );
 }
 
+/**
+ * Atomically claims the token for redemption. The guarded UPDATE only succeeds
+ * for a token that is still pending (not already redeemed, revoked, or expired),
+ * so concurrent redeem requests (e.g. a double-clicked Submit) can't both win and
+ * produce duplicate sign-offs. Returns true only for the request that claimed it.
+ */
 export async function markTokenRedeemed(input: {
   tokenId: string;
   redeemedByEmail: string;
   signoffId: string;
-}): Promise<void> {
-  await pool.query(
+}): Promise<boolean> {
+  const result = await pool.query(
     `update customer_ack_tokens
         set redeemed_at = now(),
             redeemed_by_email = $2,
             redeemed_signoff_id = $3
-      where id = $1`,
+      where id = $1
+        and redeemed_at is null
+        and revoked_at is null
+        and expires_at > now()`,
     [input.tokenId, input.redeemedByEmail.toLowerCase().trim(), input.signoffId]
   );
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function isFeatureEnabled(): Promise<boolean> {

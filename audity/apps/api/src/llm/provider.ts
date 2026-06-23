@@ -115,12 +115,20 @@ function parseEnrichedJson(text: string, input: EnrichInput): EnrichedFields {
   try {
     parsed = JSON.parse(stripped);
   } catch {
-    // try to find first {...} block
+    // Fall back to the first {...} block the model may have wrapped in prose.
     const match = stripped.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("LLM response is not valid JSON");
-    parsed = JSON.parse(match[0]);
+    try {
+      parsed = match ? JSON.parse(match[0]) : null;
+    } catch {
+      parsed = null;
+    }
   }
-  const obj = parsed as Record<string, unknown>;
+  // Degrade to the TODO placeholders below rather than crashing the import job
+  // when the model returns invalid JSON or a non-object value (null, array, …).
+  const obj: Record<string, unknown> =
+    parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
   return {
     question: typeof obj.question === "string" ? obj.question : `TODO: question fehlt für ${input.title}`,
     purpose: typeof obj.purpose === "string" ? obj.purpose : "TODO: purpose fehlt",

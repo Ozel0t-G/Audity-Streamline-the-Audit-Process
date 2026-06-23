@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
@@ -49,20 +49,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  // De-duplicate concurrent refreshes: the backend rotates the refresh token on
+  // every /api/auth/refresh (single use), so if several expired-token requests
+  // each triggered their own refresh with the same cookie, all but the first
+  // would hit an already-revoked token and spuriously log the user out. Sharing
+  // one in-flight promise guarantees a single rotation per refresh window.
+  const refreshInFlight = useRef<Promise<{ accessToken: string; csrfToken: string; user: User } | null> | null>(null);
+
   const refreshSession = useCallback(async () => {
-    const response = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
-      method: "POST",
-      credentials: "include"
-    });
-    if (!response.ok) {
-      setAccessToken(null);
-      setCsrfToken(null);
-      setUser(null);
-      return null;
+    if (refreshInFlight.current) {
+      return refreshInFlight.current;
     }
-    const payload = (await response.json()) as { accessToken: string; csrfToken: string; user: User };
-    storeSession(payload);
-    return payload;
+    const run = (async () => {
+      const response = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
+        method: "POST",
+        credentials: "include"
+      });
+      if (!response.ok) {
+        setAccessToken(null);
+        setCsrfToken(null);
+        setUser(null);
+        return null;
+      }
+      const payload = (await response.json()) as { accessToken: string; csrfToken: string; user: User };
+      storeSession(payload);
+      return payload;
+    })();
+    refreshInFlight.current = run;
+    try {
+      return await run;
+    } finally {
+      refreshInFlight.current = null;
+    }
   }, []);
 
   useEffect(() => {

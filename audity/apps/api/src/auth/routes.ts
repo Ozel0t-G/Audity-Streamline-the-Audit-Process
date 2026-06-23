@@ -15,6 +15,7 @@ import {
   verifyMfaChallengeToken
 } from "./tokens.js";
 import {
+  consumeRecoveryCode,
   createMfaSetup,
   disableMfa,
   enableMfa,
@@ -378,7 +379,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           .send({ code: "MFA_CHALLENGE_INVALID", message: "MFA challenge is invalid" });
       }
       const secret = await getMfaSecret(challenge.sub);
-      if (!secret || !verifyTotp(secret, body.code)) {
+      const totpOk = secret ? verifyTotp(secret, body.code) : false;
+      // Fall back to a single-use recovery code when the TOTP code doesn't match,
+      // so a user who lost their authenticator device can still sign in.
+      const usedRecoveryCode = totpOk ? false : await consumeRecoveryCode(challenge.sub, body.code);
+      if (!totpOk && !usedRecoveryCode) {
         await appendAuditEvent({
           actor: challenge.sub,
           action: "auth.login.failed",
@@ -405,7 +410,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         entityId: user.id,
         ip: request.ip,
         userAgent: request.headers["user-agent"] ?? null,
-        payload: { mfa: true }
+        payload: { mfa: true, method: usedRecoveryCode ? "recovery_code" : "totp" }
       });
       return {
         accessToken: session.accessToken,

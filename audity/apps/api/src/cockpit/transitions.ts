@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
-import { canAccessAssessment } from "../customers/access.js";
+import { canAccessAssessment, canAccessCustomer } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { invalidateCockpitCache } from "./routes.js";
 
@@ -117,6 +117,9 @@ export async function registerTransitionRoutes(app: FastifyInstance): Promise<vo
     "/api/customers/:id/framework-suggestions",
     { preHandler: requirePermission("assessment.view") },
     async (request, reply) => {
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
       const result = await pool.query<{
         framework_id: string;
         framework_name: string;
@@ -156,6 +159,9 @@ export async function registerTransitionRoutes(app: FastifyInstance): Promise<vo
     "/api/customers/:id/framework-suggestions/:frameworkId/deprecate",
     { preHandler: requireCsrfPermission("assessment.edit") },
     async (request, reply) => {
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
       const result = await pool.query(
         `update customer_frameworks
             set deprecated_at = now()

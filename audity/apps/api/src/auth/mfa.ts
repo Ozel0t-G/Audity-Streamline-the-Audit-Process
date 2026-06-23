@@ -106,6 +106,55 @@ export async function regenerateRecoveryCodes(userId: string): Promise<string[]>
   return recoveryCodes;
 }
 
+/**
+ * Verifies an MFA recovery code and consumes it (single use) on success, so a
+ * user who lost their authenticator device can still complete the login
+ * challenge. The matching hash is removed under a row lock so the same code
+ * can't be redeemed twice by concurrent requests. Returns true only on a match
+ * for an MFA-enabled user.
+ */
+export async function consumeRecoveryCode(userId: string, code: string): Promise<boolean> {
+  const candidate = code.trim();
+  if (!candidate) return false;
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const result = await client.query<{ recovery_codes_hash: string | string[] | null }>(
+      "select recovery_codes_hash from mfa_settings where user_id = $1 and enabled = true for update",
+      [userId]
+    );
+    const raw = result.rows[0]?.recovery_codes_hash;
+    if (raw === undefined) {
+      await client.query("rollback");
+      return false;
+    }
+    const hashes = Array.isArray(raw) ? raw : typeof raw === "string" ? (JSON.parse(raw) as string[]) : [];
+    let matchedIndex = -1;
+    for (let i = 0; i < hashes.length; i++) {
+      if (await argon2.verify(hashes[i], candidate)) {
+        matchedIndex = i;
+        break;
+      }
+    }
+    if (matchedIndex === -1) {
+      await client.query("rollback");
+      return false;
+    }
+    const remaining = hashes.filter((_, i) => i !== matchedIndex);
+    await client.query(
+      "update mfa_settings set recovery_codes_hash = $2, updated_at = now() where user_id = $1",
+      [userId, JSON.stringify(remaining)]
+    );
+    await client.query("commit");
+    return true;
+  } catch (err) {
+    await client.query("rollback").catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getRecoveryCodeStatus(userId: string): Promise<{ remaining: number; total: number }> {
   const result = await pool.query<{ recovery_codes_hash: string | string[] | null }>(
     "select recovery_codes_hash from mfa_settings where user_id = $1 and enabled = true",

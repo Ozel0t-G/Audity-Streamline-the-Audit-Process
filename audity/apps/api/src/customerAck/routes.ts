@@ -559,6 +559,17 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
           .digest("hex")
       );
 
+      // Claim the token first so a concurrent redeem (e.g. a double-clicked
+      // Submit) can't also create a sign-off. Only the winning request inserts.
+      const claimed = await markTokenRedeemed({
+        tokenId: row.id,
+        redeemedByEmail: mapped.recipientEmail,
+        signoffId
+      });
+      if (!claimed) {
+        return reply.code(410).send({ code: "TOKEN_REDEEMED", message: "Token is redeemed." });
+      }
+
       await pool.query(
         `insert into audit_signoffs (
             id, assessment_id, entity_type, entity_id, signoff_status, signoff_type,
@@ -581,12 +592,6 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
           eventHash
         ]
       );
-
-      await markTokenRedeemed({
-        tokenId: row.id,
-        redeemedByEmail: mapped.recipientEmail,
-        signoffId
-      });
 
       await appendPortalActivity({
         action: "customer_ack.redeemed",

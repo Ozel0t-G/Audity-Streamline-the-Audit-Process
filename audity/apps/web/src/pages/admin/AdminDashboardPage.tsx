@@ -214,8 +214,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [inviteForm, setInviteForm] = useState({
     email: "",
     name: "",
-    role: "Viewer",
-    password: "Change-me-now-123"
+    role: "Viewer"
   });
   const [verify, setVerify] = useState<{ valid: boolean; brokenAt: string | null; checked?: number } | null>(null);
   const [branding, setBranding] = useState<Branding>({
@@ -450,13 +449,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     event.preventDefault();
     setError("");
     try {
-      const payload = { ...inviteForm };
-      // Always let the backend generate a 24-char password; the form password
-      // field is ignored on submit so admins can't accidentally use a weak one.
-      delete (payload as Record<string, unknown>).password;
+      // The backend always generates a 24-char one-time password; admins never
+      // set a starter password from the UI.
       const result = await api<{ oneTimePassword: string; user: { email: string } }>("/api/admin/users/invite", {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify(inviteForm)
       });
       setOneTimePassword({ email: result.user.email, password: result.oneTimePassword, action: "Invitation" });
       setInviteForm({ ...inviteForm, email: "", name: "" });
@@ -895,12 +892,10 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
               {can("users.invite") ? <form className="mb-4 space-y-3" onSubmit={inviteUser}>
                 <input className="audity-input" placeholder="Email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} />
                 <input className="audity-input" placeholder="Name" value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} />
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px]">
-                  <input className="audity-input" placeholder="Temporary password" value={inviteForm.password} onChange={(event) => setInviteForm({ ...inviteForm, password: event.target.value })} />
-                  <select className="audity-input" value={inviteForm.role} onChange={(event) => setInviteForm({ ...inviteForm, role: event.target.value })}>
-                    {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
-                  </select>
-                </div>
+                <select className="audity-input" value={inviteForm.role} onChange={(event) => setInviteForm({ ...inviteForm, role: event.target.value })}>
+                  {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
+                </select>
+                <p className="text-xs text-audity-muted">A one-time password is generated automatically and shown once after the invite.</p>
                 <button className="audity-btn-primary">Invite</button>
               </form> : null}
               <div className="space-y-2">
