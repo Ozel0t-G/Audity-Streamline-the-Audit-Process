@@ -1,4 +1,4 @@
-export const AUDITY_VERSION = "0.2.2";
+export const AUDITY_VERSION = "0.2.3";
 
 export type HealthResponse = {
   status: "ok";

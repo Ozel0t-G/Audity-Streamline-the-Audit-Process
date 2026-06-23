@@ -526,7 +526,7 @@ async function writeBackupManifest(input: {
     createdAt: new Date().toISOString(),
     createdByUserId: input.userId ?? null,
     createdByUserEmail: user?.rows[0]?.email ?? null,
-    audityVersion: "0.2.2",
+    audityVersion: "0.2.3",
     databaseSchemaVersion: "core",
     includes: {
       database: input.jobType === "full" || input.jobType === "database",
@@ -908,7 +908,7 @@ async function verifyDatabaseConnection(): Promise<void> {
 app.get("/health", async () => ({
   status: "ok",
   process: "audity-worker",
-  version: "0.2.2"
+  version: "0.2.3"
 }));
 
 await verifyDatabaseConnection();
