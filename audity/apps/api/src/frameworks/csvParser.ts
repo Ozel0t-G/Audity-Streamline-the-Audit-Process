@@ -18,9 +18,16 @@ function stripBom(input: string): string {
 }
 
 function detectDelimiter(text: string): "," | ";" {
-  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
-  const comma = (firstLine.match(/,/g) ?? []).length;
-  const semicolon = (firstLine.match(/;/g) ?? []).length;
+  // Detect from the first real header line — skip leading comment (`#`) and blank
+  // lines, otherwise a comment containing commas/semicolons would pick the wrong
+  // delimiter and mis-split every data row.
+  const headerLine =
+    text.split(/\r?\n/).find((line) => {
+      const trimmed = line.trim();
+      return trimmed !== "" && !trimmed.startsWith("#");
+    }) ?? "";
+  const comma = (headerLine.match(/,/g) ?? []).length;
+  const semicolon = (headerLine.match(/;/g) ?? []).length;
   return semicolon > comma ? ";" : ",";
 }
 

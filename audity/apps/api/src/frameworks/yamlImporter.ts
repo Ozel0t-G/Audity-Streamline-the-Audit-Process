@@ -664,12 +664,14 @@ export async function syncFrameworkYamlFiles(options: { force?: boolean } = {}):
         [scannedPaths]
       );
     } else {
-      await pool.query(
-        `update frameworks
-         set archived_at = now(), updated_at = now()
-         where archived_at is null
-           and (yaml_source_path is not null or source_kind = 'legacy')`
-      );
+      // A scan that found zero files is almost always a transient error (e.g. a
+      // missing mount or read failure), not the user genuinely deleting every
+      // framework YAML. Archiving the whole catalog here would be catastrophic
+      // and hard to recover, so skip archiving and surface a warning instead.
+      result.errors.push({
+        file: directory,
+        message: "Skipped framework archiving: no YAML files were scanned (possible transient read error)."
+      });
     }
     return result;
   } finally {

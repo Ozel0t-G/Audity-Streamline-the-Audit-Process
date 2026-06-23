@@ -1007,7 +1007,7 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
             </div>
           ) : null}
           {section === "email" ? (
-            <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="grid min-w-0 gap-3">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">SMTP Configuration</h2>
                 <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveEmailSettings(event)}>
@@ -1753,7 +1753,7 @@ function EmailSubscriptionsCard() {
 
   return (
     <section className="audity-card">
-      <h2 className="audity-section-title">Notification routing</h2>
+      <h2 className="audity-section-title">Email notification</h2>
       <p className="mt-1 text-xs text-audity-secondary">
         Choose which roles receive an email per event. Members of a role get the email if they are
         active and have a valid address. Extra recipients are individual addresses without a user

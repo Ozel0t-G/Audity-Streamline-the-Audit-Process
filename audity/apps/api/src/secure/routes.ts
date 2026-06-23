@@ -446,128 +446,143 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
       }
       const customerId = randomUUID();
       const assessmentId = randomUUID();
-      await pool.query(
-        `insert into customers (id, name, industry, regulatory_context, critical_systems, business_criticality, status, created_by_user_id)
-         values ($1,$2,$3,$4,$5,$6,'active',$7)`,
-        [
-          customerId,
-          `${bundle.assessment.customer_name} (Imported)`,
-          bundle.assessment.industry,
-          bundle.assessment.regulatory_context,
-          JSON.stringify(bundle.assessment.critical_systems ?? []),
-          bundle.assessment.business_criticality,
-          request.user!.sub
-        ]
-      );
-      await pool.query(
-        `insert into assessments (id, customer_id, type, audience, framework, language, target_date, status, scope)
-         values ($1,$2,$3,$4,$5,$6,$7,'imported',$8)`,
-        [
-          assessmentId,
-          customerId,
-          bundle.assessment.type,
-          bundle.assessment.audience,
-          bundle.assessment.framework,
-          bundle.assessment.language,
-          bundle.assessment.target_date,
-          JSON.stringify(bundle.assessment.scope ?? {})
-        ]
-      );
-      for (const finding of bundle.findings ?? []) {
-        await pool.query(
-          `insert into findings (id, assessment_id, title, status, priority, observation, recommendation, source_explanation, accepted_risk)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [
-            randomUUID(),
-            assessmentId,
-            finding.title,
-            finding.status,
-            finding.priority,
-            finding.observation,
-            finding.recommendation,
-            finding.source_explanation,
-            finding.accepted_risk
-          ]
-        );
-      }
-      for (const risk of bundle.risks ?? []) {
-        await pool.query(
-          `insert into risks (id, assessment_id, title, likelihood, impact, risk_score, rating, treatment_option, owner, treatment_plan, due_date, status)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-          [
-            randomUUID(),
-            assessmentId,
-            risk.title,
-            risk.likelihood,
-            risk.impact,
-            risk.risk_score,
-            risk.rating,
-            risk.treatment_option,
-            risk.owner,
-            risk.treatment_plan,
-            risk.due_date,
-            risk.status
-          ]
-        );
-      }
-      for (const roadmapItem of bundle.roadmapItems ?? []) {
-        await pool.query(
-          `insert into roadmap_items
-            (id, assessment_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [
-            randomUUID(),
-            assessmentId,
-            roadmapItem.phase,
-            roadmapItem.action,
-            roadmapItem.owner,
-            roadmapItem.due_date,
-            roadmapItem.effort_estimate,
-            roadmapItem.status,
-            roadmapItem.source_risk_rating
-          ]
-        );
-      }
-      for (const report of bundle.reports ?? []) {
-        await pool.query(
-          `insert into reports
-            (id, assessment_id, template_id, created_by, status, content, author_info, selected_blocks, html_preview, report_version)
-           values ($1,$2,null,$3,$4,$5,$6,$7,$8,$9)`,
-          [
-            randomUUID(),
-            assessmentId,
-            request.user!.sub,
-            report.status ?? "draft",
-            JSON.stringify(report.content ?? {}),
-            JSON.stringify(report.authorInfo ?? {}),
-            JSON.stringify(report.selectedBlocks ?? []),
-            report.htmlPreview ?? null,
-            report.reportVersion ?? 1
-          ]
-        );
-      }
       await ensureBucket();
-      for (const evidence of bundle.evidenceFiles ?? []) {
-        const evidenceId = randomUUID();
-        const objectKey = `evidence/${assessmentId}/${evidenceId}/${evidence.fileName}`;
-        const content = Buffer.from(evidence.contentBase64, "base64");
-        await storageClient.putObject(storageBucket(), objectKey, content, content.length, {
-          "Content-Type": evidence.mimeType
-        });
-        await pool.query(
-          `insert into evidence_items (id, assessment_id, uploaded_by, object_key, file_name, mime_type, file_size, notes)
-           values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      // Import the whole bundle atomically: a single failed insert must not leave
+      // an orphan "(Imported)" customer or a half-populated assessment behind.
+      // Object-storage puts can't join the DB transaction, so on rollback any
+      // uploaded evidence blobs are left orphaned (harmless — no FK references them).
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query(
+          `insert into customers (id, name, industry, regulatory_context, critical_systems, business_criticality, status, created_by_user_id)
+           values ($1,$2,$3,$4,$5,$6,'active',$7)`,
           [
-            evidenceId,
-            assessmentId,
-            request.user!.sub,
-            objectKey,
-            evidence.fileName,
-            evidence.mimeType,
-            content.length,
-            evidence.notes
+            customerId,
+            `${bundle.assessment.customer_name} (Imported)`,
+            bundle.assessment.industry,
+            bundle.assessment.regulatory_context,
+            JSON.stringify(bundle.assessment.critical_systems ?? []),
+            bundle.assessment.business_criticality,
+            request.user!.sub
           ]
         );
+        await client.query(
+          `insert into assessments (id, customer_id, type, audience, framework, language, target_date, status, scope)
+           values ($1,$2,$3,$4,$5,$6,$7,'imported',$8)`,
+          [
+            assessmentId,
+            customerId,
+            bundle.assessment.type,
+            bundle.assessment.audience,
+            bundle.assessment.framework,
+            bundle.assessment.language,
+            bundle.assessment.target_date,
+            JSON.stringify(bundle.assessment.scope ?? {})
+          ]
+        );
+        for (const finding of bundle.findings ?? []) {
+          await client.query(
+            `insert into findings (id, assessment_id, title, status, priority, observation, recommendation, source_explanation, accepted_risk)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            [
+              randomUUID(),
+              assessmentId,
+              finding.title,
+              finding.status,
+              finding.priority,
+              finding.observation,
+              finding.recommendation,
+              finding.source_explanation,
+              finding.accepted_risk
+            ]
+          );
+        }
+        for (const risk of bundle.risks ?? []) {
+          await client.query(
+            `insert into risks (id, assessment_id, title, likelihood, impact, risk_score, rating, treatment_option, owner, treatment_plan, due_date, status)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+            [
+              randomUUID(),
+              assessmentId,
+              risk.title,
+              risk.likelihood,
+              risk.impact,
+              risk.risk_score,
+              risk.rating,
+              risk.treatment_option,
+              risk.owner,
+              risk.treatment_plan,
+              risk.due_date,
+              risk.status
+            ]
+          );
+        }
+        for (const roadmapItem of bundle.roadmapItems ?? []) {
+          await client.query(
+            `insert into roadmap_items
+              (id, assessment_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            [
+              randomUUID(),
+              assessmentId,
+              roadmapItem.phase,
+              roadmapItem.action,
+              roadmapItem.owner,
+              roadmapItem.due_date,
+              roadmapItem.effort_estimate,
+              roadmapItem.status,
+              roadmapItem.source_risk_rating
+            ]
+          );
+        }
+        for (const report of bundle.reports ?? []) {
+          await client.query(
+            `insert into reports
+              (id, assessment_id, template_id, created_by, status, content, author_info, selected_blocks, html_preview, report_version)
+             values ($1,$2,null,$3,$4,$5,$6,$7,$8,$9)`,
+            [
+              randomUUID(),
+              assessmentId,
+              request.user!.sub,
+              report.status ?? "draft",
+              JSON.stringify(report.content ?? {}),
+              JSON.stringify(report.authorInfo ?? {}),
+              JSON.stringify(report.selectedBlocks ?? []),
+              report.htmlPreview ?? null,
+              report.reportVersion ?? 1
+            ]
+          );
+        }
+        for (const evidence of bundle.evidenceFiles ?? []) {
+          const evidenceId = randomUUID();
+          const objectKey = `evidence/${assessmentId}/${evidenceId}/${evidence.fileName}`;
+          const content = Buffer.from(evidence.contentBase64, "base64");
+          await storageClient.putObject(storageBucket(), objectKey, content, content.length, {
+            "Content-Type": evidence.mimeType
+          });
+          await client.query(
+            `insert into evidence_items (id, assessment_id, uploaded_by, object_key, file_name, mime_type, file_size, notes)
+             values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+            [
+              evidenceId,
+              assessmentId,
+              request.user!.sub,
+              objectKey,
+              evidence.fileName,
+              evidence.mimeType,
+              content.length,
+              evidence.notes
+            ]
+          );
+        }
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback").catch(() => undefined);
+        request.log.error({ err: error }, "assessment import failed; rolled back");
+        return reply.code(400).send({ code: "IMPORT_FAILED", message: "Assessment import failed and was rolled back." });
+      } finally {
+        client.release();
       }
       await appendActivityEvent({
         userId: request.user!.sub,

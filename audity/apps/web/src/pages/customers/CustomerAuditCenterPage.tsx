@@ -252,6 +252,9 @@ function AuditCard({ audit, customerId }: { audit: CockpitAudit; customerId: str
   return (
     <Link
       to={`/customers/${customerId}?audit=${audit.id}`}
+      // Selecting an audit only updates the cockpit at the top of the page, so
+      // scroll up to make the switch visible (the cards sit far below the fold).
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       className={`audity-card-interactive block p-3 ${
         audit.stuck.stuck ? "border-audity-warning" : ""
       }`}
