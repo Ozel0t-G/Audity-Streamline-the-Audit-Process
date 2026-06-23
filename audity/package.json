@@ -6,6 +6,9 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "scripts": {
     "build": "npm run build --workspace @audity/shared && npm run build --workspace @audity/api && npm run build --workspace @audity/worker && npm run build --workspace @audity/updater && npm run build --workspace @audity/web",
     "typecheck": "npm run typecheck --workspace @audity/shared && npm run typecheck --workspace @audity/api && npm run typecheck --workspace @audity/worker && npm run typecheck --workspace @audity/updater && npm run typecheck --workspace @audity/web",
