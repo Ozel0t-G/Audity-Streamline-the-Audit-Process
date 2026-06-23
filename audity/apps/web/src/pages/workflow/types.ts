@@ -50,6 +50,8 @@ export type RoadmapItem = {
   assessmentId: string;
   riskId: string | null;
   phase: string;
+  phaseStartDate: string | null;
+  phaseEndDate: string | null;
   action: string;
   owner: string | null;
   dueDate: string | null;

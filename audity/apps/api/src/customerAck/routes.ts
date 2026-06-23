@@ -8,6 +8,8 @@ import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { invalidateCockpitCache } from "../cockpit/routes.js";
 import { sendAckEmail } from "./email.js";
+import { renderReceiptPdf } from "./receiptPdf.js";
+import { renderSnapshotPdf } from "./snapshotPdf.js";
 import {
   findTokenByPlain,
   isFeatureEnabled,
@@ -18,8 +20,26 @@ import {
   mapTokenRow,
   recordTokenOpen,
   revokeToken,
-  setFeatureEnabled
+  setFeatureEnabled,
+  type PinnedSnapshot
 } from "./tokens.js";
+
+// Portal-specific rate-limit: stricter than the global 200/min default to discourage
+// token guessing. Applied per-route via Fastify's @fastify/rate-limit config option.
+const PORTAL_RATE_LIMIT = { max: 20, timeWindow: "1 minute" } as const;
+
+/**
+ * Defensive response headers for portal endpoints — minimise what a compromised
+ * portal page could exfiltrate, prevent embedding in iframes, suppress referer leaks.
+ */
+function applyPortalHeaders(reply: { header: (name: string, value: string) => unknown }): void {
+  reply.header("X-Frame-Options", "DENY");
+  reply.header("Referrer-Policy", "no-referrer");
+  reply.header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+  reply.header("X-Content-Type-Options", "nosniff");
+  reply.header("Cross-Origin-Opener-Policy", "same-origin");
+  reply.header("Cross-Origin-Resource-Policy", "same-origin");
+}
 
 const issueBody = z.object({
   recipientEmail: z.string().email().max(254),
@@ -126,7 +146,77 @@ function portalUrlFor(token: string, publicUrl: string): string {
   return `${base.replace(/\/$/, "")}/portal/ack/${token}`;
 }
 
+const closureBody = z.object({
+  forceWithoutAck: z.boolean().optional()
+});
+
 export async function registerCustomerAckRoutes(app: FastifyInstance, config: { publicUrl: string }): Promise<void> {
+  // Closure endpoint with customer-ack-skip warning.
+  app.post<{ Params: { id: string }; Body: z.infer<typeof closureBody> }>(
+    "/api/assessments/:id/close",
+    { preHandler: requireCsrfPermission("assessment.edit") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const parsed = closureBody.safeParse(request.body ?? {});
+      const force = parsed.success && parsed.data.forceWithoutAck === true;
+      const featureEnabled = await isFeatureEnabled();
+      let skipFlagged = false;
+      if (featureEnabled) {
+        const acks = await pool.query<{ count: string }>(
+          `select count(*)::text as count from audit_signoffs
+            where assessment_id = $1
+              and signoff_type = 'customer_ack'`,
+          [request.params.id]
+        );
+        const ackCount = Number(acks.rows[0]?.count ?? "0");
+        if (ackCount === 0 && !force) {
+          return reply.code(409).send({
+            code: "MISSING_CUSTOMER_ACK",
+            message: "No customer acknowledgment recorded. Re-send with forceWithoutAck=true to close anyway.",
+            warning: true
+          });
+        }
+        if (ackCount === 0 && force) {
+          skipFlagged = true;
+        }
+      }
+      const updated = await pool.query<{ id: string; status: string }>(
+        `update assessments
+            set status = 'completed',
+                updated_at = now(),
+                closure_flags = $2::jsonb
+          where id = $1
+          returning id, status`,
+        [
+          request.params.id,
+          JSON.stringify(
+            skipFlagged
+              ? [
+                  {
+                    flag: "closed_without_customer_ack",
+                    by: request.user!.sub,
+                    at: new Date().toISOString()
+                  }
+                ]
+              : []
+          )
+        ]
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "assessment.closed",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: null,
+        after: { skipFlagged }
+      }).catch(() => undefined);
+      await invalidateCockpitCache({ assessmentId: request.params.id });
+      return { assessment: updated.rows[0], skipFlagged };
+    }
+  );
+
   // ───────────────── Admin tenant toggle ─────────────────
   app.get(
     "/api/admin/customer-ack/settings",
@@ -350,7 +440,9 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
   // ───────────────── Customer portal (no auth) ─────────────────
   app.get<{ Params: { token: string } }>(
     "/api/portal/ack/:token",
+    { config: { rateLimit: PORTAL_RATE_LIMIT } },
     async (request, reply) => {
+      applyPortalHeaders(reply);
       const row = await findTokenByPlain(request.params.token);
       if (!row) {
         return reply.code(404).send({ code: "INVALID_TOKEN", message: "Link is no longer valid." });
@@ -371,42 +463,15 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
       }
       await recordTokenOpen(mapped.id);
 
-      const ctx = await loadAuditContext(mapped.assessmentId);
-      if (!ctx) {
-        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      // Use the frozen snapshot pinned at issue time, NOT live data.
+      const snapshot = row.pinned_snapshot;
+      if (!snapshot) {
+        // Legacy tokens issued before migration 005 — fall back to live data once.
+        return reply.code(409).send({
+          code: "SNAPSHOT_MISSING",
+          message: "This token was issued before the snapshot feature shipped. Auditor must resend the link."
+        });
       }
-      const findings = await pool.query<{
-        id: string;
-        title: string | null;
-        severity_impact: number | null;
-        severity_likelihood: number | null;
-        management_response: string | null;
-        management_response_status: string | null;
-        lifecycle_status: string | null;
-      }>(
-        `select id, title, severity_impact, severity_likelihood,
-                management_response, management_response_status, lifecycle_status
-           from findings
-          where assessment_id = $1
-          order by severity_impact desc nulls last, severity_likelihood desc nulls last`,
-        [mapped.assessmentId]
-      );
-      const findingsOut = findings.rows.map((f) => {
-        const score = (f.severity_impact ?? 0) * (f.severity_likelihood ?? 0);
-        let tier = "low";
-        if (score >= 20) tier = "critical";
-        else if (score >= 14) tier = "high";
-        else if (score >= 7) tier = "medium";
-        return {
-          id: f.id,
-          title: f.title ?? "(untitled)",
-          severityTier: tier,
-          severityScore: score,
-          managementResponse: f.management_response,
-          managementResponseStatus: f.management_response_status,
-          lifecycleStatus: f.lifecycle_status
-        };
-      });
 
       const branding = await pool.query<{
         logo_object_key: string | null;
@@ -428,11 +493,19 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
 
       return {
         audit: {
-          customerName: ctx.customerName,
-          assessmentType: ctx.assessmentType,
-          auditorName: ctx.auditorName
+          customerName: snapshot.customerName,
+          assessmentType: snapshot.assessmentType,
+          auditorName: snapshot.auditorName
         },
-        findings: findingsOut,
+        findings: snapshot.findings,
+        snapshot: {
+          capturedAt: snapshot.capturedAt,
+          reportVersion: snapshot.reportVersion,
+          readinessScore: snapshot.readinessScore,
+          controlCount: snapshot.controlCount,
+          scopeItemCount: snapshot.scopeItemCount,
+          executiveSummary: snapshot.executiveSummary
+        },
         recipientEmail: mapped.recipientEmail,
         recipientHint: mapped.recipientHint,
         message: mapped.message,
@@ -450,7 +523,9 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
 
   app.post<{ Params: { token: string }; Body: z.infer<typeof redeemBody> }>(
     "/api/portal/ack/:token/redeem",
+    { config: { rateLimit: PORTAL_RATE_LIMIT } },
     async (request, reply) => {
+      applyPortalHeaders(reply);
       const parsed = redeemBody.safeParse(request.body);
       if (!parsed.success) {
         return reply.code(400).send({ code: "INVALID_BODY", message: parsed.error.message });
@@ -539,16 +614,67 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
     }
   );
 
-  // Receipt download (returns lightweight JSON for now; PDF generation comes in PR-4)
+  // Snapshot PDF: report preview the customer can scroll/print before submitting.
+  // Same token-auth as GET /portal/ack/:token — pinned snapshot only, no live data.
   app.get<{ Params: { token: string } }>(
-    "/api/portal/ack/:token/receipt",
+    "/api/portal/ack/:token/snapshot.pdf",
+    { config: { rateLimit: PORTAL_RATE_LIMIT } },
     async (request, reply) => {
+      applyPortalHeaders(reply);
       const row = await findTokenByPlain(request.params.token);
       if (!row) {
         return reply.code(404).send({ code: "INVALID_TOKEN", message: "Link is no longer valid." });
       }
       const mapped = mapTokenRow(row);
-      if (!mapped.redeemedAt) {
+      // Allow snapshot view while pending OR while redeemed (audit-trail use)
+      if (mapped.status === "revoked" || mapped.status === "expired") {
+        return reply.code(410).send({ code: `TOKEN_${mapped.status.toUpperCase()}`, message: `Token is ${mapped.status}.` });
+      }
+      if (!row.pinned_snapshot) {
+        return reply.code(409).send({ code: "SNAPSHOT_MISSING", message: "No snapshot available for this token." });
+      }
+      const brandingResult = await pool.query<{
+        primary_color: string | null;
+        header_text: string | null;
+        footer_text: string | null;
+      }>(
+        "select primary_color, header_text, footer_text from report_branding order by updated_at desc limit 1"
+      );
+      const b = brandingResult.rows[0];
+
+      const pdf = await renderSnapshotPdf({
+        snapshot: row.pinned_snapshot,
+        message: mapped.message,
+        recipientEmail: mapped.recipientEmail,
+        branding: {
+          primaryColor: b?.primary_color ?? undefined,
+          headerText: b?.header_text ?? undefined,
+          footerText: b?.footer_text ?? undefined
+        }
+      });
+      reply
+        .header("Content-Type", "application/pdf")
+        .header(
+          "Content-Disposition",
+          `inline; filename="audit-snapshot-${mapped.id}.pdf"`
+        )
+        .header("Cache-Control", "private, no-store");
+      return reply.send(pdf);
+    }
+  );
+
+  // Receipt PDF download — tamper-evident record bound to the frozen snapshot.
+  app.get<{ Params: { token: string } }>(
+    "/api/portal/ack/:token/receipt",
+    { config: { rateLimit: PORTAL_RATE_LIMIT } },
+    async (request, reply) => {
+      applyPortalHeaders(reply);
+      const row = await findTokenByPlain(request.params.token);
+      if (!row) {
+        return reply.code(404).send({ code: "INVALID_TOKEN", message: "Link is no longer valid." });
+      }
+      const mapped = mapTokenRow(row);
+      if (!mapped.redeemedAt || !mapped.redeemedSignoffId) {
         return reply.code(409).send({ code: "NOT_REDEEMED", message: "Acknowledgment has not been recorded yet." });
       }
       const signoff = await pool.query<{
@@ -556,24 +682,134 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
         signer_name: string | null;
         signer_email: string | null;
         signer_ip: string | null;
+        signer_user_agent: string | null;
         statement: string;
         comment: string | null;
         event_hash: string;
         created_at: string;
         report_version: number | null;
       }>(
-        `select id, signer_name, signer_email, signer_ip, statement, comment, event_hash, created_at::text, report_version
+        `select id, signer_name, signer_email, signer_ip, signer_user_agent,
+                statement, comment, event_hash, created_at::text, report_version
            from audit_signoffs where id = $1`,
         [mapped.redeemedSignoffId]
       );
-      const ctx = await loadAuditContext(mapped.assessmentId);
-      return {
-        receipt: {
-          tokenId: mapped.id,
-          signoff: signoff.rows[0],
-          audit: ctx
+      const s = signoff.rows[0];
+      if (!s) {
+        return reply.code(404).send({ code: "SIGNOFF_NOT_FOUND", message: "Signoff record not found." });
+      }
+      const snapshot: PinnedSnapshot | null = row.pinned_snapshot;
+      if (!snapshot) {
+        return reply.code(409).send({ code: "SNAPSHOT_MISSING", message: "Snapshot missing — cannot render receipt." });
+      }
+      const brandingResult = await pool.query<{
+        primary_color: string | null;
+        header_text: string | null;
+        footer_text: string | null;
+      }>(
+        "select primary_color, header_text, footer_text from report_branding order by updated_at desc limit 1"
+      );
+      const b = brandingResult.rows[0];
+
+      const pdf = await renderReceiptPdf({
+        signoffId: s.id,
+        signoffHash: s.event_hash,
+        signerName: s.signer_name ?? "",
+        signerEmail: s.signer_email ?? "",
+        signerIp: s.signer_ip,
+        signerUserAgent: s.signer_user_agent,
+        statement: s.statement,
+        comment: s.comment,
+        signedAt: s.created_at,
+        reportVersion: s.report_version ?? snapshot.reportVersion,
+        tokenId: mapped.id,
+        snapshot,
+        branding: {
+          primaryColor: b?.primary_color ?? undefined,
+          headerText: b?.header_text ?? undefined,
+          footerText: b?.footer_text ?? undefined
         }
-      };
+      });
+
+      reply
+        .header("Content-Type", "application/pdf")
+        .header(
+          "Content-Disposition",
+          `inline; filename="audit-acknowledgment-${mapped.id}.pdf"`
+        )
+        .header("Cache-Control", "private, no-store");
+      return reply.send(pdf);
+    }
+  );
+
+  // Auditor-side: copy raw token link (for SMTP-failure recovery).
+  // Returns the token plain-text only to the issuing auditor and only while pending.
+  app.get<{ Params: { id: string; tokenId: string } }>(
+    "/api/assessments/:id/customer-ack-tokens/:tokenId/link",
+    { preHandler: requirePermission("finding.approve") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      // Sub-status check: link can only be retrieved if email failed AND token is pending.
+      const result = await pool.query<{
+        issued_by_user_id: string;
+        email_send_status: string;
+        redeemed_at: string | null;
+        revoked_at: string | null;
+        expires_at: string;
+        recipient_email: string;
+      }>(
+        `select issued_by_user_id, email_send_status, redeemed_at::text, revoked_at::text, expires_at::text, recipient_email
+           from customer_ack_tokens
+          where id = $1 and assessment_id = $2`,
+        [request.params.tokenId, request.params.id]
+      );
+      const tokenRow = result.rows[0];
+      if (!tokenRow) {
+        return reply.code(404).send({ code: "TOKEN_NOT_FOUND", message: "Token not found." });
+      }
+      if (tokenRow.issued_by_user_id !== request.user!.sub) {
+        return reply.code(403).send({ code: "NOT_ISSUER", message: "Only the issuer can retrieve the raw link." });
+      }
+      if (tokenRow.redeemed_at || tokenRow.revoked_at || new Date(tokenRow.expires_at) < new Date()) {
+        return reply.code(409).send({ code: "NOT_PENDING", message: "Token is no longer pending." });
+      }
+      if (tokenRow.email_send_status === "sent") {
+        return reply.code(409).send({
+          code: "EMAIL_OK",
+          message: "Email was sent successfully. Raw link retrieval is reserved for SMTP failures."
+        });
+      }
+      // We can't recover the raw token (only its hash is stored), so we mint a fresh one
+      // and revoke the failed-email one. This is the documented copy-link recovery path.
+      const ctx = await loadAuditContext(request.params.id);
+      if (!ctx) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      await revokeToken({
+        tokenId: request.params.tokenId,
+        revokedByUserId: request.user!.sub,
+        reason: "Replaced by copy-link recovery after email failure"
+      });
+      const fresh = await issueToken({
+        assessmentId: request.params.id,
+        recipientEmail: tokenRow.recipient_email,
+        issuedByUserId: request.user!.sub
+      });
+      // Don't try to send email this time — return the link directly.
+      await markEmailSent(fresh.row.id, "skipped", "Returned via copy-link recovery");
+      const portalUrl = portalUrlFor(fresh.token, config.publicUrl);
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "customer_ack.copy_link_recovered",
+        entityType: "assessment",
+        entityId: request.params.id,
+        before: { failedTokenId: request.params.tokenId },
+        after: { newTokenId: fresh.row.id }
+      }).catch(() => undefined);
+      await invalidateCockpitCache({ assessmentId: request.params.id });
+      return { token: fresh.row, portalUrl };
     }
   );
 }

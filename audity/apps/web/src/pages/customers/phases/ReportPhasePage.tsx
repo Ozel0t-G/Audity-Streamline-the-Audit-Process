@@ -4,6 +4,7 @@ import { useApi } from "../../../api/client";
 import { useAuth } from "../../../auth/AuthProvider";
 import { Skeleton, useToast } from "../../../components/ui";
 import { Field, MiniStat, Panel, Pill, dateValue, numberValue, text } from "../../audit/auditPrimitives";
+import { CustomerAckPanel } from "./CustomerAckPanel";
 import { PhaseLayout } from "./PhaseLayout";
 import { useAuditOverview } from "./useAuditOverview";
 
@@ -36,6 +37,30 @@ export function ReportPhasePage() {
   });
 
   const [exporting, setExporting] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closeWarning, setCloseWarning] = useState<null | { code: string; message: string }>(null);
+
+  async function closeAudit(force = false) {
+    setClosing(true);
+    try {
+      await api(`/api/assessments/${auditId}/close`, {
+        method: "POST",
+        body: JSON.stringify({ forceWithoutAck: force })
+      });
+      toast.success(force ? "Audit closed (without customer ack)" : "Audit closed");
+      setCloseWarning(null);
+      await reload();
+    } catch (err) {
+      const error = err as { code?: string; message?: string };
+      if (error?.code === "MISSING_CUSTOMER_ACK") {
+        setCloseWarning({ code: error.code, message: error.message ?? "Missing customer acknowledgment." });
+      } else {
+        toast.error(error?.message ?? "Could not close audit");
+      }
+    } finally {
+      setClosing(false);
+    }
+  }
 
   async function createReportReview() {
     try {
@@ -242,6 +267,9 @@ export function ReportPhasePage() {
             ) : null}
           </Panel>
 
+          {/* Customer acknowledgment (magic-link) */}
+          <CustomerAckPanel assessmentId={auditId} />
+
           {/* Sign-offs */}
           <Panel
             title={`Sign-offs (${overview.signoffs.length})`}
@@ -400,6 +428,45 @@ export function ReportPhasePage() {
             ) : (
               <p className="text-sm text-audity-muted">No gaps detected.</p>
             )}
+          </Panel>
+
+          {/* Close audit */}
+          <Panel
+            title="Close audit"
+            subtitle="Mark this audit as completed. If a customer acknowledgment is missing, you will be warned."
+          >
+            <button
+              className="audity-btn-primary"
+              disabled={closing}
+              onClick={() => void closeAudit(false)}
+            >
+              {closing ? "Closing…" : "Close audit"}
+            </button>
+            {closeWarning ? (
+              <div className="mt-3 rounded-audity border border-audity-warning bg-audity-warning/10 p-3 text-sm text-audity-warning">
+                <strong>Warning: {closeWarning.message}</strong>
+                <p className="mt-2 text-xs">
+                  Closing now will tag this audit as <code>closed_without_customer_ack</code>{" "}
+                  in the cockpit history. You can still request an acknowledgment later, but
+                  the closure event is final.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    className="audity-btn-secondary text-xs"
+                    onClick={() => setCloseWarning(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="audity-btn-primary text-xs"
+                    onClick={() => void closeAudit(true)}
+                    disabled={closing}
+                  >
+                    Close anyway
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </Panel>
 
           {/* Pack export */}

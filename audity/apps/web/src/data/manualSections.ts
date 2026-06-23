@@ -70,6 +70,208 @@ const userMfaSection: ManualSection = {
 
 export const manualArticles: ManualArticle[] = [
   {
+    id: "findings-risks-roadmap",
+    title: "Findings, Risks & Roadmap — the 3-stage workflow",
+    category: "workspace",
+    audience: "user",
+    keywords: [
+      "findings", "risks", "roadmap", "kanban", "triage", "treatment",
+      "remediation", "matrix", "phase", "transitions", "workflow"
+    ],
+    summary:
+      "The workflow page guides you through three linear stages: triage findings → score and treat risks → schedule remediation on a roadmap. Each stage uses a focused UI pattern (Kanban, matrix+list, phase columns).",
+    sections: [
+      {
+        heading: "Stage 1: Finding Triage (Kanban)",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Findings appear as cards in a 5-column Kanban (Suggested → In Review → Needs Changes → Confirmed → Approved). Click a card to open the slideover with details, status transitions, comments and history. Rejected findings collapse into an accordion at the bottom."
+          },
+          {
+            kind: "steps",
+            items: [
+              "Click a suggested finding to open the slideover.",
+              "Review observation and recommendation; edit if needed.",
+              "Use 'Move to' transition buttons — only legal next-states are shown.",
+              "Add a review comment for the reviewer.",
+              "When approved, the finding will appear in the report."
+            ]
+          },
+          {
+            kind: "note",
+            text:
+              "The status graph is enforced server-side. Illegal transitions (e.g. dismissed → in_review) return 409."
+          }
+        ]
+      },
+      {
+        heading: "Stage 2: Risk Register (matrix + list)",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Risks score on a 5×5 likelihood × impact matrix. Click any matrix cell to filter the list to risks in that cell. The 'Linked findings' section under each risk shows the n:m relationship — one risk can group multiple findings, one finding can support multiple risks."
+          },
+          {
+            kind: "fields",
+            intro: "Treatment options:",
+            items: [
+              { name: "Mitigate", description: "Plan corrective actions to reduce likelihood or impact." },
+              { name: "Accept", description: "Owner, reason and expiry date required. Risk is acknowledged but not actively treated." },
+              { name: "Transfer", description: "Move risk to a third party (insurance, vendor, contract clause)." },
+              { name: "Avoid", description: "Eliminate the activity that creates the risk." }
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Stage 3: Roadmap (phase columns)",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Roadmap items are scheduled into 4 fixed phase columns: Now (0–30d), Soon (31–90d), Mid (3–6M), Long (6–12M). Phase boundaries are computed at item creation from the audit's closure date (anchor). Drag a card between columns to recompute its dates."
+          },
+          {
+            kind: "note",
+            text:
+              "Phase dates are absolute — once an item is created, the date range is frozen. Items don't drift between columns just because time passes."
+          }
+        ]
+      },
+      {
+        heading: "Filter bar (top of the page)",
+        blocks: [
+          {
+            kind: "fields",
+            items: [
+              { name: "Scope: All / Open / Closed", description: "Filters all three stages simultaneously." },
+              { name: "Owner", description: "Pick a single owner to see only their items." },
+              { name: "Search", description: "Free-text search over titles, observations and recommendations." }
+            ]
+          },
+          {
+            kind: "note",
+            text:
+              "Filter state is persisted in URL query params — share a link to share a filtered view."
+          }
+        ]
+      },
+      {
+        heading: "Bulk actions",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Select multiple finding cards via checkbox. A sticky bar appears at the bottom of the page with status and priority dropdowns. Apply changes mass-style; clear selection to dismiss the bar."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: "customer-acknowledgments",
+    title: "Customer magic-link acknowledgments",
+    category: "workspace",
+    audience: "user",
+    keywords: [
+      "customer ack",
+      "magic link",
+      "acknowledgment",
+      "sign off",
+      "ses",
+      "eidas",
+      "customer signature",
+      "audit receipt"
+    ],
+    summary:
+      "Send a customer a one-time secure link to acknowledge an audit report without an Audity account. Acknowledgments are recorded as hash-chained sign-off entries.",
+    sections: [
+      {
+        heading: "When to use",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Magic-link acknowledgments are designed for customers who do not have an Audity login. The customer receives an email, opens a focused single-page view, reviews the findings, types their name and confirms. Audity records the acknowledgment with hash, email, IP, browser and timestamp."
+          },
+          {
+            kind: "note",
+            text:
+              "This is an eIDAS Simple Electronic Signature (SES). Sufficient for management acknowledgments under EU and US law, but not for binding contracts. For QES-grade requirements, use an external signing service."
+          }
+        ]
+      },
+      {
+        heading: "Enable for your tenant",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "Open Admin → Customer Acknowledgments (requires settings.manage).",
+              "Tick the checkbox to enable the feature.",
+              "Acknowledgment panels now appear in the Report & Sign-off phase for every audit."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Send an acknowledgment link",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "Open the customer cockpit and switch to Report & Sign-off.",
+              "Scroll to the Customer acknowledgment panel.",
+              "Enter the recipient email and an optional hint (CISO, IT Director, …).",
+              "Set the expiry (default 7 days, up to 30).",
+              "Optionally add a context message — it appears in the email and on the portal page.",
+              "Click Send acknowledgment link. The customer receives an email immediately.",
+              "Resend or revoke pending links from the same panel if you need to."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "What the customer sees",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "The customer lands on /portal/ack/<token> — a focused single-page view, no login, no navigation. They see the audit metadata, findings summary, the auditor's optional message, a checkbox 'I acknowledge that I have received this audit report', a name field, optional position, optional comment, and a Submit button."
+          },
+          {
+            kind: "note",
+            text:
+              "The page uses tenant branding (logo, primary colour, header/footer text) from the Branding admin settings. The footer always shows 'Powered by Audity'."
+          }
+        ]
+      },
+      {
+        heading: "Closure with or without ack",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Closing an audit without a recorded customer acknowledgment is allowed but prompts a warning. If you confirm 'Close anyway', the audit is tagged closed_without_customer_ack in the closure flags — visible in the cockpit and in the audit history."
+          }
+        ]
+      },
+      {
+        heading: "Audit trail",
+        blocks: [
+          {
+            kind: "paragraph",
+            text:
+              "Every step is logged in the hash-chained activity log: issued, email_sent, email_failed, opened (one entry per portal visit), redeemed, revoked, resent. Portal events have user_id NULL since the customer has no Audity account; the recipient_email pin and the token id provide attribution."
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: "customer-audit-center",
     title: "Customer Audit Center (Cockpit)",
     category: "workspace",

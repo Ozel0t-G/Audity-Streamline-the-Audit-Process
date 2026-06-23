@@ -67,6 +67,7 @@ export function PlanPhasePage() {
   const canEdit = Boolean(user?.permissions.includes("assessment.edit"));
 
   const [loading, setLoading] = useState(true);
+  const [autoConvert, setAutoConvert] = useState(false);
   const [plan, setPlan] = useState<PlanForm>({
     currentPhase: "Preparation",
     kickoffAt: "",
@@ -112,6 +113,14 @@ export function PlanPhasePage() {
         readinessTarget: Number(p.readinessTarget ?? 85)
       });
       setScopeItems(payload.scopeItems ?? []);
+      try {
+        const flag = await api<{ enabled: boolean }>(
+          `/api/assessments/${auditId}/auto-convert-findings`
+        );
+        setAutoConvert(flag.enabled);
+      } catch {
+        setAutoConvert(false);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load the plan");
     } finally {
@@ -287,6 +296,41 @@ export function PlanPhasePage() {
               <button type="submit" className="audity-btn-primary mt-4">
                 Save plan
               </button>
+            ) : null}
+
+            {canEdit ? (
+              <div className="mt-4 rounded-audity border border-audity-border bg-audity-page p-3">
+                <label className="flex items-start gap-2 text-xs text-audity-secondary">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={autoConvert}
+                    onChange={async (event) => {
+                      const next = event.target.checked;
+                      setAutoConvert(next);
+                      try {
+                        await api(`/api/assessments/${auditId}/auto-convert-findings`, {
+                          method: "PUT",
+                          body: JSON.stringify({ enabled: next })
+                        });
+                        toast.success(`Auto-convert ${next ? "enabled" : "disabled"}`);
+                      } catch (err) {
+                        setAutoConvert(!next);
+                        toast.error(err instanceof Error ? err.message : "Toggle failed");
+                      }
+                    }}
+                  />
+                  <span>
+                    <strong className="text-audity-text">Auto-create draft risk on Finding approval</strong>
+                    <p className="mt-1 text-[11px] text-audity-muted">
+                      When enabled, approving a Finding automatically creates a draft Risk
+                      (likelihood 3, impact 3, Medium) linked to the Finding via the n:m link
+                      table. The Risk is created in state <code>open · draft</code> for the
+                      auditor to review.
+                    </p>
+                  </span>
+                </label>
+              </div>
             ) : null}
           </form>
 

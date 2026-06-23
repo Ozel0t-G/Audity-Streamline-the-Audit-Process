@@ -11,7 +11,8 @@ export type NextAction = {
     | "finding_remediation_due"
     | "signoff_due"
     | "contradiction"
-    | "report_review_due";
+    | "report_review_due"
+    | "customer_ack_pending";
   customerId: string;
   customerName: string;
   assessmentId: string;
@@ -290,6 +291,48 @@ export async function deriveNextActions(
       overdueBy: null,
       deepLink: `/customers/${assessment.customer_id}/report?audit=${row.assessment_id}`,
       severity: "warning"
+    });
+  }
+
+  // Pending customer acknowledgments — severity ramps as the link approaches expiry.
+  const ackRows = await pool.query<{
+    assessment_id: string;
+    token_id: string;
+    recipient_email: string;
+    expires_at: string;
+    hours_remaining: number;
+  }>(
+    `select assessment_id, id as token_id, recipient_email, expires_at::text,
+            extract(epoch from (expires_at - now())) / 3600 as hours_remaining
+       from customer_ack_tokens
+      where assessment_id = any($1::uuid[])
+        and redeemed_at is null
+        and revoked_at is null
+        and expires_at > now()`,
+    [activeAssessmentIds]
+  );
+  for (const row of ackRows.rows) {
+    const assessment = assessments.find((a) => a.id === row.assessment_id);
+    if (!assessment) continue;
+    const hours = Number(row.hours_remaining ?? 0);
+    let severity: NextAction["severity"] = "info";
+    if (hours < 24) severity = "critical";
+    else if (hours < 72) severity = "warning";
+    actions.push({
+      id: `customer_ack:${row.token_id}`,
+      kind: "customer_ack_pending",
+      customerId: assessment.customer_id,
+      customerName: assessment.customer_name,
+      assessmentId: row.assessment_id,
+      assessmentName: assessment.type,
+      title: `Customer ack pending: ${row.recipient_email}`,
+      detail: hours < 24
+        ? `Expires in ${Math.max(0, Math.floor(hours))}h — resend or follow up`
+        : `Expires in ${Math.floor(hours / 24)}d`,
+      count: 1,
+      overdueBy: null,
+      deepLink: `/customers/${assessment.customer_id}/report?audit=${row.assessment_id}`,
+      severity
     });
   }
 

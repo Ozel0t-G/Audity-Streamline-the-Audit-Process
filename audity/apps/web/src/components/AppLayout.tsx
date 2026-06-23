@@ -611,6 +611,7 @@ function AdminLayoutInner() {
             {can("roles.manage") ? <NavLink className={navClass} to="/admin/users"><NavIcon name="users" /> {t("User Management")}</NavLink> : null}
             {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks"><NavIcon name="frameworks" /> {t("Framework Library")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/frameworks/thresholds"><NavIcon name="frameworks" /> {t("Stuck Thresholds")}</NavLink> : null}
+            {can("settings.manage") ? <NavLink className={navClass} to="/admin/customer-ack"><NavIcon name="audit" /> {t("Customer Acknowledgments")}</NavLink> : null}
             <p className={navSectionClass}>{t("Monitoring")}</p>
             {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity"><NavIcon name="activity" /> {t("Activity Log")}</NavLink> : null}
             {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit"><NavIcon name="audit-log" /> {t("Audit Log")}</NavLink> : null}

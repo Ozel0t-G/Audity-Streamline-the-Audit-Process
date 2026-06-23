@@ -30,10 +30,13 @@ import { startDigestScheduler } from "./cockpit/digest.js";
 import { registerFrameworkThresholdRoutes } from "./cockpit/adminThresholds.js";
 import { registerTransitionRoutes } from "./cockpit/transitions.js";
 import { registerCustomerAckRoutes } from "./customerAck/routes.js";
+import { startExpiryScheduler } from "./customerAck/expiryJob.js";
 import { registerProductivityRoutes } from "./productivity/routes.js";
 import { registerReportRoutes } from "./reports/routes.js";
 import { registerSecureRoutes } from "./secure/routes.js";
 import { registerWorkflowRoutes } from "./workflow/routes.js";
+import { registerRiskFindingLinkRoutes } from "./workflow/links.js";
+import { registerAutoConvertRoutes } from "./workflow/autoConvert.js";
 
 const config = loadConfig();
 function redactSensitiveQuery(url: string): string {
@@ -202,8 +205,11 @@ await registerFrameworkThresholdRoutes(app);
 await registerTransitionRoutes(app);
 await registerCustomerAckRoutes(app, { publicUrl: config.publicUrl });
 startDigestScheduler();
+startExpiryScheduler();
 await registerProductivityRoutes(app);
 await registerWorkflowRoutes(app);
+await registerRiskFindingLinkRoutes(app);
+await registerAutoConvertRoutes(app);
 await registerAdminRoutes(app);
 await registerEvidenceRoutes(app);
 await registerReportRoutes(app);

@@ -92,6 +92,115 @@ export function generateTokenString(): string {
   return randomBytes(32).toString("base64url");
 }
 
+export type PinnedSnapshot = {
+  customerName: string;
+  assessmentType: string;
+  auditorName: string;
+  capturedAt: string;
+  reportVersion: number;
+  findings: Array<{
+    id: string;
+    title: string;
+    severityTier: "critical" | "high" | "medium" | "low";
+    severityScore: number;
+    managementResponse: string | null;
+    managementResponseStatus: string | null;
+    lifecycleStatus: string | null;
+  }>;
+  readinessScore: number;
+  controlCount: number;
+  scopeItemCount: number;
+  executiveSummary: string;
+};
+
+export async function captureSnapshot(assessmentId: string, reportVersion: number): Promise<PinnedSnapshot> {
+  const audit = await pool.query<{
+    customer_name: string;
+    type: string;
+    auditor_name: string | null;
+  }>(
+    `select c.name as customer_name, a.type, u.name as auditor_name
+       from assessments a
+       join customers c on c.id = a.customer_id
+       left join audit_plans ap on ap.assessment_id = a.id
+       left join users u on u.id = ap.created_by
+      where a.id = $1`,
+    [assessmentId]
+  );
+  const auditRow = audit.rows[0];
+  if (!auditRow) {
+    throw new Error(`Assessment ${assessmentId} not found for snapshot`);
+  }
+
+  const findingsResult = await pool.query<{
+    id: string;
+    title: string | null;
+    severity_impact: number | null;
+    severity_likelihood: number | null;
+    management_response: string | null;
+    management_response_status: string | null;
+    lifecycle_status: string | null;
+  }>(
+    `select id, title, severity_impact, severity_likelihood,
+            management_response, management_response_status, lifecycle_status
+       from findings
+      where assessment_id = $1
+      order by severity_impact desc nulls last, severity_likelihood desc nulls last`,
+    [assessmentId]
+  );
+  const findings = findingsResult.rows.map((f) => {
+    const score = (f.severity_impact ?? 0) * (f.severity_likelihood ?? 0);
+    let tier: "critical" | "high" | "medium" | "low" = "low";
+    if (score >= 20) tier = "critical";
+    else if (score >= 14) tier = "high";
+    else if (score >= 7) tier = "medium";
+    return {
+      id: f.id,
+      title: f.title ?? "(untitled)",
+      severityTier: tier,
+      severityScore: score,
+      managementResponse: f.management_response,
+      managementResponseStatus: f.management_response_status,
+      lifecycleStatus: f.lifecycle_status
+    };
+  });
+
+  const counts = await pool.query<{
+    control_count: string;
+    scope_count: string;
+    answered: string;
+    total: string;
+  }>(
+    `select
+        (select count(*) from assessment_questions q where q.assessment_id = $1)::text as control_count,
+        (select count(*) from audit_scope_items s where s.assessment_id = $1)::text as scope_count,
+        (select count(*) from assessment_questions q
+           join control_answers ca on ca.assessment_question_id = q.id
+          where q.assessment_id = $1 and ca.answer_state <> 'unknown')::text as answered,
+        (select count(*) from assessment_questions q where q.assessment_id = $1)::text as total`,
+    [assessmentId]
+  );
+  const countsRow = counts.rows[0];
+  const answered = Number(countsRow?.answered ?? "0");
+  const total = Number(countsRow?.total ?? "0");
+  const readiness = total > 0 ? Math.round((answered / total) * 100) : 0;
+
+  const summary = `${findings.length} finding(s) recorded · ${countsRow?.control_count ?? "0"} controls · readiness ${readiness}%.`;
+
+  return {
+    customerName: auditRow.customer_name,
+    assessmentType: auditRow.type,
+    auditorName: auditRow.auditor_name ?? "An auditor",
+    capturedAt: new Date().toISOString(),
+    reportVersion,
+    findings,
+    readinessScore: readiness,
+    controlCount: Number(countsRow?.control_count ?? "0"),
+    scopeItemCount: Number(countsRow?.scope_count ?? "0"),
+    executiveSummary: summary
+  };
+}
+
 export async function issueToken(input: {
   assessmentId: string;
   recipientEmail: string;
@@ -126,11 +235,15 @@ export async function issueToken(input: {
   const now = new Date();
   const expires = new Date(now.getTime() + expiryDays * 86400_000);
 
+  const reportVersion = input.reportVersion ?? 1;
+  const snapshot = await captureSnapshot(input.assessmentId, reportVersion);
+
   const inserted = await pool.query<CustomerAckTokenRow>(
     `insert into customer_ack_tokens (
        id, assessment_id, recipient_email, recipient_hint, token_hash,
-       issued_by_user_id, issued_at, expires_at, message, report_version_at_issue
-     ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       issued_by_user_id, issued_at, expires_at, message, report_version_at_issue,
+       pinned_snapshot
+     ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
      returning *`,
     [
       id,
@@ -142,7 +255,8 @@ export async function issueToken(input: {
       now.toISOString(),
       expires.toISOString(),
       input.message?.trim() || null,
-      input.reportVersion ?? 1
+      reportVersion,
+      JSON.stringify(snapshot)
     ]
   );
   return { token, row: mapTokenRow(inserted.rows[0]) };
@@ -158,10 +272,10 @@ export async function listTokensForAssessment(assessmentId: string): Promise<Cus
   return result.rows.map(mapTokenRow);
 }
 
-export async function findTokenByPlain(token: string): Promise<CustomerAckTokenRow | null> {
+export async function findTokenByPlain(token: string): Promise<(CustomerAckTokenRow & { pinned_snapshot: PinnedSnapshot | null }) | null> {
   const tokenHash = hashToken(token);
-  const result = await pool.query<CustomerAckTokenRow>(
-    `select * from customer_ack_tokens where token_hash = $1 limit 1`,
+  const result = await pool.query<CustomerAckTokenRow & { pinned_snapshot: PinnedSnapshot | null }>(
+    `select *, pinned_snapshot from customer_ack_tokens where token_hash = $1 limit 1`,
     [tokenHash]
   );
   return result.rows[0] ?? null;
@@ -184,7 +298,7 @@ export async function revokeToken(input: {
   return result.rows[0] ? mapTokenRow(result.rows[0]) : null;
 }
 
-export async function markEmailSent(tokenId: string, status: "sent" | "failed", error?: string): Promise<void> {
+export async function markEmailSent(tokenId: string, status: "sent" | "failed" | "skipped", error?: string): Promise<void> {
   await pool.query(
     `update customer_ack_tokens
         set email_send_status = $2, email_send_error = $3

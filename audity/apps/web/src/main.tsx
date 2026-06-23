@@ -18,6 +18,8 @@ const ConnectorAdminPage = lazy(() => import("./pages/admin/ConnectorAdminPage")
 const AiSettingsPage = lazy(() => import("./pages/admin/AiSettingsPage").then((m) => ({ default: m.AiSettingsPage })));
 const AdminArchivePage = lazy(() => import("./pages/admin/AdminArchivePage").then((m) => ({ default: m.AdminArchivePage })));
 const AdminFrameworkThresholdsPage = lazy(() => import("./pages/admin/AdminFrameworkThresholdsPage").then((m) => ({ default: m.AdminFrameworkThresholdsPage })));
+const AdminCustomerAckPage = lazy(() => import("./pages/admin/AdminCustomerAckPage").then((m) => ({ default: m.AdminCustomerAckPage })));
+const CustomerAckPortalPage = lazy(() => import("./pages/portal/CustomerAckPortalPage").then((m) => ({ default: m.CustomerAckPortalPage })));
 const FrameworkImportReviewPage = lazy(() => import("./pages/admin/FrameworkImportReviewPage").then((m) => ({ default: m.FrameworkImportReviewPage })));
 const AlphaDisclaimerPage = lazy(() => import("./pages/AlphaDisclaimerPage").then((m) => ({ default: m.AlphaDisclaimerPage })));
 const AuditCenterPage = lazy(() => import("./pages/audit/AuditCenterPage").then((m) => ({ default: m.AuditCenterPage })));
@@ -49,6 +51,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/setup" element={<SetupPage />} />
+          <Route path="/portal/ack/:token" element={<LazyRoute><CustomerAckPortalPage /></LazyRoute>} />
           <Route element={<PrivateRoute />}>
             <Route path="/alpha-disclaimer" element={<LazyRoute><AlphaDisclaimerPage /></LazyRoute>} />
             <Route element={<AppLayout />}>
@@ -79,6 +82,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/users" element={<RequirePermission permission="roles.manage"><LazyRoute><AdminDashboardPage section="users" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/frameworks" element={<RequirePermission permission="assessment.view"><LazyRoute><FrameworkLibraryPage /></LazyRoute></RequirePermission>} />
               <Route path="/admin/frameworks/thresholds" element={<RequirePermission permission="settings.manage"><LazyRoute><AdminFrameworkThresholdsPage /></LazyRoute></RequirePermission>} />
+              <Route path="/admin/customer-ack" element={<RequirePermission permission="settings.manage"><LazyRoute><AdminCustomerAckPage /></LazyRoute></RequirePermission>} />
               <Route path="/admin/branding" element={<RequirePermission permission="branding.manage"><LazyRoute><AdminDashboardPage section="branding" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/email" element={<RequirePermission permission="email.manage"><LazyRoute><AdminDashboardPage section="email" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/connectors" element={<RequirePermission permission="connectors.manage"><LazyRoute><ConnectorAdminPage /></LazyRoute></RequirePermission>} />

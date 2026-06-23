@@ -14,8 +14,28 @@ import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { PageSkeleton, SeverityBadge, useConfirm, useToast } from "../../components/ui";
 import type { Finding, HistoryEvent, ReviewComment, Risk, RoadmapItem } from "./types";
+import { FindingsKanban } from "./FindingsKanban";
+import { FindingSlideover } from "./FindingSlideover";
+import { RiskLinkedFindings } from "./RiskLinkedFindings";
+import { WorkflowFilterBar, useWorkflowFilter, type WorkflowFilter } from "./WorkflowFilterBar";
+import { StickyBulkBar } from "./StickyBulkBar";
 
-const phases = ["0-30d", "31-90d", "3-6M", "6-12M"];
+type RoadmapPhaseKey = "now" | "soon" | "mid" | "long";
+const phases: Array<{ key: RoadmapPhaseKey; label: string; range: string }> = [
+  { key: "now", label: "Now", range: "0–30d" },
+  { key: "soon", label: "Soon", range: "31–90d" },
+  { key: "mid", label: "Mid", range: "3–6M" },
+  { key: "long", label: "Long", range: "6–12M" }
+];
+
+function normalisePhaseKey(value: string | null | undefined): RoadmapPhaseKey {
+  const v = String(value ?? "").toLowerCase();
+  if (v.includes("0-30") || v === "now") return "now";
+  if (v.includes("31-90") || v === "soon") return "soon";
+  if (v.includes("3-6") || v === "mid") return "mid";
+  if (v.includes("6-12") || v === "long") return "long";
+  return "now";
+}
 const ratings = ["Low", "Medium", "High", "Critical"];
 const treatmentOptions = ["mitigate", "accept", "transfer", "avoid"];
 const riskStatuses = ["open", "in_treatment", "accepted", "closed"];
@@ -61,20 +81,32 @@ function dueState(value: string | null | undefined) {
 
 function RoadmapPhaseColumn({
   phase,
+  phaseLabel,
+  phaseRange,
   items,
   canDrag
 }: {
   phase: string;
+  phaseLabel?: string;
+  phaseRange?: string;
   items: RoadmapItem[];
   canDrag: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: phase });
+  const firstWithDates = items.find((item) => item.phaseStartDate && item.phaseEndDate);
   return (
     <div
       ref={setNodeRef}
       className={`min-h-48 rounded-audity border p-3 ${isOver ? "border-audity-primary bg-audity-primaryActive/20" : "border-audity-border bg-audity-page"}`}
     >
-      <h3 className="mb-3 text-sm font-semibold">{phase}</h3>
+      <header className="mb-3">
+        <h3 className="text-sm font-semibold">{phaseLabel ?? phase}{phaseRange ? <span className="ml-1 text-xs font-normal text-audity-muted">({phaseRange})</span> : null}</h3>
+        {firstWithDates ? (
+          <p className="text-[10px] text-audity-muted">
+            {firstWithDates.phaseStartDate} → {firstWithDates.phaseEndDate}
+          </p>
+        ) : null}
+      </header>
       <div className="space-y-2">
         {items.map((item) => (
           <RoadmapCard key={item.id} item={item} canDrag={canDrag} />
@@ -173,6 +205,7 @@ export function AssessmentWorkflowPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor)
   );
+  const [workflowFilter, setWorkflowFilter] = useWorkflowFilter();
   const [findings, setFindings] = useState<Finding[]>([]);
   const [risks, setRisks] = useState<Risk[]>([]);
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
@@ -181,6 +214,7 @@ export function AssessmentWorkflowPage() {
   const [findingComments, setFindingComments] = useState<ReviewComment[]>([]);
   const [riskComments, setRiskComments] = useState<ReviewComment[]>([]);
   const [selectedFindingId, setSelectedFindingId] = useState("");
+  const [findingSlideoverOpen, setFindingSlideoverOpen] = useState(false);
   const [selectedRiskId, setSelectedRiskId] = useState("");
   const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>([]);
   const [selectedRiskIds, setSelectedRiskIds] = useState<string[]>([]);
@@ -636,7 +670,7 @@ export function AssessmentWorkflowPage() {
     if (!id || !event.over || String(event.active.id) === String(event.over.id)) return;
     const item = roadmapItems.find((roadmapItem) => roadmapItem.id === String(event.active.id));
     const phase = String(event.over.id);
-    if (!item || !phases.includes(phase)) return;
+    if (!item || !phases.some((p) => p.key === phase)) return;
     await api(`/api/assessments/${id}/roadmap/${item.id}`, {
       method: "PUT",
       body: JSON.stringify({ phase })
@@ -658,11 +692,20 @@ export function AssessmentWorkflowPage() {
 
   return (
     <>
+          <WorkflowFilterBar
+            filter={workflowFilter}
+            onChange={setWorkflowFilter}
+            owners={Array.from(new Set([
+              ...risks.map((r) => r.owner ?? "").filter(Boolean),
+              ...roadmapItems.map((r) => r.owner ?? "").filter(Boolean)
+            ]))}
+            counts={{ findings: findings.length, risks: risks.length, roadmap: roadmapItems.length }}
+          />
           <div className="audity-page-header">
             <p className="audity-page-kicker">Guided Workflow</p>
             <h1 className="audity-page-title">Findings, Risks & Roadmap</h1>
             <p className="audity-page-copy">
-              {findings.length} findings · {risks.length} risks · {roadmapItems.length} roadmap items
+              Stage 1 → Stage 2 → Stage 3 · {findings.length} findings · {risks.length} risks · {roadmapItems.length} roadmap items
             </p>
           </div>
           {error ? <div className="mb-4 rounded-audity border border-audity-error bg-audity-error/10 px-3 py-2 text-sm text-audity-error">{error}</div> : null}
@@ -701,28 +744,69 @@ export function AssessmentWorkflowPage() {
             </div>
           </section>
           ) : null}
-          <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-4 min-w-0">
             <section className="rounded-audity border border-audity-border bg-audity-panel">
-              <div className="border-b border-audity-border px-3 py-2.5">
-                <h2 className="text-lg font-semibold">Finding Review</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-audity-border px-3 py-2.5">
+                <div>
+                  <h2 className="text-lg font-semibold">Stage 1 · Finding Triage</h2>
+                  <p className="mt-0.5 text-xs text-audity-muted">
+                    Cards move left → right through the lifecycle. Click a card to review details. Bulk-select with checkboxes.
+                  </p>
+                </div>
+                {canApproveFindings && selectedFindingIds.length ? (
+                  <form className="flex flex-wrap items-end gap-2" onSubmit={bulkUpdateFindings}>
+                    <label className="block text-xs font-medium text-audity-secondary">Status
+                      <select className="audity-input ml-2" value={findingBulkForm.status} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, status: event.target.value })}>
+                        <option value="">No change</option>
+                        {findingStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                      </select>
+                    </label>
+                    <label className="block text-xs font-medium text-audity-secondary">Priority
+                      <select className="audity-input ml-2" value={findingBulkForm.priority} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, priority: event.target.value })}>
+                        <option value="">No change</option>
+                        {findingPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                      </select>
+                    </label>
+                    <button className="audity-btn-primary">Update {selectedFindingIds.length}</button>
+                  </form>
+                ) : null}
               </div>
-              {canApproveFindings ? (
-              <form className="flex flex-wrap items-end gap-2 border-b border-audity-border px-3 py-2.5" onSubmit={bulkUpdateFindings}>
-                <label className="block text-xs font-medium text-audity-secondary">Status
-                  <select className="mt-2 audity-input" value={findingBulkForm.status} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, status: event.target.value })}>
-                    <option value="">No change</option>
-                    {findingStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                  </select>
-                </label>
-                <label className="block text-xs font-medium text-audity-secondary">Priority
-                  <select className="mt-2 audity-input" value={findingBulkForm.priority} onChange={(event) => setFindingBulkForm({ ...findingBulkForm, priority: event.target.value })}>
-                    <option value="">No change</option>
-                    {findingPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-                  </select>
-                </label>
-                <button className="audity-btn-primary" disabled={!selectedFindingIds.length}>Update {selectedFindingIds.length || ""}</button>
-              </form>
-              ) : null}
+
+              <div className="p-3">
+                <FindingsKanban
+                  findings={findings.filter((f) => {
+                    if (workflowFilter.scope === "open" && ["approved", "dismissed"].includes(f.status)) return false;
+                    if (workflowFilter.scope === "closed" && !["approved", "dismissed"].includes(f.status)) return false;
+                    if (workflowFilter.search) {
+                      const q = workflowFilter.search.toLowerCase();
+                      const hay = `${f.title} ${f.observation ?? ""} ${f.recommendation ?? ""} ${f.controlCode ?? ""}`.toLowerCase();
+                      if (!hay.includes(q)) return false;
+                    }
+                    return true;
+                  })}
+                  selectedIds={selectedFindingIds}
+                  canBulkSelect={canApproveFindings}
+                  onToggleSelect={toggleFindingSelection}
+                  onOpen={(finding) => {
+                    setSelectedFindingId(finding.id);
+                    setFindingSlideoverOpen(true);
+                  }}
+                />
+              </div>
+            </section>
+
+            <FindingSlideover
+              assessmentId={id ?? ""}
+              open={findingSlideoverOpen}
+              finding={selectedFinding ?? null}
+              canEdit={canApproveFindings}
+              onClose={() => setFindingSlideoverOpen(false)}
+              onChanged={() => void load()}
+            />
+
+            <section className="hidden">
+              {/* Legacy Finding Review block kept hidden during PR-1 migration.
+                  Will be deleted in PR-2. The slideover above replaces it. */}
               <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]">
                 <div className="divide-y divide-audity-border border-r border-audity-border">
                   {findings.map((finding) => (
@@ -850,10 +934,12 @@ export function AssessmentWorkflowPage() {
             <aside className="space-y-4">
               <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <div className="mb-4">
-                  <h2 className="text-lg font-semibold">Risk Register</h2>
-                  <p className="mt-1 text-xs text-audity-muted">Risks are drafted automatically from guided answers with score 0-2. You can edit, re-score, close, or delete every entry.</p>
+                  <h2 className="text-lg font-semibold">Stage 2 · Risk Register</h2>
+                  <p className="mt-1 text-xs text-audity-muted">Risks are drafted automatically from guided answers with score 0-2. Click the matrix to filter, click a row to edit details in the slideover.</p>
                 </div>
-                {canEditRisk ? (
+                {/* CSV Import/Export removed by product decision (PR-1).
+                    Use bulk PATCH on /api/assessments/:id/risks/bulk for mass updates. */}
+                {false && canEditRisk ? (
                 <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-3">
                   <div className="flex flex-wrap gap-2">
                     <button className="audity-btn-secondary" type="button" onClick={() => void exportRiskRegister()}>Export CSV</button>
@@ -870,25 +956,30 @@ export function AssessmentWorkflowPage() {
                     <p className="text-xs font-medium text-audity-muted">5x5 Matrix</p>
                     {matrixFilter ? <button className="text-xs text-audity-primary hover:text-audity-primaryHover" onClick={() => setMatrixFilter(null)}>Clear filter</button> : null}
                   </div>
-                  <div className="grid grid-cols-[28px_repeat(5,minmax(0,1fr))] gap-1 text-center text-xs">
+                  <div className="grid grid-cols-[44px_repeat(5,minmax(0,1fr))] gap-1.5 text-center text-xs">
                     <div />
-                    {[1, 2, 3, 4, 5].map((impact) => <div key={impact} className="text-audity-muted">I{impact}</div>)}
+                    {[1, 2, 3, 4, 5].map((impact) => <div key={impact} className="py-1 font-semibold text-audity-secondary">I{impact}</div>)}
                     {scoreAxis.map((likelihood) => (
                       <Fragment key={`row-${likelihood}`}>
-                        <div className="py-2 text-audity-muted">L{likelihood}</div>
+                        <div className="flex items-center justify-center py-2 font-semibold text-audity-secondary">L{likelihood}</div>
                         {[1, 2, 3, 4, 5].map((impact) => {
-                          const count = risks.filter((risk) => risk.likelihood === likelihood && risk.impact === impact).length;
+                          const cellRisks = risks.filter((risk) => risk.likelihood === likelihood && risk.impact === impact);
+                          const count = cellRisks.length;
                           const { rating } = { rating: likelihood * impact >= 20 ? "Critical" : likelihood * impact >= 12 ? "High" : likelihood * impact >= 5 ? "Medium" : "Low" };
                           const active = matrixFilter?.likelihood === likelihood && matrixFilter?.impact === impact;
+                          const tooltip = count
+                            ? `${count} risk${count === 1 ? "" : "s"} · ${rating}\n${cellRisks.slice(0, 5).map((r) => `• ${r.title}`).join("\n")}${count > 5 ? `\n... +${count - 5} more` : ""}`
+                            : `${rating} · empty`;
                           return (
                             <button
                               key={`${likelihood}-${impact}`}
-                              className={`h-9 rounded-audity border text-xs font-semibold ${active ? "border-audity-primary bg-audity-primaryActive text-white" : `${ratingClass(rating)} bg-audity-panel`}`}
+                              className={`h-16 rounded-audity border-2 text-lg font-bold transition ${active ? "border-audity-primary bg-audity-primaryActive text-white" : `${ratingClass(rating)} hover:scale-105`}`}
                               onClick={() => setMatrixFilter(active ? null : { likelihood, impact })}
                               aria-pressed={active}
                               type="button"
+                              title={tooltip}
                             >
-                              {count}
+                              {count || ""}
                             </button>
                           );
                         })}
@@ -896,11 +987,11 @@ export function AssessmentWorkflowPage() {
                     ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {ratings.map((rating) => (
-                    <div key={rating} className={`rounded-audity border p-3 ${ratingClass(rating)}`}>
-                      <p className="text-sm font-semibold">{rating}</p>
-                      <p className="mt-1 text-2xl font-semibold">{risks.filter((risk) => risk.rating === rating).length}</p>
+                    <div key={rating} className={`rounded-audity border p-2 ${ratingClass(rating)}`}>
+                      <p className="text-[11px] font-semibold uppercase">{rating}</p>
+                      <p className="mt-0.5 text-xl font-semibold">{risks.filter((risk) => risk.rating === rating).length}</p>
                     </div>
                   ))}
                 </div>
@@ -956,6 +1047,16 @@ export function AssessmentWorkflowPage() {
               {canEditRisk ? (
               <form onSubmit={updateRisk} className="rounded-audity border border-audity-border bg-audity-panel p-4">
                 <h2 className="mb-4 text-lg font-semibold">Edit Selected Risk</h2>
+                {selectedRisk ? (
+                  <div className="mb-4">
+                    <RiskLinkedFindings
+                      assessmentId={id ?? ""}
+                      riskId={selectedRisk.id}
+                      canEdit={canEditRisk}
+                      allFindings={findings}
+                    />
+                  </div>
+                ) : null}
                 {selectedRisk ? (
                 <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-3">
                   <div className="flex flex-wrap gap-2">
@@ -1070,8 +1171,8 @@ export function AssessmentWorkflowPage() {
                 <button className="audity-btn-secondary" type="button" onClick={() => void generateRoadmapFromRisks()}>
                   Auto-generate High/Critical
                 </button>
-                <select className="w-28 audity-input" value={roadmapForm.phase} onChange={(event) => setRoadmapForm({ ...roadmapForm, phase: event.target.value })}>
-                  {phases.map((phase) => <option key={phase}>{phase}</option>)}
+                <select className="w-32 audity-input" value={roadmapForm.phase} onChange={(event) => setRoadmapForm({ ...roadmapForm, phase: event.target.value })}>
+                  {phases.map((phase) => <option key={phase.key} value={phase.key}>{phase.label} ({phase.range})</option>)}
                 </select>
                 <input className="min-w-[180px] max-w-full flex-1 audity-input" placeholder="Roadmap action" value={roadmapForm.action} onChange={(event) => setRoadmapForm({ ...roadmapForm, action: event.target.value })} />
                 <button className="audity-btn-primary" disabled={!selectedRisk}>Generate from risk</button>
@@ -1080,17 +1181,36 @@ export function AssessmentWorkflowPage() {
             </div>
             <DndContext sensors={dndSensors} onDragEnd={(event) => void moveRoadmapItem(event)}>
               <div className="grid gap-3 xl:grid-cols-4">
-                {phases.map((phase) => (
-                  <RoadmapPhaseColumn
-                    key={phase}
-                    phase={phase}
-                    items={roadmapItems.filter((item) => item.phase === phase)}
-                    canDrag={canEditRoadmap}
-                  />
-                ))}
+                {phases.map((phase) => {
+                  const items = roadmapItems.filter((item) => normalisePhaseKey(item.phase) === phase.key);
+                  return (
+                    <RoadmapPhaseColumn
+                      key={phase.key}
+                      phase={phase.key}
+                      phaseLabel={`${phase.label}`}
+                      phaseRange={phase.range}
+                      items={items}
+                      canDrag={canEditRoadmap}
+                    />
+                  );
+                })}
               </div>
             </DndContext>
           </section>
+
+          <StickyBulkBar
+            count={selectedFindingIds.length}
+            entityLabel={selectedFindingIds.length === 1 ? "finding" : "findings"}
+            statusOptions={findingStatuses}
+            priorityOptions={findingPriorities}
+            statusValue={findingBulkForm.status}
+            priorityValue={findingBulkForm.priority}
+            onStatus={(value) => setFindingBulkForm({ ...findingBulkForm, status: value })}
+            onPriority={(value) => setFindingBulkForm({ ...findingBulkForm, priority: value })}
+            onApply={() => void bulkUpdateFindings({ preventDefault: () => undefined } as never)}
+            onClear={() => setSelectedFindingIds([])}
+            applyDisabled={!findingBulkForm.status && !findingBulkForm.priority}
+          />
     </>
   );
 }

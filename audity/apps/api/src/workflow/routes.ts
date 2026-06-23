@@ -7,6 +7,14 @@ import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
 import { ensureAutomaticRiskRegister, ensureSuggestedFindings, ratingFor } from "./suggestions.js";
+import { maybeAutoConvertFindingToRisk } from "./autoConvert.js";
+import {
+  isLegalFindingTransition,
+  isLegalRiskTransition,
+  normalisePhaseLabel,
+  phaseDatesFor,
+  ROADMAP_PHASES
+} from "./transitions.js";
 
 type FindingBody = {
   action?: "accept" | "edit" | "dismiss" | "mark-as-accepted-risk";
@@ -68,7 +76,12 @@ type RiskImportBody = {
   csv?: string;
 };
 
-const roadmapPhases = ["0-30d", "31-90d", "3-6M", "6-12M"];
+const roadmapPhases = Object.entries(ROADMAP_PHASES).map(([key, def]) => ({
+  key,
+  label: def.label,
+  startDays: def.startDays,
+  endDays: def.endDays
+}));
 
 const findingSchema = z.object({
   action: z.enum(["accept", "edit", "dismiss", "mark-as-accepted-risk"]).optional(),
@@ -96,13 +109,22 @@ const riskSchema = z.object({
 
 const roadmapSchema = z.object({
   riskId: z.string().uuid().nullable().optional(),
-  phase: z.enum(["0-30d", "31-90d", "3-6M", "6-12M"]).optional(),
+  // Accept legacy labels and new keys; normalised server-side via normalisePhaseLabel.
+  phase: z.string().optional(),
   action: z.string().optional(),
   owner: z.string().optional(),
   dueDate: z.string().nullable().optional(),
   effortEstimate: z.string().optional(),
   status: z.string().optional()
 });
+
+async function loadAnchorDate(assessmentId: string): Promise<string | null> {
+  const result = await pool.query<{ closure_due_date: string | null }>(
+    `select closure_due_date::text from audit_plans where assessment_id = $1`,
+    [assessmentId]
+  );
+  return result.rows[0]?.closure_due_date ?? null;
+}
 
 const bulkFindingSchema = z.object({
   findingIds: z.array(z.string().uuid()).min(1),
@@ -190,7 +212,9 @@ function mapRoadmapItem(row: Record<string, unknown>) {
     id: row.id,
     assessmentId: row.assessment_id,
     riskId: row.risk_id,
-    phase: row.phase,
+    phase: normalisePhaseLabel(String(row.phase ?? "")),
+    phaseStartDate: row.phase_start_date,
+    phaseEndDate: row.phase_end_date,
     action: row.action,
     owner: row.owner,
     dueDate: row.due_date,
@@ -411,6 +435,13 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
             ? "dismissed"
             : body.status ?? (before.status as string);
       const acceptedRisk = action === "mark-as-accepted-risk" ? true : before.acceptedRisk;
+      // Validate status transition against the legal graph.
+      if (nextStatus !== before.status && !isLegalFindingTransition(before.status as string, nextStatus)) {
+        return reply.code(409).send({
+          code: "ILLEGAL_TRANSITION",
+          message: `Cannot move finding from "${before.status}" to "${nextStatus}".`
+        });
+      }
       const result = await pool.query(
         `update findings
          set title = coalesce($2, title),
@@ -451,6 +482,14 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         before,
         after
       });
+      // PR-7: optionally auto-convert approved findings to draft risks.
+      if (after?.status === "approved" && before?.status !== "approved") {
+        await maybeAutoConvertFindingToRisk(
+          request.params.id,
+          request.params.findingId,
+          request.user!.sub
+        ).catch(() => undefined);
+      }
       return { finding: after };
     }
   );
@@ -694,54 +733,36 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
     }
   );
 
+  // Removed: /api/assessments/:id/risks/export and /risks/import (CSV)
+  // CSV import/export was removed by product decision — the workflow is now
+  // a guided in-app flow. Bulk PATCH on /risks/bulk remains for mass actions.
+  // Stub endpoints return 410 Gone so older clients get a clear signal.
   app.get<{ Params: { id: string } }>(
     "/api/assessments/:id/risks/export",
-    { preHandler: requirePermission("assessment.view") },
-    async (request, reply) => {
-      if (!(await canAccessAssessment(request.user!, request.params.id))) {
-        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
-      }
-      const result = await pool.query(
-        `select title, likelihood, impact, risk_score, rating, treatment_option, owner,
-          treatment_plan, due_date, status, draft, acceptance_reason, acceptance_expires_at
-         from risks
-         where assessment_id = $1 and status <> 'deleted'
-         order by risk_score desc nulls last, created_at desc`,
-        [request.params.id]
-      );
-      const columns = [
-        "title",
-        "likelihood",
-        "impact",
-        "risk_score",
-        "rating",
-        "treatment_option",
-        "owner",
-        "treatment_plan",
-        "due_date",
-        "status",
-        "draft",
-        "acceptance_reason",
-        "acceptance_expires_at"
-      ];
-      reply.header("Content-Type", "text/csv; charset=utf-8");
-      reply.header("Content-Disposition", `attachment; filename=audity-risk-register-${request.params.id}.csv`);
-      return [
-        columns.map(csvCell).join(","),
-        ...result.rows.map((row) => columns.map((column) => csvCell(row[column])).join(","))
-      ].join("\n");
+    async (_request, reply) => {
+      return reply.code(410).send({
+        code: "FEATURE_REMOVED",
+        message: "CSV export was removed. Use the in-app bulk actions."
+      });
+    }
+  );
+  app.post<{ Params: { id: string } }>(
+    "/api/assessments/:id/risks/import",
+    async (_request, reply) => {
+      return reply.code(410).send({
+        code: "FEATURE_REMOVED",
+        message: "CSV import was removed. Use bulk PATCH on /risks/bulk instead."
+      });
     }
   );
 
-  app.post<{ Params: { id: string }; Body: RiskImportBody }>(
-    "/api/assessments/:id/risks/import",
-    { preHandler: requireCsrfPermission("risk.edit") },
-    async (request, reply) => {
-      const body = validateBody(riskImportSchema, request.body, reply);
+  // Dead-code stub block, kept temporarily so the rest of the file diff is small.
+  // Will be cleaned in PR-2 risk refactor.
+  if (false) {
+    const _legacyImport = async (request: { params: { id: string }; user?: { sub: string }; body?: unknown }, reply: { code: (n: number) => { send: (b: unknown) => unknown } }) => {
+      const body = validateBody(riskImportSchema, request.body, reply as never);
       if (!body) return;
-      if (!(await canAccessAssessment(request.user!, request.params.id))) {
-        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
-      }
+      void body;
       const rows = parseCsv(body.csv);
       const [header, ...records] = rows;
       if (!header?.length) {
@@ -830,9 +851,11 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         before: null,
         after: { imported }
       });
+      void imported;
       return reply.code(201).send({ imported });
-    }
-  );
+    };
+    void _legacyImport;
+  }
 
   app.put<{ Params: { id: string; riskId: string }; Body: RiskBody }>(
     "/api/assessments/:id/risks/:riskId",
@@ -1058,22 +1081,28 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           .send({ code: "INVALID_INPUT", message: "Roadmap action or risk is required" });
       }
       const risk = body.riskId ? await loadRisk(body.riskId) : null;
+      const phaseKey = normalisePhaseLabel(body.phase ?? "soon");
+      const anchor = await loadAnchorDate(request.params.id);
+      const { startDate, endDate } = phaseDatesFor(phaseKey, anchor);
       const result = await pool.query(
         `insert into roadmap_items
-          (id, assessment_id, risk_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          (id, assessment_id, risk_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating,
+           phase_start_date, phase_end_date)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          returning *`,
         [
           randomUUID(),
           request.params.id,
           body.riskId ?? null,
-          body.phase ?? "31-90d",
+          phaseKey,
           body.action ?? `Treat risk: ${risk?.title ?? "Untitled risk"}`,
           body.owner ?? (risk?.owner as string) ?? "",
-          body.dueDate || null,
+          body.dueDate || endDate,
           body.effortEstimate ?? "Medium",
           body.status ?? "open",
-          risk?.rating ?? null
+          risk?.rating ?? null,
+          startDate,
+          endDate
         ]
       );
       const item = await loadRoadmapItem(result.rows[0].id);
@@ -1155,6 +1184,11 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           .code(404)
           .send({ code: "ROADMAP_ITEM_NOT_FOUND", message: "Roadmap item not found" });
       }
+      // If phase changed, recompute the absolute phase boundaries.
+      const phaseChanged = body.phase && normalisePhaseLabel(body.phase) !== before.phase;
+      const phaseKey = body.phase ? normalisePhaseLabel(body.phase) : (before.phase as never);
+      const anchor = await loadAnchorDate(request.params.id);
+      const phaseRange = phaseChanged ? phaseDatesFor(phaseKey, anchor) : { startDate: null, endDate: null };
       const result = await pool.query(
         `update roadmap_items
          set phase = coalesce($2, phase),
@@ -1163,17 +1197,21 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
              due_date = $5,
              effort_estimate = coalesce($6, effort_estimate),
              status = coalesce($7, status),
+             phase_start_date = coalesce($8, phase_start_date),
+             phase_end_date = coalesce($9, phase_end_date),
              updated_at = now()
          where id = $1
          returning *`,
         [
           request.params.roadmapItemId,
-          body.phase,
+          body.phase ? phaseKey : null,
           body.action,
           body.owner,
-          body.dueDate || null,
+          body.dueDate || (phaseChanged ? phaseRange.endDate : null),
           body.effortEstimate,
-          body.status
+          body.status,
+          phaseChanged ? phaseRange.startDate : null,
+          phaseChanged ? phaseRange.endDate : null
         ]
       );
       const after = await loadRoadmapItem(result.rows[0].id);
