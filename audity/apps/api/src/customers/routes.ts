@@ -17,6 +17,9 @@ type CustomerBody = {
   businessCriticality?: string;
   status?: string;
   frameworkIds?: string[];
+  address?: string;
+  website?: string;
+  notes?: string;
 };
 
 const postgresUuidSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
@@ -28,8 +31,57 @@ const customerSchema = z.object({
   criticalSystems: z.array(z.string()).optional(),
   businessCriticality: z.string().optional(),
   status: z.string().optional(),
-  frameworkIds: z.array(postgresUuidSchema).optional()
+  frameworkIds: z.array(postgresUuidSchema).optional(),
+  address: z.string().max(500).optional(),
+  website: z.string().max(300).optional(),
+  notes: z.string().max(5000).optional()
 });
+
+type ContactBody = {
+  name?: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  isPrimary?: boolean;
+  notes?: string;
+};
+
+const contactSchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
+  role: z.string().max(120).optional(),
+  email: z.string().max(200).optional(),
+  phone: z.string().max(60).optional(),
+  isPrimary: z.boolean().optional(),
+  notes: z.string().max(2000).optional()
+});
+
+type CustomerContactRow = {
+  id: string;
+  customer_id: string;
+  name: string;
+  role: string | null;
+  email: string | null;
+  phone: string | null;
+  is_primary: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapContact(row: CustomerContactRow) {
+  return {
+    id: row.id,
+    customerId: row.customer_id,
+    name: row.name,
+    role: row.role ?? null,
+    email: row.email ?? null,
+    phone: row.phone ?? null,
+    isPrimary: row.is_primary,
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
 
 const shareSchema = z.object({
   userId: z.string().uuid(),
@@ -49,6 +101,9 @@ function mapCustomer(row: Record<string, unknown>) {
     criticalSystems: row.critical_systems,
     businessCriticality: row.business_criticality,
     status: row.status,
+    address: row.address ?? null,
+    website: row.website ?? null,
+    notes: row.notes ?? null,
     createdByUserId: row.created_by_user_id,
     createdByName: row.created_by_name,
     createdByEmail: row.created_by_email,
@@ -405,7 +460,7 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
       if (!body) return;
       const before = await loadCustomer(request.params.id);
       const current = await pool.query(
-        "select industry, regulatory_context, critical_systems, business_criticality, status from customers where id = $1",
+        "select industry, regulatory_context, critical_systems, business_criticality, status, address, website, notes from customers where id = $1",
         [request.params.id]
       );
       const result = await pool.query(
@@ -416,6 +471,9 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
              critical_systems = coalesce($5, critical_systems),
              business_criticality = coalesce($6, business_criticality),
              status = coalesce($7, status),
+             address = coalesce($8, address),
+             website = coalesce($9, website),
+             notes = coalesce($10, notes),
              updated_at = now()
          where id = $1
          returning *`,
@@ -426,7 +484,10 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
           body.regulatoryContext ?? current.rows[0]?.regulatory_context,
           body.criticalSystems ? JSON.stringify(body.criticalSystems) : JSON.stringify(current.rows[0]?.critical_systems ?? []),
           body.businessCriticality ?? current.rows[0]?.business_criticality,
-          body.status
+          body.status,
+          body.address ?? current.rows[0]?.address ?? null,
+          body.website ?? current.rows[0]?.website ?? null,
+          body.notes ?? current.rows[0]?.notes ?? null
         ]
       );
       const customer = mapCustomer(result.rows[0]);
@@ -593,6 +654,115 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
         before,
         after: null
       });
+      return { status: "ok" };
+    }
+  );
+
+  // ─── Customer contacts (structured, multiple per customer) ──────────────
+  app.get<{ Params: { id: string } }>(
+    "/api/customers/:id/contacts",
+    { preHandler: requirePermission("assessment.view") },
+    async (request, reply) => {
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
+      const result = await pool.query(
+        `select * from customer_contacts where customer_id = $1
+         order by is_primary desc, name asc`,
+        [request.params.id]
+      );
+      return { contacts: result.rows.map(mapContact) };
+    }
+  );
+
+  app.post<{ Params: { id: string }; Body: ContactBody }>(
+    "/api/customers/:id/contacts",
+    { preHandler: requireCsrfPermission("assessment.edit") },
+    async (request, reply) => {
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
+      const body = validateBody(contactSchema.required({ name: true }), request.body, reply);
+      if (!body) return;
+      const contactId = randomUUID();
+      const result = await pool.query(
+        `insert into customer_contacts (id, customer_id, name, role, email, phone, is_primary, notes)
+         values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
+        [
+          contactId,
+          request.params.id,
+          body.name,
+          body.role ?? null,
+          body.email ?? null,
+          body.phone ?? null,
+          body.isPrimary ?? false,
+          body.notes ?? null
+        ]
+      );
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "customer.contact.created",
+        entityType: "customer",
+        entityId: request.params.id,
+        before: null,
+        after: { contactId, name: body.name }
+      });
+      return reply.code(201).send({ contact: mapContact(result.rows[0]) });
+    }
+  );
+
+  app.patch<{ Params: { id: string; contactId: string }; Body: ContactBody }>(
+    "/api/customers/:id/contacts/:contactId",
+    { preHandler: requireCsrfPermission("assessment.edit") },
+    async (request, reply) => {
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
+      const body = validateBody(contactSchema, request.body, reply);
+      if (!body) return;
+      const result = await pool.query(
+        `update customer_contacts
+         set name = coalesce($3, name),
+             role = coalesce($4, role),
+             email = coalesce($5, email),
+             phone = coalesce($6, phone),
+             is_primary = coalesce($7, is_primary),
+             notes = coalesce($8, notes),
+             updated_at = now()
+         where id = $1 and customer_id = $2
+         returning *`,
+        [
+          request.params.contactId,
+          request.params.id,
+          body.name ?? null,
+          body.role ?? null,
+          body.email ?? null,
+          body.phone ?? null,
+          body.isPrimary ?? null,
+          body.notes ?? null
+        ]
+      );
+      if (!result.rows[0]) {
+        return reply.code(404).send({ code: "CONTACT_NOT_FOUND", message: "Contact not found" });
+      }
+      return { contact: mapContact(result.rows[0]) };
+    }
+  );
+
+  app.delete<{ Params: { id: string; contactId: string } }>(
+    "/api/customers/:id/contacts/:contactId",
+    { preHandler: requireCsrfPermission("assessment.edit") },
+    async (request, reply) => {
+      if (!(await canAccessCustomer(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
+      const result = await pool.query(
+        "delete from customer_contacts where id = $1 and customer_id = $2",
+        [request.params.contactId, request.params.id]
+      );
+      if (!result.rowCount) {
+        return reply.code(404).send({ code: "CONTACT_NOT_FOUND", message: "Contact not found" });
+      }
       return { status: "ok" };
     }
   );
