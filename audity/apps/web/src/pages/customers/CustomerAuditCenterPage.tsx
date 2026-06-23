@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../api/client";
+import { CustomerDetailsPanel } from "./CustomerDetailsPanel";
 import { useAuth } from "../../auth/AuthProvider";
 import { useCustomerContext } from "../../components/CustomerContextProvider";
 import { EmptyState, PageSkeleton, Slideover, useConfirm, useToast } from "../../components/ui";
@@ -251,10 +252,10 @@ function AuditCard({ audit, customerId }: { audit: CockpitAudit; customerId: str
   const updatedAgoDays = Math.floor((Date.now() - updated.getTime()) / 86400000);
   return (
     <Link
-      to={`/customers/${customerId}?audit=${audit.id}`}
-      // Selecting an audit only updates the cockpit at the top of the page, so
-      // scroll up to make the switch visible (the cards sit far below the fold).
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      // Open the audit directly in the unified tab view (Plan & Scope is the
+      // entry tab); from there every audit area incl. the Risk Register is one
+      // click away. The selected audit is shown by the "Active audit" badge.
+      to={`/customers/${customerId}/plan?audit=${audit.id}`}
       className={`audity-card-interactive block p-3 ${
         audit.stuck.stuck ? "border-audity-warning" : ""
       }`}
@@ -562,6 +563,8 @@ export function CustomerAuditCenterPage() {
           />
         </div>
       ) : null}
+
+      <CustomerDetailsPanel customerId={id!} canEdit={canEdit} />
 
       {/* Executive Summary */}
       <section className="audity-card mb-4 p-4">
