@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import ExcelJS from "exceljs";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
@@ -165,6 +166,8 @@ function mapFinding(row: Record<string, unknown>) {
     title: row.title,
     status: row.status,
     priority: row.priority,
+    severityImpact: row.severity_impact,
+    severityLikelihood: row.severity_likelihood,
     observation: row.observation,
     recommendation: row.recommendation,
     sourceExplanation: row.source_explanation,
@@ -411,6 +414,90 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         [request.params.id]
       );
       return { findings: result.rows.map(mapFinding) };
+    }
+  );
+
+  // Excel export: risk register + the findings summary list (finding · L · I ·
+  // mapped framework control · free-text note) in a single .xlsx workbook.
+  app.get<{ Params: { id: string } }>(
+    "/api/assessments/:id/risk-register.xlsx",
+    { preHandler: requirePermission("assessment.view") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const risksResult = await pool.query(
+        `select * from risks where assessment_id = $1
+         order by risk_score desc nulls last, created_at desc`,
+        [request.params.id]
+      );
+      const findingsResult = await pool.query(
+        `select f.*, fc.control_code, fc.title as control_title
+         from findings f
+         left join framework_controls fc on fc.id = f.framework_control_id
+         where f.assessment_id = $1
+         order by f.created_at desc`,
+        [request.params.id]
+      );
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Audity";
+      workbook.created = new Date();
+
+      const riskSheet = workbook.addWorksheet("Risk Register");
+      riskSheet.columns = [
+        { header: "Title", key: "title", width: 42 },
+        { header: "Likelihood", key: "likelihood", width: 12 },
+        { header: "Impact", key: "impact", width: 10 },
+        { header: "Score", key: "score", width: 10 },
+        { header: "Rating", key: "rating", width: 12 },
+        { header: "Treatment", key: "treatment", width: 16 },
+        { header: "Owner", key: "owner", width: 22 },
+        { header: "Due date", key: "due", width: 14 },
+        { header: "Status", key: "status", width: 14 }
+      ];
+      for (const r of risksResult.rows) {
+        riskSheet.addRow({
+          title: r.title,
+          likelihood: r.likelihood,
+          impact: r.impact,
+          score: r.risk_score,
+          rating: r.rating,
+          treatment: r.treatment_option,
+          owner: r.owner,
+          due: r.due_date,
+          status: r.status
+        });
+      }
+      riskSheet.getRow(1).font = { bold: true };
+
+      const findingSheet = workbook.addWorksheet("Findings");
+      findingSheet.columns = [
+        { header: "Finding", key: "title", width: 42 },
+        { header: "L", key: "l", width: 6 },
+        { header: "I", key: "i", width: 6 },
+        { header: "Framework control", key: "control", width: 30 },
+        { header: "Note", key: "note", width: 60 }
+      ];
+      for (const f of findingsResult.rows) {
+        findingSheet.addRow({
+          title: f.title,
+          l: f.severity_likelihood,
+          i: f.severity_impact,
+          control: f.control_code
+            ? `${f.control_code}${f.control_title ? ` — ${f.control_title}` : ""}`
+            : "",
+          note: f.observation ?? ""
+        });
+      }
+      findingSheet.getRow(1).font = { bold: true };
+      findingSheet.getColumn("note").alignment = { wrapText: true, vertical: "top" };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      return reply
+        .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        .header("Content-Disposition", `attachment; filename="risk-register-${request.params.id}.xlsx"`)
+        .send(Buffer.from(buffer));
     }
   );
 

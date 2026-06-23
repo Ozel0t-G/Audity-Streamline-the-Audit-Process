@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { AssessmentWorkflowPage } from "../../workflow/AssessmentWorkflowPage";
+import { FindingsSummaryList } from "./FindingsSummaryList";
 import { PhaseLayout } from "./PhaseLayout";
 
 export function RiskPhasePage() {
@@ -9,10 +10,23 @@ export function RiskPhasePage() {
     <PhaseLayout
       active="risk"
       title="Risk Register"
-      description="Identify, score (5×5 likelihood × impact) and treat risks. Link risks to findings and feed treatment actions into the roadmap."
+      description="Findings overview with likelihood, impact and mapped controls. Open the full risk register for the 5×5 matrix, scoring and treatment. Export both to Excel."
     >
       {auditId ? (
-        <AssessmentWorkflowPage assessmentId={auditId} only="risk" embedded />
+        <div className="space-y-4">
+          {/* Full risk register collapsed by default — expand when you need the
+              matrix, scoring and treatment editor. */}
+          <details className="audity-card p-4">
+            <summary className="cursor-pointer select-none text-base font-semibold text-audity-text">
+              Full risk register — matrix, scoring &amp; treatment
+            </summary>
+            <div className="mt-4 border-t border-audity-border pt-4">
+              <AssessmentWorkflowPage assessmentId={auditId} only="risk" embedded />
+            </div>
+          </details>
+
+          <FindingsSummaryList assessmentId={auditId} />
+        </div>
       ) : (
         <p className="text-sm text-audity-muted">Select an audit to view its risk register.</p>
       )}

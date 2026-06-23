@@ -10,6 +10,8 @@ export type Finding = {
   title: string;
   status: string;
   priority: string | null;
+  severityImpact: number | null;
+  severityLikelihood: number | null;
   observation: string | null;
   recommendation: string | null;
   sourceExplanation: string | null;
