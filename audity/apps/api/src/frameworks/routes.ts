@@ -70,9 +70,13 @@ const importSchema = z.object({
 
 const answerSchema = z.object({
   score: z.number().int().min(0).max(5).nullable().optional(),
-  answerState: z.string().optional(),
-  evidenceStatus: z.string().optional(),
-  confidenceLevel: z.string().optional(),
+  // Constrain the enum-like fields to the values the UI actually offers, matching the
+  // z.enum pattern used in audit-center. Previously bare z.string() let arbitrary
+  // strings into control_answers, skewing downstream logic (e.g. the "answered" check
+  // treats any answer_state !== 'unknown' as answered) and report/finding text.
+  answerState: z.enum(["answered", "needs_follow_up", "not_applicable", "unknown"]).optional(),
+  evidenceStatus: z.enum(["not_requested", "requested", "received", "validated", "missing"]).optional(),
+  confidenceLevel: z.enum(["low", "medium", "high"]).optional(),
   notes: z.string().optional()
 });
 

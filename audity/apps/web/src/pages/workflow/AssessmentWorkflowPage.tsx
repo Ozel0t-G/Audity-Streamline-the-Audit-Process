@@ -84,13 +84,15 @@ function RoadmapPhaseColumn({
   phaseLabel,
   phaseRange,
   items,
-  canDrag
+  canDrag,
+  onDelete
 }: {
   phase: string;
   phaseLabel?: string;
   phaseRange?: string;
   items: RoadmapItem[];
   canDrag: boolean;
+  onDelete?: (item: RoadmapItem) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: phase });
   const firstWithDates = items.find((item) => item.phaseStartDate && item.phaseEndDate);
@@ -109,14 +111,14 @@ function RoadmapPhaseColumn({
       </header>
       <div className="space-y-2">
         {items.map((item) => (
-          <RoadmapCard key={item.id} item={item} canDrag={canDrag} />
+          <RoadmapCard key={item.id} item={item} canDrag={canDrag} onDelete={onDelete} />
         ))}
       </div>
     </div>
   );
 }
 
-function RoadmapCard({ item, canDrag }: { item: RoadmapItem; canDrag: boolean }) {
+function RoadmapCard({ item, canDrag, onDelete }: { item: RoadmapItem; canDrag: boolean; onDelete?: (item: RoadmapItem) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
     disabled: !canDrag
@@ -131,9 +133,25 @@ function RoadmapCard({ item, canDrag }: { item: RoadmapItem; canDrag: boolean })
       style={style}
       {...listeners}
       {...attributes}
-      className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} rounded-audity border border-audity-borderStrong bg-audity-panel px-3 py-2 ${isDragging ? "opacity-70" : ""}`}
+      className={`relative ${canDrag ? "cursor-grab active:cursor-grabbing" : ""} rounded-audity border border-audity-borderStrong bg-audity-panel px-3 py-2 ${isDragging ? "opacity-70" : ""}`}
     >
-      <p className="text-sm font-semibold">{item.action}</p>
+      {onDelete ? (
+        <button
+          type="button"
+          aria-label="Delete roadmap item"
+          title="Delete"
+          // Stop the pointer event from starting a drag; only delete on click.
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(item);
+          }}
+          className="absolute right-1 top-1 rounded px-1.5 text-audity-muted hover:bg-audity-error/10 hover:text-audity-error"
+        >
+          ✕
+        </button>
+      ) : null}
+      <p className="pr-5 text-sm font-semibold">{item.action}</p>
       <p className="mt-1 text-xs text-audity-muted">{item.riskTitle} · {item.effortEstimate} · {statusLabel(item.status)}</p>
       {due ? <span className={`mt-2 inline-block rounded-audity border px-2 py-0.5 text-xs ${due.tone}`}>{due.label}</span> : null}
     </div>
@@ -688,6 +706,24 @@ export function AssessmentWorkflowPage({
     await load();
   }
 
+  async function deleteRoadmapItem(item: RoadmapItem) {
+    if (!canEditRoadmap || !id) return;
+    const ok = await confirm({
+      title: "Delete roadmap item?",
+      body: `"${item.action || "This action"}" will be removed from the roadmap. This cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true
+    });
+    if (!ok) return;
+    try {
+      await api(`/api/assessments/${id}/roadmap/${item.id}`, { method: "DELETE" });
+      await load();
+      toast.success("Roadmap item deleted");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Roadmap item delete failed");
+    }
+  }
+
   if (!loaded) {
     return (
       <>
@@ -1212,6 +1248,7 @@ export function AssessmentWorkflowPage({
                       phaseRange={phase.range}
                       items={items}
                       canDrag={canEditRoadmap}
+                      onDelete={canEditRoadmap ? deleteRoadmapItem : undefined}
                     />
                   );
                 })}

@@ -107,7 +107,13 @@ async function riskRegisterCsv(assessmentId: string): Promise<string> {
     [assessmentId]
   );
   const columns = ["title", "likelihood", "impact", "risk_score", "rating", "treatment_option", "owner", "treatment_plan", "due_date", "status", "draft", "source_type", "source_score", "acceptance_reason", "acceptance_expires_at"];
-  const cell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const cell = (value: unknown) => {
+    const raw = String(value ?? "");
+    // CSV/formula-injection guard (OWASP): neutralise leading formula triggers so a
+    // spreadsheet app doesn't execute exported user text; keep plain numbers intact.
+    const text = /^[=+\-@\t\r]/.test(raw) && !/^-?\d+(\.\d+)?$/.test(raw) ? `'${raw}` : raw;
+    return `"${text.replace(/"/g, '""')}"`;
+  };
   return [
     columns.map(cell).join(","),
     ...risks.rows.map((row) => columns.map((column) => cell(row[column])).join(","))
@@ -415,6 +421,12 @@ export async function registerSecureRoutes(app: FastifyInstance): Promise<void> 
       const chunks: Buffer[] = [];
       for await (const chunk of file.file) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      if (file.file.truncated) {
+        // Without this, an over-limit upload is silently cut at 50 MB and then fails
+        // JSON.parse, returning a misleading "invalid package" 400 instead of telling
+        // the user the real problem is size.
+        return reply.code(413).send({ code: "FILE_TOO_LARGE", message: "Import package exceeds the 50 MB limit" });
       }
       let secure: { encrypted?: string; checksum?: string };
       try {

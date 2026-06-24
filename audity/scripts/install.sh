@@ -100,7 +100,23 @@ set_env AUDITY_UPDATE_CHECK_URL "$(env_or_default AUDITY_UPDATE_CHECK_URL "")"
 set_env AUDITY_UPDATER_URL "$(env_or_default AUDITY_UPDATER_URL http://audity-updater:3099)"
 set_env AUDITY_UPDATER_TOKEN "$(env_or_default AUDITY_UPDATER_TOKEN "$(secret_hex)")"
 set_env AUDITY_HOST_PROJECT_DIR "$(env_or_default AUDITY_HOST_PROJECT_DIR "$(pwd)")"
-set_env AUDITY_PUBLIC_URL "$(env_or_default AUDITY_PUBLIC_URL http://localhost)"
+# Auto-detect a sensible public address so a fresh install on any server/domain
+# works out of the box. Precedence: explicit AUDITY_PUBLIC_URL env > interactive
+# prompt > detected public IP > primary local IP > localhost. Everything else
+# (storage endpoint, portal & e-mail links) derives from this single value.
+detect_public_url() {
+  _ip="$(curl -fsS --max-time 3 https://api.ipify.org 2>/dev/null || true)"
+  if [ -z "$_ip" ]; then _ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"; fi
+  if [ -z "$_ip" ]; then _ip="localhost"; fi
+  printf 'http://%s' "$_ip"
+}
+public_url_default="$(detect_public_url)"
+if [ -z "${AUDITY_PUBLIC_URL:-}" ] && [ -t 0 ]; then
+  printf 'Public URL for this install (domain or http://IP) [%s]: ' "$public_url_default" >&2
+  read -r public_url_answer || public_url_answer=""
+  if [ -n "$public_url_answer" ]; then public_url_default="$public_url_answer"; fi
+fi
+set_env AUDITY_PUBLIC_URL "$(env_or_default AUDITY_PUBLIC_URL "$public_url_default")"
 set_env AUDITY_WEB_PORT "$(env_or_default AUDITY_WEB_PORT 80)"
 set_env AUDITY_API_PORT "$(env_or_default AUDITY_API_PORT 3000)"
 set_env AUDITY_MINIO_API_PORT "$(env_or_default AUDITY_MINIO_API_PORT 9000)"

@@ -76,6 +76,15 @@ export async function registerEvidenceRoutes(app: FastifyInstance): Promise<void
         size += buffer.length;
         chunks.push(buffer);
       }
+      // @fastify/multipart truncates the stream at the size limit instead of
+      // erroring — without this check an oversized upload would be stored as a
+      // silently-corrupted, partial evidence file.
+      if (file.file.truncated) {
+        return reply.code(413).send({
+          code: "FILE_TOO_LARGE",
+          message: `Evidence file exceeds the maximum allowed size of ${config.uploadMaxBytes} bytes.`
+        });
+      }
       await storageClient.putObject(storageBucket(), objectKey, Buffer.concat(chunks), size, {
         "Content-Type": file.mimetype
       });

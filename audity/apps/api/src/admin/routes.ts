@@ -264,7 +264,12 @@ async function wouldRemoveLastActiveInstanceAdmin(userId: string, nextRole: stri
 }
 
 function csvCell(value: unknown): string {
-  const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
+  const raw = typeof value === "string" ? value : JSON.stringify(value ?? "");
+  // CSV/formula-injection guard: a cell starting with a formula trigger (= + - @ tab CR)
+  // is executed when the file is opened in Excel/Sheets. Prefix such values with a
+  // single quote (OWASP mitigation) so they render as text, but let plain numbers
+  // (incl. negatives) through unmangled.
+  const text = /^[=+\-@\t\r]/.test(raw) && !/^-?\d+(\.\d+)?$/.test(raw) ? `'${raw}` : raw;
   return `"${text.replace(/"/g, '""')}"`;
 }
 
@@ -1176,6 +1181,12 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       await pool.query(
         "update users set password_hash = $1, updated_at = now() where id = $2",
         [passwordHash, request.params.id]
+      );
+      // Revoke the target user's existing sessions so a reset (often triggered for a
+      // compromised account) forces a re-login and locks out any hijacked session.
+      await pool.query(
+        "update sessions set revoked_at = now() where user_id = $1 and revoked_at is null",
+        [request.params.id]
       );
       await appendActivityEvent({
         userId: request.user!.sub,

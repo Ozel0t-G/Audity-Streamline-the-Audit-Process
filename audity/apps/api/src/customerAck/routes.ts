@@ -32,8 +32,13 @@ const PORTAL_RATE_LIMIT = { max: 20, timeWindow: "1 minute" } as const;
  * Defensive response headers for portal endpoints — minimise what a compromised
  * portal page could exfiltrate, prevent embedding in iframes, suppress referer leaks.
  */
-function applyPortalHeaders(reply: { header: (name: string, value: string) => unknown }): void {
-  reply.header("X-Frame-Options", "DENY");
+function applyPortalHeaders(
+  reply: { header: (name: string, value: string) => unknown },
+  options: { frameable?: boolean } = {}
+): void {
+  // The snapshot PDF is intentionally embedded in an <iframe> on the portal page,
+  // so it must allow same-origin framing; everything else stays DENY.
+  reply.header("X-Frame-Options", options.frameable ? "SAMEORIGIN" : "DENY");
   reply.header("Referrer-Policy", "no-referrer");
   reply.header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
   reply.header("X-Content-Type-Options", "nosniff");
@@ -625,7 +630,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
     "/api/portal/ack/:token/snapshot.pdf",
     { config: { rateLimit: PORTAL_RATE_LIMIT } },
     async (request, reply) => {
-      applyPortalHeaders(reply);
+      applyPortalHeaders(reply, { frameable: true });
       const row = await findTokenByPlain(request.params.token);
       if (!row) {
         return reply.code(404).send({ code: "INVALID_TOKEN", message: "Link is no longer valid." });

@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { isAdminRole } from "../customers/access.js";
 import { pool } from "../db/client.js";
 
 const workbenchKinds = [
@@ -272,11 +273,21 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
     if (!term) return { results: [] };
     const canUseWorkbench = request.user!.permissions.includes("settings.manage");
     const q = `%${term}%`;
+    // Scope every result to customers the user may access (owner or active share),
+    // admins excepted — otherwise global search leaks customer/assessment/risk/
+    // finding names across tenants regardless of access.
+    const userId = request.user!.sub;
+    const isAdmin = isAdminRole(request.user!.role);
+    const access = `($2::boolean or c.created_by_user_id = $3 or exists (
+      select 1 from customer_shares cs
+      where cs.customer_id = c.id and cs.shared_with_user_id = $3 and cs.revoked_at is null
+    ))`;
+    const scoped = [q, isAdmin, userId];
     const [customers, assessments, risks, findings, reports, records] = await Promise.all([
       pool.query(
-        `select 'Customer' as type, id::text, name as title, industry as subtitle, '/customers/' || id as url
-         from customers where archived_at is null and name ilike $1 order by updated_at desc limit 8`,
-        [q]
+        `select 'Customer' as type, c.id::text, c.name as title, c.industry as subtitle, '/customers/' || c.id as url
+         from customers c where c.archived_at is null and c.name ilike $1 and ${access} order by c.updated_at desc limit 8`,
+        scoped
       ),
       pool.query(
         `select 'Assessment' as type, a.id::text, c.name || ' - ' || a.type as title, coalesce(a.framework, f.short_name, f.name, 'Assessment') as subtitle,
@@ -284,27 +295,36 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
          from assessments a
          join customers c on c.id = a.customer_id
          left join frameworks f on f.id = a.framework_id
-         where c.name ilike $1 or a.type ilike $1 or coalesce(a.framework, f.name, '') ilike $1
+         where (c.name ilike $1 or a.type ilike $1 or coalesce(a.framework, f.name, '') ilike $1) and ${access}
          order by a.updated_at desc limit 8`,
-        [q]
+        scoped
       ),
       pool.query(
         `select 'Risk' as type, r.id::text, r.title, coalesce(r.rating, r.status) as subtitle,
                 '/assessments/' || r.assessment_id || '/workflow' as url
-         from risks r where r.title ilike $1 order by r.updated_at desc limit 8`,
-        [q]
+         from risks r
+         join assessments a on a.id = r.assessment_id
+         join customers c on c.id = a.customer_id
+         where r.title ilike $1 and ${access} order by r.updated_at desc limit 8`,
+        scoped
       ),
       pool.query(
         `select 'Finding' as type, f.id::text, f.title, coalesce(f.priority, f.status) as subtitle,
                 '/assessments/' || f.assessment_id || '/workflow' as url
-         from findings f where f.title ilike $1 order by f.updated_at desc limit 8`,
-        [q]
+         from findings f
+         join assessments a on a.id = f.assessment_id
+         join customers c on c.id = a.customer_id
+         where f.title ilike $1 and ${access} order by f.updated_at desc limit 8`,
+        scoped
       ),
       pool.query(
-        `select 'Report' as type, id::text, 'Report v' || report_version as title, status as subtitle,
-                '/assessments/' || assessment_id || '/assets' as url
-         from reports where status ilike $1 or content::text ilike $1 order by updated_at desc limit 8`,
-        [q]
+        `select 'Report' as type, rep.id::text, 'Report v' || rep.report_version as title, rep.status as subtitle,
+                '/assessments/' || rep.assessment_id || '/assets' as url
+         from reports rep
+         join assessments a on a.id = rep.assessment_id
+         join customers c on c.id = a.customer_id
+         where (rep.status ilike $1 or rep.content::text ilike $1) and ${access} order by rep.updated_at desc limit 8`,
+        scoped
       ),
       canUseWorkbench ? pool.query(
         `select 'Workbench' as type, id::text, title, kind as subtitle, '/admin/workbench?kind=' || kind as url

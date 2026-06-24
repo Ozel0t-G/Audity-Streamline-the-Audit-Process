@@ -80,13 +80,20 @@ export type RestoreOptions = {
 export async function restoreCustomerArtifactsFromSpool(opts: RestoreOptions): Promise<void> {
   const manifestPath = path.join(opts.spoolPath, "manifest.json");
   const raw = await fs.readFile(manifestPath, "utf8");
-  const manifest = JSON.parse(raw) as { evidence: string[]; reports: string[] };
+  let manifest: { evidence?: unknown; reports?: unknown };
+  try {
+    manifest = JSON.parse(raw) as { evidence?: unknown; reports?: unknown };
+  } catch {
+    throw new Error(`Archive manifest is unreadable (corrupt JSON): ${manifestPath}`);
+  }
+  const evidence = Array.isArray(manifest.evidence) ? (manifest.evidence as string[]) : [];
+  const reports = Array.isArray(manifest.reports) ? (manifest.reports as string[]) : [];
 
-  for (const key of manifest.evidence) {
+  for (const key of evidence) {
     const src = path.join(opts.spoolPath, "evidence", safeKeyToFilename(key));
     await storageClient.fPutObject(storageBucket(), key, src);
   }
-  for (const key of manifest.reports) {
+  for (const key of reports) {
     const src = path.join(opts.spoolPath, "reports", safeKeyToFilename(key));
     await storageClient.fPutObject(storageBucket(), key, src);
   }

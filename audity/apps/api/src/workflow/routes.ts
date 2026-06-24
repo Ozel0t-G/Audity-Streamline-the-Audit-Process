@@ -161,6 +161,7 @@ function mapFinding(row: Record<string, unknown>) {
     frameworkControlId: row.framework_control_id,
     controlCode: row.control_code,
     controlTitle: row.control_title,
+    controlDescription: row.control_description ?? null,
     question: row.question,
     score: row.score,
     title: row.title,
@@ -389,7 +390,7 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       });
       await ensureSuggestedFindings(request.params.id);
       const result = await pool.query(
-        `select f.*, fc.control_code, fc.title as control_title, aq.question, ca.score,
+        `select f.*, fc.control_code, fc.title as control_title, fc.description as control_description, aq.question, ca.score,
           coalesce(
             json_agg(distinct jsonb_build_object(
               'controlId', mapped.id,
@@ -432,7 +433,7 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         [request.params.id]
       );
       const findingsResult = await pool.query(
-        `select f.*, fc.control_code, fc.title as control_title
+        `select f.*, fc.control_code, fc.title as control_title, fc.description as control_description
          from findings f
          left join framework_controls fc on fc.id = f.framework_control_id
          where f.assessment_id = $1
@@ -476,7 +477,8 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         { header: "Finding", key: "title", width: 42 },
         { header: "L", key: "l", width: 6 },
         { header: "I", key: "i", width: 6 },
-        { header: "Framework control", key: "control", width: 30 },
+        { header: "Framework control", key: "control", width: 22 },
+        { header: "Control description", key: "controlDescription", width: 50 },
         { header: "Note", key: "note", width: 60 }
       ];
       for (const f of findingsResult.rows) {
@@ -487,11 +489,13 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           control: f.control_code
             ? `${f.control_code}${f.control_title ? ` — ${f.control_title}` : ""}`
             : "",
+          controlDescription: f.control_description ?? "",
           note: f.observation ?? ""
         });
       }
       findingSheet.getRow(1).font = { bold: true };
       findingSheet.getColumn("note").alignment = { wrapText: true, vertical: "top" };
+      findingSheet.getColumn("controlDescription").alignment = { wrapText: true, vertical: "top" };
 
       const buffer = await workbook.xlsx.writeBuffer();
       return reply
@@ -1212,37 +1216,54 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
       }
-      const risks = await pool.query(
-        `select r.*
-         from risks r
-         left join roadmap_items ri on ri.risk_id = r.id
-         where r.assessment_id = $1
-           and r.status not in ('closed','deleted')
-           and r.rating in ('High','Critical')
-           and ri.id is null
-         order by r.risk_score desc nulls last`,
-        [request.params.id]
-      );
       const created = [];
-      for (const risk of risks.rows) {
-        const phase = risk.rating === "Critical" ? "0-30d" : "31-90d";
-        const result = await pool.query(
-          `insert into roadmap_items
-            (id, assessment_id, risk_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating)
-           values ($1,$2,$3,$4,$5,$6,null,$7,'open',$8)
-           returning *`,
-          [
-            randomUUID(),
-            request.params.id,
-            risk.id,
-            phase,
-            `Treat ${risk.rating} risk: ${risk.title}`,
-            risk.owner ?? "",
-            risk.rating === "Critical" ? "High" : "Medium",
-            risk.rating
-          ]
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        // Serialize concurrent generate calls for the same assessment. The select
+        // below picks risks that have no roadmap item yet (ri.id is null); without
+        // this lock two near-simultaneous generates (double-click) would both see the
+        // same risks as unfulfilled and each insert an item, producing duplicates.
+        // A unique(risk_id) constraint isn't an option — manual multi-items per risk
+        // are allowed — so a transaction-scoped advisory lock is the right guard.
+        await client.query("select pg_advisory_xact_lock(hashtext($1))", [`roadmap-generate:${request.params.id}`]);
+        const risks = await client.query(
+          `select r.*
+           from risks r
+           left join roadmap_items ri on ri.risk_id = r.id
+           where r.assessment_id = $1
+             and r.status not in ('closed','deleted')
+             and r.rating in ('High','Critical')
+             and ri.id is null
+           order by r.risk_score desc nulls last`,
+          [request.params.id]
         );
-        created.push(result.rows[0]);
+        for (const risk of risks.rows) {
+          const phase = risk.rating === "Critical" ? "0-30d" : "31-90d";
+          const result = await client.query(
+            `insert into roadmap_items
+              (id, assessment_id, risk_id, phase, action, owner, due_date, effort_estimate, status, source_risk_rating)
+             values ($1,$2,$3,$4,$5,$6,null,$7,'open',$8)
+             returning *`,
+            [
+              randomUUID(),
+              request.params.id,
+              risk.id,
+              phase,
+              `Treat ${risk.rating} risk: ${risk.title}`,
+              risk.owner ?? "",
+              risk.rating === "Critical" ? "High" : "Medium",
+              risk.rating
+            ]
+          );
+          created.push(result.rows[0]);
+        }
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
       }
       await appendActivityEvent({
         userId: request.user!.sub,
@@ -1311,6 +1332,33 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         after
       });
       return { roadmapItem: after };
+    }
+  );
+
+  app.delete<{ Params: { id: string; roadmapItemId: string } }>(
+    "/api/assessments/:id/roadmap/:roadmapItemId",
+    { preHandler: requireCsrfPermission("roadmap.edit") },
+    async (request, reply) => {
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      const before = await loadRoadmapItem(request.params.roadmapItemId);
+      const result = await pool.query(
+        "delete from roadmap_items where id = $1 and assessment_id = $2",
+        [request.params.roadmapItemId, request.params.id]
+      );
+      if (!result.rowCount) {
+        return reply.code(404).send({ code: "ROADMAP_ITEM_NOT_FOUND", message: "Roadmap item not found" });
+      }
+      await appendActivityEvent({
+        userId: request.user!.sub,
+        action: "roadmap.item_deleted",
+        entityType: "roadmap_item",
+        entityId: request.params.roadmapItemId,
+        before,
+        after: null
+      });
+      return { status: "ok" };
     }
   );
 }

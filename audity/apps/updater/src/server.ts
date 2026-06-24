@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { z } from "zod";
 
@@ -41,15 +41,26 @@ function appendLog(line: string) {
   }
 }
 
+function tokensMatch(provided: string, expected: string): boolean {
+  // Constant-time comparison over fixed-length digests so the bearer check on this
+  // privileged endpoint cannot be brute-forced byte-by-byte via response timing,
+  // and so length differences don't leak (timingSafeEqual requires equal lengths).
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
 async function requireToken(request: FastifyRequest, reply: FastifyReply) {
   if (!token) {
-    await reply.code(503).send({ code: "UPDATER_NOT_CONFIGURED", message: "Updater token is not configured" });
-    return;
+    // `return reply` is required: in async Fastify hooks, calling reply.send()
+    // without returning it does NOT abort the lifecycle — the route handler would
+    // still run (e.g. /run would spawn the update script despite failed auth).
+    return reply.code(503).send({ code: "UPDATER_NOT_CONFIGURED", message: "Updater token is not configured" });
   }
   const header = request.headers.authorization;
   const bearer = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : "";
-  if (bearer !== token) {
-    await reply.code(401).send({ code: "UPDATER_AUTH_REQUIRED", message: "Updater token is invalid" });
+  if (!tokensMatch(bearer, token)) {
+    return reply.code(401).send({ code: "UPDATER_AUTH_REQUIRED", message: "Updater token is invalid" });
   }
 }
 

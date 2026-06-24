@@ -89,7 +89,8 @@ const mfaSetupVerifySchema = z.object({
   code: z.string().trim().min(6).max(12)
 });
 const disableMfaSchema = z.object({
-  userId: z.string().uuid().optional()
+  userId: z.string().uuid().optional(),
+  currentPassword: z.string().min(1).max(256).optional()
 });
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(256),
@@ -135,17 +136,34 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: SetupBody }>("/api/auth/setup", { config: { rateLimit: authRateLimit } }, async (request, reply) => {
     const body = validateBody(setupSchema, request.body);
-    const count = await getUserCount();
-    if (count > 0) {
-      return reply
-        .code(409)
-        .send({ code: "SETUP_CLOSED", message: "Initial setup is already complete" });
+    // Serialize first-time setup. Without this, two concurrent requests on a fresh
+    // instance both pass the count===0 check and each create an Instance Admin
+    // (privilege boundary). Both handlers contend on the same advisory lock, so the
+    // loser re-checks the count after the winner commits and is rejected.
+    const lockClient = await pool.connect();
+    let user: Awaited<ReturnType<typeof createInstanceAdmin>> | undefined;
+    try {
+      await lockClient.query("select pg_advisory_lock(hashtext('audity:instance-setup'))");
+      const count = await getUserCount();
+      if (count > 0) {
+        return reply
+          .code(409)
+          .send({ code: "SETUP_CLOSED", message: "Initial setup is already complete" });
+      }
+      user = await createInstanceAdmin({
+        email: body.email,
+        name: body.name ?? "Instance Admin",
+        password: body.password
+      });
+    } finally {
+      try {
+        await lockClient.query("select pg_advisory_unlock(hashtext('audity:instance-setup'))");
+        lockClient.release();
+      } catch {
+        // Discard the connection so a still-held advisory lock can't leak into the pool.
+        lockClient.release(true);
+      }
     }
-    const user = await createInstanceAdmin({
-      email: body.email,
-      name: body.name ?? "Instance Admin",
-      password: body.password
-    });
     const session = await loginWithPassword(body.email, body.password);
     if (!session) {
       return reply
@@ -153,7 +171,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         .send({ code: "SETUP_SESSION_FAILED", message: "Setup session failed" });
     }
     setRefreshCookie(reply, session.refreshToken);
-    return { accessToken: session.accessToken, csrfToken: session.csrfToken, user: publicUser(user) };
+    return { accessToken: session.accessToken, csrfToken: session.csrfToken, user: publicUser(user!) };
   });
 
   // ---- Recovery phrase (Disaster Recovery, Option B) ----
@@ -359,7 +377,16 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post("/api/auth/mfa/setup", { config: { rateLimit: authRateLimit }, preHandler: requireAuth }, async (request) => {
+  app.post("/api/auth/mfa/setup", { config: { rateLimit: authRateLimit }, preHandler: requireAuth }, async (request, reply) => {
+    // Don't let a fresh setup clobber an already-enabled MFA: storePendingMfaSecret
+    // sets enabled=false, so re-running setup would silently disable existing MFA
+    // and swap in an unconfirmed secret. Require an explicit disable first.
+    if (await isMfaEnabled(request.user!.sub)) {
+      return reply.code(409).send({
+        code: "MFA_ALREADY_ENABLED",
+        message: "MFA is already enabled. Disable it before setting it up again."
+      });
+    }
     const setup = await createMfaSetup(request.user!.email);
     await storePendingMfaSecret(request.user!.sub, setup.secret);
     return setup;
@@ -462,6 +489,27 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return reply
           .code(403)
           .send({ code: "PERMISSION_DENIED", message: "Only admins can disable MFA for other users" });
+      }
+      if (!disablingOtherUser) {
+        // Step-up auth: disabling your own MFA is a security downgrade, so require the
+        // current password — the same re-auth the change-password route enforces. This
+        // stops a transiently-compromised session from permanently weakening the account.
+        // (Admins disabling another user's MFA is a role-gated, audited override and
+        // doesn't have the target's password.)
+        if (!body.currentPassword) {
+          return reply
+            .code(400)
+            .send({ code: "PASSWORD_REQUIRED", message: "Current password is required to disable MFA" });
+        }
+        const self = await pool.query<{ password_hash: string }>(
+          "select password_hash from users where id = $1 and status = 'active'",
+          [request.user!.sub]
+        );
+        if (!self.rows[0] || !(await argon2.verify(self.rows[0].password_hash, body.currentPassword))) {
+          return reply
+            .code(401)
+            .send({ code: "PASSWORD_INVALID", message: "Current password is incorrect" });
+        }
       }
       await disableMfa(targetUserId);
       await appendAuditEvent({

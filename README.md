@@ -1,239 +1,213 @@
-<img width="771" height="280" alt="audity-lockup-dark" src="https://github.com/user-attachments/assets/c0db9260-437c-4860-ab6d-270197e4b040" /><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 771 280" width="771" height="280">
- 
-
-
-
+<img width="771" height="280" alt="audity-lockup-dark" src="https://github.com/user-attachments/assets/c0db9260-437c-4860-ab6d-270197e4b040" />
 
 # Audity — Self-Hosted Audit & GRC Assessment Platform
 
-Audity is a self-hosted audit and security assessment platform for security consultants, GRC professionals, CISOs, and internal security teams. It takes you from assessment planning through findings, risk register, remediation roadmap, and final report — without sending your client's data to someone else's cloud.
+**Audity takes a security/compliance audit from first scoping to the customer's final signature — in one place, on your own infrastructure.**
+
+It is built for security consultants, GRC professionals, CISOs, and internal audit teams who run real assessments against real frameworks and need the result to be traceable, defensible, and private.
 
 ---
 
-## What Audity does for you
+## Why I built Audity
 
-Security assessments involve a lot of moving parts: scope definition, control questions, evidence collection, findings, risk scoring, roadmap items, and a professional report at the end. Most consultants manage this across a mix of spreadsheets, Word documents, and whatever their firm's template looks like this year. It works, but it doesn't scale well, and it makes consistency hard.
+Running a security audit is not one task — it is a dozen tangled ones. You scope the engagement, pull the right control set for the framework, ask the questions, collect evidence, write findings, score risks, build a remediation roadmap, write the report, and finally get the customer to acknowledge it. In most shops this happens across a spreadsheet here, a Word template there, an email thread for evidence, and a separate file for the risk register.
 
-Audity gives that process a proper structure. You work through a guided workflow — scope and context first, then domain-based control questions with maturity scoring, finding review, risk register, roadmap planning, and finally a branded report export. Each step feeds into the next. The system keeps track of what changed and when, so you can always reconstruct the reasoning behind an assessment result.
+That approach has three problems I kept running into:
 
-It is not a compliance certification tool. Audity will not tell you that your client is ISO 27001 certified. What it does is help you run a thorough, traceable assessment and produce documentation that a professional can stand behind.
+1. **Nothing is connected.** A finding lives in one document, the control it relates to in another, the risk it feeds in a third, and the roadmap action in a fourth. Keeping them consistent is manual, and manual means drift and mistakes.
+2. **It doesn't scale across customers or frameworks.** The moment you serve several clients, or map one client against ISO 27001 *and* NIS2, the spreadsheet model collapses.
+3. **The data is sensitive — and it ends up everywhere.** Audit data is some of the most sensitive a company holds (its weaknesses, in writing). Pushing it into yet another SaaS cloud is exactly what most clients don't want.
 
-**The guided workflow looks like this:**
+**Audity solves this by giving the whole audit lifecycle a single, connected structure that you host yourself.** You pick a customer, pick (or create) an audit, and from there one tabbed workspace carries you through every phase — scope, controls & evidence, findings, risk register, roadmap, report & sign-off, and evidence/reports. Each step feeds the next, every change is recorded in a tamper-evident log, and nothing leaves your servers.
 
-```
-Setup → Scope & Context → Guided Questions → Finding Review → Risk Register → Roadmap → Report
-```
+> Audity is an **assessment** platform, not a certification authority. It won't declare anyone "ISO 27001 certified." It helps you run a thorough, traceable assessment and produce documentation a professional can stand behind.
 
-**Key capabilities:**
-
-- Domain-based control questions with 0–5 maturity scoring
-- Framework support for ISO 27001 readiness, NIST CSF 2.0, NIS2, CIS Controls, MITRE ATT&CK, NSM Grunnprinsipper, and custom frameworks
-- Finding review with accept / edit / dismiss workflow
-- Risk register with likelihood × impact scoring and treatment tracking
-- Remediation roadmap with phase-based prioritization (30 / 90 / 180 / 365 days)
-- Branded PDF report export with modular report sections
-- Encrypted report delivery via SMTP
-- Evidence file management
-- Project export and import in an encrypted `.cisoassess` container
-- Full activity and audit logging
+![Customer Audit Center](docs/screenshots/customer-audit-center.png)
+*The Customer Audit Center: customer master data, contacts, and every audit for that customer in one hub.*
 
 ---
 
-## Who it is for
+## Security & Data Protection
 
-- Security consultants running assessments for multiple clients
-- CISOs managing internal security programs
-- GRC professionals working with ISO 27001, NIS2, or NIST frameworks
-- Internal security teams that need structured, repeatable assessment processes
-- Managed security service providers that want to keep client data off shared platforms
-- Auditors who need a traceable record of assessment decisions
+Audity holds an organization's weaknesses in writing, so security is not a feature — it is the foundation. This section is intentionally detailed.
 
----
+### Authentication & sessions
 
-## Self-hosted by design
+- **Password hashing with Argon2id** everywhere a secret is stored: account login, password changes, and MFA recovery codes. No reversible storage, no fast hashes.
+- **Admin-provisioned one-time passwords.** When an admin invites a user, the backend generates a 24-character password from a CSPRNG with guaranteed complexity (upper/lower/digit/symbol) and shows it exactly once. Admins cannot set a weak starter password from the UI.
+- **JWT access tokens (HS256)** signed with the application secret, short-lived (**15 min**), carrying only `sub` and session id.
+- **Refresh-token rotation.** Refresh tokens live **30 days**, are stored only as SHA-256 hashes, and are **single-use**: every refresh revokes the old token and issues a new one. Concurrent refreshes are de-duplicated client-side so a burst of requests can't trip the rotation and force a spurious logout.
+- **Cookies are `httpOnly` + `SameSite=strict`** for the refresh token; the access token is kept in memory only.
+- **Multi-factor authentication (TOTP)** with QR enrolment, plus **single-use recovery codes** (Argon2id-hashed, consumed under a row lock so a code can't be redeemed twice). The MFA challenge token is its own short-lived (5 min), purpose-scoped JWT.
 
-Audity runs as a Docker Compose stack. There is no hosted backend. Your data stays on your infrastructure — your PostgreSQL database, your object storage, your encryption keys.
+### Authorization & multi-tenancy
 
-The deployment model is intentionally one stack per client or organization:
+- **Role-based access control** with seven roles (Instance Admin, Tenant Admin, Assessment Manager, Auditor, Contributor, Reviewer, Viewer) and fine-grained permissions enforced on every mutating route.
+- **Per-customer / per-assessment access control.** Beyond the role check, every customer- and assessment-scoped route runs `canAccessCustomer` / `canAccessAssessment`: access requires being the owner or holding an explicit, non-revoked share (`customer_shares`). Admins are scoped explicitly. This prevents horizontal (IDOR-style) access across tenants.
+- **CSRF protection.** All state-changing requests require a session-bound CSRF token (`X-CSRF-Token`) validated server-side; the SPA attaches it automatically.
+- **Sensitive admin actions are gated to Instance Admin + CSRF** — e.g. triggering an in-app update.
 
-```
-audity-artemis/   ← your client's dedicated stack
-├── docker-compose.yml
-├── .env
-└── volumes/
-    ├── postgres/
-    ├── storage/
-    └── backups/
-```
+### Rate limiting & abuse resistance
 
-Each stack has its own database, storage, secrets, encryption keys, and logs. There is no shared multi-tenant database that a misconfigured permission could leak across. If you have five clients, you run five independent stacks. This is more operational overhead than a shared platform, and that tradeoff is deliberate.
+- **Redis-backed rate limiting** on authentication, token refresh, and the public customer-acknowledgement portal, to blunt brute-force and token-guessing.
 
----
+### Data at rest & secrets
 
-## Security architecture
+- **AES-256-GCM** for secrets and sensitive payloads at rest (e.g. stored SMTP credentials, encrypted export packages) — authenticated encryption, so tampering is detected via the GCM auth tag.
+- **Key separation is enforced.** In production Audity **refuses to start** if `AUDITY_APP_SECRET` or `AUDITY_ENCRYPTION_KEY` are missing, default, weak (< 32 chars), or identical to each other. Insecure defaults are only tolerated outside production and can't slip into a real deployment.
 
-This section is intentionally detailed. The platform handles assessment data — which means it handles security weaknesses, control gaps, infrastructure details, risk ratings, and remediation plans. That data needs to be protected seriously.
+### Input handling & injection resistance
 
-### Passwords
+- **Parameterized SQL throughout.** No string-built queries; user input never reaches the query text. Identifier-scoped updates always bind both the resource id **and** its parent (e.g. `where id = $1 and assessment_id = $2`) so sub-resources can't be addressed across assessments.
+- **Schema validation with Zod** on request bodies.
+- **No `eval`, no `child_process`/shell execution** in the application code.
+- **No raw HTML injection** on the frontend — no `dangerouslySetInnerHTML` / `innerHTML`; user-supplied text in generated emails is HTML-escaped.
 
-Passwords are hashed with Argon2id with a unique salt per password. The option for a pepper stored outside the database is included. Plaintext passwords are never stored, never logged, and never sent back to a client. Password reset tokens are single-use, time-limited, and stored hashed.
+### Integrity & auditability
 
-### Multi-factor authentication
+- **Tamper-evident activity log.** Every event is hash-chained (`event_hash = sha256(timestamp + actor + action + entity + payload + prev_hash)`) and appended under a Postgres advisory lock so the chain can't fork under concurrency. Altering or removing a past entry breaks the chain and is detectable.
+- **Audit sign-offs carry their own event hash**, binding the signer, statement, report version, and timestamp.
+- **Atomic imports.** Importing an audit package writes the customer, assessment, findings, risks, roadmap, reports, and evidence inside a single database transaction — a partial failure rolls back cleanly instead of leaving orphaned records.
+- **Idempotent, versioned migrations** applied deterministically on boot.
 
-MFA via TOTP is required for production deployments. QR code enrollment, recovery codes, admin reset flow, and tenant-wide MFA enforcement are all included. Every MFA event — enabled, disabled, reset, bypassed — is written to the audit log.
+### Customer-acknowledgement portal
 
-### Session security
+The public sign-off portal (magic link) is hardened independently:
 
-Sessions use HTTP-only secure cookies with SameSite policy and CSRF protection. Idle timeout, session expiration, refresh token rotation, logout from all devices, and admin-initiated session revocation are all part of the model.
+- Tokens are **random 256-bit values, stored only as SHA-256 hashes**, with an **expiry**, a **revoke** path, and a **max number of concurrent pending tokens** per recipient.
+- Redemption is **single-use and atomic** — the token is claimed with a guarded `UPDATE` so two concurrent submits can't both produce a sign-off.
+- Each token pins an **immutable snapshot** of the report at issue time, so the customer signs exactly what they were shown.
 
-### Data encryption
+### Encrypted export / import & backups
 
-Sensitive fields are encrypted at the application layer — assessment notes, answers, findings, risks, evidence notes, report drafts, and customer infrastructure details. The storage layer (MinIO or mounted volume) is encrypted. The master encryption key is configured through an environment variable or secret file, never baked into the container image, never committed to Git.
+- Assessment and report packages are exported as **AES-256-GCM-encrypted containers** with a **SHA-256 integrity checksum**; import verifies both before touching the database.
+- Backup/restore is permission-gated and tracked in the audit log.
 
-```env
-AUDITY_ENCRYPTION_KEY=base64-encoded-32-byte-key
-AUDITY_APP_SECRET=replace-with-secure-random-secret
-```
+### Transport & web hardening
 
-If the encryption key is lost, encrypted customer data is not recoverable. Backup your key.
+- The web tier ships strict response headers (`X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, a restrictive `Permissions-Policy`), serves JS/CSS/HTML with `no-cache` to avoid stale-bundle issues, and blocks direct access to source maps and config files.
 
-### Role-based access control
+### Supply chain & updates
 
-Every API request checks who the user is, which tenant they belong to, what role they hold, and whether they are allowed to perform the requested action on the requested resource.
+- **Dependency hygiene:** advisories are tracked and patched; transitive risks are pinned via npm `overrides`. `npm audit` is kept clean.
+- **Self-update** is Instance-Admin-only + CSRF, validates the update manifest's channel/branch, and delegates the actual image rollout to a separate, token-authenticated updater service — the app never shells out.
 
-Roles: Instance Admin, Tenant Admin, Assessment Manager, Auditor, Contributor, Reviewer, Viewer.
+### Self-hosting = data residency by default
 
-Permissions are granular — `finding.approve`, `risk.accept`, `report.export`, `evidence.upload`, `auditlog.view`, and so on. Standard users cannot access audit logs or activity logs. They cannot change branding, email settings, or tenant configuration.
-
-### Immutable activity logging
-
-Every assessment-relevant action is written to an append-only activity log with before/after values:
-
-```json
-{
-  "action": "control_answer.updated",
-  "field": "maturityScore",
-  "before": 1,
-  "after": 3,
-  "userId": "usr_123",
-  "assessmentId": "assess_456",
-  "timestamp": "2026-05-15T12:00:00Z"
-}
-```
-
-The application layer has no update or delete operation on activity log records. The database user running the application does not have those permissions. Optional hash chaining links each event to the previous one, so a gap or modification in the log is detectable.
-
-The Tenant Admin UI can filter logs by user, assessment, action type, date range, and entity, and can export the full log. High-risk actions — accepting a risk, reducing a maturity score, exporting a report, disabling MFA — are highlighted.
-
-### Secure report delivery
-
-Reports are packaged into an encrypted `.auditysecure` container before sending. The package contains the PDF report, optional risk register export, a metadata file, and a checksum. The encryption key is delivered through a separate channel. No plaintext report is left in temporary directories after sending. Every email action is logged with recipient, report ID, encryption method, and SMTP delivery status.
-
-### Evidence security
-
-Evidence uploads have file size limits and file type restrictions. There are no public object storage buckets. Download URLs are short-lived and signed. Every upload, download, delete, and export action is logged.
+Audity runs entirely on your own infrastructure (Docker). Client audit data — findings, evidence, risks, reports — never leaves your servers. There is no vendor cloud in the path.
 
 ---
 
-## Framework support
+## What you can do, and how
 
-Audity supports frameworks in different modes depending on licensing:
+### 1. Set up a customer
 
-| Framework | Mode |
-|---|---|
-| NIST Cybersecurity Framework 2.0 | Built-in |
-| NIS2 | Built-in legal requirement mapping |
-| MITRE ATT&CK | Built-in detection mapping |
-| HIPAA Security Rule | Built-in requirement mapping |
-| NSM Grunnprinsipper | Built-in or referenced |
-| ISO/IEC 27001:2022 | Audity readiness workflow + user-provided licensed content |
-| Custom frameworks | User-created or imported |
+Open the **Customer Audit Center** for a customer. Here you maintain the customer's master data (industry, regulatory context, address, website, notes) and **structured contacts** (name, role, email, phone), and you see every audit that exists for that customer. Click an audit to enter it.
 
-ISO 27001 deserves a specific note: Audity includes original assessment questions for ISO 27001 readiness coverage — ISMS scope, risk assessment, access control, incident management, supplier security, and so on. It does not include the official ISO standard text, control catalogue, or ISO implementation guidance. Those are copyrighted materials that require a license from ISO. If your organization has a license, you can import that content. Audity stores it locally under your tenant and marks it as user-imported, not redistributed by Audity.
+### 2. Work the audit through one tabbed workspace
 
-Audity uses readiness language throughout: "coverage," "potential gap," "assessment result," "framework mapping." Not "certified," "fully compliant," or "audit-proof."
+Inside an audit, a single tab bar carries the whole lifecycle — the currently selected audit is always shown by an **"Active audit"** badge:
 
----
+| Tab | What you do |
+|-----|-------------|
+| **Plan & Scope** | Timeline, audit owner, reviewer, scope items. Gate: kickoff + owner set, ≥1 in-scope item. |
+| **Controls & Evidence** | Domain-based control questions with 0–5 maturity scoring, evidence mapping, sampling, interviews. |
+| **Findings** | Lifecycle, severity, management response, remediation, re-test. |
+| **Risk Register** | 5×5 likelihood × impact matrix, treatment, findings linked to risks. Below it: a simple findings list (finding · L · I · mapped control + its description · free-text note) — **exportable, together with the register, as one Excel workbook**. |
+| **Roadmap** | Sequenced remediation actions across Now / Soon / Mid / Long, drag-to-reprioritize and delete. |
+| **Report & Sign-off** | Modular report builder, Statement of Applicability, branded PDF export, signatures. |
+| **Evidence & Reports** | Evidence file management and report assets. |
 
-## Minimum requirements
+![Risk Register](docs/screenshots/risk-register.png)
+*Risk Register tab: the 5×5 matrix on top, the collapsible findings list (L/I, mapped control, notes, Excel export) below.*
 
-| Setup | CPU | RAM | Storage |
-|---|---|---|---|
-| Test / lab | 2 vCPU | 4 GB | 40–60 GB SSD |
-| Production (≤25 users) | 4 vCPU | 8 GB | 100–200 GB SSD |
-| Active consulting team | 4–8 vCPU | 16 GB | 250–500 GB NVMe |
+![Findings](docs/screenshots/findings.png)
+*Findings: lifecycle, severity matrix, management response, remediation and re-test.*
 
-OS: Linux. Runtime: Docker + Docker Compose.
+### 3. Use the right framework
 
----
+Audity ships **32+ control frameworks** as versioned YAML, including ISO/IEC 27001:2022 Annex A, NIST CSF 2.0, NIST SP 800-53 / 800-171, CIS Controls v8.1, EU NIS2, EU DORA, EU GDPR, EU AI Act, HIPAA Security Rule, PCI DSS 4.0.1, BSI C5 / IT-Grundschutz, OWASP ASVS/SAMM, MITRE ATT&CK/D3FEND, and many national baselines. You can **import your own** framework via YAML or CSV (with auto-delimiter detection and comment support), and optionally use **AI-assisted enrichment** to draft control questions/guidance (LLM provider is optional and falls back to clearly-marked TODO placeholders).
 
-## Stack overview
+### 4. Deliver and get sign-off
 
-```
-audity-web       React + TypeScript frontend (served by NGINX)
-audity-api       Node.js + TypeScript API (Fastify/NestJS)
-audity-worker    Background jobs — PDF generation, email delivery, backups
-audity-db        PostgreSQL 16
-audity-redis     Redis 7 — queues, rate limiting, session cache
-audity-storage   MinIO or local volume — evidence files, report packages
-audity-ai        Optional, disabled by default — tenant-local LLM runtime
-```
+Export a branded PDF report, deliver it over encrypted SMTP, and send the customer a **magic-link acknowledgement portal** where they review a pinned snapshot and e-sign — producing a receipt and a tamper-evident sign-off record.
+
+### 5. Run the instance (Admin)
+
+User management (RBAC), framework library, stuck-assessment thresholds, AI & integrations, connectors, branding, email settings (SMTP + per-event notification routing), system monitor, backup/restore, archive, in-app updates, and full activity/audit logs.
+
+![Admin — User Management](docs/screenshots/admin-user-management.png)
+*Admin: role-based user management and per-event email notification routing.*
 
 ---
 
-## Getting started
+## Roles
+
+| Role | Typical use |
+|------|-------------|
+| **Instance Admin** | Full platform control, updates, backups, all tenants. |
+| **Tenant Admin** | Manage users, settings and customers within a tenant. |
+| **Assessment Manager** | Owns audits end-to-end. |
+| **Auditor** | Executes assessments, records findings/risks. |
+| **Contributor** | Adds evidence and answers. |
+| **Reviewer** | Reviews and approves controls/findings. |
+| **Viewer** | Read-only. |
+
+---
+
+## Architecture & tech stack
+
+Monorepo (npm workspaces) deployed as a Docker Compose stack:
+
+- **`audity-web`** — React + Vite + React Router + Tailwind SPA, served by hardened nginx.
+- **`audity-api`** — Node.js + Fastify REST API (Argon2id, JWT, Zod, exceljs, pdfkit, nodemailer).
+- **`audity-worker`** — BullMQ background jobs (report rendering, email, exports).
+- **`audity-db`** — PostgreSQL (system of record).
+- **`audity-redis`** — sessions/rate-limiting/job queue.
+- **`audity-storage`** — MinIO (S3-compatible) for evidence & report artifacts.
+
+---
+
+## Quick start
+
+> Prerequisites: Docker + Docker Compose. All commands run from the `audity/` directory.
 
 ```bash
-git clone https://github.com/your-org/audity
-cd audity-yourtenantname
-cp .env.example .env
-# Edit .env — set AUDITY_APP_SECRET, AUDITY_ENCRYPTION_KEY, database credentials
-docker compose up -d
+# 1. Generate secure secrets and a .env (app secret, encryption key, DB/storage creds)
+./scripts/install.sh
+
+# 2. Build and start the full stack
+docker compose up -d --build
+
+# 3. Database schema is applied automatically on API start.
+#    To run migrations manually:
+docker compose exec audity-api node dist/db/migrate.js
 ```
 
-See the [deployment guide](./docs/deployment.md) for full setup instructions, TLS configuration, and backup setup.
+The web app is then reachable on the configured port; create the first Instance Admin via the setup screen.
+
+For local development with hot reload, use `docker-compose.dev.yml`.
+
+> **Production note:** Audity refuses to start in production with default/weak/identical secrets. `./scripts/install.sh` generates strong, distinct values for `AUDITY_APP_SECRET` and `AUDITY_ENCRYPTION_KEY` for you.
+
+![Login](docs/screenshots/login.png)
+*Sign-in (MFA-aware).*
 
 ---
 
-## Backup and key management
+## Screenshots
 
-Run daily PostgreSQL backups, daily evidence storage backups, and weekly full archives. Keep your `AUDITY_ENCRYPTION_KEY` backed up separately from the database — if you lose it, the encrypted data is gone. Test your restore procedure before you need it.
+Place images in `docs/screenshots/` with these names so they render above:
 
-Recommended monitoring: Uptime Kuma or Prometheus + Grafana for container health, Loki for log aggregation, Docker health checks for all services.
-
----
-
-## Implementation status
-
-| Phase | Description | Status |
-|---|---|---|
-| 1 | Docker foundation — frontend/backend split, PostgreSQL, Docker Compose | In progress |
-| 2 | Authentication — password hashing, TOTP MFA, sessions, RBAC, audit logging | Done |
-| 3 | Data persistence — customers, assessments, framework engine, findings, risks | In progress |
-| 4 | Traceability — immutable activity log, before/after tracking, tamper-evident hashing | Done |
-| 5 | Reporting — branded templates, modular report builder, PDF export | In progress |
-| 6 | Secure email — SMTP, encrypted packages, delivery audit trail | Done |
-| 7 | Evidence and export hardening — file uploads, `.cisoassess` packages | In progress |
-| 8 | Platform hardening — field-level encryption, backup/restore, rate limiting | In progress |
-| 9 | Optional AI — tenant-local runtime, AI job queue, per-tenant vector store | Future |
+- `login.png` — login screen
+- `customer-audit-center.png` — customer hub (master data, contacts, audits)
+- `risk-register.png` — Risk Register tab (matrix + findings list)
+- `findings.png` — Findings tab
+- `admin-user-management.png` — admin user management
+- *(optional)* `dashboard.png`, `report-signoff.png`
 
 ---
 
-## Alpha limitations
+## Status & license
 
-Audity does not provide legal advice. It does not certify compliance with any standard or regulation. Framework mappings in the alpha are initial and not certification-grade. Professional review is required before any formal audit conclusions.
-
-Operators are responsible for securing their own deployment — host hardening, TLS, firewall configuration, secret rotation, backup strategy, and key management. The platform gives you the structure. The operational security is yours to maintain.
-
----
-
-## License
-
-Community Edition is released under [MIT License](./LICENSE).
-
----
-
-<img width="1015" height="473" alt="Bildschirmfoto 2026-06-04 um 15 34 49" src="https://github.com/user-attachments/assets/f1887c8c-a390-4f24-8dd7-d3fe2bc32d1f" />
-<img width="1015" height="473" alt="Bildschirmfoto 2026-06-04 um 15 35 00" src="https://github.com/user-attachments/assets/69811fe1-698c-42cd-86e0-78b62c76308b" />
-<img width="1015" height="473" alt="Bildschirmfoto 2026-06-04 um 15 34 34" src="https://github.com/user-attachments/assets/d0b1931c-3af9-4f0c-b3d8-00a524406a6f" />
-
+Audity is under active development (current version `0.2.3`). See the repository for license terms.

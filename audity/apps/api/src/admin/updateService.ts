@@ -96,9 +96,15 @@ async function cachedStatus(): Promise<UpdateStatus | null> {
   );
   const row = result.rows[0];
   if (!row) return null;
+  const current = currentVersion();
+  const latestVersion = row.value.latestVersion ?? null;
   return {
     ...row.value,
-    currentVersion: currentVersion(),
+    // The cached response may have been written before the updater replaced
+    // the containers. Re-evaluate this flag with the running version so an
+    // already-installed release is never still presented as available.
+    currentVersion: current,
+    updateAvailable: Boolean(latestVersion && compareVersions(latestVersion, current) > 0),
     configuredImageTag: configuredImageTag(),
     imageRegistry: imageRegistry(),
     repository: repository(),

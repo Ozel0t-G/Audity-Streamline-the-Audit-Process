@@ -10,22 +10,24 @@ export function RiskPhasePage() {
     <PhaseLayout
       active="risk"
       title="Risk Register"
-      description="Findings overview with likelihood, impact and mapped controls. Open the full risk register for the 5×5 matrix, scoring and treatment. Export both to Excel."
+      description="Score and treat risks in the 5×5 matrix above. The findings list (with likelihood, impact, mapped controls and notes) sits below — expand it when you need it, and export both to Excel."
     >
       {auditId ? (
         <div className="space-y-4">
-          {/* Full risk register collapsed by default — expand when you need the
-              matrix, scoring and treatment editor. */}
-          <details className="audity-card p-4">
-            <summary className="cursor-pointer select-none text-base font-semibold text-audity-text">
-              Full risk register — matrix, scoring &amp; treatment
+          {/* Risk register itself — always visible, just a touch smaller. */}
+          <div className="text-[0.95rem]">
+            <AssessmentWorkflowPage assessmentId={auditId} only="risk" embedded />
+          </div>
+
+          {/* Findings list collapsed by default (everything under the register). */}
+          <details>
+            <summary className="audity-card cursor-pointer select-none p-3 text-sm font-semibold text-audity-text">
+              Findings list — likelihood, impact, mapped control &amp; notes · Excel export
             </summary>
-            <div className="mt-4 border-t border-audity-border pt-4">
-              <AssessmentWorkflowPage assessmentId={auditId} only="risk" embedded />
+            <div className="mt-2">
+              <FindingsSummaryList assessmentId={auditId} />
             </div>
           </details>
-
-          <FindingsSummaryList assessmentId={auditId} />
         </div>
       ) : (
         <p className="text-sm text-audity-muted">Select an audit to view its risk register.</p>

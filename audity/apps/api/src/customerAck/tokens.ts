@@ -137,23 +137,34 @@ export async function captureSnapshot(assessmentId: string, reportVersion: numbe
     title: string | null;
     severity_impact: number | null;
     severity_likelihood: number | null;
+    calculated_severity: string | null;
     management_response: string | null;
     management_response_status: string | null;
     lifecycle_status: string | null;
   }>(
-    `select id, title, severity_impact, severity_likelihood,
+    `select id, title, severity_impact, severity_likelihood, calculated_severity,
             management_response, management_response_status, lifecycle_status
        from findings
       where assessment_id = $1
       order by severity_impact desc nulls last, severity_likelihood desc nulls last`,
     [assessmentId]
   );
+  const validTiers = new Set(["critical", "high", "medium", "low"]);
   const findings = findingsResult.rows.map((f) => {
     const score = (f.severity_impact ?? 0) * (f.severity_likelihood ?? 0);
-    let tier: "critical" | "high" | "medium" | "low" = "low";
-    if (score >= 20) tier = "critical";
-    else if (score >= 14) tier = "high";
-    else if (score >= 7) tier = "medium";
+    // Prefer the authoritative tier the auditor's calc persisted — it folds in the
+    // control-criticality and evidence-confidence boosts that the raw L×I product
+    // omits. Recompute from the product only for legacy rows never re-saved, so the
+    // customer never sees a lower severity than what was actually assessed.
+    let tier: "critical" | "high" | "medium" | "low";
+    if (f.calculated_severity && validTiers.has(f.calculated_severity)) {
+      tier = f.calculated_severity as "critical" | "high" | "medium" | "low";
+    } else {
+      tier = "low";
+      if (score >= 20) tier = "critical";
+      else if (score >= 14) tier = "high";
+      else if (score >= 7) tier = "medium";
+    }
     return {
       id: f.id,
       title: f.title ?? "(untitled)",

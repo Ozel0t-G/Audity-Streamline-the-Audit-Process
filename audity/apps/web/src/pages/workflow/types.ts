@@ -5,6 +5,7 @@ export type Finding = {
   frameworkControlId: string | null;
   controlCode: string | null;
   controlTitle: string | null;
+  controlDescription: string | null;
   question: string | null;
   score: number | null;
   title: string;

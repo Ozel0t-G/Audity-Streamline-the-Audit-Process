@@ -36,13 +36,18 @@ export function CustomerContextProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const customerMatch = location.pathname.match(/^\/customers\/([0-9a-f-]{36})$/i);
+    // Match /customers/:id as well as the tabbed audit views /customers/:id/<tab>;
+    // without the optional trailing segment the phase tabs fell through to the
+    // "else" branch and wiped the customer/audit context (so the sidebar lost it).
+    const customerMatch = location.pathname.match(/^\/customers\/([0-9a-f-]{36})(?:\/|$)/i);
     const assessmentMatch = location.pathname.match(/^\/assessments\/([0-9a-f-]{36})\//i);
 
     if (customerMatch) {
       const nextCustomerId = customerMatch[1];
       setCustomerId(nextCustomerId);
-      setAssessmentIdState("");
+      // The active audit on a tab view is carried in ?audit=; reflect it so the
+      // sidebar shows the selected audit's navigation.
+      setAssessmentIdState(new URLSearchParams(location.search).get("audit") ?? "");
       void api<{ customer: { name: string } }>(`/api/customers/${nextCustomerId}`)
         .then((payload) => {
           if (!cancelled) setCustomerLabel(payload.customer.name);
@@ -77,7 +82,7 @@ export function CustomerContextProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [api, location.pathname]);
+  }, [api, location.pathname, location.search]);
 
   const value = useMemo<CustomerContextValue>(() => ({
     customerLabel,

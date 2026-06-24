@@ -7,17 +7,18 @@ import type { Finding } from "../../workflow/types";
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
 /**
- * Simple, always-visible findings list under the Risk Register: finding · L · I ·
- * mapped framework control · free-text note (stored in the finding's observation).
- * Exports the risk register + this list together as a single .xlsx.
+ * Simple, collapsible findings list under the Risk Register: finding · L · I ·
+ * mapped framework control (with its description) · free-text note. L/I and the
+ * note are editable inline. Exports the risk register + this list as one .xlsx.
  */
 export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) {
   const api = useApi();
-  const { accessToken, user } = useAuth();
+  const { accessToken, user, refreshSession } = useAuth();
   const toast = useToast();
   const canEdit = Boolean(user?.permissions.includes("finding.approve"));
   const [findings, setFindings] = useState<Finding[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [sev, setSev] = useState<Record<string, { l: string; i: string }>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
@@ -26,6 +27,17 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
       const res = await api<{ findings: Finding[] }>(`/api/assessments/${assessmentId}/findings`);
       setFindings(res.findings);
       setNotes(Object.fromEntries(res.findings.map((finding) => [finding.id, finding.observation ?? ""])));
+      setSev(
+        Object.fromEntries(
+          res.findings.map((finding) => [
+            finding.id,
+            {
+              l: finding.severityLikelihood != null ? String(finding.severityLikelihood) : "",
+              i: finding.severityImpact != null ? String(finding.severityImpact) : ""
+            }
+          ])
+        )
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load findings");
     }
@@ -47,9 +59,41 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
       setFindings((prev) =>
         prev.map((f) => (f.id === finding.id ? { ...f, observation: notes[finding.id] ?? "" } : f))
       );
-      toast.success("Note saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save note");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  // L/I edit severity_impact/severity_likelihood; the audit-center endpoint
+  // recomputes the finding's calculated severity, keeping the matrix consistent.
+  async function saveSeverity(finding: Finding) {
+    const entry = sev[finding.id] ?? { l: "", i: "" };
+    const l = entry.l === "" ? null : Math.max(1, Math.min(5, Number(entry.l) || 0)) || null;
+    const i = entry.i === "" ? null : Math.max(1, Math.min(5, Number(entry.i) || 0)) || null;
+    if (l === (finding.severityLikelihood ?? null) && i === (finding.severityImpact ?? null)) return;
+    // The audit-center schema accepts severity 1–5 but not null, so only send the
+    // fields that actually have a value (each can be set independently).
+    const payload: { severityLikelihood?: number; severityImpact?: number } = {};
+    if (l !== null) payload.severityLikelihood = l;
+    if (i !== null) payload.severityImpact = i;
+    if (Object.keys(payload).length === 0) return;
+    setSavingId(finding.id);
+    try {
+      await api(`/api/assessments/${assessmentId}/audit-center/findings/${finding.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload)
+      });
+      setFindings((prev) =>
+        prev.map((f) =>
+          f.id === finding.id
+            ? { ...f, severityLikelihood: l ?? f.severityLikelihood, severityImpact: i ?? f.severityImpact }
+            : f
+        )
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save L/I");
     } finally {
       setSavingId(null);
     }
@@ -58,26 +102,49 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
   async function exportExcel() {
     setExporting(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/assessments/${assessmentId}/risk-register.xlsx`, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-        credentials: "include"
-      });
+      const url = `${apiBaseUrl}/api/assessments/${assessmentId}/risk-register.xlsx`;
+      const send = (token: string | null) =>
+        fetch(url, { credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+      // Mirror the api client: on a 401 (e.g. an expired access token) refresh
+      // once and retry, so the download doesn't fail mid-session.
+      let res = await send(accessToken);
+      if (res.status === 401) {
+        const refreshed = await refreshSession();
+        if (refreshed) res = await send(refreshed.accessToken);
+      }
       if (!res.ok) throw new Error(`Export failed (${res.status})`);
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const blobUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
-      anchor.href = url;
+      anchor.href = blobUrl;
       anchor.download = `risk-register-${assessmentId}.xlsx`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Export failed");
     } finally {
       setExporting(false);
     }
   }
+
+  const sevInput = (findingId: string, key: "l" | "i", finding: Finding) => (
+    <input
+      type="number"
+      min={1}
+      max={5}
+      className="audity-input w-12 px-1 py-0.5 text-center text-xs"
+      value={sev[findingId]?.[key] ?? ""}
+      disabled={!canEdit || savingId === findingId}
+      onChange={(event) =>
+        setSev({ ...sev, [findingId]: { ...(sev[findingId] ?? { l: "", i: "" }), [key]: event.target.value } })
+      }
+      onBlur={() => {
+        if (canEdit) void saveSeverity(finding);
+      }}
+    />
+  );
 
   return (
     <section className="audity-card p-4">
@@ -108,12 +175,22 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
               {findings.map((finding) => (
                 <tr key={finding.id} className="border-t border-audity-border align-top">
                   <td className="py-2 pr-3 font-medium text-audity-text">{finding.title}</td>
-                  <td className="px-2 text-center">{finding.severityLikelihood ?? "—"}</td>
-                  <td className="px-2 text-center">{finding.severityImpact ?? "—"}</td>
+                  <td className="px-2 text-center">{sevInput(finding.id, "l", finding)}</td>
+                  <td className="px-2 text-center">{sevInput(finding.id, "i", finding)}</td>
                   <td className="px-2 text-audity-secondary">
-                    {finding.controlCode
-                      ? `${finding.controlCode}${finding.controlTitle ? ` — ${finding.controlTitle}` : ""}`
-                      : "—"}
+                    {finding.controlCode || finding.controlTitle ? (
+                      <div className="max-w-[260px]">
+                        <p className="font-medium text-audity-text">
+                          {finding.controlCode}
+                          {finding.controlTitle ? ` — ${finding.controlTitle}` : ""}
+                        </p>
+                        {finding.controlDescription ? (
+                          <p className="mt-0.5 text-xs text-audity-muted">{finding.controlDescription}</p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="px-2">
                     <textarea

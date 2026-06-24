@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { lookup } from "node:dns/promises";
+import net from "node:net";
 import type { FastifyInstance } from "fastify";
 import { Worker } from "bullmq";
 import { z } from "zod";
@@ -319,8 +321,52 @@ function syncHtmlPage(bundle: CustomerSyncBundle): string {
   return `<h1>Audity Customer Sync</h1><pre>${text}</pre>`;
 }
 
+function isBlockedAddress(ip: string): boolean {
+  const v = ip.startsWith("::ffff:") ? ip.slice(7) : ip;
+  if (net.isIPv4(v)) {
+    const [a, b] = v.split(".").map(Number);
+    if (a === 0 || a === 10 || a === 127) return true;          // this-network, private, loopback
+    if (a === 169 && b === 254) return true;                    // link-local incl. cloud metadata (169.254.169.254)
+    if (a === 172 && b >= 16 && b <= 31) return true;           // private
+    if (a === 192 && b === 168) return true;                    // private
+    if (a === 100 && b >= 64 && b <= 127) return true;          // CGNAT
+    if (a >= 224) return true;                                  // multicast / reserved
+    return false;
+  }
+  const lower = v.toLowerCase();
+  if (lower === "::1" || lower === "::") return true;           // loopback / unspecified
+  if (lower.startsWith("fe80")) return true;                   // link-local
+  if (lower.startsWith("fc") || lower.startsWith("fd")) return true; // unique-local
+  return false;
+}
+
+// SSRF guard for the single outbound chokepoint. Blocks connector base/webhook URLs
+// that resolve to private/internal/cloud-metadata addresses so a `connectors.manage`
+// holder can't turn the API server into a request proxy (e.g. read 169.254.169.254
+// IMDS credentials). Note: a DNS-rebinding attacker could still race the resolve vs.
+// the fetch; defeating that needs IP pinning at connect time. This blocks the common
+// direct-IP / metadata / misconfiguration cases.
+async function assertSafeProviderUrl(url: string): Promise<void> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("Connector URL is invalid");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("Connector URL must use http or https");
+  }
+  const resolved = await lookup(parsed.hostname, { all: true }).catch(() => []);
+  if (resolved.length === 0 || resolved.some((entry) => isBlockedAddress(entry.address))) {
+    throw new Error("Connector URL resolves to a disallowed (private/internal) address");
+  }
+}
+
 async function providerFetch(url: string, init: RequestInit) {
-  const response = await fetch(url, init);
+  await assertSafeProviderUrl(url);
+  // redirect:"error" stops a public host from bouncing the request to an internal one
+  // after the pre-flight check; timeout caps slow-loris style hangs.
+  const response = await fetch(url, { ...init, redirect: "error", signal: AbortSignal.timeout(15_000) });
   const contentType = response.headers.get("content-type") ?? "";
   const payload = contentType.includes("json") ? await response.json().catch(() => null) : await response.text().catch(() => "");
   if (!response.ok) {

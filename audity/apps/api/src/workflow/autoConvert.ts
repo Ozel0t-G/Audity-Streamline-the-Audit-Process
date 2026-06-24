@@ -75,39 +75,64 @@ export async function maybeAutoConvertFindingToRisk(
   if (!settings.rows[0]?.auto_convert_findings_to_risks) {
     return { created: false };
   }
-  const existing = await pool.query<{ risk_id: string }>(
-    `select risk_id from risk_finding_links where finding_id = $1 limit 1`,
-    [findingId]
-  );
-  if (existing.rowCount && existing.rowCount > 0) {
-    return { created: false, riskId: existing.rows[0].risk_id };
-  }
-  const finding = await pool.query<{ title: string; priority: string | null }>(
-    `select title, priority from findings where id = $1`,
-    [findingId]
-  );
-  const f = finding.rows[0];
-  if (!f) return { created: false };
 
-  const riskId = randomUUID();
-  await pool.query(
-    `insert into risks (id, assessment_id, finding_id, title, likelihood, impact, risk_score, rating, status, draft)
-       values ($1, $2, $3, $4, 3, 3, 9, 'Medium', 'open', true)`,
-    [riskId, assessmentId, findingId, f.title]
-  );
-  await pool.query(
-    `insert into risk_finding_links (risk_id, finding_id, contribution_note)
-       values ($1, $2, 'Auto-created on finding approval')
-       on conflict (risk_id, finding_id) do nothing`,
-    [riskId, findingId]
-  );
-  await appendActivityEvent({
-    userId,
-    action: "risk.auto_created_from_finding",
-    entityType: "risk",
-    entityId: riskId,
-    before: null,
-    after: { findingId, autoCreated: true }
-  }).catch(() => undefined);
-  return { created: true, riskId };
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    // Serialize concurrent auto-conversions for the same finding. Without this, two
+    // near-simultaneous approvals (double-submit/retry) both pass the existence check
+    // below and each insert a *different* random-id risk — the `on conflict
+    // (risk_id, finding_id)` guard can't dedup because the risk ids differ, yielding
+    // duplicate draft risks. risk_finding_links is many-to-many (a finding may back
+    // multiple risks), so a unique(finding_id) constraint isn't viable; a
+    // transaction-scoped advisory lock keyed on the finding is the right guard.
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [`risk-autoconvert:${findingId}`]);
+
+    const existing = await client.query<{ risk_id: string }>(
+      `select risk_id from risk_finding_links where finding_id = $1 limit 1`,
+      [findingId]
+    );
+    if (existing.rowCount && existing.rowCount > 0) {
+      await client.query("commit");
+      return { created: false, riskId: existing.rows[0].risk_id };
+    }
+    const finding = await client.query<{ title: string; priority: string | null }>(
+      `select title, priority from findings where id = $1`,
+      [findingId]
+    );
+    const f = finding.rows[0];
+    if (!f) {
+      await client.query("commit");
+      return { created: false };
+    }
+
+    const riskId = randomUUID();
+    await client.query(
+      `insert into risks (id, assessment_id, finding_id, title, likelihood, impact, risk_score, rating, status, draft)
+         values ($1, $2, $3, $4, 3, 3, 9, 'Medium', 'open', true)`,
+      [riskId, assessmentId, findingId, f.title]
+    );
+    await client.query(
+      `insert into risk_finding_links (risk_id, finding_id, contribution_note)
+         values ($1, $2, 'Auto-created on finding approval')
+         on conflict (risk_id, finding_id) do nothing`,
+      [riskId, findingId]
+    );
+    await client.query("commit");
+
+    await appendActivityEvent({
+      userId,
+      action: "risk.auto_created_from_finding",
+      entityType: "risk",
+      entityId: riskId,
+      before: null,
+      after: { findingId, autoCreated: true }
+    }).catch(() => undefined);
+    return { created: true, riskId };
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }

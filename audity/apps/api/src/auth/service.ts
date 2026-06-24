@@ -112,13 +112,25 @@ export type AuthOutcome =
   | { ok: true; user: AuthUser }
   | { ok: false; reason: AuthFailureReason; userId?: string };
 
+let timingEqualizerHashPromise: Promise<string> | null = null;
+function timingEqualizerHash(): Promise<string> {
+  if (!timingEqualizerHashPromise) {
+    timingEqualizerHashPromise = argon2.hash("audity-timing-equalizer", { type: argon2.argon2id });
+  }
+  return timingEqualizerHashPromise;
+}
+
 export async function authenticateWithPasswordDetailed(
   email: string,
   password: string
 ): Promise<AuthOutcome> {
   const row = await getUserByEmail(email);
-  if (!row) return { ok: false, reason: "no_user" };
-  if (row.status !== "active") return { ok: false, reason: "disabled", userId: row.id };
+  if (!row || row.status !== "active") {
+    // Run a dummy verify so non-existent / disabled accounts cost the same time as
+    // a real password check — otherwise response timing leaks which emails exist.
+    await argon2.verify(await timingEqualizerHash(), password).catch(() => undefined);
+    return row ? { ok: false, reason: "disabled", userId: row.id } : { ok: false, reason: "no_user" };
+  }
   const valid = await argon2.verify(row.password_hash, password);
   if (!valid) return { ok: false, reason: "wrong_password", userId: row.id };
   const user: AuthUser = {
