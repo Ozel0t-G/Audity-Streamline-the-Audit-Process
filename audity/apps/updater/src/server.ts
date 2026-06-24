@@ -147,7 +147,9 @@ async function dockerExec(args: string[], timeoutMs = 30_000): Promise<string> {
 // (minor conflicts) and surface whatever output we got rather than reporting failure.
 async function dockerPrune(): Promise<string> {
   try {
-    return await dockerExec(["system", "prune", "-f"], 300_000);
+    // Stay below the API's default fetch (undici) ~300s timeout so the updater always
+    // responds first; the daemon keeps reclaiming server-side even if the CLI is cut off.
+    return await dockerExec(["system", "prune", "-f"], 240_000);
   } catch (error) {
     const e = error as { stdout?: string; stderr?: string; message?: string };
     const out = `${e.stdout ?? ""}${e.stderr ? `\n${e.stderr}` : ""}`.trim();

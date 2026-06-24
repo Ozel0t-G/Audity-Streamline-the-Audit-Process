@@ -1,6 +1,9 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useApi } from "../../api/client";
-import { useToast } from "../../components/ui";
+import { useAuth } from "../../auth/AuthProvider";
+import { MultiCombobox, useToast, type ComboOption } from "../../components/ui";
+
+type FrameworkOption = { id: string; name: string; shortName: string | null };
 
 type CustomerDetails = {
   id: string;
@@ -10,7 +13,14 @@ type CustomerDetails = {
   address: string | null;
   website: string | null;
   notes: string | null;
+  createdByUserId?: string | null;
+  selectedFrameworks?: FrameworkOption[];
 };
+
+// Sentinel value for the "All frameworks" entry rendered at the end of the
+// framework dropdown. Selecting it expands the scope to every framework
+// instead of being stored as a real selection.
+const ALL_FRAMEWORKS = "__all_frameworks__";
 
 type Contact = {
   id: string;
@@ -25,17 +35,27 @@ type Contact = {
 export function CustomerDetailsPanel({ customerId, canEdit }: { customerId: string; canEdit: boolean }) {
   const api = useApi();
   const toast = useToast();
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [form, setForm] = useState({ industry: "", regulatoryContext: "", address: "", website: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [newContact, setNewContact] = useState({ name: "", role: "", email: "", phone: "" });
   const [addingContact, setAddingContact] = useState(false);
+  const [frameworks, setFrameworks] = useState<FrameworkOption[]>([]);
+  const [scopeFrameworkIds, setScopeFrameworkIds] = useState<string[]>([]);
+  const [savedScopeFrameworkIds, setSavedScopeFrameworkIds] = useState<string[]>([]);
+  const [savingScope, setSavingScope] = useState(false);
+  const [canManageScope, setCanManageScope] = useState(false);
+
+  const currentUserId = user?.id ?? user?.sub;
+  const isAdmin = user?.role === "Instance Admin" || user?.role === "Tenant Admin";
 
   async function load() {
     try {
-      const [c, k] = await Promise.all([
+      const [c, k, f] = await Promise.all([
         api<{ customer: CustomerDetails }>(`/api/customers/${customerId}`),
-        api<{ contacts: Contact[] }>(`/api/customers/${customerId}/contacts`)
+        api<{ contacts: Contact[] }>(`/api/customers/${customerId}/contacts`),
+        api<{ frameworks: FrameworkOption[] }>("/api/frameworks")
       ]);
       setForm({
         industry: c.customer.industry ?? "",
@@ -45,6 +65,11 @@ export function CustomerDetailsPanel({ customerId, canEdit }: { customerId: stri
         notes: c.customer.notes ?? ""
       });
       setContacts(k.contacts);
+      setFrameworks(f.frameworks);
+      const selected = c.customer.selectedFrameworks?.map((framework) => framework.id) ?? [];
+      setScopeFrameworkIds(selected);
+      setSavedScopeFrameworkIds(selected);
+      setCanManageScope(isAdmin || c.customer.createdByUserId === currentUserId);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load customer details");
     }
@@ -54,6 +79,50 @@ export function CustomerDetailsPanel({ customerId, canEdit }: { customerId: stri
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
+
+  // Append an "All frameworks" entry to the end of the dropdown so the scope
+  // can be expanded to every stored framework in one click.
+  const frameworkOptions = useMemo<ComboOption[]>(() => {
+    const base = frameworks.map((framework): ComboOption => ({
+      value: framework.id,
+      label: framework.shortName ?? framework.name,
+      hint: framework.shortName ? framework.name : undefined
+    }));
+    if (frameworks.length) {
+      base.push({ value: ALL_FRAMEWORKS, label: "All frameworks", hint: "Add every framework to the scope" });
+    }
+    return base;
+  }, [frameworks]);
+
+  function onScopeChange(next: string[]) {
+    if (next.includes(ALL_FRAMEWORKS)) {
+      setScopeFrameworkIds(frameworks.map((framework) => framework.id));
+      return;
+    }
+    setScopeFrameworkIds(next);
+  }
+
+  const scopeDirty = useMemo(() => {
+    if (scopeFrameworkIds.length !== savedScopeFrameworkIds.length) return true;
+    const saved = new Set(savedScopeFrameworkIds);
+    return scopeFrameworkIds.some((idValue) => !saved.has(idValue));
+  }, [scopeFrameworkIds, savedScopeFrameworkIds]);
+
+  async function saveFrameworkScope() {
+    setSavingScope(true);
+    try {
+      await api(`/api/customers/${customerId}/frameworks`, {
+        method: "PATCH",
+        body: JSON.stringify({ frameworkIds: scopeFrameworkIds })
+      });
+      setSavedScopeFrameworkIds(scopeFrameworkIds);
+      toast.success("Framework scope saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save framework scope");
+    } finally {
+      setSavingScope(false);
+    }
+  }
 
   async function saveDetails(event: FormEvent) {
     event.preventDefault();
@@ -95,6 +164,37 @@ export function CustomerDetailsPanel({ customerId, canEdit }: { customerId: stri
 
   return (
     <section className="audity-card mb-4 grid gap-6 p-4 lg:grid-cols-2">
+      {/* ── Framework scope ─────────────────────────────────── */}
+      <div className="lg:col-span-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-audity-text">Framework scope</h2>
+          {canManageScope ? (
+            <button
+              type="button"
+              className="audity-btn-primary audity-btn-sm"
+              disabled={savingScope || !scopeDirty}
+              onClick={() => void saveFrameworkScope()}
+            >
+              {savingScope ? "Saving…" : "Save scope"}
+            </button>
+          ) : null}
+        </div>
+        {canManageScope ? (
+          <MultiCombobox
+            options={frameworkOptions}
+            value={scopeFrameworkIds}
+            onChange={onScopeChange}
+            placeholder="Add or change frameworks…"
+            ariaLabel="Framework scope"
+            emptyText="No frameworks available"
+          />
+        ) : (
+          <p className="text-xs text-audity-muted">
+            Only the customer owner or an admin can change the framework scope.
+          </p>
+        )}
+      </div>
+
       {/* ── Master data ─────────────────────────────────────── */}
       <div>
         <h2 className="mb-3 text-base font-semibold text-audity-text">Customer details</h2>
