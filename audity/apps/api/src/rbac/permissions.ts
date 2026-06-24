@@ -34,14 +34,16 @@ export const permissions = [
   "backup.manage",
   "connectors.manage",
   "customer.archive",
-  "archive.approve"
+  "archive.approve",
+  "server.console"
 ] as const;
 
 export type PermissionName = (typeof permissions)[number];
 
 export const rolePermissions: Record<(typeof roles)[number], PermissionName[]> = {
   "Instance Admin": [...permissions],
-  "Tenant Admin": permissions.filter((permission) => !["settings.manage", "frameworks.manage"].includes(permission)),
+  // server.console (maintenance-mode shell) is Instance-Admin-only — never Tenant Admin.
+  "Tenant Admin": permissions.filter((permission) => !["settings.manage", "frameworks.manage", "server.console"].includes(permission)),
   "Assessment Manager": [
     "assessment.create",
     "assessment.edit",

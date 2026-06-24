@@ -23,6 +23,11 @@ export type AudityConfig = {
   storageSecretKey: string;
   uploadMaxBytes: number;
   uploadAllowedTypes: string[];
+  consoleEnabled: boolean;
+  consoleRunnerUrl: string;
+  consoleRunnerToken: string;
+  consoleIdleTimeoutSeconds: number;
+  consoleMaxSessionSeconds: number;
 };
 
 const insecureValues = new Set([
@@ -124,7 +129,14 @@ export function loadConfig(): AudityConfig {
     uploadAllowedTypes: (
       process.env.AUDITY_UPLOAD_ALLOWED_TYPES ??
       "application/pdf,text/plain,text/csv,image/png,image/jpeg,application/json"
-    ).split(",").map((type) => type.trim()).filter(Boolean)
+    ).split(",").map((type) => type.trim()).filter(Boolean),
+    // Maintenance-mode server console. Off unless explicitly enabled at the infra
+    // layer, so a DB/admin compromise alone cannot turn on a web shell.
+    consoleEnabled: process.env.AUDITY_SERVER_CONSOLE_ENABLED === "true",
+    consoleRunnerUrl: process.env.AUDITY_CONSOLE_RUNNER_URL ?? "http://audity-console-runner:3100",
+    consoleRunnerToken: process.env.AUDITY_CONSOLE_RUNNER_TOKEN ?? "",
+    consoleIdleTimeoutSeconds: Number(process.env.AUDITY_CONSOLE_IDLE_TIMEOUT_SECONDS ?? 600),
+    consoleMaxSessionSeconds: Number(process.env.AUDITY_CONSOLE_MAX_SESSION_SECONDS ?? 1800)
   };
   validateProductionConfig(config);
   cachedConfig = config;

@@ -26,8 +26,11 @@ function readableLabel(value: string) {
   return value.replace(/_/g, " ");
 }
 
-export function GuidedQuestionsPage() {
-  const { id } = useParams();
+export function GuidedQuestionsPage({ assessmentId }: { assessmentId?: string } = {}) {
+  // When embedded inside the Controls tab the assessment id is passed as a prop;
+  // the standalone /assessments/:id/questions route still supplies it via the URL.
+  const params = useParams();
+  const id = assessmentId ?? params.id;
   const api = useApi();
   const { user } = useAuth();
   const canEditAssessment = Boolean(user?.permissions.includes("assessment.edit"));

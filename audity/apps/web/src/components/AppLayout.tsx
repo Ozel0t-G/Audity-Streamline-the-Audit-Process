@@ -623,6 +623,7 @@ function AdminLayoutInner() {
             {can("email.manage") ? <NavLink className={navClass} to="/admin/email"><NavIcon name="email" /> {t("Email Settings")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/workbench"><NavIcon name="workbench" /> {t("Workbench")}</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup"><NavIcon name="backup" /> {t("Backup")}</NavLink> : null}
+            {can("server.console") ? <NavLink className={navClass} to="/admin/maintenance"><NavIcon name="system" /> {t("Maintenance Mode")}</NavLink> : null}
             {can("archive.approve") ? <NavLink className={navClass} to="/admin/archive"><NavIcon name="archive" /> {t("Archive")}</NavLink> : null}
             <NavLink className={navClass} to="/manual"><NavIcon name="manual" /> {t("Manual")}</NavLink>
           </nav>

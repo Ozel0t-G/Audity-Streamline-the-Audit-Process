@@ -1,4 +1,5 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
+import { promisify } from "node:util";
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { z } from "zod";
@@ -121,6 +122,55 @@ app.post<{ Body: unknown }>("/run", { preHandler: requireToken }, async (request
   }
   startUpdate(parsed.data.version);
   return reply.code(202).send({ job: currentJob });
+});
+
+// --- Allowlisted maintenance commands (no shell; fixed binary + arg array) ----------
+const execFileAsync = promisify(execFile);
+const EXEC_SERVICES = ["api", "web", "worker", "db", "redis", "storage"] as const;
+const execSchema = z.object({
+  action: z.enum(["status", "restart", "logs", "disk"]),
+  service: z.enum(EXEC_SERVICES).optional(),
+  lines: z.number().int().min(1).max(1000).optional()
+});
+
+async function dockerExec(args: string[]): Promise<string> {
+  // execFile (NOT a shell): args are passed verbatim to docker, so no metacharacter
+  // can ever be interpreted as a separate command — command injection is impossible.
+  const { stdout, stderr } = await execFileAsync("docker", args, {
+    timeout: 30_000,
+    maxBuffer: 4 * 1024 * 1024
+  });
+  return `${stdout ?? ""}${stderr ? `\n${stderr}` : ""}`.trim();
+}
+
+app.post<{ Body: unknown }>("/exec", { preHandler: requireToken }, async (request, reply) => {
+  const parsed = execSchema.safeParse(request.body ?? {});
+  if (!parsed.success) {
+    return reply.code(400).send({ code: "VALIDATION_FAILED", message: "Invalid exec request" });
+  }
+  const { action, service, lines } = parsed.data;
+  try {
+    if (action === "status") {
+      return { output: await dockerExec(["ps", "--filter", "name=audity-", "--format", "table {{.Names}}\t{{.Status}}\t{{.Ports}}"]) };
+    }
+    if (action === "disk") {
+      return { output: await dockerExec(["system", "df"]) };
+    }
+    // restart/logs require a service from the fixed enum.
+    if (!service) {
+      return reply.code(400).send({ code: "SERVICE_REQUIRED", message: "A service is required for this action" });
+    }
+    const container = `audity-${service}`;
+    if (action === "restart") {
+      return { output: `Restarted ${container}\n${await dockerExec(["restart", container])}` };
+    }
+    if (action === "logs") {
+      return { output: await dockerExec(["logs", "--tail", String(lines ?? 100), container]) };
+    }
+    return reply.code(400).send({ code: "UNKNOWN_ACTION", message: "Unknown action" });
+  } catch (error) {
+    return reply.code(500).send({ code: "EXEC_FAILED", message: error instanceof Error ? error.message : "exec failed" });
+  }
 });
 
 app.listen({ host: "0.0.0.0", port }).catch((error) => {

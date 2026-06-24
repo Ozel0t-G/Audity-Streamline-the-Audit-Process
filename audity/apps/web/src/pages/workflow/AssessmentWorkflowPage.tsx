@@ -1020,7 +1020,8 @@ export function AssessmentWorkflowPage({
                         {[1, 2, 3, 4, 5].map((impact) => {
                           const cellRisks = risks.filter((risk) => risk.likelihood === likelihood && risk.impact === impact);
                           const count = cellRisks.length;
-                          const { rating } = { rating: likelihood * impact >= 20 ? "Critical" : likelihood * impact >= 12 ? "High" : likelihood * impact >= 5 ? "Medium" : "Low" };
+                          // Bands unified with server ratingFor + finding severity (20 / 14 / 7).
+                          const { rating } = { rating: likelihood * impact >= 20 ? "Critical" : likelihood * impact >= 14 ? "High" : likelihood * impact >= 7 ? "Medium" : "Low" };
                           const active = matrixFilter?.likelihood === likelihood && matrixFilter?.impact === impact;
                           const tooltip = count
                             ? `${count} risk${count === 1 ? "" : "s"} · ${rating}\n${cellRisks.slice(0, 5).map((r) => `• ${r.title}`).join("\n")}${count > 5 ? `\n... +${count - 5} more` : ""}`

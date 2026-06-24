@@ -1580,6 +1580,21 @@ function ServerStatusCard() {
   const [info, setInfo] = useState<SystemInfo | null>(null);
   const [fingerprint, setFingerprint] = useState<RecoveryFingerprintInfo | null>(null);
   const [error, setError] = useState("");
+  const [acknowledging, setAcknowledging] = useState(false);
+
+  const acknowledgePhrase = async () => {
+    setAcknowledging(true);
+    try {
+      const result = await api<{ acknowledgedAt: string | null }>("/api/auth/recovery-phrase/acknowledge", {
+        method: "POST"
+      });
+      setFingerprint((prev) => (prev ? { ...prev, acknowledgedAt: result.acknowledgedAt } : prev));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not acknowledge the recovery phrase.");
+    } finally {
+      setAcknowledging(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1661,9 +1676,19 @@ function ServerStatusCard() {
                   Phrase acknowledged
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full border border-audity-warning/30 bg-audity-warning/10 px-2 py-0.5 text-audity-warning">
-                  Phrase not yet saved
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-audity-warning/30 bg-audity-warning/10 px-2 py-0.5 text-audity-warning">
+                    Phrase not yet saved
+                  </span>
+                  <button
+                    type="button"
+                    className="audity-btn-secondary audity-btn-sm"
+                    onClick={acknowledgePhrase}
+                    disabled={acknowledging}
+                  >
+                    {acknowledging ? "Saving…" : "Mark phrase as saved"}
+                  </button>
+                </div>
               )}
             </div>
           </div>

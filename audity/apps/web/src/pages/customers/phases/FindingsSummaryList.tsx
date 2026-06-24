@@ -174,7 +174,12 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
             <tbody>
               {findings.map((finding) => (
                 <tr key={finding.id} className="border-t border-audity-border align-top">
-                  <td className="py-2 pr-3 font-medium text-audity-text">{finding.title}</td>
+                  <td className="py-2 pr-3 font-medium text-audity-text">
+                    {finding.title}
+                    {finding.sourceExplanation ? (
+                      <p className="mt-0.5 text-xs font-normal text-audity-muted">{finding.sourceExplanation}</p>
+                    ) : null}
+                  </td>
                   <td className="px-2 text-center">{sevInput(finding.id, "l", finding)}</td>
                   <td className="px-2 text-center">{sevInput(finding.id, "i", finding)}</td>
                   <td className="px-2 text-audity-secondary">

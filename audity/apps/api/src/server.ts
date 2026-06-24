@@ -56,6 +56,12 @@ function redactSensitiveQuery(url: string): string {
 }
 
 const app = Fastify({
+  // Behind the nginx reverse proxy: trust X-Forwarded-For only from private/loopback
+  // peers (the proxy + localhost), never from arbitrary public IPs. This makes
+  // request.ip the real client IP, so the auth rate-limit keys per client (not one
+  // shared bucket) and the console grant binds to the real IP. If the proxy isn't
+  // covered, request.ip falls back to the socket IP — same as before, so no regression.
+  trustProxy: "loopback, linklocal, uniquelocal",
   logger: {
     level: config.logLevel,
     serializers: {
@@ -76,9 +82,19 @@ const rateLimitRedis = new Redis(config.redisUrl, {
 });
 const publicOrigin = new URL(config.publicUrl.includes("://") ? config.publicUrl : `http://${config.publicUrl}`).origin;
 const isProduction = config.env === "production";
-const allowedOrigins = isProduction
-  ? [publicOrigin]
-  : Array.from(new Set([publicOrigin, "http://localhost", "http://127.0.0.1"]));
+// Operators can allow extra origins (e.g. when the app is reached via both an IP and a
+// domain, or behind a proxy) without changing the canonical public URL. Comma-separated.
+const extraAllowedOrigins = (process.env.AUDITY_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+const allowedOrigins = Array.from(
+  new Set([
+    publicOrigin,
+    ...extraAllowedOrigins,
+    ...(isProduction ? [] : ["http://localhost", "http://127.0.0.1"])
+  ])
+);
 
 await app.register(helmet, {
   contentSecurityPolicy: {
@@ -124,11 +140,22 @@ app.addHook("preHandler", async (request, reply) => {
   if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return;
   const origin = request.headers.origin;
   if (!origin) return;
-  if (!allowedOrigins.includes(origin)) {
-    await reply
-      .code(403)
-      .send({ code: "ORIGIN_DENIED", message: "Request origin is not allowed" });
+  // Explicit allowlist (AUDITY_PUBLIC_URL + AUDITY_ALLOWED_ORIGINS).
+  if (allowedOrigins.includes(origin)) return;
+  // Same-origin fallback: accept when the browser-reported Origin host matches the host
+  // this request was served on. This makes the app work on any server/IP/domain/port
+  // with no allowlist config — while a genuine cross-site (CSRF) request, whose Origin
+  // host differs from the target Host, is still rejected. A victim's browser always sends
+  // the real target as Host and the attacker's site as Origin, so the two only match for
+  // legitimate same-site requests. (Behind a Host-rewriting proxy, set AUDITY_ALLOWED_ORIGINS.)
+  try {
+    if (request.headers.host && new URL(origin).host === request.headers.host) return;
+  } catch {
+    /* malformed Origin → fall through to deny */
   }
+  return reply
+    .code(403)
+    .send({ code: "ORIGIN_DENIED", message: "Request origin is not allowed" });
 });
 
 app.setErrorHandler((error, request, reply) => {
@@ -214,6 +241,12 @@ await registerAdminRoutes(app);
 await registerEvidenceRoutes(app);
 await registerReportRoutes(app);
 await registerSecureRoutes(app);
+// Maintenance-mode console: loaded only when enabled, so the optional ws/console
+// dependencies are not required for a normal boot.
+if (config.consoleEnabled) {
+  const { registerConsoleRoutes } = await import("./console/routes.js");
+  await registerConsoleRoutes(app);
+}
 await app.listen({ host: "0.0.0.0", port: config.port });
 
 let shuttingDown = false;

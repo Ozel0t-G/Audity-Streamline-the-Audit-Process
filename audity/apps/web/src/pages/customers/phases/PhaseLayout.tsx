@@ -19,7 +19,10 @@ const PHASE_TABS = [
   { key: "risk", label: "Risk Register" },
   { key: "roadmap", label: "Roadmap" },
   { key: "report", label: "Report & Sign-off" },
-  { key: "evidence", label: "Evidence & Reports" }
+  // Renamed from "Evidence & Reports" to remove the Evidence/Reports label collision
+  // with tabs 2 ("Controls & Evidence") and 6 ("Report & Sign-off"): this tab is the
+  // final artifact/download surface, not where you do the work.
+  { key: "evidence", label: "Artifacts & Downloads" }
 ] as const;
 
 export function PhaseLayout({
@@ -164,7 +167,27 @@ export function PhaseLayout({
       </nav>
 
       <div className={`grid gap-4 ${aiOpen ? "xl:grid-cols-[1fr_320px]" : ""}`}>
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0">
+          {children}
+          {(() => {
+            // Guided progression: a "Continue to <next phase>" button so the user
+            // follows the intended Plan→Controls→Findings→Risk→Roadmap→Report→Artifacts
+            // sequence without having to know the tab order. Hidden on the last phase.
+            const idx = PHASE_TABS.findIndex((tab) => tab.key === active);
+            const next = idx >= 0 ? PHASE_TABS[idx + 1] : undefined;
+            if (!next) return null;
+            return (
+              <div className="mt-6 flex justify-end border-t border-audity-border pt-4">
+                <Link
+                  to={`/customers/${id}/${next.key}${selectedAudit ? `?audit=${selectedAudit}` : ""}`}
+                  className="audity-btn-primary"
+                >
+                  Continue to {next.label} →
+                </Link>
+              </div>
+            );
+          })()}
+        </div>
         {aiOpen ? (
           <aside className="audity-card h-fit p-4">
             <h2 className="text-sm font-semibold text-audity-text">AI Assist · {title}</h2>

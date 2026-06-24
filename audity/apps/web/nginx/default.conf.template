@@ -5,6 +5,12 @@ server {
   index index.html;
   client_max_body_size 30m;
 
+  # Docker's embedded DNS (always 127.0.0.11 on any Docker host). Combined with the
+  # variable upstream below, nginx re-resolves the API container's IP at request time,
+  # so an API rebuild/restart (new container IP) no longer causes stale-IP 502s. Fully
+  # automatic and portable — no per-server configuration needed.
+  resolver 127.0.0.11 valid=10s ipv6=off;
+
   add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self' ${AUDITY_CSP_CONNECT_EXTRA}; frame-ancestors 'none'; frame-src 'self' blob:; img-src 'self' data: blob: https://cdn.jsdelivr.net https://www.google.com https://t0.gstatic.com https://t1.gstatic.com https://t2.gstatic.com https://t3.gstatic.com; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'" always;
   add_header Cross-Origin-Opener-Policy "same-origin" always;
   add_header Cross-Origin-Resource-Policy "same-origin" always;
@@ -50,16 +56,25 @@ server {
   }
 
   location /api/ {
-    proxy_pass http://audity-api:3000/api/;
+    # Variable upstream forces per-request DNS resolution via the resolver above.
+    set $audity_api audity-api;
+    proxy_pass http://$audity_api:3000$request_uri;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+    # WebSocket upgrade support (maintenance-mode console at /api/admin/console/ws).
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    # Long-lived console sessions; don't let nginx's default 60s read timeout drop them.
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
   }
 
   location = /health {
-    proxy_pass http://audity-api:3000/health;
+    set $audity_api_health audity-api;
+    proxy_pass http://$audity_api_health:3000/health;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;

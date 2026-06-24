@@ -70,6 +70,64 @@ const userMfaSection: ManualSection = {
 
 export const manualArticles: ManualArticle[] = [
   {
+    id: "maintenance-console",
+    title: "Maintenance Console (Allowlist)",
+    category: "admin",
+    audience: "admin",
+    keywords: ["maintenance", "console", "server", "restart", "update", "logs", "backup", "commands", "allowlist", "shell"],
+    summary: "Run a fixed allowlist of vetted maintenance commands on the server from the admin panel — no free shell.",
+    sections: [
+      {
+        heading: "What it is",
+        blocks: [
+          { kind: "paragraph", text: "Maintenance Mode gives Instance Admins a curated server console: a fixed allowlist of vetted maintenance commands — there is no free shell. Each command maps to exactly one hard-coded operation that runs without a shell interpreter, so arbitrary command execution and injection are not possible. Access requires re-authentication with password + MFA, every command is written to the tamper-evident audit log, and all Instance Admins are notified when the console is opened." },
+          { kind: "warning", text: "Only Instance Admins with the server.console permission can use it, and only when AUDITY_SERVER_CONSOLE_ENABLED=true. Container commands (status, restart, logs, disk, update) additionally require the updater service to be running: start it with `docker compose --profile console up -d`." }
+        ]
+      },
+      {
+        heading: "How to use it",
+        blocks: [
+          { kind: "steps", items: [
+            "Open Admin → Maintenance Mode.",
+            "Click 'Open console' and re-authenticate with your password and current MFA code (or a recovery code).",
+            "Pick a command from the palette. For commands that take an argument (e.g. restart, logs) choose the service first.",
+            "Output appears in the log area below. Click 'End session' when you are finished."
+          ] }
+        ]
+      },
+      {
+        heading: "Allowed commands",
+        blocks: [
+          { kind: "fields", intro: "Container & services — run via the token-gated updater (the only component with Docker access):", items: [
+            { name: "status", description: "Show all Audity containers with their status and health at a glance." },
+            { name: "restart <service>", description: "Restart a single service (api, web, worker, db, redis or storage), e.g. after a config change or a hang." },
+            { name: "logs <service> [lines]", description: "Show the last N log lines (max 1000, default 100) of a service for troubleshooting." },
+            { name: "disk", description: "Docker disk usage — images, containers and volumes — to catch space problems early." },
+            { name: "update", description: "Pull the latest version and restart the stack." },
+            { name: "update:status", description: "Show whether an update is currently running." }
+          ] },
+          { kind: "fields", intro: "Database:", items: [
+            { name: "db:status", description: "Confirm the database is reachable and show the number of tables." },
+            { name: "db:migrate", description: "Apply any pending database migrations. Idempotent — safe to run repeatedly (e.g. after an update)." },
+            { name: "backup:create", description: "Queue a full backup job before performing maintenance." },
+            { name: "backup:list", description: "List the most recent backup jobs and their status." }
+          ] },
+          { kind: "fields", intro: "Diagnostics — read-only:", items: [
+            { name: "health", description: "Database and Redis reachability from the API." },
+            { name: "version", description: "The installed Audity version." },
+            { name: "whoami", description: "The admin account and role running the console (for orientation and audit)." }
+          ] }
+        ]
+      },
+      {
+        heading: "What it deliberately cannot do",
+        blocks: [
+          { kind: "paragraph", text: "By design there is no free shell, no arbitrary docker or docker exec, no file editing, no raw SQL writes, and no outbound internet. This bounds the blast radius: even a compromised admin session can only run the listed maintenance commands — never arbitrary code on the server." }
+        ]
+      }
+    ]
+  },
+  {
     id: "findings-risks-roadmap",
     title: "Findings, Risks & Roadmap — the 3-stage workflow",
     category: "workspace",

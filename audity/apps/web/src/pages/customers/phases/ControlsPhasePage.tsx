@@ -6,6 +6,7 @@ import { Skeleton, useToast } from "../../../components/ui";
 import { Field, Panel, Pill, dateValue, numberValue, text } from "../../audit/auditPrimitives";
 import { PhaseLayout } from "./PhaseLayout";
 import { useAuditOverview, type AuditControl } from "./useAuditOverview";
+import { GuidedQuestionsPage } from "../../frameworks/GuidedQuestionsPage";
 
 const applicabilityOptions = ["applicable", "not_applicable", "partially_applicable"];
 const reviewStatuses = ["draft", "ready_for_review", "changes_requested", "approved"];
@@ -25,6 +26,7 @@ export function ControlsPhasePage() {
   const { overview, loading, error, reload } = useAuditOverview(auditId);
 
   const [selectedControlId, setSelectedControlId] = useState("");
+  const [showQuestions, setShowQuestions] = useState(false);
   const filteredControls = useMemo(() => {
     if (!overview.controls.length) return [] as AuditControl[];
     if (filter === "contradiction") {
@@ -298,9 +300,14 @@ export function ControlsPhasePage() {
 
           {/* Quick links to related views */}
           <div className="flex flex-wrap gap-2 text-xs">
-            <Link className="audity-btn-secondary" to={`/assessments/${auditId}/questions`}>
-              Open Guided Questions
-            </Link>
+            <button
+              type="button"
+              className="audity-btn-secondary"
+              onClick={() => setShowQuestions((v) => !v)}
+              aria-expanded={showQuestions}
+            >
+              {showQuestions ? "Hide Guided Questions ▲" : "Open Guided Questions ▾"}
+            </button>
             <Link
               className="audity-btn-secondary"
               to={`/customers/${selectedControl ? "" : ""}/controls?audit=${auditId}&filter=contradiction`}
@@ -308,6 +315,13 @@ export function ControlsPhasePage() {
               Show contradictions ({overview.contradictions.length})
             </Link>
           </div>
+
+          {/* Guided Questions embedded in-tab (no context switch out of the audit shell) */}
+          {showQuestions ? (
+            <div className="rounded-audity border border-audity-border bg-audity-panel/40 p-3">
+              <GuidedQuestionsPage assessmentId={auditId} />
+            </div>
+          ) : null}
 
           {/* Controls table + Profile form */}
           <div className="grid gap-4 xl:grid-cols-[1fr_1.1fr]">

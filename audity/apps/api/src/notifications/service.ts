@@ -10,7 +10,8 @@ export type NotificationInput = {
     | "new_questions_available"
     | "system_update_available"
     | "system_update_started"
-    | "system_update_finished";
+    | "system_update_finished"
+    | "console_session";
   title: string;
   message: string;
   entityType?: string | null;

@@ -8,9 +8,12 @@ export function priorityForScore(score: number): string {
 
 export function ratingFor(likelihood = 1, impact = 1): { riskScore: number; rating: string } {
   const riskScore = likelihood * impact;
+  // Bands unified with the finding-severity / customer-portal tiers (20 / 14 / 7) so
+  // the same L×I product yields the same tier whether shown as a finding severity or a
+  // risk rating. Previously this used 20 / 12 / 5, which mislabeled scores 5,6,12,13.
   if (riskScore >= 20) return { riskScore, rating: "Critical" };
-  if (riskScore >= 12) return { riskScore, rating: "High" };
-  if (riskScore >= 5) return { riskScore, rating: "Medium" };
+  if (riskScore >= 14) return { riskScore, rating: "High" };
+  if (riskScore >= 7) return { riskScore, rating: "Medium" };
   return { riskScore, rating: "Low" };
 }
 

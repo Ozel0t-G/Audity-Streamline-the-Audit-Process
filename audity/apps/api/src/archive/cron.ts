@@ -48,8 +48,14 @@ export function startArchiveBundleCron(logger?: {
 }) {
   const cfg = loadConfig();
   const targetDay = Math.max(1, Math.min(28, cfg.archiveBundleDayOfMonth));
+  // Prevent overlapping ticks: bundling a large month can take longer than the 1h
+  // interval, and a second concurrent bundleMonth races the first's spool-dir cleanup
+  // (spurious "bundle failed" alert). A single-process flag is enough here.
+  let running = false;
 
   async function tick(): Promise<void> {
+    if (running) return;
+    running = true;
     try {
       const now = new Date();
       if (now.getUTCDate() !== targetDay) return;
@@ -68,6 +74,8 @@ export function startArchiveBundleCron(logger?: {
           error instanceof Error ? error.message : String(error)
         }`
       }).catch(() => undefined);
+    } finally {
+      running = false;
     }
   }
 

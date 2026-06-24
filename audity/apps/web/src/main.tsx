@@ -19,6 +19,7 @@ const AiSettingsPage = lazy(() => import("./pages/admin/AiSettingsPage").then((m
 const AdminArchivePage = lazy(() => import("./pages/admin/AdminArchivePage").then((m) => ({ default: m.AdminArchivePage })));
 const AdminFrameworkThresholdsPage = lazy(() => import("./pages/admin/AdminFrameworkThresholdsPage").then((m) => ({ default: m.AdminFrameworkThresholdsPage })));
 const AdminCustomerAckPage = lazy(() => import("./pages/admin/AdminCustomerAckPage").then((m) => ({ default: m.AdminCustomerAckPage })));
+const MaintenanceConsolePage = lazy(() => import("./pages/admin/MaintenanceConsolePage").then((m) => ({ default: m.MaintenanceConsolePage })));
 const CustomerAckPortalPage = lazy(() => import("./pages/portal/CustomerAckPortalPage").then((m) => ({ default: m.CustomerAckPortalPage })));
 const FrameworkImportReviewPage = lazy(() => import("./pages/admin/FrameworkImportReviewPage").then((m) => ({ default: m.FrameworkImportReviewPage })));
 const AlphaDisclaimerPage = lazy(() => import("./pages/AlphaDisclaimerPage").then((m) => ({ default: m.AlphaDisclaimerPage })));
@@ -96,6 +97,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/workbench" element={<RequirePermission permission="settings.manage"><LazyRoute><WorkbenchPage /></LazyRoute></RequirePermission>} />
               <Route path="/admin/system" element={<RequirePermission permission="settings.manage"><LazyRoute><AdminDashboardPage section="system" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/backup" element={<RequirePermission instanceAdminOnly><LazyRoute><AdminDashboardPage section="backup" /></LazyRoute></RequirePermission>} />
+              <Route path="/admin/maintenance" element={<RequirePermission permission="server.console"><LazyRoute><MaintenanceConsolePage /></LazyRoute></RequirePermission>} />
               <Route path="/admin/archive" element={<RequirePermission permission="archive.approve"><LazyRoute><AdminArchivePage /></LazyRoute></RequirePermission>} />
             </Route>
           </Route>
