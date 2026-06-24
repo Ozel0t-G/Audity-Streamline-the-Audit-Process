@@ -57,9 +57,15 @@ export function MaintenanceConsolePage() {
     async (cmd: CommandSpec) => {
       if (!grant) return;
       const args = argState[cmd.name] ?? {};
+      // Restarting api or web kills this very request path (browser → web → api), so the
+      // response can't come back. Warn and treat the resulting drop as expected, not an error.
+      const selfRestart = cmd.name === "restart" && (args.service === "api" || args.service === "web");
       setBusy(true);
       setError("");
       append(`$ ${cmd.name}${Object.entries(args).map(([k, v]) => ` ${k}=${v}`).join("")}`);
+      if (selfRestart) {
+        append(`note: restarting '${args.service}' drops this console connection — give it a few seconds, then reconnect.`);
+      }
       try {
         const res = await api<{ ok: boolean; output: string }>("/api/admin/console/run", {
           method: "POST",
@@ -67,11 +73,15 @@ export function MaintenanceConsolePage() {
         });
         append(res.output || "(no output)");
       } catch (err) {
-        if (err instanceof Error && /re-authenticate|grant_invalid/i.test(err.message)) {
-          setGrant(null);
-          setCommands([]);
+        if (selfRestart) {
+          append("(connection dropped as expected — the restart was triggered; reconnect in a few seconds.)");
+        } else {
+          if (err instanceof Error && /re-authenticate|grant_invalid/i.test(err.message)) {
+            setGrant(null);
+            setCommands([]);
+          }
+          append(`error: ${err instanceof Error ? err.message : "failed"}`);
         }
-        append(`error: ${err instanceof Error ? err.message : "failed"}`);
       } finally {
         setBusy(false);
       }

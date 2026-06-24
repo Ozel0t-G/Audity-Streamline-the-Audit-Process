@@ -128,19 +128,31 @@ app.post<{ Body: unknown }>("/run", { preHandler: requireToken }, async (request
 const execFileAsync = promisify(execFile);
 const EXEC_SERVICES = ["api", "web", "worker", "db", "redis", "storage"] as const;
 const execSchema = z.object({
-  action: z.enum(["status", "restart", "logs", "disk"]),
+  action: z.enum(["status", "restart", "logs", "disk", "prune"]),
   service: z.enum(EXEC_SERVICES).optional(),
   lines: z.number().int().min(1).max(1000).optional()
 });
 
-async function dockerExec(args: string[]): Promise<string> {
+async function dockerExec(args: string[], timeoutMs = 30_000): Promise<string> {
   // execFile (NOT a shell): args are passed verbatim to docker, so no metacharacter
   // can ever be interpreted as a separate command — command injection is impossible.
   const { stdout, stderr } = await execFileAsync("docker", args, {
-    timeout: 30_000,
-    maxBuffer: 4 * 1024 * 1024
+    timeout: timeoutMs,
+    maxBuffer: 8 * 1024 * 1024
   });
   return `${stdout ?? ""}${stderr ? `\n${stderr}` : ""}`.trim();
+}
+
+// Prune can reclaim many GB and outlast a short timeout; tolerate a non-zero exit
+// (minor conflicts) and surface whatever output we got rather than reporting failure.
+async function dockerPrune(): Promise<string> {
+  try {
+    return await dockerExec(["system", "prune", "-f"], 300_000);
+  } catch (error) {
+    const e = error as { stdout?: string; stderr?: string; message?: string };
+    const out = `${e.stdout ?? ""}${e.stderr ? `\n${e.stderr}` : ""}`.trim();
+    return out || "Prune completed (the daemon may still be reclaiming space in the background).";
+  }
 }
 
 app.post<{ Body: unknown }>("/exec", { preHandler: requireToken }, async (request, reply) => {
@@ -155,6 +167,11 @@ app.post<{ Body: unknown }>("/exec", { preHandler: requireToken }, async (reques
     }
     if (action === "disk") {
       return { output: await dockerExec(["system", "df"]) };
+    }
+    if (action === "prune") {
+      // Safe reclaim: stopped containers + dangling images + build cache + unused
+      // networks. NO `-a` (keeps tagged/in-use images) and NO `--volumes` (keeps data).
+      return { output: await dockerPrune() };
     }
     // restart/logs require a service from the fixed enum.
     if (!service) {

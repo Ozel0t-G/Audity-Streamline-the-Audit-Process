@@ -32,8 +32,7 @@ export const COMMAND_ALLOWLIST: CommandSpec[] = [
   { name: "restart", category: "Container & services", description: "Restart a single service.", args: [{ name: "service", kind: "service", required: true }] },
   { name: "logs", category: "Container & services", description: "Show the last N log lines of a service.", args: [{ name: "service", kind: "service", required: true }, { name: "lines", kind: "int", max: 1000, default: 100 }] },
   { name: "disk", category: "Container & services", description: "Docker disk usage (images, containers, volumes)." },
-  { name: "update", category: "Container & services", description: "Pull the latest version and restart the stack." },
-  { name: "update:status", category: "Container & services", description: "Show whether an update is currently running." },
+  { name: "prune", category: "Container & services", description: "Reclaim disk: remove stopped containers, dangling images and build cache (keeps data volumes and running containers)." },
   { name: "db:status", category: "Database", description: "Database reachability and table count." },
   { name: "db:migrate", category: "Database", description: "Apply any pending database migrations (idempotent)." },
   { name: "backup:create", category: "Database", description: "Queue a full backup job." },
@@ -79,6 +78,8 @@ export async function runCommand(name: string, args: Record<string, unknown>, ct
       return { output: String((await updaterFetch("/exec", { action: "status" })).output ?? "") };
     case "disk":
       return { output: String((await updaterFetch("/exec", { action: "disk" })).output ?? "") };
+    case "prune":
+      return { output: String((await updaterFetch("/exec", { action: "prune" })).output ?? "") || "Nothing to reclaim." };
     case "restart": {
       const service = validateService(args.service);
       return { output: String((await updaterFetch("/exec", { action: "restart", service })).output ?? "") };
@@ -87,14 +88,6 @@ export async function runCommand(name: string, args: Record<string, unknown>, ct
       const service = validateService(args.service);
       const lines = Math.min(1000, Math.max(1, Math.floor(Number(args.lines) || 100)));
       return { output: String((await updaterFetch("/exec", { action: "logs", service, lines })).output ?? "") };
-    }
-    case "update": {
-      await updaterFetch("/run", {});
-      return { output: "Update started. Use 'update:status' to follow progress." };
-    }
-    case "update:status": {
-      const data = await updaterFetch("/status");
-      return { output: JSON.stringify(data.job ?? data, null, 2) };
     }
     case "db:status": {
       const tables = await pool.query<{ count: string }>(

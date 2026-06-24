@@ -103,8 +103,7 @@ export const manualArticles: ManualArticle[] = [
             { name: "restart <service>", description: "Restart a single service (api, web, worker, db, redis or storage), e.g. after a config change or a hang." },
             { name: "logs <service> [lines]", description: "Show the last N log lines (max 1000, default 100) of a service for troubleshooting." },
             { name: "disk", description: "Docker disk usage — images, containers and volumes — to catch space problems early." },
-            { name: "update", description: "Pull the latest version and restart the stack." },
-            { name: "update:status", description: "Show whether an update is currently running." }
+            { name: "prune", description: "Reclaim disk space: remove stopped containers, dangling images and build cache. Never touches running containers or data volumes." }
           ] },
           { kind: "fields", intro: "Database:", items: [
             { name: "db:status", description: "Confirm the database is reachable and show the number of tables." },
