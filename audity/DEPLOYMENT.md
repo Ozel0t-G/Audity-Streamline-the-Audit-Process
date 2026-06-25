@@ -217,8 +217,9 @@ notifies the requester) or denies with a reason.
 ### Disaster recovery
 
 1. After provisioning a fresh Audity host, set `AUDITY_ENCRYPTION_KEY` to the
-   **same** value the previous instance used (the human-readable form is
-   available via the recovery phrase shown during first-time setup).
+   **same** value the previous instance used (its human-readable form is the
+   recovery phrase you stored at the previous instance's one-time, host-side
+   reveal — see "Recovery phrase" above).
 2. Restore the latest PostgreSQL backup so `customers`, `archive_index`,
    and friends contain the historical state.
 3. Copy archived bundle files (`<month>.audity-archive`) into the
@@ -233,19 +234,52 @@ notifies the requester) or denies with a reason.
 ### Recovery phrase
 
 Every Audity instance derives its encryption key from
-`AUDITY_ENCRYPTION_KEY`. The setup wizard shows the corresponding **recovery
-phrase** (72 hex characters in 6 groups of 12) plus a short fingerprint that
-also appears on **Admin → System Monitor**.
+`AUDITY_ENCRYPTION_KEY`. The **recovery phrase** (72 hex characters in 6 groups
+of 12) is the human-readable encoding of that key. A short **fingerprint** of the
+key appears on **Admin → System Monitor** for verification.
 
-- Treat the phrase like a master password — anyone with it can decrypt
-  archives and backups.
-- Store it outside the server (password manager, printed envelope).
-- Re-display via `docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js`.
+**One-time, host-side reveal (sealed afterwards).** The full phrase is **never**
+served over HTTP and is never shown in the web app — only the fingerprint is.
+The phrase is displayed **exactly once**, on the server console:
+
+- `scripts/install.sh` prints it once at the end of installation (source `install`).
+- Or run it once manually:
+  `docker compose run --rm audity-api node apps/api/dist/scripts/printRecoveryPhrase.js`.
+
+After the first reveal it is **permanently sealed**: the CLI tool refuses to
+reprint it (exit code 3) and shows only the fingerprint plus when/how it was
+first revealed. There is no app or CLI override. Rotating `AUDITY_ENCRYPTION_KEY`
+produces a brand-new phrase with its own single reveal (the seal resets on a
+fingerprint change). Store the phrase the moment it is shown.
+
+- Treat the phrase like a master password — anyone with it can decrypt archives
+  and backups. Store it outside the server (password manager, printed envelope),
+  separate from the admin password.
 - Verify a stored phrase against the running instance from the login page
-  (**"Verify your recovery phrase"** link below the form).
-- The login page's verify form also flags **`matchesInstance: false`** if you
-  ever rotate the key and need to confirm the old phrase still decodes a
-  legacy bundle.
+  (**"Verify your recovery phrase"** link below the form); it flags
+  **`matchesInstance: false`** if it does not decode to the current key.
+- The setup wizard no longer displays the phrase; it shows the fingerprint and
+  asks you to confirm you stored the phrase shown on the server console.
+
+#### The `.env` is the real secret
+
+Honest threat model: the recovery phrase is just `AUDITY_ENCRYPTION_KEY` in
+another encoding. **Anyone who can read the `.env` file (or `docker exec` /
+`docker inspect` the container) can reconstruct the phrase**, regardless of the
+seal. The one-time seal is an operational + tamper-evidence control (it removes
+the phrase from HTTP/browser/log exposure, prevents an app-only admin from
+extracting the key, and records every reveal in `audit_logs`) — it is **not** a
+cryptographic boundary. The real boundary is host/infrastructure access. Treat
+`.env` as the crown jewel:
+
+- `chmod 600` and root-owned; never commit it to git; keep it on encrypted storage.
+- Restrict who can `docker exec` / SSH into the host (that is the actual control).
+- Prefer a secrets manager (Vault, Docker/K8s secrets mounted as tmpfs) over a
+  plaintext `.env` where possible.
+- The API process scrubs `AUDITY_ENCRYPTION_KEY` from its own environment after
+  boot (reduces `/proc/<pid>/environ` exposure), but `docker exec … printenv`
+  and `docker inspect` still surface it from the container's configured env — so
+  the file-level and access controls above are what matter.
 
 ## Log Archival (Mandatory, Tamper-Evident)
 

@@ -5,8 +5,7 @@ import { BrandMark } from "../components/BrandMark";
 
 const apiBaseUrl = import.meta.env.VITE_AUDITY_API_URL ?? "";
 
-type RecoveryPhraseResponse = {
-  phrase: string;
+type RecoveryFingerprintResponse = {
   fingerprint: string;
   fingerprintShort: string;
   acknowledgedAt: string | null;
@@ -28,7 +27,6 @@ export function SetupPage() {
   const [strength, setStrength] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [phrase, setPhrase] = useState<string>("");
   const [phraseFingerprint, setPhraseFingerprint] = useState<string>("");
   const [phraseConfirmed, setPhraseConfirmed] = useState<boolean>(false);
 
@@ -51,16 +49,17 @@ export function SetupPage() {
     return Math.min(score, 4);
   }
 
-  async function loadRecoveryPhrase() {
-    const response = await fetch(`${apiBaseUrl}/api/auth/recovery-phrase`, {
+  async function loadRecoveryFingerprint() {
+    // The full phrase is never served over HTTP — fetch only the fingerprint so
+    // the operator can verify it against the phrase shown on the server console.
+    const response = await fetch(`${apiBaseUrl}/api/auth/recovery-phrase/fingerprint`, {
       credentials: "include"
     });
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
-      throw new Error(detail?.message ?? "Could not load recovery phrase.");
+      throw new Error(detail?.message ?? "Could not load encryption-key fingerprint.");
     }
-    const payload = (await response.json()) as RecoveryPhraseResponse;
-    setPhrase(payload.phrase);
+    const payload = (await response.json()) as RecoveryFingerprintResponse;
     setPhraseFingerprint(payload.fingerprintShort);
   }
 
@@ -74,7 +73,7 @@ export function SetupPage() {
     setLoading(true);
     try {
       await setupInitialAdmin({ email, name, password });
-      await loadRecoveryPhrase();
+      await loadRecoveryFingerprint();
       setStep("phrase");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Setup failed");
@@ -182,51 +181,32 @@ export function SetupPage() {
           </form>
         ) : step === "phrase" ? (
           <div className="rounded-audity border border-audity-border bg-audity-panel p-6">
-            <h1 className="mb-2 text-xl font-semibold">Save your recovery phrase</h1>
+            <h1 className="mb-2 text-xl font-semibold">Secure your recovery phrase</h1>
             <p className="mb-4 text-sm text-audity-secondary">
-              This phrase encodes the encryption key that protects archives and backups. Without it,
-              encrypted exports cannot be restored after a fresh install. Audity cannot recover it
-              for you — store it in a password manager, printed envelope, or other safe location.
+              Your instance has a recovery phrase that encodes the encryption key protecting archives
+              and backups. For security, the full phrase is <strong>never shown in this web app</strong>.
+              It is displayed exactly once on the server console, then permanently sealed.
             </p>
+            <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-4 text-sm text-audity-text">
+              <p className="mb-2 font-medium">Where to get the phrase (one-time, on the server):</p>
+              <ul className="list-inside list-disc space-y-1 text-xs text-audity-secondary">
+                <li>If you installed with <span className="font-mono">scripts/install.sh</span>, the phrase was printed once at the end of installation — copy it from that output now.</li>
+                <li>Otherwise, run this once on the host and store the result:</li>
+              </ul>
+              <pre className="mt-2 overflow-x-auto rounded-audity border border-audity-border bg-audity-panel px-3 py-2 text-xs text-audity-text"><code>docker compose run --rm audity-api \
+  node apps/api/dist/scripts/printRecoveryPhrase.js</code></pre>
+            </div>
             <div className="mb-4 rounded-audity border border-audity-warning/40 bg-audity-warning/10 p-4">
               <ul className="list-inside list-disc space-y-1 text-xs text-audity-warning">
-                <li>Anyone with this phrase can decrypt your archives. Treat it like a master password.</li>
-                <li>Do not store it in the same place as your admin password.</li>
-                <li>You can re-display it any time under Admin → System Monitor.</li>
+                <li>Anyone with the phrase can decrypt your archives. Treat it like a master password.</li>
+                <li>Store it outside this server, separate from your admin password.</li>
+                <li>It is shown only ONCE and then sealed — there is no re-display in the app or CLI.</li>
               </ul>
             </div>
-            <div className="mb-4 rounded-audity border border-audity-border bg-audity-page p-4 font-mono text-base leading-relaxed text-audity-text">
-              {phrase ? phrase.split("-").map((block, idx) => (
-                <div key={`${idx}-${block}`} className="flex">
-                  <span className="w-8 text-audity-muted">{(idx + 1).toString().padStart(2, " ")}.</span>
-                  <span className="tracking-wider">{block}</span>
-                </div>
-              )) : <span className="text-audity-muted">Loading…</span>}
-            </div>
             <div className="mb-4 text-xs text-audity-secondary">
-              Fingerprint: <span className="font-mono text-audity-text">{phraseFingerprint}</span>
-            </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="audity-btn-secondary"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(phrase);
-                  } catch {
-                    /* ignore clipboard errors */
-                  }
-                }}
-              >
-                Copy phrase
-              </button>
-              <button
-                type="button"
-                className="audity-btn-secondary"
-                onClick={() => window.print()}
-              >
-                Print
-              </button>
+              Encryption-key fingerprint:{" "}
+              <span className="font-mono text-audity-text">{phraseFingerprint || "…"}</span>
+              <span className="block text-audity-muted">Compare this with the fingerprint printed next to your phrase to confirm they match.</span>
             </div>
             <label className="mb-4 flex items-start gap-2 text-sm text-audity-text">
               <input
@@ -236,8 +216,9 @@ export function SetupPage() {
                 onChange={(event) => setPhraseConfirmed(event.target.checked)}
               />
               <span>
-                I have stored this recovery phrase in a safe place outside this server.
-                I understand that without it, encrypted archives cannot be restored.
+                I have retrieved the recovery phrase from the server console and stored it in a safe
+                place. I understand that without it, encrypted archives cannot be restored, and that
+                it will not be shown again.
               </span>
             </label>
             {error ? <p className="mb-3 text-sm text-audity-error">{error}</p> : null}

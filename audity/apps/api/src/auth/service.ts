@@ -177,20 +177,22 @@ export async function refreshSession(
   refreshToken: string;
   csrfToken: string;
 } | null> {
-  const result = await pool.query<{ id: string; user_id: string }>(
-    `select id, user_id from sessions
+  // Atomic rotation: a single UPDATE both validates and consumes the refresh
+  // token. Concurrent requests with the same token cannot each mint a new
+  // session — only one caller's UPDATE matches the still-active row (Postgres
+  // row lock); the losers match zero rows and get null. Single-use guaranteed.
+  const result = await pool.query<{ user_id: string }>(
+    `update sessions set revoked_at = now()
      where refresh_token_hash = $1
        and revoked_at is null
-       and expires_at > now()`,
+       and expires_at > now()
+     returning user_id`,
     [hashRefreshToken(refreshToken)]
   );
   const session = result.rows[0];
   if (!session) {
     return null;
   }
-  await pool.query("update sessions set revoked_at = now() where id = $1", [
-    session.id
-  ]);
   const user = await getUserById(session.user_id);
   if (!user) {
     return null;

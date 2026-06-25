@@ -8,7 +8,7 @@ import { pool } from "../db/client.js";
 import { requireAuth, requireCsrf, requirePermission } from "./hooks.js";
 import { validateUserPassword, PASSWORD_POLICY_DESCRIPTION } from "./passwordPolicy.js";
 import { acknowledgeKey, ensureKeyMeta } from "./encryptionKeyMeta.js";
-import { keyToPhrase, phraseToKey } from "./recoveryPhrase.js";
+import { phraseToKey } from "./recoveryPhrase.js";
 import {
   signMfaChallengeToken,
   verifyAccessToken,
@@ -175,23 +175,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ---- Recovery phrase (Disaster Recovery, Option B) ----
-  app.get(
-    "/api/auth/recovery-phrase",
-    { preHandler: requireAuth, config: { rateLimit: authRateLimit } },
-    async (request, reply) => {
-      if (!isInstanceAdmin(request.user)) {
-        return reply.code(403).send({ code: "FORBIDDEN", message: "Only Instance Admins can view the recovery phrase" });
-      }
-      const meta = await ensureKeyMeta();
-      return {
-        phrase: keyToPhrase(loadConfig().encryptionKey),
-        fingerprint: meta.fingerprint,
-        fingerprintShort: meta.fingerprint.match(/.{2}/g)!.join(" "),
-        acknowledgedAt: meta.acknowledged_at,
-        acknowledgedBy: meta.acknowledged_by
-      };
-    }
-  );
+  // SECURITY: The full recovery phrase is the encoding of AUDITY_ENCRYPTION_KEY
+  // and is NEVER served over HTTP. The single, host-side reveal happens once at
+  // install (scripts/install.sh) or via one `printRecoveryPhrase` CLI call, then
+  // it is sealed. The running app exposes only the non-secret fingerprint
+  // (`/recovery-phrase/fingerprint`) and the acknowledge endpoint below.
 
   app.post(
     "/api/auth/recovery-phrase/acknowledge",

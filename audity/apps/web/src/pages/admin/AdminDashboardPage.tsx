@@ -2017,9 +2017,12 @@ function ServerStatusCard() {
           </div>
           <p className="mt-2 text-xs text-audity-secondary">
             Compare this fingerprint against the one you stored with your recovery phrase to confirm the
-            instance is still using the same encryption key. Run{" "}
-            <code className="font-mono text-xs">docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js</code>{" "}
-            on the host to re-display the full phrase.
+            instance is still using the same encryption key. For security, the full phrase is{" "}
+            <strong>shown only once</strong> — on the server console at install time (or a single
+            <code className="font-mono text-xs"> printRecoveryPhrase</code> CLI run) — and is then{" "}
+            <strong>sealed</strong>. It is never displayed here or anywhere else in the app. If you
+            lost it, recover it from the copy you stored at setup; the encryption key itself lives in
+            the server <code className="font-mono text-xs">.env</code>, which must be kept restricted.
           </p>
         </div>
       ) : null}

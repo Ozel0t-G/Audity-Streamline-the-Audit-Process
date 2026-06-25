@@ -168,3 +168,10 @@ echo "Initial admin email: $(env_value AUDITY_SEED_ADMIN_EMAIL)"
 echo "Initial admin password: $(env_value AUDITY_SEED_ADMIN_PASSWORD)"
 echo ""
 echo "Store the generated .env securely. It contains production secrets."
+
+# One-time, host-side reveal of the instance recovery phrase. This is the ONLY
+# automatic display of the phrase; afterwards it is sealed and the CLI tool will
+# refuse to reprint it (see apps/api/src/scripts/printRecoveryPhrase.ts).
+echo ""
+echo "Revealing the instance recovery phrase (shown only once)..."
+compose run --rm audity-api node apps/api/dist/scripts/printRecoveryPhrase.js --source=install || true

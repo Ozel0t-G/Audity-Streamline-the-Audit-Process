@@ -42,6 +42,14 @@ import { registerRiskFindingLinkRoutes } from "./workflow/links.js";
 import { registerAutoConvertRoutes } from "./workflow/autoConvert.js";
 
 const config = loadConfig();
+// Defense in depth: loadConfig() has now cached the encryption key in memory, so
+// every in-process consumer uses config.encryptionKey from here on. Drop the raw
+// key from this process's environment to reduce its exposure (e.g. /proc/<pid>/
+// environ, accidental env dumps). NOTE: this only scrubs the running API process
+// — `docker exec`/`docker inspect` still surface the key from the container's
+// configured env, and the .env file remains the real secret to protect.
+delete process.env.AUDITY_ENCRYPTION_KEY;
+
 function redactSensitiveQuery(url: string): string {
   if (!url.includes("?")) return url;
   const [path, search] = url.split("?", 2);

@@ -1743,6 +1743,121 @@ export const manualArticles: ManualArticle[] = [
     related: ["admin-backup", "admin-disaster-recovery"]
   },
   {
+    id: "admin-recovery-phrase-security",
+    title: "Admin: Encryption Key & Recovery Phrase (security)",
+    category: "admin",
+    audience: "admin",
+    keywords: [
+      "recovery phrase",
+      "encryption key",
+      "AUDITY_ENCRYPTION_KEY",
+      "one-time",
+      "sealed",
+      "fingerprint",
+      "threat model",
+      "tamper-evident",
+      "secrets",
+      ".env",
+      "non-repudiation",
+      "key rotation"
+    ],
+    summary:
+      "How Audity protects the instance encryption key: the recovery phrase is shown only once on the server console, then permanently sealed. The web app never shows it. Honest threat model + how to protect the real secret, the .env file.",
+    sections: [
+      {
+        heading: "What the recovery phrase actually is",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "The recovery phrase is not a separate secret — it is AUDITY_ENCRYPTION_KEY re-encoded as 72 hexadecimal characters (a 32-byte key plus a 4-byte checksum). The same key encrypts evidence, backups, and the audit/activity log archives. The short 'fingerprint' shown in Admin > System Monitor is a non-secret hash of the key, safe to display, used only to confirm two instances use the same key."
+          },
+          {
+            kind: "note",
+            text: "Because the phrase is just the key in another form, whoever holds the phrase holds the master key. Treat it like a master password and store it outside the server, separate from the admin password."
+          }
+        ]
+      },
+      {
+        heading: "One-time, host-side reveal — then sealed",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "For security, the full phrase is NEVER served over HTTP and is never displayed anywhere in the web app — not in the setup wizard, not in System Monitor. The web app shows only the fingerprint. The phrase is revealed exactly once, on the server console."
+          },
+          {
+            kind: "steps",
+            intro: "The single reveal happens host-side, whichever comes first:",
+            items: [
+              "scripts/install.sh prints the phrase once at the end of installation (source 'install').",
+              "Or you run it once manually: docker compose run --rm audity-api node apps/api/dist/scripts/printRecoveryPhrase.js (source 'cli').",
+              "After the first reveal it is permanently SEALED: the CLI tool refuses to reprint it (exit code 3) and shows only the fingerprint plus when/how it was first revealed.",
+              "Rotating AUDITY_ENCRYPTION_KEY produces a brand-new phrase with its own single reveal — the seal resets when the key's fingerprint changes."
+            ]
+          },
+          {
+            kind: "warning",
+            text: "There is no app or CLI override to un-seal. Store the phrase the moment it is shown. If you miss it, recover it from the copy you stored at setup (or reconstruct it host-side from .env). The setup wizard only asks you to confirm you stored the phrase shown on the console; it never displays it."
+          }
+        ]
+      },
+      {
+        heading: "What 'sealed' protects — and what it does not",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Honest threat model: the seal is an operational and tamper-evidence control, NOT a cryptographic boundary. It does three real things: (1) removes the full key material from HTTP / the browser / logs; (2) stops an app-only admin (no shell) from extracting the master key through the application; (3) records every reveal and every refused attempt in the immutable audit log."
+          },
+          {
+            kind: "warning",
+            text: "It does NOT defend against anyone who can read the .env file or docker exec / docker inspect the container — they can reconstruct the phrase from the raw key with the published algorithm, regardless of the seal. The real boundary is host and infrastructure access, not application code."
+          }
+        ]
+      },
+      {
+        heading: "Protect the .env — the real crown jewel",
+        blocks: [
+          {
+            kind: "fields",
+            intro: "AUDITY_ENCRYPTION_KEY lives in the .env file next to docker-compose.yml. That file, not the app, is what you must guard:",
+            items: [
+              { name: "File permissions", description: "chmod 600 and root-owned. Never commit it to git. Keep it on encrypted storage." },
+              { name: "Access control", description: "Restrict who can SSH into the host and who can run docker / docker exec. This is the actual security boundary for the key." },
+              { name: "Secrets manager", description: "Where possible, prefer a secrets manager (Vault, Docker/Kubernetes secrets mounted as tmpfs) over a plaintext .env." },
+              { name: "Process scrubbing", description: "The API process deletes AUDITY_ENCRYPTION_KEY from its own environment after boot, reducing exposure via /proc/<pid>/environ. Note: docker exec ... printenv and docker inspect still surface it from the container's configured env, so file-level and access controls are what matter." }
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Audit trail",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Every phrase event is written to the append-only audit log: encryption_key.phrase_revealed (the one-time reveal, with source install/cli), encryption_key.phrase_reveal_denied (any attempt after sealing), and encryption_key.acknowledged (when an admin confirms in the UI that they stored it). Review these under Admin > Audit Log."
+          }
+        ]
+      },
+      {
+        heading: "If you lost the phrase",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "First, retrieve it from where you stored it at setup (password manager, printed envelope). That is the intended source.",
+              "If the instance is still running and you have host access, the key is in .env — you can reconstruct the phrase from it, but this requires host privileges by design.",
+              "If you want a fresh, storable phrase, rotate the key (see the Disaster Recovery article, Scenario B): set a new AUDITY_ENCRYPTION_KEY, restart audity-api, and the new key gets its own one-time reveal."
+            ]
+          },
+          {
+            kind: "warning",
+            text: "If you lose BOTH the stored phrase AND the .env / key, encrypted backups and archives can never be decrypted again. There is no back door. Test your recovery flow at least once while you still have everything."
+          }
+        ]
+      }
+    ],
+    related: ["admin-disaster-recovery", "admin-backup", "admin-log-archival"]
+  },
+  {
     id: "admin-disaster-recovery",
     title: "Admin: Disaster Recovery Flow",
     category: "admin",
@@ -1824,18 +1939,24 @@ export const manualArticles: ManualArticle[] = [
           },
           {
             kind: "steps",
-            intro: "From a host shell (no login required):",
+            intro: "From a host shell — the fingerprint is always available; the full phrase is one-time:",
             items: [
               "SSH into the host that runs the Audity Docker stack.",
-              "Run: docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js",
-              "The script prints the full 72-character recovery phrase, the full fingerprint, and a short fingerprint. Anyone with shell access can run this — make sure your SSH access is locked down."
+              "Run: docker compose run --rm audity-api node apps/api/dist/scripts/printRecoveryPhrase.js",
+              "If the phrase has NOT been revealed yet for the current key, this prints the full 72-character phrase once and then seals it. If it has already been revealed (e.g. by the installer), it prints ONLY the fingerprint plus when/how it was first revealed, and refuses to reprint the phrase (exit code 3).",
+              "Anyone with shell access can run this — lock down SSH and who can run docker. The seal is an operational/tamper-evidence control, not a hard boundary: the phrase encodes AUDITY_ENCRYPTION_KEY, so anyone who can read the .env can reconstruct it regardless."
             ]
+          },
+          {
+            kind: "warning",
+            text:
+              "The full phrase is shown only ONCE per key (at install, or the first CLI run), then permanently sealed — there is no app or CLI override. Store it the moment it is shown. If you lose it, recover it from your stored copy; rotating the key generates a brand-new phrase with its own single reveal."
           },
           {
             kind: "code",
             language: "bash",
             text:
-              "docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js"
+              "docker compose run --rm audity-api node apps/api/dist/scripts/printRecoveryPhrase.js"
           }
         ]
       },
@@ -2082,12 +2203,12 @@ export const manualArticles: ManualArticle[] = [
               {
                 name: "AUDITY_ENCRYPTION_KEY",
                 description:
-                  "Host .env file next to docker-compose.yml. Read at API container start. Restart the audity-api container after any change."
+                  "Host .env file next to docker-compose.yml. Read once at API container start, then scrubbed from the running process environment. Restart the audity-api container after any change. This file is the real crown jewel — chmod 600, root-owned, never in git, on encrypted storage, with docker/SSH access restricted."
               },
               {
                 name: "Recovery phrase (72 hex chars)",
                 description:
-                  "Shown once during setup wizard. Re-displayable via docker exec audity-api node apps/api/dist/scripts/printRecoveryPhrase.js. Never entered into the UI — the phrase is the user-readable form of the key, the key goes into .env."
+                  "Shown ONCE host-side — on the install.sh console output, or a single printRecoveryPhrase CLI run — then permanently sealed (no re-display in the app or CLI). The web app only ever shows the non-secret fingerprint. Never entered into the UI; the phrase is the user-readable form of the key, the key lives in .env."
               },
               {
                 name: "Backup one-time password",
