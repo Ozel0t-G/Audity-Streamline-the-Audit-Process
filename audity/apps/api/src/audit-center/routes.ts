@@ -6,6 +6,7 @@ import { requireCsrfPermission, requirePermission, type AuthenticatedUser } from
 import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { ensureAssessmentQuestions, getAssessmentFrameworkId } from "../frameworks/assessmentQuestions.js";
+import { optionalDateString } from "../utils/validation.js";
 
 const defaultPhases = [
   { name: "Preparation", status: "active", sortOrder: 1 },
@@ -43,11 +44,11 @@ const planSchema = z.object({
   programTemplateId: z.string().uuid().nullable().optional(),
   currentPhase: z.string().trim().min(1).optional(),
   phases: z.array(z.record(z.string(), z.unknown())).optional(),
-  kickoffAt: z.string().nullable().optional(),
-  fieldworkStart: z.string().nullable().optional(),
-  fieldworkEnd: z.string().nullable().optional(),
-  reportDueDate: z.string().nullable().optional(),
-  closureDueDate: z.string().nullable().optional(),
+  kickoffAt: optionalDateString,
+  fieldworkStart: optionalDateString,
+  fieldworkEnd: optionalDateString,
+  reportDueDate: optionalDateString,
+  closureDueDate: optionalDateString,
   auditOwner: z.string().max(180).nullable().optional(),
   reviewer: z.string().max(180).nullable().optional(),
   readinessTarget: z.number().int().min(1).max(100).optional()
@@ -79,7 +80,7 @@ const evidenceRequestSchema = z.object({
   title: z.string().trim().min(1).max(240),
   description: z.string().max(3000).optional(),
   owner: z.string().max(180).nullable().optional(),
-  dueDate: z.string().nullable().optional(),
+  dueDate: optionalDateString,
   status: z.enum(["open", "requested", "received", "validated", "closed", "cancelled"]).optional(),
   portalVisibility: z.enum(["internal", "customer"]).optional()
 });
@@ -101,7 +102,7 @@ const evidenceMappingSchema = z.object({
 const interviewSchema = z.object({
   title: z.string().trim().min(1).max(240),
   participants: z.string().max(1000).optional(),
-  interviewAt: z.string().nullable().optional(),
+  interviewAt: optionalDateString,
   notes: z.string().max(6000).optional(),
   linkedQuestionId: z.string().uuid().nullable().optional(),
   followUp: z.string().max(3000).nullable().optional(),
@@ -130,7 +131,7 @@ const findingAuditSchema = z.object({
   managementOwner: z.string().max(180).nullable().optional(),
   remediationStatus: z.enum(["not_started", "planned", "in_progress", "implemented", "blocked"]).optional(),
   remediationOwner: z.string().max(180).nullable().optional(),
-  remediationDueDate: z.string().nullable().optional(),
+  remediationDueDate: optionalDateString,
   retestStatus: z.enum(["not_ready", "ready", "passed", "failed"]).optional(),
   retestNotes: z.string().max(4000).nullable().optional(),
   retestEvidenceId: z.string().uuid().nullable().optional()
@@ -142,7 +143,7 @@ const reportReviewSchema = z.object({
   reviewer: z.string().max(180).nullable().optional(),
   customerReviewer: z.string().max(180).nullable().optional(),
   summary: z.string().max(4000).nullable().optional(),
-  dueDate: z.string().nullable().optional()
+  dueDate: optionalDateString
 });
 
 const signoffSchema = z.object({

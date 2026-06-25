@@ -17,7 +17,7 @@ const requestStatuses = ["open", "requested", "received", "validated", "closed",
 export function ControlsPhasePage() {
   const [searchParams] = useSearchParams();
   const auditId = searchParams.get("audit") ?? "";
-  const focus = searchParams.get("focus") ?? "controls";
+  const tab = searchParams.get("tab") ?? "controls";
   const filter = searchParams.get("filter") ?? "";
   const api = useApi();
   const { user } = useAuth();
@@ -27,8 +27,28 @@ export function ControlsPhasePage() {
 
   const [selectedControlId, setSelectedControlId] = useState("");
   const [showQuestions, setShowQuestions] = useState(false);
+  // Question IDs of controls that have an overdue evidence request (due before
+  // today and not yet resolved). Drives the tab=requests deep link from the
+  // cockpit's "overdue evidence requests" next action.
+  const overdueRequestQuestionIds = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const open = new Set(["open", "requested", "received"]);
+    const ids = new Set<string>();
+    for (const r of overview.evidenceRequests) {
+      const due = dateValue(r.dueDate);
+      const qid = text(r.assessmentQuestionId);
+      if (qid && due && due < today && open.has(text(r.status))) {
+        ids.add(qid);
+      }
+    }
+    return ids;
+  }, [overview.evidenceRequests]);
+
   const filteredControls = useMemo(() => {
     if (!overview.controls.length) return [] as AuditControl[];
+    if (tab === "requests") {
+      return overview.controls.filter((c) => overdueRequestQuestionIds.has(text(c.assessmentQuestionId)));
+    }
     if (filter === "contradiction") {
       return overview.controls.filter((c) => c.contradiction);
     }
@@ -36,7 +56,7 @@ export function ControlsPhasePage() {
       return overview.controls.filter((c) => text(c.reviewStatus) === "ready_for_review");
     }
     return overview.controls;
-  }, [overview.controls, filter]);
+  }, [overview.controls, filter, tab, overdueRequestQuestionIds]);
 
   const selectedControl = useMemo(
     () =>
@@ -292,6 +312,15 @@ export function ControlsPhasePage() {
           {filter ? (
             <div className="rounded-audity border border-audity-warning bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
               Active filter: <strong>{filter}</strong> ·{" "}
+              <Link to={`/customers/${searchParams.get("customer") ?? ""}/controls?audit=${auditId}`} className="underline">
+                Clear
+              </Link>
+            </div>
+          ) : null}
+
+          {tab === "requests" ? (
+            <div className="rounded-audity border border-audity-warning bg-audity-warning/10 px-3 py-2 text-xs text-audity-warning">
+              Showing controls with <strong>overdue evidence requests</strong> ({filteredControls.length}) ·{" "}
               <Link to={`/customers/${searchParams.get("customer") ?? ""}/controls?audit=${auditId}`} className="underline">
                 Clear
               </Link>

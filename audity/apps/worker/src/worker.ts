@@ -437,6 +437,12 @@ function parseEvidenceManifest(manifest: Buffer): { copiedObjects: string[] } {
 }
 
 async function restoreEvidenceObjects(copiedObjects: string[]): Promise<{ restoredObjects: string[]; removedObjects: number }> {
+  // Full point-in-time restore: wipe the entire storage bucket, then re-create it
+  // from the snapshot. This is only safe because evidenceSnapshot() captures the
+  // WHOLE bucket (listEvidenceObjects has no prefix filter — it includes
+  // secure-packages/ and any other object), not just evidence/ keys. If the
+  // snapshot is ever narrowed to an evidence/ prefix, this bucket-wide wipe must
+  // be narrowed to the same prefix or it will delete unbacked-up objects.
   const currentObjects = await listStorageObjects(storageBucket);
   if (currentObjects.length > 0) {
     await storageClient.removeObjects(storageBucket, currentObjects);

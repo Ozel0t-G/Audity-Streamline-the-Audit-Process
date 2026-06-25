@@ -5,6 +5,7 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { isAdminRole } from "../customers/access.js";
 import { pool } from "../db/client.js";
+import { optionalDateString } from "../utils/validation.js";
 
 const workbenchKinds = [
   "evidence_request",
@@ -40,7 +41,7 @@ const recordSchema = z.object({
   owner: z.string().max(240).nullable().optional(),
   customerId: z.string().uuid().nullable().optional(),
   assessmentId: z.string().uuid().nullable().optional(),
-  dueDate: z.string().nullable().optional(),
+  dueDate: optionalDateString,
   visibility: z.enum(["internal", "customer", "public_readonly"]).optional(),
   metadata: z.record(z.string(), z.unknown()).optional()
 });
@@ -70,7 +71,7 @@ const recurringSchema = z.object({
   templateId: z.string().uuid().nullable().optional(),
   name: z.string().trim().min(1).max(180),
   cadence: z.enum(["monthly", "quarterly", "semiannual", "annual"]).optional(),
-  nextRunDate: z.string().nullable().optional(),
+  nextRunDate: optionalDateString,
   enabled: z.boolean().optional()
 });
 
@@ -114,7 +115,7 @@ const legalHoldSchema = z.object({
   reason: z.string().trim().min(1).max(2000),
   status: z.string().trim().min(1).max(80).optional(),
   approvedBy: z.string().max(180).nullable().optional(),
-  expiresAt: z.string().nullable().optional()
+  expiresAt: optionalDateString
 });
 
 const webhookSchema = z.object({
@@ -614,6 +615,19 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
     return { legalHold: result.rows[0] };
   });
 
+  // Release an active hold. Without this, a held customer/assessment would be
+  // permanently un-deletable/un-archivable once enforcement (409) is in place.
+  app.post<{ Params: { id: string } }>("/api/admin/productivity/legal-holds/:id/release", { preHandler: requireCsrfPermission("settings.manage") }, async (request, reply) => {
+    const result = await pool.query(
+      "update legal_holds set status = 'released', updated_at = now() where id = $1 and status = 'active' returning *",
+      [request.params.id]
+    );
+    if (!result.rows[0]) {
+      return reply.code(404).send({ code: "LEGAL_HOLD_NOT_FOUND", message: "No active legal hold with that id" });
+    }
+    return { legalHold: result.rows[0] };
+  });
+
   app.post<{ Body: z.infer<typeof webhookSchema> }>("/api/admin/productivity/webhooks", { preHandler: requireCsrfPermission("settings.manage") }, async (request) => {
     const body = parseBody(webhookSchema, request.body);
     const result = await pool.query(
@@ -646,7 +660,7 @@ export async function registerProductivityRoutes(app: FastifyInstance): Promise<
   });
 
   app.post<{ Body: { name?: string; scopes?: string[]; expiresAt?: string | null } }>("/api/admin/productivity/api-tokens", { preHandler: requireCsrfPermission("settings.manage") }, async (request, reply) => {
-    const body = parseBody(z.object({ name: z.string().trim().min(1).max(160), scopes: z.array(z.string()).optional(), expiresAt: z.string().nullable().optional() }), request.body);
+    const body = parseBody(z.object({ name: z.string().trim().min(1).max(160), scopes: z.array(z.string()).optional(), expiresAt: optionalDateString }), request.body);
     const token = `audity_${randomBytes(24).toString("base64url")}`;
     const result = await pool.query(
       `insert into public_api_tokens (id, name, token_hash, token_prefix, scopes, created_by, expires_at)

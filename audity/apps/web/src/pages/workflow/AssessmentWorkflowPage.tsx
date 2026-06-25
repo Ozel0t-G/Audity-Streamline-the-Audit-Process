@@ -377,12 +377,16 @@ export function AssessmentWorkflowPage({
       setFindingComments([]);
       return;
     }
+    // Guard against a stale response: when the user clicks finding A then quickly B,
+    // A's slower response must not overwrite B's freshly-loaded history/comments.
+    let cancelled = false;
     api<{ history: HistoryEvent[] }>(`/api/assessments/${id}/history?entityType=finding&entityId=${selectedFinding.id}`)
-      .then((payload) => setFindingHistory(payload.history))
-      .catch(() => setFindingHistory([]));
+      .then((payload) => { if (!cancelled) setFindingHistory(payload.history); })
+      .catch(() => { if (!cancelled) setFindingHistory([]); });
     api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=finding&entityId=${selectedFinding.id}`)
-      .then((payload) => setFindingComments(payload.comments))
-      .catch(() => setFindingComments([]));
+      .then((payload) => { if (!cancelled) setFindingComments(payload.comments); })
+      .catch(() => { if (!cancelled) setFindingComments([]); });
+    return () => { cancelled = true; };
   }, [api, id, selectedFinding?.id]);
 
   useEffect(() => {
@@ -391,12 +395,15 @@ export function AssessmentWorkflowPage({
       setRiskComments([]);
       return;
     }
+    // Same stale-response guard as the finding effect above.
+    let cancelled = false;
     api<{ history: HistoryEvent[] }>(`/api/assessments/${id}/history?entityType=risk&entityId=${selectedRisk.id}`)
-      .then((payload) => setRiskHistory(payload.history))
-      .catch(() => setRiskHistory([]));
+      .then((payload) => { if (!cancelled) setRiskHistory(payload.history); })
+      .catch(() => { if (!cancelled) setRiskHistory([]); });
     api<{ comments: ReviewComment[] }>(`/api/assessments/${id}/comments?entityType=risk&entityId=${selectedRisk.id}`)
-      .then((payload) => setRiskComments(payload.comments))
-      .catch(() => setRiskComments([]));
+      .then((payload) => { if (!cancelled) setRiskComments(payload.comments); })
+      .catch(() => { if (!cancelled) setRiskComments([]); });
+    return () => { cancelled = true; };
   }, [api, id, selectedRisk?.id]);
 
   async function updateFinding(action: "accept" | "dismiss" | "mark-as-accepted-risk" | "edit", fields = {}) {

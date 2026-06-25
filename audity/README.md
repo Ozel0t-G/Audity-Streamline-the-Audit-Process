@@ -56,6 +56,7 @@ Important variables:
 - `AUDITY_STORAGE_*`: MinIO/S3-compatible evidence storage settings.
 - `AUDITY_STORAGE_PUBLIC_ENDPOINT`: browser-facing MinIO/S3 endpoint used for signed downloads.
 - `AUDITY_BACKUP_BUCKET`: MinIO/S3 bucket for database dumps and evidence manifests.
+- `AUDITY_LOG_ARCHIVE_DIR`: filesystem path (default `/app/log-archive`, backed by the `audity-log-archive` volume) for the mandatory 24h audit/activity log archives when the destination is left at *Local server (WORM)*.
 - `AUDITY_FRAMEWORK_YAML_*`: directory and polling interval for YAML-managed frameworks.
 - `AUDITY_DEFAULT_FRAMEWORK_KEY` / `AUDITY_DEFAULT_FRAMEWORK_ID`: optional default framework selection for assessments without an assigned framework.
 - `AUDITY_SMTP_*`: optional SMTP defaults; runtime SMTP settings are managed in Admin > Email Settings.
@@ -90,6 +91,26 @@ docker compose exec audity-db pg_restore -U audity -d audity --clean --if-exists
 ```
 
 Evidence restore is object-storage based: use the manifest to verify expected object keys and copy matching objects from the backup bucket back into the evidence bucket.
+
+### Log Archival (mandatory)
+
+Separately from the manual/scheduled backups above, Audity **always** archives the
+audit log and the activity log every 24 hours into an encrypted, signed,
+hash-chained `.audity-logs` bundle. This runs in the api container and **cannot be
+disabled** by any user or admin — only the destination can be changed in
+**Admin > Backup > Log Archival** (Instance Admin only). Supported destinations:
+local WORM directory (default), SFTP, S3-compatible, and FTP/FTPS. NFS/SMB shares
+are used by mounting them at the OS level and selecting the local destination.
+
+API endpoints (`GET` require `backup.manage`; mutations require Instance Admin):
+
+- `GET /api/admin/log-archive/settings`
+- `GET /api/admin/log-archive/runs`
+- `PATCH /api/admin/log-archive/destination`
+- `POST /api/admin/log-archive/test`
+
+See `DEPLOYMENT.md` → *Log Archival (Mandatory, Tamper-Evident)* for the bundle
+format, destination fields, and verification steps.
 
 ## Update Process
 

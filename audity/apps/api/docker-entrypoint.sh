@@ -24,6 +24,10 @@ if [ "$(id -u)" = "0" ]; then
       chown -R node:node "$dir" 2>/dev/null || true
     fi
   done
+  # WORM directory for the mandatory 24h log archival (no spool/bundled subdirs).
+  if [ -d /app/log-archive ]; then
+    chown -R node:node /app/log-archive 2>/dev/null || true
+  fi
   exec su-exec node "$@"
 fi
 
@@ -31,5 +35,6 @@ fi
 for dir in /app/archive /app/user_frameworks; do
   [ -d "$dir" ] && mkdir -p "$dir/spool" "$dir/bundled" 2>/dev/null || true
 done
+mkdir -p /app/log-archive 2>/dev/null || true
 
 exec "$@"

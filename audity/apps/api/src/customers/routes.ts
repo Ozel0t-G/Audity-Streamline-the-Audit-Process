@@ -6,6 +6,7 @@ import { appendAuditEvent } from "../audit/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { pool } from "../db/client.js";
 import { createNotification } from "../notifications/service.js";
+import { customerHasActiveLegalHold } from "../productivity/legalHolds.js";
 import { isUuid, validateBody } from "../utils/validation.js";
 import { canAccessCustomer, canManageCustomerAccess, canViewCustomerIncludingArchived, customerAccessRecipients, isAdminRole } from "./access.js";
 
@@ -644,8 +645,38 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
       if (!(await canManageCustomerAccess(request.user!, request.params.id))) {
         return reply.code(403).send({ code: "CUSTOMER_DELETE_FORBIDDEN", message: "Only the customer creator or Admin can delete this customer" });
       }
+      if (await customerHasActiveLegalHold(request.params.id)) {
+        return reply.code(409).send({
+          code: "LEGAL_HOLD_ACTIVE",
+          message: "This customer (or one of its assessments) is under an active legal hold and cannot be deleted. Release the hold first."
+        });
+      }
       const before = await loadCustomer(request.params.id);
-      await pool.query("delete from customers where id = $1", [request.params.id]);
+      // email_delivery_log (.assessment_id/.report_id) and the archive tables reference
+      // the customer / its assessments+reports WITHOUT on-delete-cascade, so the plain
+      // cascade delete used to fail (a customer that ever had a report emailed, or was
+      // archived, could not be deleted — FK violation → 500). Clean those up first, in one
+      // transaction: null the email-log refs (keep the compliance record) and drop the
+      // archive metadata, then delete the customer (which cascades the rest).
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query(
+          `update email_delivery_log
+              set assessment_id = null, report_id = null
+            where assessment_id in (select id from assessments where customer_id = $1)`,
+          [request.params.id]
+        );
+        await client.query("delete from archive_restore_requests where customer_id = $1", [request.params.id]);
+        await client.query("delete from archive_index where customer_id = $1", [request.params.id]);
+        await client.query("delete from customers where id = $1", [request.params.id]);
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
       await appendActivityEvent({
         userId: request.user!.sub,
         action: "customer.deleted",

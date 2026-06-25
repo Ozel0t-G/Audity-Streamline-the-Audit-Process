@@ -6,12 +6,13 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
-import { validateBody } from "../utils/validation.js";
+import { optionalDateString, validateBody } from "../utils/validation.js";
 import { ensureAutomaticRiskRegister, ensureSuggestedFindings, ratingFor } from "./suggestions.js";
 import { maybeAutoConvertFindingToRisk } from "./autoConvert.js";
 import {
   isLegalFindingTransition,
   isLegalRiskTransition,
+  isLegalRoadmapTransition,
   normalisePhaseLabel,
   phaseDatesFor,
   ROADMAP_PHASES
@@ -101,11 +102,11 @@ const riskSchema = z.object({
   treatmentOption: z.string().optional(),
   owner: z.string().optional(),
   treatmentPlan: z.string().optional(),
-  dueDate: z.string().nullable().optional(),
+  dueDate: optionalDateString,
   status: z.string().optional(),
   draft: z.boolean().optional(),
   acceptanceReason: z.string().optional(),
-  acceptanceExpiresAt: z.string().nullable().optional()
+  acceptanceExpiresAt: optionalDateString
 });
 
 const roadmapSchema = z.object({
@@ -114,7 +115,7 @@ const roadmapSchema = z.object({
   phase: z.string().optional(),
   action: z.string().optional(),
   owner: z.string().optional(),
-  dueDate: z.string().nullable().optional(),
+  dueDate: optionalDateString,
   effortEstimate: z.string().optional(),
   status: z.string().optional()
 });
@@ -137,7 +138,7 @@ const bulkRiskSchema = z.object({
   riskIds: z.array(z.string().uuid()).min(1),
   status: z.string().optional(),
   owner: z.string().optional(),
-  dueDate: z.string().nullable().optional(),
+  dueDate: optionalDateString,
   treatmentOption: z.string().optional(),
   draft: z.boolean().optional(),
   delete: z.boolean().optional()
@@ -976,6 +977,13 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       if (validationError) {
         return reply.code(400).send({ code: "INVALID_RISK_TREATMENT", message: validationError });
       }
+      const nextStatus = mergedBody.status as string;
+      if (nextStatus !== before.status && !isLegalRiskTransition(before.status as string, nextStatus)) {
+        return reply.code(422).send({
+          code: "ILLEGAL_TRANSITION",
+          message: `Cannot move risk from "${before.status}" to "${nextStatus}".`
+        });
+      }
       const likelihood = body.likelihood ?? (before.likelihood as number) ?? 3;
       const impact = body.impact ?? (before.impact as number) ?? 3;
       const { riskScore, rating } = ratingFor(likelihood, impact);
@@ -1291,6 +1299,13 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
         return reply
           .code(404)
           .send({ code: "ROADMAP_ITEM_NOT_FOUND", message: "Roadmap item not found" });
+      }
+      const nextStatus = body.status ?? (before.status as string);
+      if (nextStatus !== before.status && !isLegalRoadmapTransition(before.status as string, nextStatus)) {
+        return reply.code(422).send({
+          code: "ILLEGAL_TRANSITION",
+          message: `Cannot move roadmap item from "${before.status}" to "${nextStatus}".`
+        });
       }
       // If phase changed, recompute the absolute phase boundaries.
       const phaseChanged = body.phase && normalisePhaseLabel(body.phase) !== before.phase;

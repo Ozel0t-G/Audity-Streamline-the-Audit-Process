@@ -1597,7 +1597,150 @@ export const manualArticles: ManualArticle[] = [
           }
         ]
       }
-    ]
+    ],
+    related: ["admin-log-archival", "admin-disaster-recovery"]
+  },
+  {
+    id: "admin-log-archival",
+    title: "Admin: Log Archival (mandatory)",
+    category: "admin",
+    audience: "admin",
+    keywords: [
+      "log archival",
+      "audit log",
+      "activity log",
+      "tamper-evident",
+      "hash chain",
+      "WORM",
+      "SFTP",
+      "S3",
+      "FTP",
+      "FTPS",
+      "NAS",
+      "retention",
+      "compliance",
+      "non-repudiation"
+    ],
+    summary:
+      "Audity archives the audit log and the activity log every 24 hours into an encrypted, signed, hash-chained bundle. It cannot be disabled — admins can only choose where the archives are written.",
+    sections: [
+      {
+        heading: "What it does and why",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Separately from the manual and scheduled backups, Audity continuously archives its two immutable log streams — the audit log (admin and security events) and the hash-chained user activity log — off the live database. The goal is retention and non-repudiation: the trail survives even a full database loss or a compromised admin account, because a tamper-evident copy was already written elsewhere on a fixed schedule."
+          },
+          {
+            kind: "note",
+            text: "This runs every 24 hours and is always on. There is no enable/disable switch, no setting, and no API call that can stop it. Neither a normal user nor any admin — including Instance Admin — can turn it off. Admins can only change where the archives are written."
+          },
+          {
+            kind: "paragraph",
+            text: "Each archive is an AES-256-GCM encrypted, HMAC-signed bundle whose checksum is chained into the next archive. Altering, truncating, or deleting any archive in the chain breaks verification of every archive that follows it, so tampering is detectable after the fact."
+          }
+        ]
+      },
+      {
+        heading: "How it runs",
+        blocks: [
+          {
+            kind: "fields",
+            items: [
+              { name: "Cadence", description: "A run happens when the last successful archive is older than ~23 hours. The small margin absorbs timing drift so a day is never silently skipped. A run also fires shortly after the server starts if one is already due." },
+              { name: "Incremental", description: "Each run exports only the log rows appended since the previous successful run, tracked by a per-stream watermark. No duplicates, no gaps." },
+              { name: "Failure-safe", description: "If a run fails, the watermark is not advanced, so the next run re-exports the same rows. At worst a bundle is duplicated; logs are never lost. Failures are recorded and trigger the backup.failed email topic (configure recipients under Admin > Email)." },
+              { name: "Heartbeat", description: "When there is nothing new to archive, the run is still recorded as a success with zero counts, so the run history proves the job is alive." },
+              { name: "Where it runs", description: "In-process in the API service, like the monthly archive job. No Redis or worker is required." }
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Choose where archives are written",
+        blocks: [
+          {
+            kind: "steps",
+            intro: "Changing the destination is restricted to Instance Admin and is itself recorded in both the audit log and the activity log.",
+            items: [
+              "Open Admin Panel and click Backup, then find the Log Archival card (marked Always on).",
+              "Pick a destination type: Local server (WORM), SFTP, S3-compatible, or FTP/FTPS.",
+              "Fill in the fields for that type. Secret fields (passwords, S3 secret keys) are stored encrypted and are never shown again — leave them blank to keep the current secret.",
+              "Click Test connection to write and delete a probe object and confirm the credentials work.",
+              "Click Save destination. From the next run onward, archives go to the new destination."
+            ]
+          }
+        ]
+      },
+      {
+        heading: "Destination types",
+        blocks: [
+          {
+            kind: "fields",
+            intro: "Four destination types are supported:",
+            items: [
+              { name: "Local server (WORM)", description: "Default. A dedicated directory on the application server (or any NFS/SMB share mounted at the OS level so it appears as a path). Files are written without overwrite, so existing archives cannot be replaced. Persisted via the audity-log-archive volume. Optional Directory field overrides the default path." },
+              { name: "SFTP", description: "Recommended for true remote targets. Fields: Host, Port (default 22), Username, Password, Remote path. Encrypted in transit and supported by virtually every NAS and server." },
+              { name: "S3-compatible", description: "MinIO, Synology, QNAP, Wasabi, AWS S3, and similar. Fields: Endpoint, Bucket, Access key, Secret key, optional Region, optional Key prefix, Use TLS. The bucket is created if it does not exist." },
+              { name: "FTP / FTPS", description: "For legacy NAS only. Fields: Host, Port (default 21), Username, Password, Remote path, and Use FTPS. Plain FTP is unencrypted — enable Use FTPS whenever the target supports it." }
+            ]
+          },
+          {
+            kind: "note",
+            text: "NFS and SMB/CIFS are not spoken by Audity directly. Mount the share on the host or container and point the Local server (WORM) destination at the mounted path. This is more robust than an in-app NFS/SMB client and works with any NAS."
+          }
+        ]
+      },
+      {
+        heading: "Send local archives to a NAS or host directory",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "By default the Local destination writes to /app/log-archive inside the API container, backed by the audity-log-archive volume. To write to a host directory or an OS-mounted NAS share instead, override the volume mount in your compose file:"
+          },
+          {
+            kind: "code",
+            text: "services:\n  audity-api:\n    volumes:\n      - /mnt/nas/audity-log-archive:/app/log-archive",
+            language: "yaml"
+          },
+          {
+            kind: "paragraph",
+            text: "The environment variable AUDITY_LOG_ARCHIVE_DIR (default /app/log-archive) sets the path used by the Local destination. The container entrypoint creates and takes ownership of this directory on first start."
+          }
+        ]
+      },
+      {
+        heading: "Archive format and verification",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Bundles are named audity-logs-<timestamp>.audity-logs. Inside the encrypted container is a ZIP with manifest.json (metadata, covered id ranges, the previous archive's checksum, and an HMAC signature), audit.jsonl (one audit log row per line), and activity.jsonl (one activity log row per line)."
+          },
+          {
+            kind: "paragraph",
+            text: "The encryption key is derived from the instance encryption key — the same key used for evidence, backups, and the monthly archive bundles. The recovery phrase is therefore what you need to decrypt these archives. To verify one: AES-256-GCM-decrypt the body (a tag failure means tampering), unzip, recompute the manifest HMAC, and confirm each archive's prevChecksum matches the SHA-256 of the preceding archive."
+          },
+          {
+            kind: "warning",
+            text: "If you rotate the instance encryption key, archives written under the old key still require the old key to decrypt, and any saved remote-destination credentials (SFTP/FTP passwords, S3 secret keys) must be re-entered because they are stored encrypted under that key."
+          }
+        ]
+      },
+      {
+        heading: "Monitor archival runs",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              "On the Log Archival card, read Last archived and the last run's status and row counts.",
+              "Review the run-history table: time, status, total logs archived, and the bundle checksum prefix.",
+              "A run marked failed shows its reason; the next 24h tick retries automatically because the watermark only advances on success."
+            ]
+          }
+        ]
+      }
+    ],
+    related: ["admin-backup", "admin-disaster-recovery"]
   },
   {
     id: "admin-disaster-recovery",

@@ -68,9 +68,14 @@ function cleanVersion(value: string | null | undefined) {
 }
 
 function parseSemver(value: string | null | undefined) {
-  const match = cleanVersion(value).match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
+  // Capture the optional pre-release tag (the `-…` part) so it can affect precedence;
+  // build metadata (`+…`) is ignored per semver.
+  const match = cleanVersion(value).match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/);
   if (!match) return null;
-  return [Number(match[1]), Number(match[2]), Number(match[3])] as const;
+  return {
+    core: [Number(match[1]), Number(match[2]), Number(match[3])] as const,
+    prerelease: match[4] ?? null
+  };
 }
 
 function compareVersions(left: string, right: string) {
@@ -78,9 +83,17 @@ function compareVersions(left: string, right: string) {
   const b = parseSemver(right);
   if (!a || !b) return cleanVersion(left).localeCompare(cleanVersion(right));
   for (let index = 0; index < 3; index += 1) {
-    if (a[index] !== b[index]) return a[index] - b[index];
+    if (a.core[index] !== b.core[index]) return a.core[index] - b.core[index];
   }
-  return 0;
+  // Equal core (major.minor.patch). Per semver §11.3 a normal release has higher
+  // precedence than a pre-release of the same core, so e.g. 1.2.3 > 1.2.3-rc1.
+  // Without this, a user on a pre-release never sees the matching stable release
+  // as an available update.
+  if (a.prerelease === b.prerelease) return 0;
+  if (!a.prerelease) return 1;
+  if (!b.prerelease) return -1;
+  // Both pre-releases of the same core: deterministic identifier order.
+  return a.prerelease.localeCompare(b.prerelease);
 }
 
 function newestVersion(values: string[]) {

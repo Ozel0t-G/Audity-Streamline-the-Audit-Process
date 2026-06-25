@@ -5,7 +5,7 @@ import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { canAccessAssessment, canAccessCustomer } from "../customers/access.js";
 import { pool } from "../db/client.js";
-import { isUuid, validateBody } from "../utils/validation.js";
+import { isUuid, optionalDateString, validateBody } from "../utils/validation.js";
 
 type AssessmentBody = {
   templateKey?: string;
@@ -40,7 +40,7 @@ const assessmentSchema = z.object({
     postgresUuidSchema.optional()
   ),
   language: z.string().optional(),
-  targetDate: z.string().optional(),
+  targetDate: optionalDateString,
   status: z.string().optional()
 });
 

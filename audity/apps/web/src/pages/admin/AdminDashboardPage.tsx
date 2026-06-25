@@ -132,6 +132,68 @@ type BackupSettings = {
   retentionDays: number;
 };
 
+type LogArchiveDestinationType = "local" | "sftp" | "s3" | "ftp";
+
+type LogArchiveRun = {
+  id: string;
+  startedAt: string;
+  completedAt: string | null;
+  status: string;
+  auditLogCount: number;
+  activityLogCount: number;
+  destinationType: string | null;
+  destinationUri: string | null;
+  bundleChecksum: string | null;
+  failureReason: string | null;
+};
+
+type LogArchiveSettings = {
+  destinationType: LogArchiveDestinationType;
+  destinationConfig: Record<string, unknown>;
+  secretsPresent: Record<string, boolean>;
+  lastArchivedAt: string | null;
+  lastBundleChecksum: string | null;
+  lastRun: LogArchiveRun | null;
+  mandatory: boolean;
+  intervalHours: number;
+};
+
+type LogArchiveForm = {
+  type: LogArchiveDestinationType;
+  path: string;
+  host: string;
+  port: string;
+  username: string;
+  password: string;
+  remotePath: string;
+  endpoint: string;
+  region: string;
+  bucket: string;
+  accessKey: string;
+  secretKey: string;
+  prefix: string;
+  useSSL: boolean;
+  secure: boolean;
+};
+
+const emptyLogArchiveForm: LogArchiveForm = {
+  type: "local",
+  path: "",
+  host: "",
+  port: "",
+  username: "",
+  password: "",
+  remotePath: "",
+  endpoint: "",
+  region: "",
+  bucket: "",
+  accessKey: "",
+  secretKey: "",
+  prefix: "",
+  useSSL: true,
+  secure: true
+};
+
 type DashboardRange = "6h" | "24h" | "1w" | "1m";
 
 type DashboardSystem = {
@@ -265,6 +327,11 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     retentionDays: 30
   });
   const [backupPassword, setBackupPassword] = useState("");
+  const [logArchiveSettings, setLogArchiveSettings] = useState<LogArchiveSettings | null>(null);
+  const [logArchiveRuns, setLogArchiveRuns] = useState<LogArchiveRun[]>([]);
+  const [logArchiveForm, setLogArchiveForm] = useState<LogArchiveForm>(emptyLogArchiveForm);
+  const [logArchiveBusy, setLogArchiveBusy] = useState(false);
+  const [logArchiveResult, setLogArchiveResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [restoreBackupId, setRestoreBackupId] = useState("");
   const [restorePrecheck, setRestorePrecheck] = useState<Record<string, unknown> | null>(null);
   const [restoreConfirmation, setRestoreConfirmation] = useState("");
@@ -367,6 +434,118 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
     setBackupJobs(jobsPayload.backupJobs);
     setBackupSettings(settingsPayload.backupSettings);
     if (!restoreBackupId && jobsPayload.backupJobs[0]) setRestoreBackupId(jobsPayload.backupJobs[0].id);
+    // Load log archival separately so an older API (endpoints not yet deployed)
+    // or a pre-migration state can't break the rest of the Backup page.
+    try {
+      const [logArchivePayload, logArchiveRunsPayload] = await Promise.all([
+        api<{ settings: LogArchiveSettings }>("/api/admin/log-archive/settings"),
+        api<{ runs: LogArchiveRun[] }>("/api/admin/log-archive/runs")
+      ]);
+      setLogArchiveSettings(logArchivePayload.settings);
+      setLogArchiveRuns(logArchiveRunsPayload.runs);
+      hydrateLogArchiveForm(logArchivePayload.settings);
+    } catch {
+      setLogArchiveSettings(null);
+      setLogArchiveRuns([]);
+    }
+  }
+
+  function hydrateLogArchiveForm(settings: LogArchiveSettings) {
+    const config = settings.destinationConfig ?? {};
+    const str = (key: string) => (typeof config[key] === "string" ? (config[key] as string) : "");
+    setLogArchiveForm({
+      ...emptyLogArchiveForm,
+      type: settings.destinationType,
+      path: str("path"),
+      host: str("host"),
+      port: config.port != null ? String(config.port) : "",
+      username: str("username"),
+      remotePath: str("remotePath"),
+      endpoint: str("endpoint"),
+      region: str("region"),
+      bucket: str("bucket"),
+      accessKey: str("accessKey"),
+      prefix: str("prefix"),
+      useSSL: config.useSSL !== false,
+      secure: config.secure !== false,
+      // Secrets are never returned by the API; leave blank to keep the stored one.
+      password: "",
+      secretKey: ""
+    });
+  }
+
+  function buildLogArchivePayload(): Record<string, unknown> {
+    const f = logArchiveForm;
+    const port = f.port.trim() ? Number(f.port.trim()) : undefined;
+    switch (f.type) {
+      case "local":
+        return { type: "local", path: f.path.trim() || undefined };
+      case "sftp":
+        return {
+          type: "sftp",
+          host: f.host.trim(),
+          port,
+          username: f.username.trim(),
+          remotePath: f.remotePath.trim(),
+          ...(f.password ? { password: f.password } : {})
+        };
+      case "s3":
+        return {
+          type: "s3",
+          endpoint: f.endpoint.trim(),
+          region: f.region.trim() || undefined,
+          bucket: f.bucket.trim(),
+          accessKey: f.accessKey.trim(),
+          prefix: f.prefix.trim() || undefined,
+          useSSL: f.useSSL,
+          ...(f.secretKey ? { secretKey: f.secretKey } : {})
+        };
+      case "ftp":
+        return {
+          type: "ftp",
+          host: f.host.trim(),
+          port,
+          username: f.username.trim(),
+          remotePath: f.remotePath.trim(),
+          secure: f.secure,
+          ...(f.password ? { password: f.password } : {})
+        };
+    }
+  }
+
+  async function saveLogArchiveDestination(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLogArchiveBusy(true);
+    setLogArchiveResult(null);
+    try {
+      const payload = await api<{ settings: LogArchiveSettings }>("/api/admin/log-archive/destination", {
+        method: "PATCH",
+        body: JSON.stringify(buildLogArchivePayload())
+      });
+      setLogArchiveSettings(payload.settings);
+      hydrateLogArchiveForm(payload.settings);
+      setLogArchiveResult({ ok: true, message: "Log archive destination saved." });
+    } catch (err) {
+      setLogArchiveResult({ ok: false, message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setLogArchiveBusy(false);
+    }
+  }
+
+  async function testLogArchiveDestination() {
+    setLogArchiveBusy(true);
+    setLogArchiveResult(null);
+    try {
+      await api<{ ok: boolean }>("/api/admin/log-archive/test", {
+        method: "POST",
+        body: JSON.stringify(buildLogArchivePayload())
+      });
+      setLogArchiveResult({ ok: true, message: "Connection test succeeded." });
+    } catch (err) {
+      setLogArchiveResult({ ok: false, message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setLogArchiveBusy(false);
+    }
   }
 
   async function loadSection() {
@@ -1296,6 +1475,150 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
                       Save schedule
                     </button>
                   </form>
+                </section>
+                <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h2 className="text-lg font-semibold">Log Archival</h2>
+                    <span className="rounded-audity border border-audity-success px-2 py-1 text-xs text-audity-success">Always on</span>
+                  </div>
+                  <p className="mb-4 text-xs text-audity-muted">
+                    Audit and activity logs are archived automatically every 24 hours as an encrypted,
+                    signed, hash-chained bundle. This cannot be disabled — only the destination can be changed.
+                  </p>
+                  {logArchiveSettings ? (
+                    <div className="mb-4 space-y-1 rounded-audity border border-audity-border bg-audity-page px-3 py-2 text-xs text-audity-secondary">
+                      <div>Last archived: {logArchiveSettings.lastArchivedAt ? new Date(logArchiveSettings.lastArchivedAt).toLocaleString() : "never"}</div>
+                      {logArchiveSettings.lastRun ? (
+                        <div>
+                          Last run: <span className={logArchiveSettings.lastRun.status === "failed" ? "text-audity-error" : "text-audity-success"}>{logArchiveSettings.lastRun.status}</span>
+                          {" · "}{logArchiveSettings.lastRun.auditLogCount} audit / {logArchiveSettings.lastRun.activityLogCount} activity
+                          {logArchiveSettings.lastRun.failureReason ? ` · ${logArchiveSettings.lastRun.failureReason}` : ""}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {user?.role === "Instance Admin" ? (
+                    <form className="space-y-3" onSubmit={(event) => void saveLogArchiveDestination(event)}>
+                      <label className="block text-xs font-medium text-audity-secondary">
+                        Destination
+                        <select className="mt-2 audity-input" value={logArchiveForm.type} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, type: event.target.value as LogArchiveDestinationType })}>
+                          <option value="local">Local server (WORM)</option>
+                          <option value="sftp">SFTP</option>
+                          <option value="s3">S3-compatible</option>
+                          <option value="ftp">FTP / FTPS</option>
+                        </select>
+                      </label>
+                      {logArchiveForm.type === "local" ? (
+                        <label className="block text-xs font-medium text-audity-secondary">
+                          Directory (optional — defaults to AUDITY_LOG_ARCHIVE_DIR)
+                          <input className="mt-2 audity-input" value={logArchiveForm.path} placeholder="/app/log-archive" onChange={(event) => setLogArchiveForm({ ...logArchiveForm, path: event.target.value })} />
+                        </label>
+                      ) : null}
+                      {logArchiveForm.type === "sftp" || logArchiveForm.type === "ftp" ? (
+                        <>
+                          <div className="grid grid-cols-[1fr_90px] gap-2">
+                            <label className="block text-xs font-medium text-audity-secondary">
+                              Host
+                              <input className="mt-2 audity-input" value={logArchiveForm.host} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, host: event.target.value })} />
+                            </label>
+                            <label className="block text-xs font-medium text-audity-secondary">
+                              Port
+                              <input className="mt-2 audity-input" value={logArchiveForm.port} placeholder={logArchiveForm.type === "sftp" ? "22" : "21"} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, port: event.target.value })} />
+                            </label>
+                          </div>
+                          <label className="block text-xs font-medium text-audity-secondary">
+                            Username
+                            <input className="mt-2 audity-input" value={logArchiveForm.username} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, username: event.target.value })} />
+                          </label>
+                          <label className="block text-xs font-medium text-audity-secondary">
+                            Password {logArchiveSettings?.secretsPresent?.hasPassword ? "(leave blank to keep current)" : ""}
+                            <input className="mt-2 audity-input" type="password" value={logArchiveForm.password} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, password: event.target.value })} />
+                          </label>
+                          <label className="block text-xs font-medium text-audity-secondary">
+                            Remote path
+                            <input className="mt-2 audity-input" value={logArchiveForm.remotePath} placeholder="/backups/audity-logs" onChange={(event) => setLogArchiveForm({ ...logArchiveForm, remotePath: event.target.value })} />
+                          </label>
+                          {logArchiveForm.type === "ftp" ? (
+                            <label className="flex items-center gap-2 text-sm text-audity-text">
+                              <input type="checkbox" checked={logArchiveForm.secure} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, secure: event.target.checked })} />
+                              Use FTPS (encrypted)
+                            </label>
+                          ) : null}
+                        </>
+                      ) : null}
+                      {logArchiveForm.type === "s3" ? (
+                        <>
+                          <label className="block text-xs font-medium text-audity-secondary">
+                            Endpoint
+                            <input className="mt-2 audity-input" value={logArchiveForm.endpoint} placeholder="https://s3.example.com" onChange={(event) => setLogArchiveForm({ ...logArchiveForm, endpoint: event.target.value })} />
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className="block text-xs font-medium text-audity-secondary">
+                              Bucket
+                              <input className="mt-2 audity-input" value={logArchiveForm.bucket} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, bucket: event.target.value })} />
+                            </label>
+                            <label className="block text-xs font-medium text-audity-secondary">
+                              Region (optional)
+                              <input className="mt-2 audity-input" value={logArchiveForm.region} placeholder="us-east-1" onChange={(event) => setLogArchiveForm({ ...logArchiveForm, region: event.target.value })} />
+                            </label>
+                          </div>
+                          <label className="block text-xs font-medium text-audity-secondary">
+                            Access key
+                            <input className="mt-2 audity-input" value={logArchiveForm.accessKey} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, accessKey: event.target.value })} />
+                          </label>
+                          <label className="block text-xs font-medium text-audity-secondary">
+                            Secret key {logArchiveSettings?.secretsPresent?.hasSecretKey ? "(leave blank to keep current)" : ""}
+                            <input className="mt-2 audity-input" type="password" value={logArchiveForm.secretKey} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, secretKey: event.target.value })} />
+                          </label>
+                          <label className="block text-xs font-medium text-audity-secondary">
+                            Key prefix (optional)
+                            <input className="mt-2 audity-input" value={logArchiveForm.prefix} placeholder="audity-logs/" onChange={(event) => setLogArchiveForm({ ...logArchiveForm, prefix: event.target.value })} />
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-audity-text">
+                            <input type="checkbox" checked={logArchiveForm.useSSL} onChange={(event) => setLogArchiveForm({ ...logArchiveForm, useSSL: event.target.checked })} />
+                            Use TLS
+                          </label>
+                        </>
+                      ) : null}
+                      {logArchiveResult ? (
+                        <div className={`rounded-audity border px-3 py-2 text-xs ${logArchiveResult.ok ? "border-audity-success text-audity-success" : "border-audity-error text-audity-error"}`}>
+                          {logArchiveResult.message}
+                        </div>
+                      ) : null}
+                      <div className="flex flex-wrap gap-2">
+                        <button className="audity-btn-primary" disabled={logArchiveBusy}>
+                          Save destination
+                        </button>
+                        <button type="button" className="audity-btn-secondary" disabled={logArchiveBusy} onClick={() => void testLogArchiveDestination()}>
+                          Test connection
+                        </button>
+                      </div>
+                    </form>
+                  ) : <p className="text-sm text-audity-muted">Instance Admin required to change the destination.</p>}
+                  {logArchiveRuns.length ? (
+                    <div className="mt-4 overflow-hidden rounded-audity border border-audity-border">
+                      <table className="w-full border-collapse text-xs">
+                        <thead className="bg-audity-tableHeader uppercase text-audity-muted">
+                          <tr>
+                            <th className="border-b border-audity-border px-2 py-2 text-left">Time</th>
+                            <th className="border-b border-audity-border px-2 py-2 text-left">Status</th>
+                            <th className="border-b border-audity-border px-2 py-2 text-left">Logs</th>
+                            <th className="border-b border-audity-border px-2 py-2 text-left">Checksum</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {logArchiveRuns.slice(0, 10).map((run) => (
+                            <tr key={run.id} className="border-b border-audity-border last:border-0">
+                              <td className="px-2 py-2 text-audity-secondary">{new Date(run.startedAt).toLocaleString()}</td>
+                              <td className={`px-2 py-2 ${run.status === "failed" ? "text-audity-error" : "text-audity-success"}`}>{run.status}</td>
+                              <td className="px-2 py-2 text-audity-secondary">{run.auditLogCount + run.activityLogCount}</td>
+                              <td className="px-2 py-2 font-mono text-audity-muted">{run.bundleChecksum ? run.bundleChecksum.slice(0, 12) : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
                 </section>
                 <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
                   <h2 className="mb-4 text-lg font-semibold">Restore Precheck</h2>

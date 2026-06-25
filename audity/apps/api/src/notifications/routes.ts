@@ -2,7 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { appendActivityEvent } from "../activity/service.js";
 import { ensureUpdateNotificationForAdmin } from "../admin/updateService.js";
 import { requireAuth, requireCsrf } from "../auth/hooks.js";
-import { verifyAccessToken } from "../auth/tokens.js";
+import {
+  signStreamTicketToken,
+  streamTicketExpiresInSeconds,
+  verifyStreamTicketToken
+} from "../auth/tokens.js";
 import { pool } from "../db/client.js";
 import { mapNotification } from "./service.js";
 
@@ -17,18 +21,31 @@ async function notificationDigest(userId: string): Promise<string> {
 }
 
 export async function registerNotificationRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { token?: string } }>(
+  // EventSource cannot set Authorization headers, so the stream is authenticated
+  // with a short-lived, purpose-scoped ticket instead of the full access token.
+  // The ticket is minted here (authenticated via the normal Bearer header) and is
+  // rejected by verifyAccessToken for any other API call — so even if it leaks via
+  // access logs / browser history its blast radius is the notification stream for
+  // ~60s.
+  app.get("/api/notifications/stream-ticket", { preHandler: requireAuth }, async (request) => {
+    return {
+      ticket: signStreamTicketToken(request.user!.sub),
+      expiresIn: streamTicketExpiresInSeconds
+    };
+  });
+
+  app.get<{ Querystring: { ticket?: string } }>(
     "/api/notifications/stream",
     async (request, reply) => {
-      const token = request.query.token;
-      if (!token) {
-        return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Token query parameter required" });
+      const ticket = request.query.ticket;
+      if (!ticket) {
+        return reply.code(401).send({ code: "AUTH_REQUIRED", message: "Ticket query parameter required" });
       }
       let userId: string;
       try {
-        userId = verifyAccessToken(token).sub;
+        userId = verifyStreamTicketToken(ticket).sub;
       } catch {
-        return reply.code(401).send({ code: "TOKEN_INVALID", message: "Access token is invalid" });
+        return reply.code(401).send({ code: "TICKET_INVALID", message: "Stream ticket is invalid or expired" });
       }
       reply.raw.writeHead(200, {
         "Content-Type": "text/event-stream",

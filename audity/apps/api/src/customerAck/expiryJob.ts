@@ -1,6 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
 import { pool } from "../db/client.js";
 
+// Mirror activity/service.ts: guarantee a strictly increasing created_at so the
+// verifier's "order by created_at asc, id asc" reflects true append order.
+function nextTimestamp(previous?: Date): Date {
+  const now = new Date();
+  if (!previous || now.getTime() > previous.getTime()) {
+    return now;
+  }
+  return new Date(previous.getTime() + 1);
+}
+
 /**
  * Hourly job: find tokens that crossed their expiry without being redeemed or revoked,
  * write a customer_ack.expired activity-log entry per token, and mark them so the entry
@@ -33,9 +43,35 @@ export async function runExpiryJob(): Promise<{ scanned: number; flagged: number
 
   let flagged = 0;
   for (const row of expired.rows) {
+    // Each entry is appended under the same advisory lock and monotonic-timestamp
+    // discipline as activity/service.ts. Without the lock a concurrent
+    // appendActivityEvent() could read the same head, so both rows would share one
+    // prev_hash and the verifier would (correctly) flag a prev_hash_mismatch.
+    const client = await pool.connect();
+    let committed = false;
     try {
-      const previous = await pool.query<{ event_hash: string }>(
-        "select event_hash from user_activity_logs order by created_at desc, id desc limit 1"
+      await client.query("begin");
+      await client.query("select pg_advisory_xact_lock(hashtext('audity_user_activity_logs'))");
+
+      // Re-check inside the lock: a previous run (or another worker) may already have
+      // logged this token between the unlocked scan above and acquiring the lock.
+      const already = await client.query(
+        `select 1 from user_activity_logs
+          where action = 'customer_ack.expired'
+            and entity_type = 'assessment'
+            and entity_id = $1
+            and after_value @> jsonb_build_object('tokenId', $2::text)
+          limit 1`,
+        [row.assessment_id, row.id]
+      );
+      if (already.rowCount) {
+        await client.query("commit");
+        committed = true;
+        continue;
+      }
+
+      const previous = await client.query<{ event_hash: string; created_at: Date }>(
+        "select event_hash, created_at from user_activity_logs order by created_at desc, id desc limit 1"
       );
       const prevHash = previous.rows[0]?.event_hash ?? "";
       const after = {
@@ -44,19 +80,28 @@ export async function runExpiryJob(): Promise<{ scanned: number; flagged: number
         expiredAt: row.expires_at
       };
       const payload = JSON.stringify({ before: null, after });
-      const timestamp = new Date().toISOString();
+      const timestamp = nextTimestamp(previous.rows[0]?.created_at).toISOString();
+      // System events store user_id = null; hash the actor slot as "" to match the
+      // verifier, which reconstructs the hash with (user_id ?? "").
       const eventHash = createHash("sha256")
-        .update(timestamp + "SYSTEM" + "customer_ack.expired" + row.assessment_id + payload + prevHash)
+        .update(timestamp + "" + "customer_ack.expired" + row.assessment_id + payload + prevHash)
         .digest("hex");
-      await pool.query(
+      await client.query(
         `insert into user_activity_logs
            (id, user_id, action, entity_type, entity_id, before_value, after_value, prev_hash, event_hash, created_at)
          values ($1, null, 'customer_ack.expired', 'assessment', $2, null, $3::jsonb, $4, $5, $6)`,
-        [randomUUID(), row.assessment_id, JSON.stringify(after), prevHash, eventHash, timestamp]
+        [randomUUID(), row.assessment_id, JSON.stringify(after), prevHash || null, eventHash, timestamp]
       );
+      await client.query("commit");
+      committed = true;
       flagged += 1;
     } catch {
-      // best-effort; continue
+      if (!committed) {
+        await client.query("rollback").catch(() => undefined);
+      }
+      // best-effort; continue with the next token
+    } finally {
+      client.release();
     }
   }
   return { scanned: expired.rowCount ?? 0, flagged };

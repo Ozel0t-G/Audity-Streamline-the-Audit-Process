@@ -311,7 +311,14 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
       }
 
       const frameworkId = randomUUID();
-      await pool.query(
+      // Persist framework + domains + controls + mappings atomically. Without a
+      // transaction, a failure partway through the loop (constraint violation, DB
+      // hiccup, oversized field) left a half-imported framework: a row visible in
+      // the library but missing some/all of its controls.
+      const importClient = await pool.connect();
+      try {
+        await importClient.query("begin");
+        await importClient.query(
         `insert into frameworks
           (id, name, short_name, version, source_type, license_status, distributed_by_audity,
            status_label, disclaimer, imported_by, imported_at, license_confirmed)
@@ -334,7 +341,7 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
         if (!domainId) {
           domainId = randomUUID();
           domainIds.set(domainName, domainId);
-          await pool.query(
+          await importClient.query(
           `insert into framework_domains (id, framework_id, name, description, sort_order)
              values ($1, $2, $3, $4, $5)`,
             [
@@ -347,7 +354,7 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
           );
         }
         const controlId = randomUUID();
-        await pool.query(
+        await importClient.query(
           `insert into framework_controls
             (id, framework_domain_id, control_code, title, description, question_text, sort_order)
            values ($1, $2, $3, $4, $5, $6, $7)`,
@@ -361,7 +368,7 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
             controls.indexOf(control) + 1
           ]
         );
-        await pool.query(
+        await importClient.query(
           `insert into question_control_mappings
             (id, framework_id, framework_control_id, question_id, question, answer_scale,
              minimum_evidence_expected, preferred_evidence_types, gap_trigger, sort_order)
@@ -377,6 +384,13 @@ export async function registerFrameworkRoutes(app: FastifyInstance): Promise<voi
             controls.indexOf(control) + 1
           ]
         );
+      }
+        await importClient.query("commit");
+      } catch (error) {
+        await importClient.query("rollback").catch(() => undefined);
+        throw error;
+      } finally {
+        importClient.release();
       }
 
       const publishedCustomerCount = body.publishToTenant

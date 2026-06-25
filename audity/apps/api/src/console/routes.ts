@@ -5,11 +5,10 @@ import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
 import { appendActivityEvent } from "../activity/service.js";
 import { authenticateWithPasswordDetailed, getUserById, isSessionActive } from "../auth/service.js";
 import { consumeRecoveryCode, getMfaSecret, isMfaEnabled, verifyTotp } from "../auth/mfa.js";
-import { createNotification } from "../notifications/service.js";
-import { pool } from "../db/client.js";
 import { validateBody } from "../utils/validation.js";
 import { mintConsoleGrant, revokeConsoleGrant, validateConsoleGrant } from "./grant.js";
 import { COMMAND_ALLOWLIST, runCommand } from "./commands.js";
+import { appendConsoleTranscript, ConsoleSession, endConsoleSession } from "./session.js";
 
 const authorizeSchema = z.object({
   password: z.string().min(1).max(256),
@@ -23,23 +22,6 @@ const runSchema = z.object({
 });
 
 const endSchema = z.object({ grant: z.string().min(1).max(256) });
-
-async function notifyInstanceAdmins(message: string, byUserId: string): Promise<void> {
-  const admins = await pool.query<{ id: string }>(
-    `select u.id from users u join roles r on r.id = u.role_id where r.name = 'Instance Admin' and u.status = 'active'`
-  );
-  for (const admin of admins.rows) {
-    await createNotification({
-      recipientUserId: admin.id,
-      type: "console_session",
-      title: "Maintenance console used",
-      message,
-      entityType: "console_session",
-      entityId: "1",
-      createdByUserId: byUserId
-    }).catch(() => undefined);
-  }
-}
 
 export async function registerConsoleRoutes(app: FastifyInstance): Promise<void> {
   const cfg = loadConfig();
@@ -74,21 +56,23 @@ export async function registerConsoleRoutes(app: FastifyInstance): Promise<void>
         return reply.code(401).send({ code: "MFA_FAILED", message: "MFA code is invalid" });
       }
 
+      // Record the session: creates the console_sessions row, the tamper-evident
+      // session_started event (with the real session id), and the start notification
+      // to every Instance Admin. The grant carries the row id so /run and /end can
+      // append the transcript and close it out.
+      const session = new ConsoleSession({
+        userId: user.sub,
+        ip: request.ip,
+        userAgent: String(request.headers["user-agent"] ?? "")
+      });
+      await session.begin();
       const grant = await mintConsoleGrant({
         userId: user.sub,
         sessionId: user.sid,
         ip: request.ip,
-        userAgent: String(request.headers["user-agent"] ?? "")
+        userAgent: String(request.headers["user-agent"] ?? ""),
+        sessionRecId: session.id
       });
-      await appendActivityEvent({
-        userId: user.sub,
-        action: "console.session_started",
-        entityType: "console_session",
-        entityId: "1",
-        before: null,
-        after: { ip: request.ip }
-      }).catch(() => undefined);
-      await notifyInstanceAdmins(`The maintenance console was opened from ${request.ip}.`, user.sub).catch(() => undefined);
       return { grant };
     }
   );
@@ -139,10 +123,16 @@ export async function registerConsoleRoutes(app: FastifyInstance): Promise<void>
         userId: grant.userId,
         action: "console.command",
         entityType: "console_session",
-        entityId: "1",
+        entityId: grant.sessionRecId ?? "unknown",
         before: null,
         after: { command: body.command, args: body.args ?? {}, ok }
       }).catch(() => undefined);
+
+      if (grant.sessionRecId) {
+        const argSummary = body.args && Object.keys(body.args).length ? ` ${JSON.stringify(body.args)}` : "";
+        await appendConsoleTranscript(grant.sessionRecId, "in", `${body.command}${argSummary}`);
+        await appendConsoleTranscript(grant.sessionRecId, "out", result.output);
+      }
 
       // Always 200 for an executed command — `ok` carries success/failure so the UI
       // can show the command's own error output instead of a generic HTTP error.
@@ -157,6 +147,12 @@ export async function registerConsoleRoutes(app: FastifyInstance): Promise<void>
     async (request, reply) => {
       const body = validateBody(endSchema, request.body, reply);
       if (!body) return;
+      // Resolve the grant before revoking so we can close out its session record
+      // (ended_at + session_ended event). Closing is idempotent and best-effort.
+      const grant = await validateConsoleGrant(body.grant);
+      if (grant?.sessionRecId) {
+        await endConsoleSession(grant.sessionRecId, grant.userId, "closed");
+      }
       await revokeConsoleGrant(body.grant);
       return { ok: true };
     }

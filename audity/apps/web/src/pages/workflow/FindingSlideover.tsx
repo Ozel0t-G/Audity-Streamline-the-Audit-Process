@@ -70,16 +70,20 @@ export function FindingSlideover({ open, assessmentId, finding, canEdit, onClose
 
   useEffect(() => {
     if (!finding || !open) return;
+    // Guard against a stale response overwriting a newer finding's history/comments
+    // when the slideover's finding changes faster than a fetch resolves.
+    let cancelled = false;
     void api<{ history: HistoryEvent[] }>(
       `/api/assessments/${assessmentId}/history?entityType=finding&entityId=${finding.id}`
     )
-      .then((payload) => setHistory(payload.history))
-      .catch(() => setHistory([]));
+      .then((payload) => { if (!cancelled) setHistory(payload.history); })
+      .catch(() => { if (!cancelled) setHistory([]); });
     void api<{ comments: ReviewComment[] }>(
       `/api/assessments/${assessmentId}/comments?entityType=finding&entityId=${finding.id}`
     )
-      .then((payload) => setComments(payload.comments))
-      .catch(() => setComments([]));
+      .then((payload) => { if (!cancelled) setComments(payload.comments); })
+      .catch(() => { if (!cancelled) setComments([]); });
+    return () => { cancelled = true; };
   }, [api, assessmentId, finding, open]);
 
   if (!finding) return null;

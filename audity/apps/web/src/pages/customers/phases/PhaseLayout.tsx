@@ -49,9 +49,12 @@ export function PhaseLayout({
 
   useEffect(() => {
     if (!id) return;
-    void api<{ customer: CustomerLight }>(`/api/customers/${id}`).then((res) =>
-      setCustomer(res.customer)
-    );
+    // Guard against a stale response landing after the customer changed (or the
+    // component unmounted) and overwriting the current customer's data.
+    let cancelled = false;
+    void api<{ customer: CustomerLight }>(`/api/customers/${id}`).then((res) => {
+      if (!cancelled) setCustomer(res.customer);
+    });
     void api<{
       audits: {
         active: AuditLight[];
@@ -61,6 +64,7 @@ export function PhaseLayout({
       };
     }>(`/api/customers/${id}/cockpit`)
       .then((cockpit) => {
+        if (cancelled) return;
         const merged = [
           ...cockpit.audits.active,
           ...cockpit.audits.draft,
@@ -76,6 +80,9 @@ export function PhaseLayout({
         }
       })
       .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

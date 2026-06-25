@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { HARDCODED_DEFAULTS, resolveThresholds } from "./thresholds.js";
 
@@ -104,6 +105,13 @@ export async function registerFrameworkThresholdRoutes(app: FastifyInstance): Pr
     "/api/assessments/:id/stuck-thresholds",
     { preHandler: requireCsrfPermission("assessment.edit") },
     async (request, reply) => {
+      // The "assessment.edit" permission alone doesn't scope to a specific assessment —
+      // without this check any edit-capable user could rewrite the stuck-thresholds of
+      // *any* assessment, including other customers' audits (IDOR). 404 (not 403) so we
+      // don't reveal whether the id exists to users who can't access it.
+      if (!(await canAccessAssessment(request.user!, request.params.id))) {
+        return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
       const parsed = thresholdsBody.safeParse(request.body);
       if (!parsed.success) {
         return reply.code(400).send({ code: "INVALID_BODY", message: parsed.error.message });

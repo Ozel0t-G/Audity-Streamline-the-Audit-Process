@@ -124,24 +124,6 @@ export async function archiveCustomer(opts: ArchiveCustomerOptions): Promise<Arc
   });
 
   const now = new Date();
-  await pool.query(
-    `update customers
-        set archived_at = $2,
-            archived_by = $3,
-            archive_reason = $4,
-            updated_at = now()
-      where id = $1`,
-    [opts.customerId, now.toISOString(), opts.actorUserId, opts.reason]
-  );
-  await pool.query(
-    `update assessments
-        set archived_at = $2,
-            archived_by = $3
-      where customer_id = $1
-        and archived_at is null`,
-    [opts.customerId, now.toISOString(), opts.actorUserId]
-  );
-
   const manifest = {
     customerId: opts.customerId,
     customerName: customer.name,
@@ -153,29 +135,61 @@ export async function archiveCustomer(opts: ArchiveCustomerOptions): Promise<Arc
     reportKeys
   };
 
-  await pool.query(
-    `insert into archive_index
-       (customer_id, archived_at, archived_by, archive_month, archive_state,
-        spool_path, manifest_json, size_bytes)
-     values ($1, $2, $3, $4, 'spool', $5, $6::jsonb, $7)
-     on conflict (customer_id) do update set
-        archived_at = excluded.archived_at,
-        archived_by = excluded.archived_by,
-        archive_month = excluded.archive_month,
-        archive_state = 'spool',
-        spool_path = excluded.spool_path,
-        manifest_json = excluded.manifest_json,
-        size_bytes = excluded.size_bytes`,
-    [
-      opts.customerId,
-      now.toISOString(),
-      opts.actorUserId,
-      month,
-      spoolPath,
-      JSON.stringify(manifest),
-      movedSizeBytes
-    ]
-  );
+  // The FS move (above) cannot join a DB transaction, but the three DB writes
+  // must commit together: a partial commit (e.g. customers/assessments marked
+  // archived but no archive_index row) would leave the spooled files orphaned
+  // and unrestorable. On failure the spool is retained for retry (documented
+  // design) — only the DB stays consistent.
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query(
+      `update customers
+          set archived_at = $2,
+              archived_by = $3,
+              archive_reason = $4,
+              updated_at = now()
+        where id = $1`,
+      [opts.customerId, now.toISOString(), opts.actorUserId, opts.reason]
+    );
+    await client.query(
+      `update assessments
+          set archived_at = $2,
+              archived_by = $3
+        where customer_id = $1
+          and archived_at is null`,
+      [opts.customerId, now.toISOString(), opts.actorUserId]
+    );
+    await client.query(
+      `insert into archive_index
+         (customer_id, archived_at, archived_by, archive_month, archive_state,
+          spool_path, manifest_json, size_bytes)
+       values ($1, $2, $3, $4, 'spool', $5, $6::jsonb, $7)
+       on conflict (customer_id) do update set
+          archived_at = excluded.archived_at,
+          archived_by = excluded.archived_by,
+          archive_month = excluded.archive_month,
+          archive_state = 'spool',
+          spool_path = excluded.spool_path,
+          manifest_json = excluded.manifest_json,
+          size_bytes = excluded.size_bytes`,
+      [
+        opts.customerId,
+        now.toISOString(),
+        opts.actorUserId,
+        month,
+        spoolPath,
+        JSON.stringify(manifest),
+        movedSizeBytes
+      ]
+    );
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 
   await appendAuditEvent({
     actor: opts.actorUserId,
@@ -328,35 +342,49 @@ export async function approveRestoreRequest(opts: {
     );
   }
 
-  await pool.query(
-    `update customers
-        set archived_at = null,
-            archived_by = null,
-            archive_reason = null,
-            updated_at = now()
-      where id = $1`,
-    [row.customer_id]
-  );
-  await pool.query(
-    `update assessments
-        set archived_at = null,
-            archived_by = null
-      where customer_id = $1`,
-    [row.customer_id]
-  );
-  await pool.query(
-    `update archive_restore_requests
-        set status = 'approved',
-            resolved_by = $2,
-            resolved_at = now(),
-            resolution_note = $3
-      where id = $1`,
-    [opts.requestId, opts.approvedBy, opts.note ?? null]
-  );
-  await pool.query(
-    `delete from archive_index where customer_id = $1`,
-    [row.customer_id]
-  );
+  // Files are already restored from spool (and the spool dir removed) above; the
+  // four DB writes must now commit together. A partial commit (e.g. archive_index
+  // deleted but customers still archived) would leave a customer un-archivable in
+  // the UI with no spool to restore from.
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query(
+      `update customers
+          set archived_at = null,
+              archived_by = null,
+              archive_reason = null,
+              updated_at = now()
+        where id = $1`,
+      [row.customer_id]
+    );
+    await client.query(
+      `update assessments
+          set archived_at = null,
+              archived_by = null
+        where customer_id = $1`,
+      [row.customer_id]
+    );
+    await client.query(
+      `update archive_restore_requests
+          set status = 'approved',
+              resolved_by = $2,
+              resolved_at = now(),
+              resolution_note = $3
+        where id = $1`,
+      [opts.requestId, opts.approvedBy, opts.note ?? null]
+    );
+    await client.query(
+      `delete from archive_index where customer_id = $1`,
+      [row.customer_id]
+    );
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 
   const customer = await loadCustomerSummary(row.customer_id);
 

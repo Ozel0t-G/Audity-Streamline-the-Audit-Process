@@ -21,6 +21,7 @@ export type ConsoleGrant = {
   sessionId: string; // the auth session (sid) this grant is bound to
   ip: string;
   userAgent: string;
+  sessionRecId?: string; // console_sessions row id this grant records into
 };
 
 function keyFor(token: string): string {

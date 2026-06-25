@@ -113,18 +113,27 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
 
   useEffect(() => {
     if (!commandOpen) return;
+    // The 120ms debounce cancels the *pending* timer, but an already in-flight fetch
+    // for an earlier query could still resolve after a newer one on a slow network and
+    // overwrite the results. The cancelled flag drops such stale responses.
+    let cancelled = false;
     const timer = window.setTimeout(() => {
       void api<{ actions: SearchResult[]; results: SearchResult[] }>(`/api/command-palette?q=${encodeURIComponent(commandQuery)}`)
         .then((payload) => {
+          if (cancelled) return;
           setCommandActions(payload.actions);
           setCommandResults(payload.results);
         })
         .catch(() => {
+          if (cancelled) return;
           setCommandActions([]);
           setCommandResults([]);
         });
     }, 120);
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [api, commandOpen, commandQuery]);
 
   async function loadNotifications() {
@@ -138,10 +147,17 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     if (!accessToken) return;
     let source: EventSource | undefined;
     let pollTimer: number | undefined;
-    const startStream = () => {
-      if (source) return;
+    let cancelled = false;
+    let starting = false;
+    const startStream = async () => {
+      if (source || starting) return;
+      starting = true;
       try {
-        source = new EventSource(`/api/notifications/stream?token=${encodeURIComponent(accessToken)}`);
+        // EventSource can't send an Authorization header, so mint a short-lived,
+        // stream-only ticket over the authenticated API and pass that in the URL.
+        const { ticket } = await api<{ ticket: string }>("/api/notifications/stream-ticket");
+        if (cancelled) return;
+        source = new EventSource(`/api/notifications/stream?ticket=${encodeURIComponent(ticket)}`);
         source.addEventListener("notifications.changed", () => void loadNotifications().catch(() => undefined));
         source.onerror = () => {
           source?.close();
@@ -150,6 +166,8 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         };
       } catch {
         startPollingFallback();
+      } finally {
+        starting = false;
       }
     };
     const startPollingFallback = () => {
@@ -167,7 +185,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     const sync = () => {
       if (document.visibilityState === "visible") {
         void loadNotifications().catch(() => undefined);
-        startStream();
+        void startStream();
       } else {
         stop();
       }
@@ -175,6 +193,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     sync();
     document.addEventListener("visibilitychange", sync);
     return () => {
+      cancelled = true;
       document.removeEventListener("visibilitychange", sync);
       stop();
     };

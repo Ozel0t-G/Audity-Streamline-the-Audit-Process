@@ -51,7 +51,7 @@ export class ConsoleSession {
       return;
     }
     // Prefix input lines so the transcript distinguishes what the admin typed.
-    this.chunks.push(direction === "in" ? data : data);
+    this.chunks.push(direction === "in" ? `> ${data}\n` : data);
   }
 
   async end(exitReason: string): Promise<void> {
@@ -94,4 +94,52 @@ export class ConsoleSession {
       }).catch(() => undefined);
     }
   }
+}
+
+/**
+ * Append one input/output chunk to a persisted session's transcript, enforcing the
+ * byte cap. Stateless (keyed by session id) so it works across the stateless HTTP
+ * /run requests — the in-memory ConsoleSession.record() above is for the long-lived
+ * console-runner connection. Best-effort: a failed append never breaks the command.
+ */
+export async function appendConsoleTranscript(
+  sessionId: string,
+  direction: "in" | "out",
+  data: string
+): Promise<void> {
+  const chunk = direction === "in" ? `> ${data}\n` : data;
+  const addBytes = Buffer.byteLength(chunk, "utf8");
+  await pool
+    .query(
+      `update console_sessions
+          set transcript = case when byte_count >= $3 then transcript
+                                else coalesce(transcript, '') || $2 end,
+              byte_count  = case when byte_count >= $3 then byte_count
+                                else byte_count + $4 end
+        where id = $1`,
+      [sessionId, chunk, TRANSCRIPT_CAP_BYTES, addBytes]
+    )
+    .catch(() => undefined);
+}
+
+/** Marks a persisted console session ended and writes the tamper-evident end event. */
+export async function endConsoleSession(
+  sessionId: string,
+  userId: string,
+  exitReason: string
+): Promise<void> {
+  await pool
+    .query(
+      `update console_sessions set ended_at = now(), exit_reason = $2 where id = $1 and ended_at is null`,
+      [sessionId, exitReason]
+    )
+    .catch(() => undefined);
+  await appendActivityEvent({
+    userId,
+    action: "console.session_ended",
+    entityType: "console_session",
+    entityId: sessionId,
+    before: null,
+    after: { exitReason }
+  }).catch(() => undefined);
 }

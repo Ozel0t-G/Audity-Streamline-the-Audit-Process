@@ -43,7 +43,12 @@ export function useIdleLogout() {
         sessionIdleTimeoutMinutes: 30
       }));
       if (cancelled) return;
-      timeoutMinutes = payload.sessionIdleTimeoutMinutes;
+      // Guard against a malformed-but-successful response. A non-numeric setting
+      // serialises to JSON `null` (and a missing field is `undefined`), which would
+      // make schedule()'s Math.min/Math.max produce 1 minute or NaN — the latter
+      // makes setTimeout fire immediately, logging the user out almost at once.
+      const minutes = Number(payload.sessionIdleTimeoutMinutes);
+      timeoutMinutes = Number.isFinite(minutes) && minutes > 0 ? minutes : 30;
       schedule();
     };
 

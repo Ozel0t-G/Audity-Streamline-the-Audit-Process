@@ -117,6 +117,12 @@ export function WorkbenchPage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [newToken, setNewToken] = useState("");
+  const [tokenScopes, setTokenScopes] = useState<string[]>([
+    "read:customers",
+    "read:findings",
+    "read:evidence",
+    "read:reports"
+  ]);
   const [form, setForm] = useState({
     kind: searchParams.get("kind") ?? "evidence_request",
     title: "",
@@ -287,7 +293,7 @@ export function WorkbenchPage() {
   async function createApiToken() {
     const payload = await api<{ token: string }>("/api/admin/productivity/api-tokens", {
       method: "POST",
-      body: JSON.stringify({ name: adminForm.name || "Automation token", scopes: ["read", "write"] })
+      body: JSON.stringify({ name: adminForm.name || "Automation token", scopes: tokenScopes.length ? tokenScopes : ["read:customers"] })
     });
     setNewToken(payload.token);
     await load();
@@ -527,7 +533,29 @@ export function WorkbenchPage() {
                   </div>
                   <div className="rounded-audity border border-audity-border bg-audity-page p-3">
                     <h3 className="text-sm font-semibold">Public API Tokens</h3>
-                    <button className="mt-3 audity-btn-secondary" onClick={() => void createApiToken()}>Create token</button>
+                    <p className="mt-1 text-xs text-audity-muted">Read-only scopes for the public API (GET /api/public/v1/…).</p>
+                    <div className="mt-2 grid gap-1">
+                      {[
+                        { scope: "read:customers", label: "Customers & assessments" },
+                        { scope: "read:findings", label: "Findings & risks" },
+                        { scope: "read:evidence", label: "Evidence metadata" },
+                        { scope: "read:reports", label: "Report metadata" }
+                      ].map(({ scope, label }) => (
+                        <label key={scope} className="flex items-center gap-2 text-sm text-audity-secondary">
+                          <input
+                            type="checkbox"
+                            checked={tokenScopes.includes(scope)}
+                            onChange={(event) =>
+                              setTokenScopes((prev) =>
+                                event.target.checked ? [...prev, scope] : prev.filter((s) => s !== scope)
+                              )
+                            }
+                          />
+                          {label} <span className="font-mono text-xs text-audity-muted">{scope}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <button className="mt-3 audity-btn-secondary" disabled={!tokenScopes.length} onClick={() => void createApiToken()}>Create token</button>
                     {newToken ? <p className="mt-2 break-all rounded-audity border border-audity-warning px-2 py-1 font-mono text-xs text-audity-warning">{newToken}</p> : null}
                   </div>
                 </div>

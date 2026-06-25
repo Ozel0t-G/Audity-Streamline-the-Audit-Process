@@ -569,7 +569,17 @@ export function startConnectorSyncWorker(log: { info: (obj: unknown, message?: s
           const message = err instanceof Error ? err.message : "Auto sync failed";
           await updateConnectorStatus(row.id, "error", message, {});
           await logRun(row.id, "auto-sync", "error", message);
-          log.error({ err, connectorId: row.id, jobId: job.id }, "Connector auto sync failed");
+          // Log only name/message/stack — never the raw error. A failed fetch carries
+          // a `cause` that the logger would serialise, which can echo back the webhook
+          // URL (a per-connector secret) into operator logs.
+          log.error(
+            {
+              err: err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : { message },
+              connectorId: row.id,
+              jobId: job.id
+            },
+            "Connector auto sync failed"
+          );
         }
       }
       log.info({ jobId: job.id, results }, "Connector auto sync completed");

@@ -10,6 +10,21 @@ const linkBody = z.object({
   contributionNote: z.string().max(500).optional()
 });
 
+// canAccessAssessment(:id) only proves the caller may touch assessment :id — it does
+// NOT prove that the risk/finding referenced by the sub-path/body actually belongs to
+// that assessment. Without these checks a caller could pass their own accessible :id
+// together with a riskId/findingId from another customer's assessment to read linked
+// titles/ratings or write spurious links (nested IDOR).
+async function riskBelongsToAssessment(riskId: string, assessmentId: string): Promise<boolean> {
+  const result = await pool.query("select 1 from risks where id = $1 and assessment_id = $2", [riskId, assessmentId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+async function findingBelongsToAssessment(findingId: string, assessmentId: string): Promise<boolean> {
+  const result = await pool.query("select 1 from findings where id = $1 and assessment_id = $2", [findingId, assessmentId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
 export async function registerRiskFindingLinkRoutes(app: FastifyInstance): Promise<void> {
   // List findings linked to a risk
   app.get<{ Params: { id: string; riskId: string } }>(
@@ -18,6 +33,9 @@ export async function registerRiskFindingLinkRoutes(app: FastifyInstance): Promi
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      if (!(await riskBelongsToAssessment(request.params.riskId, request.params.id))) {
+        return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
       }
       const result = await pool.query<{
         finding_id: string;
@@ -59,6 +77,9 @@ export async function registerRiskFindingLinkRoutes(app: FastifyInstance): Promi
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      if (!(await findingBelongsToAssessment(request.params.findingId, request.params.id))) {
+        return reply.code(404).send({ code: "FINDING_NOT_FOUND", message: "Finding not found" });
       }
       const result = await pool.query<{
         risk_id: string;
@@ -105,6 +126,13 @@ export async function registerRiskFindingLinkRoutes(app: FastifyInstance): Promi
       if (!parsed.success) {
         return reply.code(400).send({ code: "INVALID_BODY", message: parsed.error.message });
       }
+      // Both endpoints of the link must belong to the accessed assessment.
+      if (!(await riskBelongsToAssessment(request.params.riskId, request.params.id))) {
+        return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
+      }
+      if (!(await findingBelongsToAssessment(parsed.data.findingId, request.params.id))) {
+        return reply.code(404).send({ code: "FINDING_NOT_FOUND", message: "Finding not found" });
+      }
       const result = await pool.query(
         `insert into risk_finding_links (risk_id, finding_id, contribution_note)
               values ($1, $2, $3)
@@ -132,6 +160,9 @@ export async function registerRiskFindingLinkRoutes(app: FastifyInstance): Promi
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
+      }
+      if (!(await riskBelongsToAssessment(request.params.riskId, request.params.id))) {
+        return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
       }
       const result = await pool.query(
         `delete from risk_finding_links

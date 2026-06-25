@@ -564,39 +564,53 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
           .digest("hex")
       );
 
-      // Claim the token first so a concurrent redeem (e.g. a double-clicked
-      // Submit) can't also create a sign-off. Only the winning request inserts.
-      const claimed = await markTokenRedeemed({
-        tokenId: row.id,
-        redeemedByEmail: mapped.recipientEmail,
-        signoffId
-      });
-      if (!claimed) {
-        return reply.code(410).send({ code: "TOKEN_REDEEMED", message: "Token is redeemed." });
-      }
+      // Claim the token and write the sign-off in ONE transaction. Otherwise a
+      // transient failure on the sign-off insert (after a successful claim) would
+      // burn the token while leaving no sign-off — the customer could never
+      // re-acknowledge. The claim itself stays atomic (single conditional UPDATE),
+      // so a concurrent double-submit still has exactly one winner.
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        const claimed = await markTokenRedeemed({
+          tokenId: row.id,
+          redeemedByEmail: mapped.recipientEmail,
+          signoffId
+        }, client);
+        if (!claimed) {
+          await client.query("rollback");
+          return reply.code(410).send({ code: "TOKEN_REDEEMED", message: "Token is redeemed." });
+        }
 
-      await pool.query(
-        `insert into audit_signoffs (
-            id, assessment_id, entity_type, entity_id, signoff_status, signoff_type,
-            signer_name, signer_email, signer_ip, signer_user_agent, statement,
-            comment, token_id, report_version, event_hash
-         ) values ($1, $2, 'assessment', $3, 'signed', 'customer_ack',
-                   $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-        [
-          signoffId,
-          mapped.assessmentId,
-          mapped.assessmentId,
-          signerName,
-          mapped.recipientEmail,
-          ip,
-          userAgent,
-          statement,
-          comment,
-          row.id,
-          mapped.reportVersionAtIssue,
-          eventHash
-        ]
-      );
+        await client.query(
+          `insert into audit_signoffs (
+              id, assessment_id, entity_type, entity_id, signoff_status, signoff_type,
+              signer_name, signer_email, signer_ip, signer_user_agent, statement,
+              comment, token_id, report_version, event_hash
+           ) values ($1, $2, 'assessment', $3, 'signed', 'customer_ack',
+                     $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [
+            signoffId,
+            mapped.assessmentId,
+            mapped.assessmentId,
+            signerName,
+            mapped.recipientEmail,
+            ip,
+            userAgent,
+            statement,
+            comment,
+            row.id,
+            mapped.reportVersionAtIssue,
+            eventHash
+          ]
+        );
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
 
       await appendPortalActivity({
         action: "customer_ack.redeemed",

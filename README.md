@@ -68,6 +68,7 @@ Audity holds an organization's weaknesses in writing, so security is not a featu
 - **Tamper-evident activity log.** Every event is hash-chained (`event_hash = sha256(timestamp + actor + action + entity + payload + prev_hash)`) and appended under a Postgres advisory lock so the chain can't fork under concurrency. Altering or removing a past entry breaks the chain and is detectable.
 - **Audit sign-offs carry their own event hash**, binding the signer, statement, report version, and timestamp.
 - **Atomic imports.** Importing an audit package writes the customer, assessment, findings, risks, roadmap, reports, and evidence inside a single database transaction — a partial failure rolls back cleanly instead of leaving orphaned records.
+- **Mandatory off-database log archival.** The audit log and activity log are archived automatically **every 24 hours** into an AES-256-GCM-encrypted, HMAC-signed, hash-chained `.audity-logs` bundle. It is wired into API boot and **cannot be disabled** by any user or admin — only the destination (local WORM dir, SFTP, S3-compatible, or FTP/FTPS) can be changed, and that change is itself audited. So even a full database loss or a compromised admin account can't erase the trail. See `DEPLOYMENT.md`.
 - **Idempotent, versioned migrations** applied deterministically on boot.
 
 ### Customer-acknowledgement portal

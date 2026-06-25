@@ -14,6 +14,7 @@ import {
   listRestoreRequests
 } from "./service.js";
 import { canAccessCustomer, canViewCustomerIncludingArchived, isAdminRole } from "../customers/access.js";
+import { customerHasActiveLegalHold } from "../productivity/legalHolds.js";
 import { pool } from "../db/client.js";
 import { loadConfig } from "../config.js";
 import { bundleMonth, decodeBundle } from "./bundle.js";
@@ -43,6 +44,12 @@ export async function registerArchiveRoutes(app: FastifyInstance): Promise<void>
       }
       if (!(await canAccessCustomer(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "CUSTOMER_NOT_FOUND", message: "Customer not found" });
+      }
+      if (await customerHasActiveLegalHold(request.params.id)) {
+        return reply.code(409).send({
+          code: "LEGAL_HOLD_ACTIVE",
+          message: "This customer (or one of its assessments) is under an active legal hold and cannot be archived. Release the hold first."
+        });
       }
       const body = validateBody(archiveSchema, request.body, reply);
       if (!body) return;

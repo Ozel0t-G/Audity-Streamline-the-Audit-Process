@@ -357,7 +357,7 @@ function eventHash(row: {
     .createHash("sha256")
     .update(
       row.created_at.toISOString() +
-        row.user_id +
+        (row.user_id ?? "") +
         row.action +
         row.entity_id +
         payload +
@@ -1089,12 +1089,26 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
          order by p.name`,
         [request.params.id]
       );
-      await pool.query("delete from role_permissions where role_id = $1", [request.params.id]);
-      for (const permission of permissionRows.rows) {
-        await pool.query(
-          "insert into role_permissions (role_id, permission_id) values ($1, $2) on conflict do nothing",
-          [request.params.id, permission.id]
-        );
+      // Rewrite the role's permissions atomically. This is the authorization table:
+      // without a transaction, a failed insert after the delete would leave the role
+      // with partial/no permissions — e.g. the Instance Admin role could lose
+      // roles.manage and lock everyone out of role administration.
+      const permsClient = await pool.connect();
+      try {
+        await permsClient.query("begin");
+        await permsClient.query("delete from role_permissions where role_id = $1", [request.params.id]);
+        for (const permission of permissionRows.rows) {
+          await permsClient.query(
+            "insert into role_permissions (role_id, permission_id) values ($1, $2) on conflict do nothing",
+            [request.params.id, permission.id]
+          );
+        }
+        await permsClient.query("commit");
+      } catch (error) {
+        await permsClient.query("rollback").catch(() => undefined);
+        throw error;
+      } finally {
+        permsClient.release();
       }
       const after = permissionRows.rows.map((permission) => permission.name).sort();
       await appendActivityEvent({

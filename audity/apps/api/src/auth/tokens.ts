@@ -16,6 +16,13 @@ export type MfaChallengePayload = {
   purpose: "mfa_challenge";
 };
 
+const streamTicketTtlSeconds = 60;
+
+export type StreamTicketPayload = {
+  sub: string;
+  purpose: "notif_stream";
+};
+
 export function signAccessToken(payload: AccessTokenPayload): string {
   return jwt.sign(payload, loadConfig().appSecret, {
     algorithm: SIGNING_ALGORITHM,
@@ -25,11 +32,38 @@ export function signAccessToken(payload: AccessTokenPayload): string {
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
-  return jwt.verify(token, loadConfig().appSecret, {
+  const payload = jwt.verify(token, loadConfig().appSecret, {
     algorithms: [SIGNING_ALGORITHM],
     issuer: "audity"
-  }) as AccessTokenPayload;
+  }) as AccessTokenPayload & { purpose?: string };
+  // Purpose-scoped tokens (MFA challenge, notification stream ticket) share the
+  // same secret/issuer but must never be accepted as full access tokens.
+  if (payload.purpose) {
+    throw new Error("Token is not a valid access token");
+  }
+  return payload;
 }
+
+export function signStreamTicketToken(userId: string): string {
+  return jwt.sign({ sub: userId, purpose: "notif_stream" }, loadConfig().appSecret, {
+    algorithm: SIGNING_ALGORITHM,
+    expiresIn: streamTicketTtlSeconds,
+    issuer: "audity"
+  });
+}
+
+export function verifyStreamTicketToken(token: string): StreamTicketPayload {
+  const payload = jwt.verify(token, loadConfig().appSecret, {
+    algorithms: [SIGNING_ALGORITHM],
+    issuer: "audity"
+  }) as StreamTicketPayload;
+  if (payload.purpose !== "notif_stream") {
+    throw new Error("Invalid notification stream ticket");
+  }
+  return payload;
+}
+
+export const streamTicketExpiresInSeconds = streamTicketTtlSeconds;
 
 export function signMfaChallengeToken(userId: string): string {
   return jwt.sign({ sub: userId, purpose: "mfa_challenge" }, loadConfig().appSecret, {

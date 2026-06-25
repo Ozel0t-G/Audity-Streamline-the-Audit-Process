@@ -46,6 +46,7 @@ services:
       - ./audity_frameworks:/app/audity_frameworks:ro
       - ./user_frameworks:/app/user_frameworks
       - audity-archive:/app/archive
+      - audity-log-archive:/app/log-archive
     environment:
       AUDITY_ENV: ${AUDITY_ENV:-production}
       AUDITY_IMAGE_REGISTRY: ${AUDITY_IMAGE_REGISTRY:-ghcr.io/ozel0t-g}
@@ -241,3 +242,4 @@ volumes:
   audity-db-data:
   audity-storage-data:
   audity-archive:
+  audity-log-archive:

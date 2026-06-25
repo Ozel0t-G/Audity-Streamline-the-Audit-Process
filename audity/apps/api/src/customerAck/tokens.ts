@@ -1,6 +1,9 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { pool } from "../db/client.js";
 
+/** Minimal query interface satisfied by both the pool and a transaction client. */
+type Queryable = { query: typeof pool.query };
+
 export type CustomerAckTokenStatus = "pending" | "redeemed" | "revoked" | "expired";
 
 export type CustomerAckTokenRow = {
@@ -222,6 +225,11 @@ export async function issueToken(input: {
   reportVersion?: number;
 }): Promise<{ token: string; row: CustomerAckToken }> {
   const expiryDays = Math.max(1, Math.min(30, input.expiryDays ?? DEFAULT_EXPIRY_DAYS));
+  // Normalise once and reuse for both the limit check and the insert. Previously the
+  // check used .toLowerCase() (no trim) while the insert stored .toLowerCase().trim(),
+  // so a whitespace-padded email never matched the stored rows — letting a caller
+  // bypass the MAX_CONCURRENT_PENDING limit.
+  const recipientEmail = input.recipientEmail.toLowerCase().trim();
 
   const pending = await pool.query<{ count: string }>(
     `select count(*)::text as count
@@ -231,7 +239,7 @@ export async function issueToken(input: {
         and redeemed_at is null
         and revoked_at is null
         and expires_at > now()`,
-    [input.assessmentId, input.recipientEmail.toLowerCase()]
+    [input.assessmentId, recipientEmail]
   );
   if (Number(pending.rows[0]?.count ?? "0") >= MAX_CONCURRENT_PENDING) {
     throw Object.assign(
@@ -259,7 +267,7 @@ export async function issueToken(input: {
     [
       id,
       input.assessmentId,
-      input.recipientEmail.toLowerCase().trim(),
+      recipientEmail,
       input.recipientHint?.trim() || null,
       tokenHash,
       input.issuedByUserId,
@@ -337,8 +345,8 @@ export async function markTokenRedeemed(input: {
   tokenId: string;
   redeemedByEmail: string;
   signoffId: string;
-}): Promise<boolean> {
-  const result = await pool.query(
+}, executor: Queryable = pool): Promise<boolean> {
+  const result = await executor.query(
     `update customer_ack_tokens
         set redeemed_at = now(),
             redeemed_by_email = $2,

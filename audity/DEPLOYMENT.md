@@ -176,6 +176,7 @@ Volumes used by Docker:
 - `audity-db-data`: PostgreSQL data
 - `audity-storage-data`: MinIO object storage data
 - `audity-archive`: Archive spool and monthly encrypted bundles (`/app/archive` inside the api container)
+- `audity-log-archive`: Tamper-evident audit/activity log archives written by the mandatory 24h Log Archival job (`/app/log-archive` inside the api container — only used when the destination is left at the default *Local server (WORM)* option)
 
 Before destructive server maintenance, create an Audity full backup and also snapshot Docker volumes if your hosting provider supports it.
 
@@ -245,3 +246,140 @@ also appears on **Admin → System Monitor**.
 - The login page's verify form also flags **`matchesInstance: false`** if you
   ever rotate the key and need to confirm the old phrase still decodes a
   legacy bundle.
+
+## Log Archival (Mandatory, Tamper-Evident)
+
+Audity continuously archives its two immutable log streams — the **audit log**
+(`audit_logs`) and the hash-chained **user activity log** (`user_activity_logs`)
+— into encrypted, signed, hash-chained bundles. This subsystem is independent of
+the general Backup feature described above and exists to satisfy retention and
+non-repudiation requirements: the logs are exported off the live database on a
+fixed schedule so that even a full database loss or a compromised admin account
+cannot erase the trail.
+
+### Guarantees
+
+- **Always on and non-disableable.** The archival scheduler is wired
+  unconditionally into the API boot sequence. There is **no enable/disable
+  toggle**, no setting, and no API endpoint that can stop it. Neither a normal
+  user nor any admin (including Instance Admin) can switch it off. Admins can
+  only change *where* the archive is written.
+- **Runs every 24 hours.** The scheduler ticks hourly and performs a run when the
+  last successful archive is older than ~23 hours (the small margin absorbs tick
+  drift so a day is never silently skipped). A run is also performed shortly
+  after the API starts if one is already due.
+- **Tamper-evident.** Each archive is an AES-256-GCM encrypted container whose
+  manifest carries an HMAC signature, and whose SHA-256 checksum is chained into
+  the *next* archive's manifest (`prevChecksum`). Altering, truncating, or
+  removing any archive in the chain breaks verification of the following ones.
+- **Append-only at every layer.** `audit_logs` and `user_activity_logs` are
+  protected by database triggers that reject `UPDATE`/`DELETE`. The archival run
+  history (`log_archive_runs`) is likewise append-only. The default local
+  destination writes files with the exclusive `wx` flag, so an existing archive
+  is never overwritten.
+- **Incremental, no gaps, no duplicates.** Each run exports only the rows
+  appended since the previous successful run (tracked by a watermark per log
+  stream). If a run fails, the watermark is not advanced, so the next run
+  re-exports the same rows — data is never lost, at worst a bundle is duplicated.
+
+### Archive format
+
+Bundles are named `audity-logs-<timestamp>.audity-logs` and have this layout:
+
+```
+bytes 0..3    magic "ALOG"
+bytes 4..7    version (u32 LE)
+bytes 8..19   AES-256-GCM IV (12 bytes)
+bytes 20..35  AES-256-GCM auth tag (16 bytes)
+bytes 36..    ciphertext (encrypted ZIP)
+```
+
+The encrypted ZIP contains:
+
+- `manifest.json` — metadata: created-at, row counts, the id ranges covered, the
+  previous archive's checksum (`prevChecksum`), and an HMAC `signature`.
+- `audit.jsonl` — one `audit_logs` row per line.
+- `activity.jsonl` — one `user_activity_logs` row per line.
+
+The encryption key is derived as `sha256(AUDITY_ENCRYPTION_KEY)` — the **same key
+as evidence, backups, and monthly archive bundles**. The recovery phrase
+(see above) is therefore what you need to decrypt these archives. If you rotate
+`AUDITY_ENCRYPTION_KEY`, archives written under the old key require the old key to
+decrypt, and any saved remote-destination credentials (see below) must be
+re-entered because they are stored encrypted under the same key.
+
+### Destinations
+
+The default destination is a tamper-resistant **local WORM directory** on the
+application server. An Instance Admin can change the destination in
+**Admin → Backup → Log Archival**. Four destination types are supported:
+
+| Type | Use case | Required fields | Notes |
+|------|----------|-----------------|-------|
+| **Local server (WORM)** | Default. Same server the app runs on, or any NFS/SMB share **mounted at the OS level** so it appears as a path. | *Directory* (optional; defaults to `AUDITY_LOG_ARCHIVE_DIR`) | Files written with `wx` (no overwrite). Persisted via the `audity-log-archive` volume. Covers most NAS devices without protocol-specific configuration. |
+| **SFTP** | Recommended for true remote targets. | Host, Port (default 22), Username, Password, Remote path | SSH file transfer; encrypted in transit; supported by virtually every NAS/server. |
+| **S3-compatible** | MinIO, Synology, QNAP, Wasabi, AWS S3, etc. | Endpoint, Bucket, Access key, Secret key, Region (optional), Key prefix (optional), Use TLS | Reuses the bundled S3 client against a caller-supplied endpoint/bucket. The bucket is created if missing. |
+| **FTP / FTPS** | Legacy NAS only. | Host, Port (default 21), Username, Password, Remote path, *Use FTPS* | Plain FTP is **unencrypted** — enable *Use FTPS* whenever the target supports it. |
+
+Notes on NFS and SMB/CIFS: these are **not** spoken by the application directly.
+Mount the share on the host/container (e.g. an `/etc/fstab` NFS mount or an SMB
+mount) and point the **Local server (WORM)** destination at the mounted path
+(either by overriding the directory field or by binding the mount to
+`/app/log-archive`). This is more robust than an in-app NFS/SMB client and works
+with any NAS.
+
+### Configuration
+
+- `AUDITY_LOG_ARCHIVE_DIR` (default `/app/log-archive`): filesystem path for the
+  default *Local server (WORM)* destination inside the api container. Backed by
+  the `audity-log-archive` named volume in the shipped compose files. The api
+  container's entrypoint creates and `chown`s this directory on first start, the
+  same way it handles `/app/archive`.
+- To send archives to a host directory or an OS-mounted NAS share instead of the
+  managed volume, replace the volume mount in your compose override, for example:
+
+  ```yaml
+  services:
+    audity-api:
+      volumes:
+        - /mnt/nas/audity-log-archive:/app/log-archive
+  ```
+
+Remote-destination credentials (SFTP/FTP passwords, S3 secret keys) are stored
+**encrypted at rest** (AES-256-GCM, same scheme as SMTP passwords) and are never
+returned by the API — the UI only shows whether a secret is set and lets you
+replace it.
+
+### Operating it
+
+- **UI:** Admin → Backup → **Log Archival**. The card shows an *Always on* badge,
+  the last archived time, the last run's status and row counts, the destination
+  form, **Test connection** / **Save destination** buttons, and a run-history
+  table (time, status, total logs, bundle checksum prefix). Changing the
+  destination is restricted to **Instance Admin** and is itself recorded in both
+  the audit log and the activity log.
+- **API endpoints:**
+  - `GET /api/admin/log-archive/settings` — destination type, non-secret config,
+    secret-presence flags, and last-run summary (`backup.manage`).
+  - `GET /api/admin/log-archive/runs` — recent run history (`backup.manage`).
+  - `PATCH /api/admin/log-archive/destination` — change the destination only
+    (Instance Admin + CSRF). There is intentionally no field to disable archival.
+  - `POST /api/admin/log-archive/test` — write-and-delete a probe object against
+    a candidate destination without saving it (Instance Admin + CSRF).
+- **Where it runs:** in-process inside the **api** container (mirroring the
+  monthly Archive cron), not in the worker. No Redis or worker is required for
+  archival to function.
+- **Failure handling:** a failed run is recorded in `log_archive_runs` with the
+  reason and triggers the `backup.failed` email topic (configure recipients in
+  Admin → Email). Because the watermark only advances on success, the next tick
+  retries automatically.
+
+### Verifying and reading an archive
+
+Archives are decrypted and verified with the instance encryption key. To inspect
+one, copy it off the destination and decode it with the same key derivation
+(`sha256(AUDITY_ENCRYPTION_KEY)`): parse the header, AES-256-GCM-decrypt the body
+(GCM tag failure ⇒ tampering), unzip, then recompute the manifest HMAC and the
+`prevChecksum` chain. A broken signature or a `prevChecksum` that does not match
+the preceding archive's SHA-256 is direct evidence of tampering or a missing
+archive in the sequence.
