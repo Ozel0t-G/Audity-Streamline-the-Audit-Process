@@ -1,20 +1,19 @@
 {
   "channel": "production",
   "branch": "production",
-  "version": "0.2.3",
-  "imageTag": "0.2.3",
-  "releasedAt": "2026-06-23T11:56:11Z",
+  "version": "0.2.6",
+  "imageTag": "0.2.6",
+  "releasedAt": "2026-06-25T18:54:00Z",
   "modules": {
-    "web": "ghcr.io/ozel0t-g/audity-web:0.2.3",
-    "api": "ghcr.io/ozel0t-g/audity-api:0.2.3",
-    "worker": "ghcr.io/ozel0t-g/audity-worker:0.2.3",
-    "updater": "ghcr.io/ozel0t-g/audity-updater:0.2.3"
+    "web": "ghcr.io/ozel0t-g/audity-web:0.2.6",
+    "api": "ghcr.io/ozel0t-g/audity-api:0.2.6",
+    "worker": "ghcr.io/ozel0t-g/audity-worker:0.2.6",
+    "updater": "ghcr.io/ozel0t-g/audity-updater:0.2.6"
   },
   "notes": [
-    "Production release channel manifest. Update checks must use this file from the production branch.",
-    "Makes the System Update Panel visible at the top of System Settings and refreshes browser cache behavior.",
-    "Publishes the latest main branch changes to the production update channel.",
-    "Restores shipped framework YAML catalogs on image-based updates when the host catalog is missing.",
-    "Adds an API image fallback to the embedded shipped framework catalog when the mounted host catalog is empty."
+    "Publishes the locally tested main branch state to the production update channel.",
+    "Includes customer framework scope management improvements.",
+    "Includes log archival destinations and backup/admin refinements.",
+    "Includes API, web, worker, and updater images for release 0.2.6."
   ]
 }
