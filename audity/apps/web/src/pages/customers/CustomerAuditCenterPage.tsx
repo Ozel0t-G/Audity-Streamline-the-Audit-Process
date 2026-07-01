@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { CustomerDetailsPanel } from "./CustomerDetailsPanel";
@@ -422,18 +422,26 @@ export function CustomerAuditCenterPage() {
     return data.audits.active[0] ?? data.audits.draft[0] ?? null;
   }, [data, selectedAuditId]);
 
+  // Only the latest load() may write state: the route `id` changing (or a
+  // post-mutation reload racing the effect) must not let a slower earlier
+  // response overwrite newer data. Mirrors the `let cancelled` guard used
+  // elsewhere in the app.
+  const loadSeqRef = useRef(0);
   async function load() {
     if (!id) return;
+    const requestId = ++loadSeqRef.current;
     setLoading(true);
     try {
       const payload = await api<CockpitPayload>(`/api/customers/${id}/cockpit`);
+      if (loadSeqRef.current !== requestId) return;
       setData(payload);
       setCustomerLabel(payload.customer.name);
       setError("");
     } catch (err) {
+      if (loadSeqRef.current !== requestId) return;
       setError(err instanceof Error ? err.message : "Could not load cockpit");
     } finally {
-      setLoading(false);
+      if (loadSeqRef.current === requestId) setLoading(false);
     }
   }
 

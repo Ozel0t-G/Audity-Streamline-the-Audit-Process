@@ -29,6 +29,7 @@ export type AudityConfig = {
   consoleRunnerToken: string;
   consoleIdleTimeoutSeconds: number;
   consoleMaxSessionSeconds: number;
+  licenseGraceDays: number;
 };
 
 const insecureValues = new Set([
@@ -138,7 +139,8 @@ export function loadConfig(): AudityConfig {
     consoleRunnerUrl: process.env.AUDITY_CONSOLE_RUNNER_URL ?? "http://audity-console-runner:3100",
     consoleRunnerToken: process.env.AUDITY_CONSOLE_RUNNER_TOKEN ?? "",
     consoleIdleTimeoutSeconds: Number(process.env.AUDITY_CONSOLE_IDLE_TIMEOUT_SECONDS ?? 600),
-    consoleMaxSessionSeconds: Number(process.env.AUDITY_CONSOLE_MAX_SESSION_SECONDS ?? 1800)
+    consoleMaxSessionSeconds: Number(process.env.AUDITY_CONSOLE_MAX_SESSION_SECONDS ?? 1800),
+    licenseGraceDays: Number(process.env.AUDITY_LICENSE_GRACE_DAYS ?? 30)
   };
   validateProductionConfig(config);
   cachedConfig = config;

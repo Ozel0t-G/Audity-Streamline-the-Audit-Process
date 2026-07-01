@@ -32,7 +32,11 @@ export function ControlsPhasePage() {
   // cockpit's "overdue evidence requests" next action.
   const overdueRequestQuestionIds = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    const open = new Set(["open", "requested", "received"]);
+    // Only requests still AWAITING evidence count as overdue. "received"/"validated" mean
+    // the evidence already arrived (see audit-center evidenceStatus handling), so they are
+    // resolved — excluding them keeps this filter consistent with the backend's cockpit
+    // "evidence overdue" next-action (status in ('open','requested')) and this block's comment.
+    const open = new Set(["open", "requested"]);
     const ids = new Set<string>();
     for (const r of overview.evidenceRequests) {
       const due = dateValue(r.dueDate);

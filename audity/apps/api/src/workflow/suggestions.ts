@@ -75,57 +75,76 @@ export async function ensureSuggestedFindings(assessmentId: string): Promise<voi
 
 export async function ensureAutomaticRiskRegister(assessmentId: string): Promise<void> {
   await ensureSuggestedFindings(assessmentId);
-  const candidates = await pool.query<{
-    finding_id: string;
-    assessment_question_id: string | null;
-    framework_control_id: string | null;
-    title: string;
-    priority: string | null;
-    source_explanation: string | null;
-    score: number | null;
-  }>(
-    `select f.id as finding_id, f.assessment_question_id, f.framework_control_id,
-       f.title, f.priority, f.source_explanation, ca.score
-     from findings f
-     left join assessments a on a.id = f.assessment_id
-     left join framework_controls fc on fc.id = f.framework_control_id
-     left join framework_domains fd on fd.id = fc.framework_domain_id
-     left join control_answers ca on ca.assessment_question_id = f.assessment_question_id
-     left join risks r on r.finding_id = f.id
-     where f.assessment_id = $1
-       and f.status <> 'dismissed'
-       and (f.framework_control_id is null or fd.framework_id = a.framework_id)
-       and r.id is null`,
-    [assessmentId]
-  );
-
-  for (const candidate of candidates.rows) {
-    const likelihood = candidate.priority === "high" ? 4 : 3;
-    const impact = candidate.priority === "high" ? 4 : 3;
-    const { riskScore, rating } = ratingFor(likelihood, impact);
-    await pool.query(
-      `insert into risks
-        (id, assessment_id, finding_id, title, likelihood, impact, risk_score, rating,
-         treatment_option, owner, treatment_plan, due_date, status, draft, source_type,
-         source_assessment_question_id, source_framework_control_id, source_score,
-         source_generated_at, source_explanation)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, 'mitigate', '', $9, null, 'open',
-         true, 'guided_question', $10, $11, $12, now(), $13)`,
-      [
-        randomUUID(),
-        assessmentId,
-        candidate.finding_id,
-        candidate.title,
-        likelihood,
-        impact,
-        riskScore,
-        rating,
-        "Auto-created from guided question answers. Adjust owner, treatment and scoring as needed.",
-        candidate.assessment_question_id,
-        candidate.framework_control_id,
-        candidate.score,
-        candidate.source_explanation
-      ]
+  // Serialize concurrent callers for this assessment via a transaction-scoped advisory lock.
+  // ensureAutomaticRiskRegister runs on EVERY control-answer save, so two simultaneous saves
+  // could otherwise both see a finding as "no risk yet" (the candidates query filters
+  // `r.id is null`) and each insert a risk — and `risks.finding_id` is a deprecated legacy
+  // column with NO unique constraint, so the duplicate inserts both succeed → duplicate
+  // auto-risks. The lock makes the second caller wait, then its candidates query sees the
+  // first caller's freshly inserted risks and skips them. Same pattern as workflow/autoConvert.
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [`audity_risk_register:${assessmentId}`]);
+    const candidates = await client.query<{
+      finding_id: string;
+      assessment_question_id: string | null;
+      framework_control_id: string | null;
+      title: string;
+      priority: string | null;
+      source_explanation: string | null;
+      score: number | null;
+    }>(
+      `select f.id as finding_id, f.assessment_question_id, f.framework_control_id,
+         f.title, f.priority, f.source_explanation, ca.score
+       from findings f
+       left join assessments a on a.id = f.assessment_id
+       left join framework_controls fc on fc.id = f.framework_control_id
+       left join framework_domains fd on fd.id = fc.framework_domain_id
+       left join control_answers ca on ca.assessment_question_id = f.assessment_question_id
+       left join risks r on r.finding_id = f.id
+       where f.assessment_id = $1
+         and f.status <> 'dismissed'
+         and f.lifecycle_status not in ('closed', 'verified')
+         and (f.framework_control_id is null or fd.framework_id = a.framework_id)
+         and r.id is null`,
+      [assessmentId]
     );
+
+    for (const candidate of candidates.rows) {
+      const likelihood = candidate.priority === "high" ? 4 : 3;
+      const impact = candidate.priority === "high" ? 4 : 3;
+      const { riskScore, rating } = ratingFor(likelihood, impact);
+      await client.query(
+        `insert into risks
+          (id, assessment_id, finding_id, title, likelihood, impact, risk_score, rating,
+           treatment_option, owner, treatment_plan, due_date, status, draft, source_type,
+           source_assessment_question_id, source_framework_control_id, source_score,
+           source_generated_at, source_explanation)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, 'mitigate', '', $9, null, 'open',
+           true, 'guided_question', $10, $11, $12, now(), $13)`,
+        [
+          randomUUID(),
+          assessmentId,
+          candidate.finding_id,
+          candidate.title,
+          likelihood,
+          impact,
+          riskScore,
+          rating,
+          "Auto-created from guided question answers. Adjust owner, treatment and scoring as needed.",
+          candidate.assessment_question_id,
+          candidate.framework_control_id,
+          candidate.score,
+          candidate.source_explanation
+        ]
+      );
+    }
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
   }
 }

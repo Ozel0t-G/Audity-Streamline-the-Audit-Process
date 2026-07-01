@@ -11,6 +11,9 @@ import { useTooltips } from "./layout/useTooltips";
 import { useLanguage, useUserTheme } from "./layout/useUserTheme";
 import { OnboardingTips } from "./OnboardingTips";
 import { NextActionBell } from "./NextActionBell";
+import { DemoWatermark } from "./DemoWatermark";
+import { FeatureTag } from "./FeatureTag";
+import { useEntitlement } from "../license/useEntitlement";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -199,12 +202,74 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
     };
   }, [api, accessToken]);
 
+  // Map a notification to the page it's about, so clicking it always lands the
+  // user somewhere relevant (previously only customer- and system_update-linked
+  // notifications navigated; every other type did nothing).
+  function notificationTarget(notification: (typeof notifications)[number]): string {
+    const customerId = notification.customerId;
+    if (customerId) {
+      switch (notification.entityType) {
+        case "finding":
+          return `/customers/${customerId}/findings`;
+        case "evidence":
+          return `/customers/${customerId}/evidence`;
+        case "control_answer":
+          return `/customers/${customerId}/controls`;
+        case "risk":
+          return `/customers/${customerId}/risk`;
+        case "roadmap_item":
+          return `/customers/${customerId}/roadmap`;
+        default:
+          return `/customers/${customerId}`;
+      }
+    }
+    let target = "/inbox";
+    switch (notification.entityType) {
+      case "system_update":
+        target = "/admin/system";
+        break;
+      case "backup_job":
+      case "restore_job":
+      case "backup_settings":
+      case "log_archive_settings":
+        target = "/admin/backup";
+        break;
+      case "connector":
+        target = "/admin/connectors";
+        break;
+      case "framework_import":
+        target = notification.entityId
+          ? `/admin/frameworks/imports/${notification.entityId}`
+          : "/admin/frameworks";
+        break;
+      case "framework":
+        target = "/admin/frameworks";
+        break;
+      case "console_session":
+        target = "/admin/maintenance";
+        break;
+      case "user":
+      case "role":
+        target = "/admin/users";
+        break;
+      case "workbench":
+        target = "/admin/workbench";
+        break;
+      default:
+        target = "/inbox";
+    }
+    // Non-admins can't open /admin/* routes — fall back to the full inbox.
+    if (target.startsWith("/admin") && !admin) return "/inbox";
+    return target;
+  }
+
   async function openNotification(notification: (typeof notifications)[number]) {
-    await api(`/api/notifications/${notification.id}/read`, { method: "PATCH" });
-    await loadNotifications();
     setNotificationsOpen(false);
-    if (notification.customerId) navigate(`/customers/${notification.customerId}`);
-    if (notification.entityType === "system_update") navigate("/admin/system");
+    // Mark read in the background; navigation must not hinge on the PATCH succeeding.
+    void api(`/api/notifications/${notification.id}/read`, { method: "PATCH" })
+      .then(() => loadNotifications())
+      .catch(() => undefined);
+    navigate(notificationTarget(notification));
   }
 
   async function markAllRead() {
@@ -261,6 +326,7 @@ function TopBar({ adminMode = false }: { adminMode?: boolean }) {
         ) : null}
       </div>
       <div className="flex items-center gap-1">
+        <DemoWatermark />
         <NextActionBell />
         <button
           type="button"
@@ -615,6 +681,9 @@ function AdminLayoutInner() {
   useTooltips();
   useUserTheme();
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
+  const aiEntitled = useEntitlement("ai");
+  const connectorsEntitled = useEntitlement("connectors");
+  const customerAckEntitled = useEntitlement("customer_ack");
   const { mobileNavOpen, setMobileNavOpen } = useMobileNav();
   return (
     <Shell
@@ -630,20 +699,21 @@ function AdminLayoutInner() {
             {can("roles.manage") ? <NavLink className={navClass} to="/admin/users"><NavIcon name="users" /> {t("User Management")}</NavLink> : null}
             {can("assessment.view") ? <NavLink className={navClass} to="/admin/frameworks"><NavIcon name="frameworks" /> {t("Framework Library")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/frameworks/thresholds"><NavIcon name="frameworks" /> {t("Stuck Thresholds")}</NavLink> : null}
-            {can("settings.manage") ? <NavLink className={navClass} to="/admin/customer-ack"><NavIcon name="audit" /> {t("Customer Acknowledgments")}</NavLink> : null}
+            {can("settings.manage") && customerAckEntitled ? <NavLink className={navClass} to="/admin/customer-ack"><NavIcon name="audit" /> {t("Customer Acknowledgments")} <FeatureTag featureId="customer_ack" /></NavLink> : null}
             <p className={navSectionClass}>{t("Monitoring")}</p>
             {can("activitylog.view") ? <NavLink className={navClass} to="/admin/activity"><NavIcon name="activity" /> {t("Activity Log")}</NavLink> : null}
             {can("auditlog.view") ? <NavLink className={navClass} to="/admin/audit"><NavIcon name="audit-log" /> {t("Audit Log")}</NavLink> : null}
             <p className={navSectionClass}>{t("System")}</p>
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/system"><NavIcon name="system" /> {t("System Monitor")}</NavLink> : null}
-            {can("settings.manage") ? <NavLink className={navClass} to="/admin/ai"><NavIcon name="system" /> {t("AI & Integrations")}</NavLink> : null}
-            {can("connectors.manage") ? <NavLink className={navClass} to="/admin/connectors"><NavIcon name="connector" /> {t("Connector")}</NavLink> : null}
+            {can("settings.manage") && aiEntitled ? <NavLink className={navClass} to="/admin/ai"><NavIcon name="system" /> {t("AI & Integrations")} <FeatureTag featureId="ai" /></NavLink> : null}
+            {can("connectors.manage") && connectorsEntitled ? <NavLink className={navClass} to="/admin/connectors"><NavIcon name="connector" /> {t("Connector")} <FeatureTag featureId="connectors" /></NavLink> : null}
             {can("branding.manage") ? <NavLink className={navClass} to="/admin/branding"><NavIcon name="branding" /> {t("Branding")}</NavLink> : null}
             {can("email.manage") ? <NavLink className={navClass} to="/admin/email"><NavIcon name="email" /> {t("Email Settings")}</NavLink> : null}
             {can("settings.manage") ? <NavLink className={navClass} to="/admin/workbench"><NavIcon name="workbench" /> {t("Workbench")}</NavLink> : null}
             {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/backup"><NavIcon name="backup" /> {t("Backup")}</NavLink> : null}
             {can("server.console") ? <NavLink className={navClass} to="/admin/maintenance"><NavIcon name="system" /> {t("Maintenance Mode")}</NavLink> : null}
             {can("archive.approve") ? <NavLink className={navClass} to="/admin/archive"><NavIcon name="archive" /> {t("Archive")}</NavLink> : null}
+            {user?.role === "Instance Admin" ? <NavLink className={navClass} to="/admin/license"><NavIcon name="system" /> {t("License")}</NavLink> : null}
             <NavLink className={navClass} to="/manual"><NavIcon name="manual" /> {t("Manual")}</NavLink>
           </nav>
           <Link

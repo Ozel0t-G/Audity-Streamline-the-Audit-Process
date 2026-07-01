@@ -186,6 +186,23 @@ export async function archiveCustomer(opts: ArchiveCustomerOptions): Promise<Arc
     await client.query("commit");
   } catch (error) {
     await client.query("rollback").catch(() => undefined);
+    // The artifact move above already removed the originals from object storage. With
+    // the DB rolled back the customer stays ACTIVE, so the moved evidence/report blobs
+    // would otherwise be stranded in spool with no archive_index row pointing to them —
+    // the active customer's evidence/reports would silently 404. Best-effort: put them
+    // back at their original keys (the inverse of the move; also clears the spool) so the
+    // active customer is left fully consistent. If even this fails, retain the spool (it
+    // has the manifest) for manual recovery and surface both errors.
+    try {
+      await restoreCustomerArtifactsFromSpool({ customerId: opts.customerId, spoolPath });
+    } catch (restoreError) {
+      throw new Error(
+        `Archive DB write failed and the automatic rollback of the moved artifacts also failed; ` +
+          `spool retained at '${spoolPath}' for manual restore. ` +
+          `cause: ${error instanceof Error ? error.message : String(error)}; ` +
+          `restore: ${restoreError instanceof Error ? restoreError.message : String(restoreError)}`
+      );
+    }
     throw error;
   } finally {
     client.release();

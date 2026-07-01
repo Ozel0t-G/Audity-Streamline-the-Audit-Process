@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { MultiCombobox, useToast, type ComboOption } from "../../components/ui";
@@ -49,14 +49,17 @@ export function CustomerDetailsPanel({ customerId, canEdit }: { customerId: stri
 
   const currentUserId = user?.id ?? user?.sub;
   const isAdmin = user?.role === "Instance Admin" || user?.role === "Tenant Admin";
+  const loadSeqRef = useRef(0);
 
   async function load() {
+    const requestId = ++loadSeqRef.current;
     try {
       const [c, k, f] = await Promise.all([
         api<{ customer: CustomerDetails }>(`/api/customers/${customerId}`),
         api<{ contacts: Contact[] }>(`/api/customers/${customerId}/contacts`),
         api<{ frameworks: FrameworkOption[] }>("/api/frameworks")
       ]);
+      if (loadSeqRef.current !== requestId) return;
       setForm({
         industry: c.customer.industry ?? "",
         regulatoryContext: c.customer.regulatoryContext ?? "",
@@ -71,7 +74,7 @@ export function CustomerDetailsPanel({ customerId, canEdit }: { customerId: stri
       setSavedScopeFrameworkIds(selected);
       setCanManageScope(isAdmin || c.customer.createdByUserId === currentUserId);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not load customer details");
+      if (loadSeqRef.current === requestId) toast.error(err instanceof Error ? err.message : "Could not load customer details");
     }
   }
 

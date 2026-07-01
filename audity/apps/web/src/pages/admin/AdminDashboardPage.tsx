@@ -255,6 +255,8 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [activeUserCount, setActiveUserCount] = useState(0);
+  const [userLimit, setUserLimit] = useState<number | null>(null);
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [permissions, setPermissions] = useState<PermissionOption[]>([]);
   const [rolePermissionDrafts, setRolePermissionDrafts] = useState<Record<string, string[]>>({});
@@ -389,8 +391,10 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
   }
 
   async function loadUsers() {
-    const payload = await api<{ users: AdminUser[]; roles: RoleOption[]; permissions: PermissionOption[] }>("/api/admin/users");
+    const payload = await api<{ users: AdminUser[]; roles: RoleOption[]; permissions: PermissionOption[]; activeUserCount?: number; userLimit?: number | null }>("/api/admin/users");
     setUsers(payload.users);
+    setActiveUserCount(payload.activeUserCount ?? payload.users.length);
+    setUserLimit(payload.userLimit ?? null);
     setRoles(payload.roles);
     setPermissions(payload.permissions);
     setRolePermissionDrafts(Object.fromEntries(payload.roles.map((role) => [role.id, role.permissions ?? []])));
@@ -1023,7 +1027,19 @@ export function AdminDashboardPage({ section }: { section: AdminSection }) {
           {section === "users" ? (
           <div className="grid gap-3">
             <section className="rounded-audity border border-audity-border bg-audity-panel p-4">
-              <h2 className="mb-4 text-lg font-semibold">User Management</h2>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold">User Management</h2>
+                <span
+                  className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                    userLimit != null && activeUserCount >= userLimit
+                      ? "border-audity-error text-audity-error"
+                      : "border-audity-border text-audity-secondary"
+                  }`}
+                  title="Active users / limit of this license tier"
+                >
+                  {activeUserCount}/{userLimit ?? "∞"} users active
+                </span>
+              </div>
               <div className="mb-4 grid gap-2 xl:grid-cols-2">
                 {roles.map((role) => {
                   const expanded = expandedRoleIds.includes(role.id);

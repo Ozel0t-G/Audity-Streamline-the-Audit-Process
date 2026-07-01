@@ -364,7 +364,7 @@ async function loadOverview(assessmentId: string, userId: string) {
         owner: control.controlOwner ?? null
       })),
     ...findings.rows
-      .filter((finding) => !["closed", "verified"].includes(String(finding.lifecycle_status ?? "draft")))
+      .filter((finding) => String(finding.status) !== "dismissed" && !["closed", "verified"].includes(String(finding.lifecycle_status ?? "draft")))
       .map((finding) => ({
         type: "Process Gap",
         title: finding.title,
@@ -376,7 +376,7 @@ async function loadOverview(assessmentId: string, userId: string) {
   const controlsTotal = controlRows.length;
   const approvedControls = controlRows.filter((control) => control.reviewStatus === "approved" || control.signoffStatus === "signed").length;
   const evidenceMappedControls = controlRows.filter((control) => Number(control.mappedEvidence ?? 0) > 0 || ["validated", "received"].includes(String(control.evidenceStatus ?? ""))).length;
-  const openFindings = findings.rows.filter((finding) => !["closed", "verified"].includes(String(finding.lifecycle_status ?? "draft"))).length;
+  const openFindings = findings.rows.filter((finding) => String(finding.status) !== "dismissed" && !["closed", "verified"].includes(String(finding.lifecycle_status ?? "draft"))).length;
   const reportFinal = reportReviews.rows.some((review) => ["final", "approved"].includes(String(review.status)));
   const readinessScore = controlsTotal
     ? Math.max(0, Math.min(100, Math.round(
@@ -630,6 +630,12 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
   app.post<{ Params: { id: string }; Body: z.infer<typeof evidenceRequestSchema> }>("/api/assessments/:id/audit-center/evidence-requests", { preHandler: requireCsrfPermission("assessment.edit") }, async (request, reply) => {
     if (!(await assertAssessmentAccess(request.user!, request.params.id))) return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
     const body = parseBody(evidenceRequestSchema, request.body);
+    // Parent-scoping (Bug #8 class): a linked control question must belong to THIS assessment,
+    // so a request in assessment A can't reference a question from another assessment.
+    if (body.assessmentQuestionId) {
+      const q = await pool.query("select 1 from assessment_questions where id = $1 and assessment_id = $2", [body.assessmentQuestionId, request.params.id]);
+      if (!q.rows[0]) return reply.code(404).send({ code: "QUESTION_NOT_FOUND", message: "Control question not found" });
+    }
     const result = await pool.query(
       `insert into audit_evidence_requests
         (id, assessment_id, assessment_question_id, title, description, owner, due_date, status, portal_visibility, created_by)
@@ -665,6 +671,22 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
     const body = parseBody(evidenceMappingSchema, request.body);
     const evidenceItem = await pool.query("select id from evidence_items where id = $1 and assessment_id = $2 and deleted_at is null", [body.evidenceId, request.params.id]);
     if (!evidenceItem.rows[0]) return reply.code(404).send({ code: "EVIDENCE_NOT_FOUND", message: "Evidence item not found" });
+    // Parent-scoping (Bug #8 class): the linked control/finding/risk must belong to THIS
+    // assessment too. Without this a user with access to assessment A could attach A's evidence
+    // to a control/finding/risk from another assessment — polluting A's mappings with foreign IDs
+    // and seeding a latent cross-assessment IDOR. Mirrors the evidence check above.
+    if (body.assessmentQuestionId) {
+      const q = await pool.query("select 1 from assessment_questions where id = $1 and assessment_id = $2", [body.assessmentQuestionId, request.params.id]);
+      if (!q.rows[0]) return reply.code(404).send({ code: "QUESTION_NOT_FOUND", message: "Control question not found" });
+    }
+    if (body.findingId) {
+      const f = await pool.query("select 1 from findings where id = $1 and assessment_id = $2", [body.findingId, request.params.id]);
+      if (!f.rows[0]) return reply.code(404).send({ code: "FINDING_NOT_FOUND", message: "Finding not found" });
+    }
+    if (body.riskId) {
+      const r = await pool.query("select 1 from risks where id = $1 and assessment_id = $2", [body.riskId, request.params.id]);
+      if (!r.rows[0]) return reply.code(404).send({ code: "RISK_NOT_FOUND", message: "Risk not found" });
+    }
     const qualityScore = calculateQuality(body);
     const result = await pool.query(
       `insert into audit_evidence_mappings
@@ -710,6 +732,11 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
   app.post<{ Params: { id: string }; Body: z.infer<typeof interviewSchema> }>("/api/assessments/:id/audit-center/interviews", { preHandler: requireCsrfPermission("assessment.edit") }, async (request, reply) => {
     if (!(await assertAssessmentAccess(request.user!, request.params.id))) return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
     const body = parseBody(interviewSchema, request.body);
+    // Parent-scoping (Bug #17 class): a linked control question must belong to THIS assessment.
+    if (body.linkedQuestionId) {
+      const q = await pool.query("select 1 from assessment_questions where id = $1 and assessment_id = $2", [body.linkedQuestionId, request.params.id]);
+      if (!q.rows[0]) return reply.code(404).send({ code: "QUESTION_NOT_FOUND", message: "Control question not found" });
+    }
     const result = await pool.query(
       `insert into audit_interviews
         (id, assessment_id, title, participants, interview_at, notes, linked_question_id, follow_up, status, created_by)
@@ -723,6 +750,11 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
   app.patch<{ Params: { id: string; interviewId: string }; Body: Partial<z.infer<typeof interviewSchema>> }>("/api/assessments/:id/audit-center/interviews/:interviewId", { preHandler: requireCsrfPermission("assessment.edit") }, async (request, reply) => {
     if (!(await assertAssessmentAccess(request.user!, request.params.id))) return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
     const body = parseBody(interviewSchema.partial(), request.body);
+    // Parent-scoping (Bug #17 class): a (re)linked control question must belong to THIS assessment.
+    if (body.linkedQuestionId) {
+      const q = await pool.query("select 1 from assessment_questions where id = $1 and assessment_id = $2", [body.linkedQuestionId, request.params.id]);
+      if (!q.rows[0]) return reply.code(404).send({ code: "QUESTION_NOT_FOUND", message: "Control question not found" });
+    }
     const result = await pool.query(
       `update audit_interviews
        set title = coalesce($3, title),
@@ -790,6 +822,11 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
     const body = parseBody(findingAuditSchema, request.body);
     const before = await pool.query("select * from findings where id = $1 and assessment_id = $2", [request.params.findingId, request.params.id]);
     if (!before.rows[0]) return reply.code(404).send({ code: "FINDING_NOT_FOUND", message: "Finding not found" });
+    // Parent-scoping (Bug #17 class): retest evidence must belong to THIS assessment.
+    if (body.retestEvidenceId) {
+      const ev = await pool.query("select 1 from evidence_items where id = $1 and assessment_id = $2 and deleted_at is null", [body.retestEvidenceId, request.params.id]);
+      if (!ev.rows[0]) return reply.code(404).send({ code: "EVIDENCE_NOT_FOUND", message: "Evidence item not found" });
+    }
     const severity = calculatedSeverity({
       ...body,
       severityImpact: body.severityImpact ?? before.rows[0].severity_impact ?? 3,
@@ -847,6 +884,11 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
   app.post<{ Params: { id: string }; Body: z.infer<typeof reportReviewSchema> }>("/api/assessments/:id/audit-center/report-reviews", { preHandler: requireCsrfPermission("report.export") }, async (request, reply) => {
     if (!(await assertAssessmentAccess(request.user!, request.params.id))) return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
     const body = parseBody(reportReviewSchema, request.body);
+    // Parent-scoping (Bug #17 class): a linked report must belong to THIS assessment.
+    if (body.reportId) {
+      const rep = await pool.query("select 1 from reports where id = $1 and assessment_id = $2", [body.reportId, request.params.id]);
+      if (!rep.rows[0]) return reply.code(404).send({ code: "REPORT_NOT_FOUND", message: "Report not found" });
+    }
     const result = await pool.query(
       `insert into audit_report_reviews (id, assessment_id, report_id, status, reviewer, customer_reviewer, summary, due_date, approved_at, created_by)
        values ($1,$2,$3,$4,$5,$6,$7,$8,case when $4 in ('final','approved') then now() else null end,$9) returning *`,
@@ -859,6 +901,11 @@ export async function registerAuditCenterRoutes(app: FastifyInstance): Promise<v
   app.patch<{ Params: { id: string; reviewId: string }; Body: Partial<z.infer<typeof reportReviewSchema>> }>("/api/assessments/:id/audit-center/report-reviews/:reviewId", { preHandler: requireCsrfPermission("report.export") }, async (request, reply) => {
     if (!(await assertAssessmentAccess(request.user!, request.params.id))) return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
     const body = parseBody(reportReviewSchema.partial(), request.body);
+    // Parent-scoping (Bug #17 class): a (re)linked report must belong to THIS assessment.
+    if (body.reportId) {
+      const rep = await pool.query("select 1 from reports where id = $1 and assessment_id = $2", [body.reportId, request.params.id]);
+      if (!rep.rows[0]) return reply.code(404).send({ code: "REPORT_NOT_FOUND", message: "Report not found" });
+    }
     const result = await pool.query(
       `update audit_report_reviews
        set report_id = coalesce($3, report_id),

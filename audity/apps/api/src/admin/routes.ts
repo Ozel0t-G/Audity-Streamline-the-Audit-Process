@@ -15,6 +15,9 @@ import {
   type EmailTopicId
 } from "../notifications/emailTopics.js";
 import { createLlmProvider, estimateCostCents, type EnrichInput } from "../llm/provider.js";
+import { requireFeature } from "../license/requireFeature.js";
+import { licenseService } from "../license/service.js";
+import { withinLimit, effectiveLimit } from "../license/entitlement.js";
 import {
   loadLlmConfigInternal,
   loadLlmConfigPublic,
@@ -1054,7 +1057,16 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
        order by r.name`
     );
     const permissions = await pool.query("select id, name from permissions order by name");
-    return { users: result.rows, roles: roles.rows, permissions: permissions.rows };
+    const activeUsers = await pool.query<{ count: string }>(
+      "select count(*)::text as count from users where status = 'active'"
+    );
+    return {
+      users: result.rows,
+      roles: roles.rows,
+      permissions: permissions.rows,
+      activeUserCount: Number(activeUsers.rows[0]?.count ?? 0),
+      userLimit: effectiveLimit("users", licenseService.getState())
+    };
   });
 
   app.patch<{ Params: { id: string }; Body: RolePermissionsBody }>(
@@ -1129,6 +1141,17 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const body = validateBody(inviteSchema, request.body, reply);
       if (!body) return;
+      // Nutzerlimit pro Tier (Free 5 / Pro 15 / Enterprise unbegrenzt; Demo unbegrenzt).
+      const activeUsers = await pool.query<{ count: string }>(
+        "select count(*)::text as count from users where status = 'active'"
+      );
+      if (!withinLimit("users", Number(activeUsers.rows[0]?.count ?? 0), licenseService.getState())) {
+        const max = effectiveLimit("users", licenseService.getState());
+        return reply.code(403).send({
+          code: "USER_LIMIT_REACHED",
+          message: `User limit reached (max. ${max}). Upgrade your license to add more users.`
+        });
+      }
       if (!canAssignRole(request.user!.role, body.role)) {
         return reply.code(403).send({
           code: "ROLE_ASSIGNMENT_FORBIDDEN",
@@ -1362,13 +1385,13 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get(
     "/api/admin/llm/config",
-    { preHandler: requireAdminPermission("settings.manage") },
+    { preHandler: [requireAdminPermission("settings.manage"), requireFeature("ai")] },
     async () => loadLlmConfigPublic()
   );
 
   app.put(
     "/api/admin/llm/config",
-    { preHandler: requireAdminPermission("settings.manage") },
+    { preHandler: [requireAdminPermission("settings.manage"), requireFeature("ai")] },
     async (request, reply) => {
       const body = validateBody(llmConfigSchema, request.body, reply);
       if (!body) return;
@@ -1400,7 +1423,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/api/admin/llm/test",
     {
-      preHandler: requireAdminPermission("settings.manage"),
+      preHandler: [requireAdminPermission("settings.manage"), requireFeature("ai")],
       config: { rateLimit: { max: 5, timeWindow: "1 minute" } }
     },
     async () => {
@@ -1420,7 +1443,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/api/admin/llm/enrich-preview",
     {
-      preHandler: requireAdminPermission("settings.manage"),
+      preHandler: [requireAdminPermission("settings.manage"), requireFeature("ai")],
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } }
     },
     async (request, reply) => {
@@ -1719,7 +1742,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get(
     "/api/admin/llm/usage",
-    { preHandler: requireAdminPermission("settings.manage") },
+    { preHandler: [requireAdminPermission("settings.manage"), requireFeature("ai")] },
     async () => {
       const totals = await pool.query<{
         provider: string | null;

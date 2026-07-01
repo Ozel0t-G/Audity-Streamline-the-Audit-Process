@@ -70,6 +70,91 @@ const userMfaSection: ManualSection = {
 
 export const manualArticles: ManualArticle[] = [
   {
+    id: "licensing",
+    title: "Licensing, plans & limits",
+    category: "admin",
+    audience: "admin",
+    keywords: [
+      "license", "licensing", "plan", "tier", "free", "pro", "enterprise", "demo",
+      "activate", "activation", "token", "user limit", "customer limit", "ai",
+      "connectors", "customer acknowledgment", "upgrade", "downgrade", "grace period"
+    ],
+    summary:
+      "How the Free, Pro and Enterprise tiers work, what each unlocks, the user and customer limits, and how to activate or change a license.",
+    sections: [
+      {
+        heading: "Plans and what they unlock",
+        blocks: [
+          { kind: "paragraph", text: "Audity has three commercial tiers plus a demo mode. Tiers are cumulative: every higher tier includes everything from the one below it, so Pro features are automatically part of Enterprise." },
+          {
+            kind: "fields",
+            intro: "What each tier adds:",
+            items: [
+              { name: "Free", description: "No license required. Core audit work: all 30+ frameworks, the Audit Center workflow, evidence management, reports and export, and the local WORM log archive." },
+              { name: "Pro", description: "Everything in Free, plus AI enrichment for framework imports and controls." },
+              { name: "Enterprise", description: "Everything in Pro, plus Connectors (integrations) and Customer Acknowledgment (magic-link receipts)." },
+              { name: "Demo", description: "A showcase mode for evaluation: all features are unlocked, sample customers are seeded, and every feature is marked with a colored tier tag. A DEMO badge is shown in the header." }
+            ]
+          },
+          { kind: "note", text: "Features your tier does not include are hidden rather than locked, so the interface stays clean. In Demo mode everything is visible and each feature is tagged with the tier it belongs to (green = Free, blue = Pro, purple = Enterprise)." }
+        ]
+      },
+      {
+        heading: "User and customer limits",
+        blocks: [
+          { kind: "paragraph", text: "Each tier caps how many active users and customers the instance may have. Current usage is shown as an \"X / Y\" badge — in User Management for users, and on the Customers page for customers. The badge turns red once the limit is reached." },
+          {
+            kind: "fields",
+            intro: "Limits per tier:",
+            items: [
+              { name: "Users", description: "Free 5 · Pro 15 · Enterprise unlimited. Counts active users." },
+              { name: "Customers", description: "Free 25 · Pro 50 · Enterprise unlimited. Counts active (non-archived) customers." }
+            ]
+          },
+          { kind: "note", text: "At the limit, creating another user or customer is refused with a clear message. Downgrading never deletes data: if you end up over a lower tier's limit, existing records stay and remain exportable — only creating new ones is blocked until you upgrade or remove some." }
+        ]
+      },
+      {
+        heading: "Activate or change a license",
+        blocks: [
+          {
+            kind: "steps",
+            intro: "Activation happens entirely on your server — the token never leaves it:",
+            items: [
+              "Open Admin → License (Instance Admin only; it is the last entry in the admin menu).",
+              "Paste your license token into the field and click Activate.",
+              "Audity verifies the signature and applies the license immediately. The current status — tier, licensee and expiry — is shown at the top.",
+              "To remove a license and return to Free, click Deactivate current license."
+            ]
+          },
+          { kind: "note", text: "Free needs no license. To obtain a Pro or Enterprise token, contact your Audity provider — there is no in-app purchase." }
+        ]
+      },
+      {
+        heading: "Demo mode",
+        blocks: [
+          { kind: "paragraph", text: "A demo license unlocks every feature and seeds three sample customers — one completed audit, one in progress, and one nearly finished with many findings — so you can present the full product with realistic data." },
+          {
+            kind: "steps",
+            intro: "While a demo license is active:",
+            items: [
+              "A DEMO badge appears in the header and every feature shows its tier tag.",
+              "On the Admin → License page, use Reset demo data to delete and recreate the sample customers."
+            ]
+          },
+          { kind: "warning", text: "Demo data is marked internally and is intended for a dedicated demo instance. Avoid activating a demo license on a production server that holds real data." }
+        ]
+      },
+      {
+        heading: "How licensing works",
+        blocks: [
+          { kind: "paragraph", text: "Licenses are signed tokens verified locally against an embedded public key — nothing is sent to an external service, in keeping with Audity's self-hosted, data-sovereign design. Paid tiers are typically annual; an expired license keeps working through a short grace period before falling back to Free, and your data is always retained." }
+        ]
+      }
+    ],
+    related: ["customer-acknowledgments", "maintenance-console"]
+  },
+  {
     id: "maintenance-console",
     title: "Maintenance Console (Allowlist)",
     category: "admin",

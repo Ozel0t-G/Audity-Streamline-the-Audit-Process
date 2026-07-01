@@ -1,0 +1,14 @@
+# Eigenständige Docker-Installation für die Audity-Marketing-Website.
+#
+#   cd website
+#   docker compose up -d --build
+#   → http://127.0.0.1:8088
+
+services:
+  website:
+    build: .
+    image: audity-website
+    container_name: audity-website
+    ports:
+      - "127.0.0.1:8088:80"
+    restart: unless-stopped

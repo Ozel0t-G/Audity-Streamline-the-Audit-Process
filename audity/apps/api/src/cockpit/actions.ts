@@ -127,54 +127,49 @@ export async function deriveNextActions(
     }
   }
 
+  // Aggregate overdue evidence per assessment in SQL (same shape as the findings query
+  // below). The previous version fetched raw rows with `limit 50` and aggregated in JS,
+  // which under-reported on instances with >50 open requests: assessments whose requests
+  // fell outside the 50 most-overdue silently showed no "evidence overdue" action. The
+  // overdue-day expression is unchanged (> 0 == the old `od <= 0 → skip`).
   const evidenceRows = await pool.query<{
     assessment_id: string;
-    request_id: string;
-    title: string;
-    due_date: string | null;
-    overdue_days: number | null;
+    overdue_count: number;
+    max_overdue: number;
   }>(
-    `select assessment_id, id as request_id, title, due_date::text,
-            case when due_date is not null
-                 then extract(day from (now() at time zone 'utc') - (due_date::timestamp))::int
-                 else null end as overdue_days
+    `select assessment_id,
+            count(*) filter (
+              where due_date is not null
+                and extract(day from (now() at time zone 'utc') - (due_date::timestamp)) > 0
+            )::int as overdue_count,
+            coalesce(max(extract(day from (now() at time zone 'utc') - (due_date::timestamp))) filter (
+              where due_date is not null
+                and extract(day from (now() at time zone 'utc') - (due_date::timestamp)) > 0
+            ), 0)::int as max_overdue
        from audit_evidence_requests
       where assessment_id = any($1::uuid[])
         and status in ('open', 'requested')
-      order by due_date asc nulls last
-      limit 50`,
+      group by assessment_id`,
     [activeAssessmentIds]
   );
 
-  const overdueByAssessment = new Map<string, { count: number; maxOverdue: number; title: string }>();
   for (const row of evidenceRows.rows) {
-    const od = row.overdue_days ?? 0;
-    if (od <= 0) continue;
-    const entry = overdueByAssessment.get(row.assessment_id) ?? {
-      count: 0,
-      maxOverdue: 0,
-      title: row.title
-    };
-    entry.count += 1;
-    entry.maxOverdue = Math.max(entry.maxOverdue, od);
-    overdueByAssessment.set(row.assessment_id, entry);
-  }
-  for (const [assessmentId, info] of overdueByAssessment.entries()) {
-    const assessment = assessments.find((a) => a.id === assessmentId);
+    if (row.overdue_count <= 0) continue;
+    const assessment = assessments.find((a) => a.id === row.assessment_id);
     if (!assessment) continue;
     actions.push({
-      id: `evidence_overdue:${assessmentId}`,
+      id: `evidence_overdue:${row.assessment_id}`,
       kind: "evidence_overdue",
       customerId: assessment.customer_id,
       customerName: assessment.customer_name,
-      assessmentId,
+      assessmentId: row.assessment_id,
       assessmentName: assessment.type,
-      title: `${info.count} evidence request${info.count === 1 ? "" : "s"} overdue`,
-      detail: `Longest delay: ${info.maxOverdue} day${info.maxOverdue === 1 ? "" : "s"}`,
-      count: info.count,
-      overdueBy: info.maxOverdue,
-      deepLink: `/customers/${assessment.customer_id}/controls?audit=${assessmentId}&tab=requests`,
-      severity: info.maxOverdue > 7 ? "critical" : "warning"
+      title: `${row.overdue_count} evidence request${row.overdue_count === 1 ? "" : "s"} overdue`,
+      detail: `Longest delay: ${row.max_overdue} day${row.max_overdue === 1 ? "" : "s"}`,
+      count: row.overdue_count,
+      overdueBy: row.max_overdue,
+      deepLink: `/customers/${assessment.customer_id}/controls?audit=${row.assessment_id}&tab=requests`,
+      severity: row.max_overdue > 7 ? "critical" : "warning"
     });
   }
 

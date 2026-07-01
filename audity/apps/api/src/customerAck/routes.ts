@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createHash, randomUUID as cryptoRandomUUID } from "node:crypto";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrf, requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { requireFeature } from "../license/requireFeature.js";
 import { canAccessAssessment } from "../customers/access.js";
 import { pool } from "../db/client.js";
 import { invalidateCockpitCache } from "../cockpit/routes.js";
@@ -225,7 +226,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
   // ───────────────── Admin tenant toggle ─────────────────
   app.get(
     "/api/admin/customer-ack/settings",
-    { preHandler: requirePermission("settings.manage") },
+    { preHandler: [requirePermission("settings.manage"), requireFeature("customer_ack")] },
     async () => {
       const enabled = await isFeatureEnabled();
       return { enabled };
@@ -234,7 +235,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
 
   app.put<{ Body: z.infer<typeof tenantToggleBody> }>(
     "/api/admin/customer-ack/settings",
-    { preHandler: requirePermission("settings.manage") },
+    { preHandler: [requirePermission("settings.manage"), requireFeature("customer_ack")] },
     async (request, reply) => {
       const parsed = tenantToggleBody.safeParse(request.body);
       if (!parsed.success) {
@@ -259,7 +260,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
   // ───────────────── Auditor endpoints ─────────────────
   app.get<{ Params: { id: string } }>(
     "/api/assessments/:id/customer-ack-tokens",
-    { preHandler: requirePermission("assessment.view") },
+    { preHandler: [requirePermission("assessment.view"), requireFeature("customer_ack")] },
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
@@ -272,7 +273,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
 
   app.post<{ Params: { id: string }; Body: z.infer<typeof issueBody> }>(
     "/api/assessments/:id/customer-ack-tokens",
-    { preHandler: requireCsrfPermission("finding.approve") },
+    { preHandler: [requireCsrfPermission("finding.approve"), requireFeature("customer_ack")] },
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
@@ -341,7 +342,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
 
   app.post<{ Params: { id: string; tokenId: string }; Body: z.infer<typeof revokeBody> }>(
     "/api/assessments/:id/customer-ack-tokens/:tokenId/revoke",
-    { preHandler: requireCsrfPermission("finding.approve") },
+    { preHandler: [requireCsrfPermission("finding.approve"), requireFeature("customer_ack")] },
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
@@ -373,7 +374,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
 
   app.post<{ Params: { id: string; tokenId: string } }>(
     "/api/assessments/:id/customer-ack-tokens/:tokenId/resend",
-    { preHandler: requireCsrfPermission("finding.approve") },
+    { preHandler: [requireCsrfPermission("finding.approve"), requireFeature("customer_ack")] },
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });
@@ -770,7 +771,7 @@ export async function registerCustomerAckRoutes(app: FastifyInstance, config: { 
   // Returns the token plain-text only to the issuing auditor and only while pending.
   app.get<{ Params: { id: string; tokenId: string } }>(
     "/api/assessments/:id/customer-ack-tokens/:tokenId/link",
-    { preHandler: requirePermission("finding.approve") },
+    { preHandler: [requirePermission("finding.approve"), requireFeature("customer_ack")] },
     async (request, reply) => {
       if (!(await canAccessAssessment(request.user!, request.params.id))) {
         return reply.code(404).send({ code: "ASSESSMENT_NOT_FOUND", message: "Assessment not found" });

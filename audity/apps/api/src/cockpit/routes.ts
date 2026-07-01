@@ -136,10 +136,10 @@ async function loadCustomerAudits(customerId: string): Promise<CockpitAudit[]> {
         (select count(*) from assessment_questions q where q.assessment_id = a.id)::int as question_count,
         (select count(*) from assessment_questions q
            join control_answers ca on ca.assessment_question_id = q.id
-          where q.assessment_id = a.id and ca.answer_state <> 'unknown')::int as answered_count,
+          where q.assessment_id = a.id and (ca.score is not null or ca.answer_state <> 'unknown'))::int as answered_count,
         (select count(*) from findings fnd where fnd.assessment_id = a.id)::int as finding_count,
         (select count(*) from findings fnd where fnd.assessment_id = a.id
-           and coalesce(fnd.lifecycle_status, fnd.status, 'open') not in ('closed','verified'))::int as open_finding_count
+           and fnd.status <> 'dismissed' and fnd.lifecycle_status not in ('closed','verified'))::int as open_finding_count
        from assessments a
        left join frameworks f on f.id = a.framework_id
        left join audit_plans ap on ap.assessment_id = a.id

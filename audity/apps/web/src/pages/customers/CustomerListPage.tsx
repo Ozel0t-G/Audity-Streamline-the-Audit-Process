@@ -33,11 +33,15 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [globalError, setGlobalError] = useState("");
+  const [usage, setUsage] = useState<{ customerCount: number; customerLimit: number | null } | null>(null);
 
   async function loadCustomers() {
     const endpoint = mode === "my" ? "/api/customers/my" : mode === "shared" ? "/api/customers/shared" : "/api/customers";
-    const payload = await api<{ customers: Customer[] }>(endpoint);
+    const payload = await api<{ customers: Customer[]; customerCount?: number; customerLimit?: number | null }>(endpoint);
     setCustomers(payload.customers);
+    if (payload.customerCount !== undefined) {
+      setUsage({ customerCount: payload.customerCount, customerLimit: payload.customerLimit ?? null });
+    }
   }
 
   async function loadFrameworks() {
@@ -149,6 +153,18 @@ export function CustomerListPage({ mode = "all" }: { mode?: "all" | "my" | "shar
         <div>
           <p className="audity-page-kicker">Customer management</p>
           <h1 className="audity-page-title">{mode === "my" ? "My Customers" : mode === "shared" ? "Shared Customers" : "Customers"}</h1>
+          {usage ? (
+            <span
+              className={`mt-1 inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                usage.customerLimit != null && usage.customerCount >= usage.customerLimit
+                  ? "border-audity-error text-audity-error"
+                  : "border-audity-border text-audity-secondary"
+              }`}
+              title="Active customers / limit of this license tier"
+            >
+              {usage.customerCount}/{usage.customerLimit ?? "∞"} customers
+            </span>
+          ) : null}
         </div>
         {canCreateCustomer ? (
           <div className="flex flex-wrap gap-2">

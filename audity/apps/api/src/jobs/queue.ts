@@ -37,3 +37,19 @@ export const connectorQueue = new Queue("audity-connector-sync", {
   defaultJobOptions
 });
 
+// A BullMQ Queue is an EventEmitter: an unhandled 'error' (e.g. a transient Redis
+// drop) prints a raw stack to stderr instead of being logged like every other
+// error-emitter in the codebase. Attach a handler to each; ioredis reconnects on
+// its own, so we only log.
+for (const [name, queue] of [
+  ["audity-report-export", reportQueue],
+  ["audity-email-send", emailQueue],
+  ["audity-backup", backupQueue],
+  ["audity-restore", restoreQueue],
+  ["audity-connector-sync", connectorQueue]
+] as const) {
+  queue.on("error", (error) => {
+    console.error(`[bullmq] ${name} queue error`, error);
+  });
+}
+

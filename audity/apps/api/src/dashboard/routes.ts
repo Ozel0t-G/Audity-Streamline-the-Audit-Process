@@ -184,12 +184,12 @@ export async function registerDashboardRoutes(app: FastifyInstance): Promise<voi
          ) ans on true
          left join lateral (
            select count(*) filter (where r.status not in ('closed','deleted') and r.rating in ('High','Critical'))::int as open_high_risks,
-                  count(*) filter (where r.status <> 'deleted' and r.rating = 'Critical')::int as critical_risks
+                  count(*) filter (where r.status not in ('closed','deleted') and r.rating = 'Critical')::int as critical_risks
            from risks r
            where r.assessment_id = a.id
          ) risk_stats on true
          left join lateral (
-           select count(*) filter (where f.status <> 'dismissed')::int as open_findings
+           select count(*) filter (where f.status <> 'dismissed' and f.lifecycle_status not in ('closed','verified'))::int as open_findings
            from findings f
            where f.assessment_id = a.id
          ) finding_stats on true

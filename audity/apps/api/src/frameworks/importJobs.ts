@@ -8,6 +8,8 @@ import { sha256 } from "../utils/crypto.js";
 import { syncFrameworkYamlFiles } from "./yamlImporter.js";
 import { createLlmProvider, estimateCostCents } from "../llm/provider.js";
 import { loadLlmConfigInternal } from "../llm/settings.js";
+import { isEntitled } from "../license/entitlement.js";
+import { licenseService } from "../license/service.js";
 import {
   parseCsv,
   validateCsv,
@@ -455,7 +457,12 @@ export async function processImport(importId: string): Promise<void> {
     return;
   }
 
-  const config = await loadLlmConfigInternal();
+  let config = await loadLlmConfigInternal();
+  // AI ist ein Paid-Feature: ohne Berechtigung (Free) auf "none" zwingen →
+  // Enrichment fällt auf TODO-Platzhalter zurück. Demo/Pro/Enterprise ⇒ AI aktiv.
+  if (!isEntitled("ai", licenseService.getState())) {
+    config = { ...config, provider: "none" };
+  }
   const provider = createLlmProvider(config);
   const language = (record.framework_language ?? "de") as "de" | "en";
   const skeleton = buildSkeletonDraft({

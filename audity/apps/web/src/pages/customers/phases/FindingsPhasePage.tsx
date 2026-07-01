@@ -41,11 +41,16 @@ export function FindingsPhasePage() {
       );
     }
     if (filterParam === "remediation_overdue") {
+      const today = new Date().toISOString().slice(0, 10);
       return overview.findings.filter((f) => {
         const due = text(f.remediationDueDate);
         const status = text(f.remediationStatus, "not_started");
         if (!due) return false;
-        return new Date(due) < new Date() && !["implemented", "closed"].includes(status);
+        // Date-only (UTC) comparison to match the backend's `remediation_due_date < now()::date`:
+        // a finding due TODAY is NOT yet overdue. The previous `new Date(due) < new Date()`
+        // compared a midnight-UTC date against the current instant, so it wrongly flagged
+        // due-today findings as overdue once the clock passed midnight UTC.
+        return due.slice(0, 10) < today && !["implemented", "closed"].includes(status);
       });
     }
     return overview.findings;

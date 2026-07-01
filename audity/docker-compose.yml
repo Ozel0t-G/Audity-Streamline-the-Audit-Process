@@ -61,6 +61,8 @@ services:
       AUDITY_PUBLIC_URL: ${AUDITY_PUBLIC_URL:-http://localhost}
       AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
       AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
+      AUDITY_LICENSE_PUBLIC_KEY: ${AUDITY_LICENSE_PUBLIC_KEY:-}
+      AUDITY_LICENSE_GRACE_DAYS: ${AUDITY_LICENSE_GRACE_DAYS:-30}
       AUDITY_DATABASE_URL: ${AUDITY_DATABASE_URL:-postgres://audity:change-me@audity-db:5432/audity}
       AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
       AUDITY_STORAGE_PROVIDER: ${AUDITY_STORAGE_PROVIDER:-minio}
@@ -148,6 +150,8 @@ services:
     environment:
       AUDITY_APP_SECRET: ${AUDITY_APP_SECRET:-change-me}
       AUDITY_ENCRYPTION_KEY: ${AUDITY_ENCRYPTION_KEY:-replace-with-base64-encoded-32-byte-key}
+      AUDITY_LICENSE_PUBLIC_KEY: ${AUDITY_LICENSE_PUBLIC_KEY:-}
+      AUDITY_LICENSE_GRACE_DAYS: ${AUDITY_LICENSE_GRACE_DAYS:-30}
       AUDITY_DATABASE_URL: ${AUDITY_DATABASE_URL:-postgres://audity:change-me@audity-db:5432/audity}
       AUDITY_REDIS_URL: ${AUDITY_REDIS_URL:-redis://audity-redis:6379}
       AUDITY_USER_YAML_DIR: ${AUDITY_USER_YAML_DIR:-user_frameworks}

@@ -4,6 +4,8 @@ import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { appendAuditEvent } from "../audit/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { licenseService } from "../license/service.js";
+import { effectiveLimit } from "../license/entitlement.js";
 import { pool } from "../db/client.js";
 import { createNotification } from "../notifications/service.js";
 import { customerHasActiveLegalHold } from "../productivity/legalHolds.js";
@@ -232,6 +234,16 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
     }
   );
 
+  async function customerUsage() {
+    const usage = await pool.query<{ count: string }>(
+      "select count(*)::text as count from customers where archived_at is null and not is_demo"
+    );
+    return {
+      customerCount: Number(usage.rows[0]?.count ?? 0),
+      customerLimit: effectiveLimit("customers", licenseService.getState())
+    };
+  }
+
   app.get("/api/customers", { preHandler: requirePermission("assessment.view") }, async (request) => {
     const admin = isAdminRole(request.user!.role);
     const result = await pool.query(
@@ -249,7 +261,7 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
        order by c.created_at desc`,
       admin ? [] : [request.user!.sub]
     );
-    return { customers: result.rows.map(mapCustomer) };
+    return { customers: result.rows.map(mapCustomer), ...(await customerUsage()) };
   });
 
   app.get("/api/customers/my", { preHandler: requirePermission("assessment.view") }, async (request) => {
@@ -259,7 +271,7 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
        order by c.created_at desc`,
       admin ? [] : [request.user!.sub]
     );
-    return { customers: result.rows.map(mapCustomer) };
+    return { customers: result.rows.map(mapCustomer), ...(await customerUsage()) };
   });
 
   app.get("/api/customers/shared", { preHandler: requirePermission("assessment.view") }, async (request) => {
@@ -271,7 +283,7 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
        order by c.created_at desc`,
       [request.user!.sub]
     );
-    return { customers: result.rows.map(mapCustomer) };
+    return { customers: result.rows.map(mapCustomer), ...(await customerUsage()) };
   });
 
   app.post<{ Body: CustomerBody }>(
@@ -280,6 +292,14 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       const body = validateBody(customerSchema.required({ name: true }), request.body, reply);
       if (!body) return;
+      // Kundenlimit pro Tier (Free 25 / Pro 50 / Enterprise unbegrenzt; Demo unbegrenzt).
+      const usage = await customerUsage();
+      if (usage.customerLimit != null && usage.customerCount >= usage.customerLimit) {
+        return reply.code(403).send({
+          code: "CUSTOMER_LIMIT_REACHED",
+          message: `Customer limit reached (max. ${usage.customerLimit}). Upgrade your license to add more customers.`
+        });
+      }
       const id = randomUUID();
       const result = await pool.query(
         `insert into customers
@@ -336,7 +356,13 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
       if (!body) return;
       const created: Array<Record<string, unknown>> = [];
       const failures: Array<{ name: string; reason: string }> = [];
+      const usage = await customerUsage();
+      let insertedThisBatch = 0;
       for (const row of body.customers) {
+        if (usage.customerLimit != null && usage.customerCount + insertedThisBatch >= usage.customerLimit) {
+          failures.push({ name: row.name, reason: `Customer limit reached (max. ${usage.customerLimit})` });
+          continue;
+        }
         const id = randomUUID();
         try {
           await pool.query(
@@ -354,6 +380,7 @@ export async function registerCustomerRoutes(app: FastifyInstance): Promise<void
               row.status ?? "active"
             ]
           );
+          insertedThisBatch += 1;
         } catch (error) {
           failures.push({
             name: row.name,

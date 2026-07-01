@@ -28,10 +28,10 @@ export async function moveCustomerArtifactsToSpool(opts: MoveOptions): Promise<n
   await fs.mkdir(path.join(opts.spoolPath, "evidence"), { recursive: true });
   await fs.mkdir(path.join(opts.spoolPath, "reports"), { recursive: true });
 
-  let total = 0;
-  total += await moveBlobs(opts.evidenceKeys, path.join(opts.spoolPath, "evidence"));
-  total += await moveBlobs(opts.reportKeys, path.join(opts.spoolPath, "reports"));
-
+  // Write the manifest BEFORE moving any blobs. moveBlobs deletes each original from
+  // object storage right after spooling it, so if the move throws partway the manifest is
+  // the only record of which keys were in play — without it the already-spooled blobs
+  // can't be mapped back to their original keys for recovery. (movedAt = move-start time.)
   const manifest = {
     movedAt: new Date().toISOString(),
     customerId: opts.customerId,
@@ -43,6 +43,10 @@ export async function moveCustomerArtifactsToSpool(opts: MoveOptions): Promise<n
     JSON.stringify(manifest, null, 2),
     "utf8"
   );
+
+  let total = 0;
+  total += await moveBlobs(opts.evidenceKeys, path.join(opts.spoolPath, "evidence"));
+  total += await moveBlobs(opts.reportKeys, path.join(opts.spoolPath, "reports"));
   return total;
 }
 
@@ -90,12 +94,31 @@ export async function restoreCustomerArtifactsFromSpool(opts: RestoreOptions): P
   const reports = Array.isArray(manifest.reports) ? (manifest.reports as string[]) : [];
 
   for (const key of evidence) {
-    const src = path.join(opts.spoolPath, "evidence", safeKeyToFilename(key));
-    await storageClient.fPutObject(storageBucket(), key, src);
+    await restoreOneBlob(key, path.join(opts.spoolPath, "evidence", safeKeyToFilename(key)));
   }
   for (const key of reports) {
-    const src = path.join(opts.spoolPath, "reports", safeKeyToFilename(key));
-    await storageClient.fPutObject(storageBucket(), key, src);
+    await restoreOneBlob(key, path.join(opts.spoolPath, "reports", safeKeyToFilename(key)));
   }
   await fs.rm(opts.spoolPath, { recursive: true, force: true });
+}
+
+/**
+ * Re-upload one spooled blob to its original object-storage key. A manifest key whose
+ * spool file is absent is only legitimate after a PARTIAL move (its original was never
+ * removed from storage): verify the original is still present and skip if so. If the blob
+ * is missing from BOTH the spool and storage it is genuinely lost — fail loud rather than
+ * silently completing a lossy restore.
+ */
+async function restoreOneBlob(key: string, src: string): Promise<void> {
+  try {
+    await fs.access(src);
+  } catch {
+    try {
+      await storageClient.statObject(storageBucket(), key);
+      return; // original still in storage (never moved) — nothing to restore
+    } catch {
+      throw new Error(`Cannot restore '${key}': missing from both the spool and object storage`);
+    }
+  }
+  await storageClient.fPutObject(storageBucket(), key, src);
 }

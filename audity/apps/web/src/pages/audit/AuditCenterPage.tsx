@@ -281,14 +281,21 @@ export function AuditCenterPage() {
     return overview.signoffs.filter((signoff) => text(signoff.entityType) === "control" && text(signoff.entityId) === selectedControl.assessmentQuestionId);
   }, [overview.signoffs, selectedControl]);
 
+  // Only the latest load() may write state: changing the route `id` (or a
+  // post-mutation reload racing the effect) must not let a slower earlier
+  // response overwrite newer data. Mirrors the `let cancelled` guard used
+  // elsewhere in the app.
+  const loadSeqRef = useRef(0);
   async function load() {
     if (!id) return;
+    const requestId = ++loadSeqRef.current;
     setError("");
     try {
       const [overviewPayload, templatePayload] = await Promise.all([
         api<AuditOverview>(`/api/assessments/${id}/audit-center`),
         api<{ templates: Template[] }>("/api/audit-program-templates")
       ]);
+      if (loadSeqRef.current !== requestId) return;
       setOverview(overviewPayload);
       setTemplates(templatePayload.templates);
       if (!selectedControlId && overviewPayload.controls[0]) {
@@ -298,9 +305,10 @@ export function AuditCenterPage() {
         setSelectedFindingId(text(overviewPayload.findings[0].id));
       }
     } catch (loadError) {
+      if (loadSeqRef.current !== requestId) return;
       setError(loadError instanceof Error ? loadError.message : "Audit Center could not be loaded");
     } finally {
-      setLoading(false);
+      if (loadSeqRef.current === requestId) setLoading(false);
     }
   }
 
@@ -621,7 +629,7 @@ export function AuditCenterPage() {
     const planSet = Boolean(overview.plan && Object.values(overview.plan).some((value) => text(value as unknown).trim()));
     const scopeDone = overview.scopeItems.length > 0 && planSet;
     const controlsDone = overview.controls.length > 0 && overview.controls.every((control) => !["draft", ""].includes(text(control.reviewStatus, "")));
-    const findingsDone = overview.findings.length > 0 && overview.findings.every((finding) => ["closed", "verified"].includes(text(finding.lifecycleStatus, "")));
+    const findingsDone = overview.findings.length > 0 && overview.findings.every((finding) => ["closed", "verified"].includes(text(finding.lifecycleStatus, "")) || text(finding.status) === "dismissed");
     const auditWorkDone = overview.interviews.length > 0 && overview.samples.length > 0;
     const reportDone = overview.signoffs.some((signoff) => text(signoff.entityType) === "assessment");
     const packDone = overview.statementOfApplicability.length > 0;
@@ -651,7 +659,7 @@ export function AuditCenterPage() {
   const averageEvidenceQuality = evidenceQualityScores.length
     ? (evidenceQualityScores.reduce((total, score) => total + score, 0) / evidenceQualityScores.length).toFixed(1)
     : "0.0";
-  const openFindingCount = overview.findings.filter((finding) => !["closed", "verified"].includes(text(finding.lifecycleStatus, "draft"))).length;
+  const openFindingCount = overview.findings.filter((finding) => text(finding.status) !== "dismissed" && !["closed", "verified"].includes(text(finding.lifecycleStatus, "draft"))).length;
   const highSeverityFindingCount = overview.findings.filter((finding) => ["high", "critical"].includes(text(finding.calculatedSeverity ?? finding.priority))).length;
   const activeRemediationCount = overview.findings.filter((finding) => ["planned", "in_progress", "blocked"].includes(text(finding.remediationStatus))).length;
   const readyRetestCount = overview.findings.filter((finding) => ["ready", "failed"].includes(text(finding.retestStatus))).length;
@@ -904,7 +912,7 @@ export function AuditCenterPage() {
             <MiniStat label="Readiness" value={`${overview.readinessScore}%`} />
             <MiniStat label="Controls" value={overview.controls.length} />
             <MiniStat label="Open gaps" value={overview.gaps.length} />
-            <MiniStat label="Open findings" value={overview.findings.filter((finding) => !["closed", "verified"].includes(text(finding.lifecycleStatus, "draft"))).length} />
+            <MiniStat label="Open findings" value={overview.findings.filter((finding) => text(finding.status) !== "dismissed" && !["closed", "verified"].includes(text(finding.lifecycleStatus, "draft"))).length} />
           </div>
           <Panel title="Executive Summary" subtitle="Generated from control reviews, evidence mappings, findings, and report status.">
             <div className="mb-4 h-2 rounded-full bg-audity-page">

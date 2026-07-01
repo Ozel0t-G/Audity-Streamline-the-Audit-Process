@@ -1,5 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { pool } from "../db/client.js";
+import { isEntitled } from "../license/entitlement.js";
+import { licenseService } from "../license/service.js";
 
 /** Minimal query interface satisfied by both the pool and a transaction client. */
 type Queryable = { query: typeof pool.query };
@@ -361,6 +363,10 @@ export async function markTokenRedeemed(input: {
 }
 
 export async function isFeatureEnabled(): Promise<boolean> {
+  // Customer Acknowledgment ist Enterprise: ohne Berechtigung (Free/Pro) ist das
+  // Feature komplett aus — deaktiviert zentral Ack-Pflicht beim Close, Token-Ausgabe
+  // und Portal-Einlösung. Demo/Enterprise ⇒ regulärer Tenant-Toggle gilt.
+  if (!isEntitled("customer_ack", licenseService.getState())) return false;
   const result = await pool.query<{ value: unknown }>(
     `select value from settings where key = 'customer_ack_enabled'`
   );

@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
+import { LicenseProvider } from "./license/LicenseProvider";
 import { PrivateRoute, RequirePermission } from "./auth/PrivateRoute";
 import { AdminLayout, AppLayout } from "./components/AppLayout";
 import { ConfirmProvider, PageSkeleton, ToastProvider } from "./components/ui";
@@ -40,6 +41,7 @@ const RedirectAuditCenter = lazy(() => import("./pages/RedirectAuditCenter").the
 const RedirectToCustomerTab = lazy(() => import("./pages/RedirectToCustomerTab").then((m) => ({ default: m.RedirectToCustomerTab })));
 const FrameworkLibraryPage = lazy(() => import("./pages/frameworks/FrameworkLibraryPage").then((m) => ({ default: m.FrameworkLibraryPage })));
 const GuidedQuestionsPage = lazy(() => import("./pages/frameworks/GuidedQuestionsPage").then((m) => ({ default: m.GuidedQuestionsPage })));
+const LicenseAdminPage = lazy(() => import("./pages/admin/LicenseAdminPage").then((m) => ({ default: m.LicenseAdminPage })));
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageSkeleton cards={3} showTable />}>{children}</Suspense>;
@@ -51,6 +53,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <AuthProvider>
        <ToastProvider>
         <ConfirmProvider>
+        <LicenseProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/setup" element={<SetupPage />} />
@@ -99,10 +102,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/admin/backup" element={<RequirePermission instanceAdminOnly><LazyRoute><AdminDashboardPage section="backup" /></LazyRoute></RequirePermission>} />
               <Route path="/admin/maintenance" element={<RequirePermission permission="server.console"><LazyRoute><MaintenanceConsolePage /></LazyRoute></RequirePermission>} />
               <Route path="/admin/archive" element={<RequirePermission permission="archive.approve"><LazyRoute><AdminArchivePage /></LazyRoute></RequirePermission>} />
+              <Route path="/admin/license" element={<RequirePermission instanceAdminOnly><LazyRoute><LicenseAdminPage /></LazyRoute></RequirePermission>} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </LicenseProvider>
         </ConfirmProvider>
        </ToastProvider>
       </AuthProvider>

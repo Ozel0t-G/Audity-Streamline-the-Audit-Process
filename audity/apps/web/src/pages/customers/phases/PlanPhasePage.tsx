@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useApi } from "../../../api/client";
 import { useAuth } from "../../../auth/AuthProvider";
@@ -65,6 +65,7 @@ export function PlanPhasePage() {
   const { user } = useAuth();
   const toast = useToast();
   const canEdit = Boolean(user?.permissions.includes("assessment.edit"));
+  const loadSeqRef = useRef(0);
 
   const [loading, setLoading] = useState(true);
   const [autoConvert, setAutoConvert] = useState(false);
@@ -94,12 +95,14 @@ export function PlanPhasePage() {
       setLoading(false);
       return;
     }
+    const requestId = ++loadSeqRef.current;
     setLoading(true);
     try {
       const payload = await api<{
         plan: Record<string, unknown> | null;
         scopeItems: ScopeItem[];
       }>(`/api/assessments/${auditId}/audit-center`);
+      if (loadSeqRef.current !== requestId) return;
       const p = payload.plan ?? {};
       setPlan({
         currentPhase: String(p.currentPhase ?? "Preparation"),
@@ -117,14 +120,14 @@ export function PlanPhasePage() {
         const flag = await api<{ enabled: boolean }>(
           `/api/assessments/${auditId}/auto-convert-findings`
         );
-        setAutoConvert(flag.enabled);
+        if (loadSeqRef.current === requestId) setAutoConvert(flag.enabled);
       } catch {
-        setAutoConvert(false);
+        if (loadSeqRef.current === requestId) setAutoConvert(false);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not load the plan");
+      if (loadSeqRef.current === requestId) toast.error(err instanceof Error ? err.message : "Could not load the plan");
     } finally {
-      setLoading(false);
+      if (loadSeqRef.current === requestId) setLoading(false);
     }
   }
 

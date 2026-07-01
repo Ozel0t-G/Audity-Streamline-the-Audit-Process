@@ -25,6 +25,9 @@ import { startArchiveBundleCron } from "./archive/cron.js";
 import { startUpdateAutoCheck } from "./admin/updateService.js";
 import { registerLogArchiveRoutes } from "./logArchive/routes.js";
 import { startLogArchiveScheduler } from "./logArchive/scheduler.js";
+import { registerLicenseRoutes } from "./license/routes.js";
+import { licenseService } from "./license/service.js";
+import { ensureDemoSeeded } from "./license/demoSeed.js";
 import { registerNotificationRoutes } from "./notifications/routes.js";
 import { registerCockpitRoutes } from "./cockpit/routes.js";
 import { registerNotificationPreferencesRoutes } from "./cockpit/preferences.js";
@@ -215,6 +218,11 @@ await applyCoreSchema();
 // shipped in a new release are applied to existing instances without a
 // separate `npm run db:seed` step.
 await seedRolesAndPermissions();
+// License model (Free/Pro/Enterprise/Demo): verify token, cache state, re-check hourly.
+await licenseService.init();
+if (licenseService.getState().demoMode) {
+  await ensureDemoSeeded().catch((error) => app.log.error(error, "Demo data seeding failed"));
+}
 // Recover stuck framework-import jobs on startup so they don't display
 // an eternal progress bar after an API restart mid-job.
 await (await import("./db/client.js")).pool.query(
@@ -236,6 +244,7 @@ await registerConnectorRoutes(app);
 await registerCustomerRoutes(app);
 await registerArchiveRoutes(app);
 await registerLogArchiveRoutes(app);
+await registerLicenseRoutes(app);
 await registerAssessmentRoutes(app);
 await registerAuditCenterRoutes(app);
 await registerFrameworkRoutes(app);

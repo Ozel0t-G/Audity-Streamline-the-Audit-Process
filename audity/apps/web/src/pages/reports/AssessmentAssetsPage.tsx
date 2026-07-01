@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
@@ -56,6 +56,7 @@ export function AssessmentAssetsPage({
   const navigate = useNavigate();
   const api = useApi();
   const { accessToken, expireSession, refreshSession, user } = useAuth();
+  const loadSeqRef = useRef(0);
   const can = (permission: string) => Boolean(user?.permissions.includes(permission));
   const canUploadEvidence = can("evidence.upload");
   const canDownloadEvidence = can("evidence.download");
@@ -130,10 +131,14 @@ export function AssessmentAssetsPage({
 
   async function load() {
     if (!id) return;
+    // Guard against stale responses when the route id (or assessmentId prop) changes.
+    const requestId = ++loadSeqRef.current;
     const evidencePayload = await api<{ evidenceItems: EvidenceItem[] }>(`/api/assessments/${id}/evidence`);
+    if (loadSeqRef.current !== requestId) return;
     setEvidenceItems(evidencePayload.evidenceItems);
     if (canManageBranding) {
       const brandingPayload = await api<{ branding: Branding }>("/api/admin/branding");
+      if (loadSeqRef.current !== requestId) return;
       setBranding(brandingPayload.branding);
     }
   }

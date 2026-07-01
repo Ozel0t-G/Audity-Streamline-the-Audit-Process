@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../api/client";
 import { useAuth } from "../../../auth/AuthProvider";
 import { useToast } from "../../../components/ui";
@@ -16,6 +16,7 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
   const { accessToken, user, refreshSession } = useAuth();
   const toast = useToast();
   const canEdit = Boolean(user?.permissions.includes("finding.approve"));
+  const loadSeqRef = useRef(0);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [sev, setSev] = useState<Record<string, { l: string; i: string }>>({});
@@ -23,8 +24,10 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
   const [exporting, setExporting] = useState(false);
 
   async function load() {
+    const requestId = ++loadSeqRef.current;
     try {
       const res = await api<{ findings: Finding[] }>(`/api/assessments/${assessmentId}/findings`);
+      if (loadSeqRef.current !== requestId) return;
       setFindings(res.findings);
       setNotes(Object.fromEntries(res.findings.map((finding) => [finding.id, finding.observation ?? ""])));
       setSev(
@@ -39,7 +42,7 @@ export function FindingsSummaryList({ assessmentId }: { assessmentId: string }) 
         )
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not load findings");
+      if (loadSeqRef.current === requestId) toast.error(err instanceof Error ? err.message : "Could not load findings");
     }
   }
 

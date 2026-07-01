@@ -6,6 +6,9 @@ import { Worker } from "bullmq";
 import { z } from "zod";
 import { appendActivityEvent } from "../activity/service.js";
 import { requireCsrfPermission, requirePermission } from "../auth/hooks.js";
+import { requireFeature } from "../license/requireFeature.js";
+import { isEntitled } from "../license/entitlement.js";
+import { licenseService } from "../license/service.js";
 import { loadConfig } from "../config.js";
 import { pool } from "../db/client.js";
 import { connectorQueue } from "../jobs/queue.js";
@@ -559,6 +562,10 @@ export function startConnectorSyncWorker(log: { info: (obj: unknown, message?: s
   new Worker(
     "audity-connector-sync",
     async (job) => {
+      // Connectors sind Enterprise: ohne Berechtigung kein Auto-Sync (z. B. nach Downgrade).
+      if (!isEntitled("connectors", licenseService.getState())) {
+        return { skipped: "not_licensed" };
+      }
       const rows = await pool.query<ConnectorRow>("select * from connectors where enabled = true order by display_name");
       const results = [];
       for (const row of rows.rows) {
@@ -612,7 +619,7 @@ async function updateConnectorStatus(id: ConnectorId, status: string, message: s
 }
 
 export async function registerConnectorRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/api/admin/connectors", { preHandler: requirePermission("connectors.manage") }, async () => {
+  app.get("/api/admin/connectors", { preHandler: [requirePermission("connectors.manage"), requireFeature("connectors")] }, async () => {
     await ensureConnectorsSeeded();
     const result = await pool.query<ConnectorRow>("select * from connectors order by display_name");
     const runs = await pool.query(
@@ -626,7 +633,7 @@ export async function registerConnectorRoutes(app: FastifyInstance): Promise<voi
 
   app.put<{ Params: { id: string }; Body: z.infer<typeof connectorSaveSchema> }>(
     "/api/admin/connectors/:id",
-    { preHandler: requireCsrfPermission("connectors.manage") },
+    { preHandler: [requireCsrfPermission("connectors.manage"), requireFeature("connectors")] },
     async (request, reply) => {
       if (!isConnectorId(request.params.id)) {
         return reply.code(404).send({ code: "CONNECTOR_NOT_FOUND", message: "Connector not found" });
@@ -665,7 +672,7 @@ export async function registerConnectorRoutes(app: FastifyInstance): Promise<voi
 
   app.post<{ Params: { id: string } }>(
     "/api/admin/connectors/:id/test",
-    { preHandler: requireCsrfPermission("connectors.manage") },
+    { preHandler: [requireCsrfPermission("connectors.manage"), requireFeature("connectors")] },
     async (request, reply) => {
       if (!isConnectorId(request.params.id)) {
         return reply.code(404).send({ code: "CONNECTOR_NOT_FOUND", message: "Connector not found" });
@@ -688,7 +695,7 @@ export async function registerConnectorRoutes(app: FastifyInstance): Promise<voi
 
   app.post<{ Params: { id: string }; Body: z.infer<typeof connectorSyncSchema> }>(
     "/api/admin/connectors/:id/sync",
-    { preHandler: requireCsrfPermission("connectors.manage") },
+    { preHandler: [requireCsrfPermission("connectors.manage"), requireFeature("connectors")] },
     async (request, reply) => {
       if (!isConnectorId(request.params.id)) {
         return reply.code(404).send({ code: "CONNECTOR_NOT_FOUND", message: "Connector not found" });

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
@@ -34,6 +34,7 @@ export function GuidedQuestionsPage({ assessmentId }: { assessmentId?: string } 
   const api = useApi();
   const { user } = useAuth();
   const canEditAssessment = Boolean(user?.permissions.includes("assessment.edit"));
+  const loadSeqRef = useRef(0);
   const [payload, setPayload] = useState<AssessmentQuestionsPayload | null>(null);
   const [activeDomainId, setActiveDomainId] = useState("");
   const [activeQuestionId, setActiveQuestionId] = useState("");
@@ -118,7 +119,9 @@ export function GuidedQuestionsPage({ assessmentId }: { assessmentId?: string } 
 
   async function load() {
     if (!id) return;
+    const requestId = ++loadSeqRef.current;
     const next = await api<AssessmentQuestionsPayload>(`/api/assessments/${id}/questions`);
+    if (loadSeqRef.current !== requestId) return;
     setPayload(next);
     const nextDomain = next.domains.find((domain) => domain.id === activeDomainId) ?? next.domains[0];
     const nextQuestion =

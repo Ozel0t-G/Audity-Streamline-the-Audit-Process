@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../api/client";
 import { useAuth } from "../../../auth/AuthProvider";
 import { useToast } from "../../../components/ui";
+import { useEntitlement } from "../../../license/useEntitlement";
+import { FeatureTag } from "../../../components/FeatureTag";
 import { Field, Panel, Pill, dateValue, text } from "../../audit/auditPrimitives";
 
 type AckToken = {
@@ -30,6 +32,8 @@ type AckPayload = {
 
 export function CustomerAckPanel({ assessmentId }: { assessmentId: string }) {
   const api = useApi();
+  const entitled = useEntitlement("customer_ack");
+  const loadSeqRef = useRef(0);
   const { user } = useAuth();
   const toast = useToast();
   const canSend = Boolean(user?.permissions.includes("finding.approve"));
@@ -48,16 +52,18 @@ export function CustomerAckPanel({ assessmentId }: { assessmentId: string }) {
 
   async function load() {
     if (!assessmentId) return;
+    const requestId = ++loadSeqRef.current;
     setLoading(true);
     try {
       const payload = await api<AckPayload>(
         `/api/assessments/${assessmentId}/customer-ack-tokens`
       );
+      if (loadSeqRef.current !== requestId) return;
       setData(payload);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not load tokens");
+      if (loadSeqRef.current === requestId) toast.error(err instanceof Error ? err.message : "Could not load tokens");
     } finally {
-      setLoading(false);
+      if (loadSeqRef.current === requestId) setLoading(false);
     }
   }
 
@@ -146,6 +152,10 @@ export function CustomerAckPanel({ assessmentId }: { assessmentId: string }) {
     }
   }
 
+  // Customer Acknowledgment ist Enterprise: unter Free/Pro Panel komplett ausblenden
+  // (Demo ⇒ sichtbar mit Enterprise-Tag). Echte Sperre läuft serverseitig.
+  if (!entitled) return null;
+
   if (loading || !data) {
     return (
       <Panel title="Customer acknowledgment" subtitle="Loading…">
@@ -179,6 +189,7 @@ export function CustomerAckPanel({ assessmentId }: { assessmentId: string }) {
       title="Customer acknowledgment"
       subtitle="Send a one-time magic link so the customer can confirm receipt without an Audity account."
     >
+      <div className="mb-3"><FeatureTag featureId="customer_ack" /></div>
       {redeemed.length ? (
         <div className="mb-4 rounded-audity border border-audity-success bg-audity-success/10 p-3 text-sm">
           <strong className="text-audity-success">

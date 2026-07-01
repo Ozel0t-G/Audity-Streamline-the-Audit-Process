@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "../../../api/client";
 
 export type AnyRecord = Record<string, unknown>;
@@ -77,24 +77,33 @@ export function useAuditOverview(assessmentId: string) {
   const [overview, setOverview] = useState<AuditOverview>(emptyOverview);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Guards against stale responses: when assessmentId changes (or reload() races),
+  // only the most recent request may write state, so a slower earlier response can
+  // never overwrite newer data. Same intent as the `let cancelled` guard used
+  // across the app's other async fetches.
+  const requestRef = useRef(0);
 
   const load = useCallback(async () => {
     if (!assessmentId) {
+      requestRef.current += 1;
       setOverview(emptyOverview);
       setLoading(false);
       return;
     }
+    const requestId = ++requestRef.current;
     setLoading(true);
     try {
       const payload = await api<AuditOverview>(
         `/api/assessments/${assessmentId}/audit-center`
       );
+      if (requestRef.current !== requestId) return;
       setOverview(payload ?? emptyOverview);
       setError("");
     } catch (err) {
+      if (requestRef.current !== requestId) return;
       setError(err instanceof Error ? err.message : "Could not load audit data");
     } finally {
-      setLoading(false);
+      if (requestRef.current === requestId) setLoading(false);
     }
   }, [api, assessmentId]);
 

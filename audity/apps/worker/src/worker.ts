@@ -920,7 +920,18 @@ app.get("/health", async () => ({
 await verifyDatabaseConnection();
 await ensureBucket();
 
-new Worker(
+// A BullMQ Worker is an EventEmitter: an emitted 'error' (e.g. a transient Redis
+// drop) with no listener bypasses logging and prints a raw stack to stderr,
+// making a recoverable infra hiccup look like an unhandled crash. Attach a
+// handler to every worker — matching pool.on('error') above. ioredis reconnects
+// on its own, so we only log.
+function logWorkerErrors(worker: Worker, queue: string): void {
+  worker.on("error", (error) => {
+    console.error(`[worker-bullmq] ${queue} worker error`, error);
+  });
+}
+
+const reportExportWorker = new Worker(
   "audity-report-export",
   async (job) => {
     if (job.name === "export-report-xlsx") {
@@ -934,6 +945,7 @@ new Worker(
     }
   }
 );
+logWorkerErrors(reportExportWorker, "audity-report-export");
 
 async function runPdfExport(job: Job): Promise<{ objectKey: string }> {
   const { reportId, userId } = job.data as {
@@ -1178,7 +1190,7 @@ async function runXlsxExport(job: Job): Promise<{ objectKey: string }> {
   return { objectKey };
 }
 
-new Worker(
+const emailWorker = new Worker(
   "audity-email-send",
   async (job) => {
     return sendSecureReportEmail(job.data as {
@@ -1197,8 +1209,9 @@ new Worker(
     }
   }
 );
+logWorkerErrors(emailWorker, "audity-email-send");
 
-new Worker(
+const backupWorker = new Worker(
   "audity-backup",
   async (job) => runBackup(job.data as {
     backupJobId?: string;
@@ -1214,8 +1227,9 @@ new Worker(
     }
   }
 );
+logWorkerErrors(backupWorker, "audity-backup");
 
-new Worker(
+const restoreWorker = new Worker(
   "audity-restore",
   async (job) => runRestore(job.data as {
     restoreJobId: string;
@@ -1228,6 +1242,7 @@ new Worker(
     }
   }
 );
+logWorkerErrors(restoreWorker, "audity-restore");
 
 await app.listen({
   host: "0.0.0.0",
