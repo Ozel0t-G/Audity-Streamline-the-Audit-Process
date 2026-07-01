@@ -1,19 +1,19 @@
 {
   "channel": "production",
   "branch": "production",
-  "version": "0.2.6",
-  "imageTag": "0.2.6",
-  "releasedAt": "2026-06-25T18:54:00Z",
+  "version": "0.2.7",
+  "imageTag": "0.2.7",
+  "releasedAt": "2026-07-01T07:25:48Z",
   "modules": {
-    "web": "ghcr.io/ozel0t-g/audity-web:0.2.6",
-    "api": "ghcr.io/ozel0t-g/audity-api:0.2.6",
-    "worker": "ghcr.io/ozel0t-g/audity-worker:0.2.6",
-    "updater": "ghcr.io/ozel0t-g/audity-updater:0.2.6"
+    "web": "ghcr.io/ozel0t-g/audity-web:0.2.7",
+    "api": "ghcr.io/ozel0t-g/audity-api:0.2.7",
+    "worker": "ghcr.io/ozel0t-g/audity-worker:0.2.7",
+    "updater": "ghcr.io/ozel0t-g/audity-updater:0.2.7"
   },
   "notes": [
-    "Publishes the locally tested main branch state to the production update channel.",
-    "Includes customer framework scope management improvements.",
-    "Includes log archival destinations and backup/admin refinements.",
-    "Includes API, web, worker, and updater images for release 0.2.6."
+    "Publishes the current production branch state to the production update channel.",
+    "Includes the Audity marketing website package.",
+    "Includes license management and demo entitlement support.",
+    "Includes API, web, worker, and updater images for release 0.2.7."
   ]
 }
